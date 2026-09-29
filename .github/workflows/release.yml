@@ -1,24 +1,30 @@
-# Builds the Windows installer and attaches it to a GitHub Release.
+# Builds Ember for Windows from source, signs it through SignPath (when configured),
+# and attaches the installer, portable .zip and .tar.gz to the GitHub Release.
 #
-# Three ways in, same result: push a version tag (v*), push a release/<tag>
-# branch, or dispatch by hand with a tag name. The last two make the run create
-# the tag itself, which covers environments whose git credentials cannot push
-# tags directly.
+# Push a version tag (v*), or dispatch by hand with a tag name. Signing needs the
+# repository secret SIGNPATH_API_TOKEN and the variable SIGNPATH_ORGANIZATION_ID; without
+# them the same build runs unsigned. Every signing request waits for manual approval in
+# SignPath. See CODE_SIGNING.md.
 name: Release
 
 on:
   push:
     tags: ['v*']
-    branches: ['release/**']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release as (e.g. v0.6.0)'
+        description: 'Tag to release as (e.g. v1.0.1)'
         required: true
         type: string
 
 permissions:
   contents: write
+  actions: read
+
+env:
+  SIGN: ${{ secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' }}
+  SIGNPATH_PROJECT: ember
+  SIGNPATH_POLICY: release-signing
 
 jobs:
   build:
@@ -37,24 +43,90 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Typecheck + electron-vite build + electron-builder NSIS, per package.json.
-      # --publish never: electron-builder turns on implicit publishing when it
-      # smells CI and then fails wanting a token; the release step below is the
-      # one that publishes.
-      - run: pnpm dist --publish never
+      # Typecheck + bundle, then the unpacked app only. --publish never: electron-builder
+      # turns on implicit publishing when it smells CI and then fails wanting a token.
+      - run: pnpm run build
+      - run: pnpm exec electron-builder --win dir --publish never
+
+      - name: Upload the unsigned app
+        id: upload-app
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ember-app-unsigned
+          path: release/win-unpacked
+          if-no-files-found: error
+
+      - name: Sign Ember.exe
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: release/win-unpacked-signed
+
+      - name: Use the signed app
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force release/win-unpacked
+          Move-Item release/win-unpacked-signed release/win-unpacked
+
+      # Installer, .zip and .tar.gz, all built from the (signed) folder above.
+      - run: pnpm exec electron-builder --win --prepackaged release/win-unpacked --publish never
+
+      - name: Upload the unsigned installer
+        id: upload-installer
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ember-installer-unsigned
+          path: release/Ember-Setup-win-x64.exe
+          if-no-files-found: error
+
+      - name: Sign the installer
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: release/signed
+
+      - name: Use the signed installer
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: Move-Item -Force release/signed/Ember-Setup-win-x64.exe release/Ember-Setup-win-x64.exe
+
+      - name: Checksums
+        shell: bash
+        run: cd release && sha256sum Ember-Setup-win-x64.exe Ember-win-x64.zip Ember-win-x64.tar.gz | tee SHA256SUMS.txt
 
       - name: Resolve release tag
         id: tag
         shell: bash
         run: |
           TAG="${{ inputs.tag }}"
-          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME#release/}"; fi
+          if [ -z "$TAG" ]; then TAG="$GITHUB_REF_NAME"; fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           files: |
-            release/*.exe
-            release/*.blockmap
-          generate_release_notes: true
+            release/Ember-Setup-win-x64.exe
+            release/Ember-win-x64.zip
+            release/Ember-win-x64.tar.gz
+            release/SHA256SUMS.txt
+          fail_on_unmatched_files: true

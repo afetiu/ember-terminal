@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "app": the unpacked app folder, as the build job
+  uploads it (actions/upload-artifact zips it). Only Ember's own executable is signed;
+  Electron's and ConPTY's binaries ship as their authors built them.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="Ember.exe">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

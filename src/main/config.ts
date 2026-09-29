@@ -158,7 +158,7 @@ export const DEFAULT_CONFIG: EmberConfig = {
     allowHtml: true,
   },
   claude: {
-    usageLimits: true,
+    usageLimits: false,
     statusLine: true,
   },
   agent: {

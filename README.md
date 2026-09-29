@@ -30,6 +30,14 @@ all. Ember replaces the *window*, not the shell: `pwsh.exe` is spawned through t
 same bundled ConPTY that Windows Terminal itself ships, so your profile, oh-my-posh,
 modules and PSReadLine behave exactly as before.
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org). Releases are built from this repository by
+GitHub Actions and every signing request is approved by hand — see
+[CODE_SIGNING.md](CODE_SIGNING.md) for what is signed, the team roles and the privacy
+policy.
+
 ## What's actually different
 
 - **A caret that travels.** Two springs — a stiff head and a slack tail — with the

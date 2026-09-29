@@ -238,7 +238,7 @@ export class Settings {
           path: 'claude.usageLimits',
           label: 'Plan usage in the sidebar',
           kind: 'toggle',
-          hint: 'the 5-hour and weekly limits, polled every minute with the login Claude Code already has',
+          hint: 'the 5-hour and weekly limits, polled every minute from Anthropic with the login Claude Code already has. Off by default',
         },
         {
           path: 'claude.statusLine',
