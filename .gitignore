@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+release/
+*.log
+.vite/
+# Copied out of node_modules by scripts/prepare-resources.mjs; the lockfile owns the version.
+resources/vendor/
+# Screenshots the probes drop in the repo root. Looking at them is the point; keeping
+# them is not — two got committed before this line existed.
+/*.png
+*.tsbuildinfo

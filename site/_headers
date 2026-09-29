@@ -1,0 +1,30 @@
+# Cloudflare Pages response headers for ember.deepanswerlabs.com
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'; upgrade-insecure-requests
+
+# HTML: always revalidate so a release (new version string, new copy) shows up at once.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# CSS/JS are not fingerprinted (no build step), so keep them short-lived; Cloudflare
+# still serves them from the edge and revalidates with ETags.
+/*.css
+  Cache-Control: public, max-age=3600, must-revalidate
+/*.js
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# Images change rarely; a day in browsers, a week at the edge.
+/assets/*
+  Cache-Control: public, max-age=86400, s-maxage=604800
+
+# (Nothing for /download/*: those are answered by _redirects with a 302, which
+# browsers don't cache without explicit headers.)

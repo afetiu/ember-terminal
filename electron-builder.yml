@@ -1,0 +1,62 @@
+appId: com.deepanswerlabs.ember
+productName: Ember
+copyright: Copyright © 2026 Deep Answer Labs
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+  # Debug symbols for the ConPTY binary — 10MB of no use to anyone installing this.
+  - '!**/node_modules/@lydell/**/*.pdb'
+
+# The pty binary, conpty.dll and OpenConsole.exe cannot be executed from inside an
+# asar archive; they must sit on the real filesystem.
+asarUnpack:
+  - '**/node_modules/@lydell/**'
+
+# Files that are read as files rather than imported: the panel MCP server, which Claude
+# Code spawns as its own process, and mermaid, which the panel fetches over HTTP.
+# Neither can live in the asar.
+extraResources:
+  - from: resources
+    to: resources
+
+# Three Windows downloads, all x64: the NSIS installer, plus the unpacked app as a
+# portable .zip and .tar.gz (unzip and run Ember.exe; settings live in ~/.ember, so
+# nothing is written next to the exe).
+#
+# Artifact names carry NO version on purpose: the site links to
+# https://github.com/<owner>/<repo>/releases/latest/download/<file>, which only works
+# if every release uploads the same file names. The version still shows in the
+# installer's Apps & Features entry (uninstallDisplayName) and in Ember.exe's file
+# properties.
+win:
+  icon: build/icon.ico
+  artifactName: Ember-win-${arch}.${ext}
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+    - target: tar.gz
+      arch: [x64]
+  # Unsigned: Windows SmartScreen will warn on first run. Signing needs a real
+  # certificate, which is a purchase decision, not a build setting.
+  signAndEditExecutable: true
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+  shortcutName: Ember
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  artifactName: Ember-Setup-win-${arch}.${ext}
+  uninstallDisplayName: Ember ${version}
+  deleteAppDataOnUninstall: false

@@ -1,0 +1,60 @@
+# Builds the Windows installer and attaches it to a GitHub Release.
+#
+# Three ways in, same result: push a version tag (v*), push a release/<tag>
+# branch, or dispatch by hand with a tag name. The last two make the run create
+# the tag itself, which covers environments whose git credentials cannot push
+# tags directly.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['release/**']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release as (e.g. v0.6.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Typecheck + electron-vite build + electron-builder NSIS, per package.json.
+      # --publish never: electron-builder turns on implicit publishing when it
+      # smells CI and then fails wanting a token; the release step below is the
+      # one that publishes.
+      - run: pnpm dist --publish never
+
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME#release/}"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            release/*.exe
+            release/*.blockmap
+          generate_release_notes: true

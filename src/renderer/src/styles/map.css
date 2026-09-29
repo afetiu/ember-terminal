@@ -1,0 +1,275 @@
+/* ---------- the map ----------
+   A project's architecture as one zoomable picture. Boxes are parts, nested boxes are
+   parts of parts, lines are connections. Colour says what kind of thing a box is; a
+   glow says it changed since you last looked; a dot says whether it is healthy. */
+.ember-group-panes.has-note > .ember-map {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+}
+
+.ember-map {
+  --map-ok: #4ce0b3;
+  --map-warn: #ffc857;
+  --map-down: #ff6b81;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  font-family: var(--ui-font);
+  color: var(--c-fg);
+}
+
+.ember-map[data-mode='list'] > :not(.ember-map-list),
+.ember-map[data-mode='form'] > :not(.ember-map-form),
+.ember-map[data-mode='map'] > :not(.ember-map-view) {
+  display: none;
+}
+
+.ember-map-list,
+.ember-map-view,
+.ember-map-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ember-map-head,
+.ember-map-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--hairline);
+  flex: none;
+  min-width: 0;
+}
+
+.ember-map-head h2,
+.ember-map-bar h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ember-map-count,
+.ember-map-lede {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-map-lede {
+  flex: 1 1 auto;
+}
+
+.ember-map-btn {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  font: 11px var(--ui-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ember-map-btn:hover {
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-map-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ember-map-btn.is-primary {
+  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-map-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+}
+
+.ember-map-btn.is-ghost {
+  border-color: transparent;
+}
+
+.ember-map-btn.is-danger.is-armed {
+  border-color: var(--map-down);
+  color: var(--map-down);
+}
+
+.ember-map-btn:focus-visible,
+.ember-map-row:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.ember-map-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ember-map-link:hover {
+  text-decoration: underline;
+}
+
+/* the list of projects */
+.ember-map-rows {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.ember-map-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--c-fg);
+  text-align: left;
+  font-family: var(--ui-font);
+  cursor: pointer;
+  position: relative;
+}
+
+.ember-map-row:hover {
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+}
+
+.ember-map-row-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.ember-map-row-meta {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  text-align: right;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-map-row.is-busy .ember-map-row-meta {
+  color: var(--c-working);
+}
+
+.ember-map-row.is-error .ember-map-row-meta {
+  color: var(--map-down);
+}
+
+.ember-map-row-brief {
+  grid-column: 1 / -1;
+  padding-right: 80px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-map-row-new {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  background: color-mix(in srgb, var(--c-attention) 22%, transparent);
+  color: var(--c-attention);
+}
+
+.ember-map-empty {
+  max-width: 520px;
+  margin: 12vh auto 0;
+  padding: 0 24px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+}
+
+.ember-map-empty strong {
+  color: var(--c-fg);
+}
+
+/* the form */
+.ember-map-form {
+  overflow-y: auto;
+  align-items: center;
+  padding: 6vh 16px 24px;
+}
+
+.ember-map-formcard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(620px, 100%);
+}
+
+.ember-map-formcard h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ember-map-formcard label {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+}
+
+.ember-map-formcard input,
+.ember-map-formcard textarea,
+.ember-map-formcard select {
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+  color: var(--c-fg);
+  font: 13px/1.5 var(--ui-font);
+  outline: none;
+  resize: vertical;
+}
+
+.ember-map-formcard select option {
+  background: var(--c-bg);
+}
+
+.ember-map-formcard :is(input, textarea, select):focus {
+  border-color: color-mix(in srgb, var(--c-accent) 70%, transparent);
+}
+
+.ember-map-formnote {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-map-formactions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+

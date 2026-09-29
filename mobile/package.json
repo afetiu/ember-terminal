@@ -1,0 +1,18 @@
+{
+  "name": "ember-phone",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ember on the phone — a front end onto the orchestrator running on the desk",
+  "scripts": {
+    "sync": "node sync.mjs && cap sync android",
+    "apk": "node sync.mjs && cap sync android && cd android && gradlew.bat assembleRelease"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/android": "^7.0.0"
+  }
+}

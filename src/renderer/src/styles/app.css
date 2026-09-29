@@ -1,0 +1,4698 @@
+/* Motion curves. Entering uses a long-tailed ease-out so things arrive and settle
+   rather than stopping dead; leaving uses an ease-in so departures accelerate away. */
+:root {
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-leave: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-move: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Fast out, smooth in, no overshoot — matches the critically damped springs. */
+  --ease-snap: cubic-bezier(0.22, 0.85, 0.28, 1);
+  --titlebar-h: 36px;
+  --sidebar-w: 244px;
+  /* One radius scale for the whole chrome. Controls take the small one, cards and
+     inputs the middle, surfaces the large; nothing picks its own number. */
+  --r-sm: 7px;
+  --r-md: 11px;
+  --r-lg: 14px;
+  /* The one line weight used to separate surfaces. Faint on purpose: the material does
+     most of the separating, the line only finishes the edge. */
+  --hairline: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  /* Driven by a spring in App, like --sidebar-w. 0 when the orchestrator is closed. */
+  --orch-w: 0px;
+  --c-working: #4ce0b3;
+  --c-attention: #ffc857;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Keyboard focus is shown, once, the same way everywhere — and only for the keyboard:
+   :focus-visible leaves a mouse click unmarked. */
+:is(
+    .ember-card,
+    .ember-newtab,
+    .ember-sidebar-toggle,
+    .ember-voicetoggle,
+    .ember-panel-btn,
+    .ember-notes-row,
+    .ember-notes-new,
+    .ember-notes-reveal,
+    .ember-notes-back,
+    .ember-notes-delete,
+    .ember-notes-search,
+    .ember-orch-send,
+    .ember-orch-call,
+    .ember-orch-x,
+    .ember-orch-box,
+    .ember-winbtn
+  ):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------- scrollbars ----------
+   A pill floated off the edge by a transparent border rather than a channel welded to
+   it, nearly invisible until the pointer is inside whatever scrolls. `:hover::-…-thumb`
+   is the condition that does that: it means "the pointer is in this scroller", which is
+   when a scrollbar is worth seeing and the only time it is.
+
+   The standard `scrollbar-width` / `scrollbar-color` properties are deliberately absent
+   everywhere in this file. Chromium honours those in preference to these
+   pseudo-elements, so setting either on an element silently swaps all of this back for
+   a thin grey bar. */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+}
+
+/* With the orchestrator open beneath it, the list keeps only the height its cards need,
+   up to a share of the column; the conversation takes the rest. */
+.ember-sidebar.has-orch .ember-cards {
+  flex: 0 1 auto;
+  max-height: 44%;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+  border: 0;
+}
+
+/* Nobody has clicked a scrollbar arrow this decade. */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+  border: 3.5px solid transparent;
+  border-radius: 99px;
+  background-clip: padding-box;
+  transition: background 180ms var(--ease-move);
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c-fg) 26%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: color-mix(in srgb, var(--c-accent) 75%, transparent);
+  background-clip: padding-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  /* The window is transparent so the Windows 11 acrylic backdrop shows through;
+     never paint an opaque colour here or the material is lost. */
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+  user-select: none;
+}
+
+.ember-root {
+  position: relative;
+  display: grid;
+  /* The left column and the stage. The left column has two faces — the sessions, or the
+     orchestrator that runs them — in the same cell; see App.toggleOrchestrator. */
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-rows: var(--titlebar-h) 1fr;
+  height: 100%;
+  /* The tint over whatever is behind the window — this is Windows Terminal's
+     `opacity: 70`. On a glass window it is the only layer there is, which is what
+     keeps the terminal see-through when Ember is not the active window. */
+  background: color-mix(in srgb, var(--c-bg) calc(var(--c-tint-alpha) * 100%), transparent);
+  overflow: hidden;
+  /* No transition here: --sidebar-w is driven by a spring in App, so the column
+     width already animates with real physics. */
+}
+
+/* Windows rounds (and shadows) the frame itself for a normal window, but not for a
+   transparent one, so the glass build draws its own corners. Maximised windows are
+   square-cornered on Windows 11 — matching that is what stops a hairline of desktop
+   showing at the corners of a full-screen terminal. */
+body.is-glass .ember-root {
+  border-radius: 8px;
+}
+
+body.is-glass.is-maximized .ember-root {
+  border-radius: 0;
+}
+
+/* ---------- title bar ---------- */
+
+.ember-titlebar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: drag;
+  background: color-mix(in srgb, var(--c-bg) 26%, transparent);
+}
+
+.ember-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.ember-brand-mark {
+  width: 20px;
+  height: 20px;
+  display: block;
+  /* A drop-shadow, not a box-shadow: the image is a flame on transparency, and a
+     box-shadow paints the rectangle it sits in, which read as a dark plate behind it. */
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c-accent) 45%, transparent));
+}
+
+.ember-brand-name {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+}
+
+.ember-drag {
+  flex: 1;
+  min-width: 24px;
+  -webkit-app-region: drag;
+}
+
+/* ---------- sidebar ---------- */
+
+.ember-sidebar {
+  /* Row given explicitly: the orchestrator shares this cell, and with two items claiming
+     one column the auto-placer otherwise walks the stage down into a row of its own. */
+  grid-column: 1;
+  grid-row: 2;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  /* Not a surface. The sessions list is part of the frame; the stage and the panels are
+     the cards that sit on it. What ties the two together is the selected card, which
+     takes the stage's colour and joins it — see .ember-card.is-active. */
+  background: transparent;
+  transition: opacity 200ms var(--ease-move);
+}
+
+/* The seam between the frame and the stage, drawn on the sidebar's side so the selected
+   card can cover its own stretch of it and read as one piece with the stage. The stage
+   has no left border of its own for the same reason. */
+.ember-sidebar::after {
+  /* No seam. The colour step between frame and stage is the whole edge; a line on top
+     of it read as a border the selected card was sitting on. */
+  display: none;
+}
+
+/* ---------- minimised ----------
+   A rail, not an absence. Collapsing used to fade the sidebar out entirely, which took
+   every session with it — so the only way to see what was running was to bring the whole
+   thing back. Here the cards, their badges and their activity stay; the names go, because
+   the names are what cost the width. */
+body.sidebar-mini .ember-sidebar-title,
+body.sidebar-mini .ember-card-body,
+body.sidebar-mini .ember-chip {
+  display: none;
+}
+
+body.sidebar-mini .ember-sidebar-head {
+  justify-content: center;
+  padding: 12px 0 6px;
+}
+
+body.sidebar-mini .ember-cards {
+  padding-left: 0;
+  padding-right: 0;
+  align-items: center;
+}
+
+body.sidebar-mini .ember-card {
+  justify-content: center;
+  min-height: 0;
+  padding: 6px 0;
+  width: 44px;
+  margin-left: auto;
+  margin-right: 0;
+  gap: 0;
+}
+
+/* The badge is the whole card now, and it shrinks with it — a rail of full-size icons is
+   a narrower sidebar, not a minimised one. */
+body.sidebar-mini .ember-card-badge {
+  margin: 0;
+  width: 30px;
+  height: 30px;
+}
+
+body.sidebar-mini .ember-card-badge canvas {
+  width: 30px;
+  height: 30px;
+}
+
+.ember-sidebar-head {
+  display: flex;
+  align-items: center;
+  /* The two buttons are one control cluster, so the label takes the slack instead
+     of `space-between` stranding the mic in the middle of the row. */
+  gap: 4px;
+  padding: 12px 10px 6px 14px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+}
+
+.ember-sidebar-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-cards {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* No right padding: the selected card has to reach the stage to join it. The others
+     keep their distance with a margin of their own. */
+  padding: 4px 0 12px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ember-card {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  /* Auto height so stacked chips are never clipped; the min keeps the rhythm when a
+     card has no chips at all. */
+  min-height: 60px;
+  /* Every card runs out to the stage edge, selected or not, so nothing about a card's
+     box changes when it is chosen — the plates behind it do all the moving. */
+  margin: 0 0 6px 0;
+  padding: 7px 8px 7px 10px;
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  overflow: hidden;
+  z-index: 1;
+  -webkit-app-region: no-drag;
+  transition:
+    background 150ms var(--ease-move),
+    opacity 180ms var(--ease-enter),
+    transform 220ms var(--ease-snap),
+    height 190ms var(--ease-leave),
+    margin 190ms var(--ease-leave);
+}
+
+.ember-card:hover .ember-card-title {
+  color: var(--c-fg);
+}
+
+.ember-card:active {
+  transform: scale(0.975);
+  transition-duration: 90ms;
+}
+
+.ember-card.is-active {
+  /* The colour is the plate's (below), which travels here rather than switching on. */
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The selection plate: one element behind the cards, in the stage's colour and the
+   active card's shape, moved by a spring in Sidebar (transform only). */
+.ember-card-plate {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 0;
+  height: 0;
+  z-index: 0;
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms var(--ease-move);
+  will-change: transform;
+}
+
+/* The contact. As the plate lands, a thin line of accent flares along its join with the
+   stage and fades — the visible instant of the tab meeting the surface it now belongs to. */
+.ember-card-plate::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--c-accent);
+  box-shadow: 0 0 10px var(--c-accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+}
+
+.ember-card-plate.is-landed::after {
+  animation: ember-spark 560ms var(--ease-move) both;
+}
+
+@keyframes ember-spark {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.3);
+  }
+  18% {
+    opacity: 0.9;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+
+/* Hover is quiet on purpose: the title comes to full strength, nothing is painted behind
+   the row, and nothing inside it moves — the only thing that moves in this list is the
+   selection plate. */
+
+.ember-card.is-entering {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.96);
+}
+
+.ember-card.is-leaving {
+  opacity: 0;
+  transform: scale(0.94);
+  pointer-events: none;
+}
+
+.ember-card-badge {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+}
+
+.ember-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ember-card-title {
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--c-fg) 68%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 150ms var(--ease-move);
+}
+
+.ember-card.is-active .ember-card-title {
+  color: var(--c-fg);
+}
+
+.ember-card-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  letter-spacing: 0.2px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+/* Nothing to say: the mascot is carrying the state on its own. */
+.ember-card-status.is-quiet {
+  display: none;
+}
+
+.ember-card-dot {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  transition: background 240ms var(--ease-move);
+}
+
+/* State is carried on the card so the dot, label and glow all move together. */
+.ember-card[data-state='working'] .ember-card-status {
+  color: var(--c-working);
+}
+.ember-card[data-state='working'] .ember-card-dot {
+  box-shadow: 0 0 7px var(--c-working);
+}
+
+.ember-card[data-state='attention'] .ember-card-status {
+  color: var(--c-attention);
+}
+.ember-card[data-state='attention'] .ember-card-dot {
+  box-shadow: 0 0 9px var(--c-attention);
+}
+.ember-card[data-state='attention']:not(.is-active) {
+  background: color-mix(in srgb, var(--c-attention) 12%, transparent);
+}
+
+/* "Your turn" is good news, not an alarm: a finished turn gets the working colour and
+   none of the nudging, so amber keeps meaning "this one is blocked on you". */
+.ember-card[data-attention='handoff'] .ember-card-status,
+.ember-card[data-attention='handoff'] .ember-card-dot {
+  color: var(--c-working);
+}
+.ember-card[data-attention='handoff'] .ember-card-dot {
+  box-shadow: 0 0 7px var(--c-working);
+}
+.ember-card[data-attention='handoff']:not(.is-active) {
+  background: color-mix(in srgb, var(--c-working) 10%, transparent);
+  animation: none;
+}
+
+.ember-card[data-state='exited'] {
+  opacity: 0.55;
+}
+.ember-card[data-state='exited'] .ember-card-title {
+  text-decoration: line-through;
+}
+
+@keyframes ember-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes ember-nudge {
+  0%,
+  88%,
+  100% {
+    transform: translateY(0);
+  }
+  92% {
+    transform: translateY(-3px);
+  }
+  96% {
+    transform: translateY(2px);
+  }
+}
+
+.ember-card-close,
+.ember-newtab,
+.ember-sidebar-toggle,
+.ember-winbtn {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition:
+    background 130ms var(--ease-move),
+    color 130ms var(--ease-move),
+    opacity 130ms var(--ease-move),
+    transform 180ms var(--ease-snap);
+}
+
+/* Press feedback: compress on the way down, spring back past rest on release. */
+.ember-card-close:active,
+.ember-newtab:active,
+.ember-sidebar-toggle:active {
+  transform: scale(0.86);
+  transition-duration: 90ms;
+}
+
+/* Hold-to-close. The ring is a conic gradient driven by --hold from the ticker, so
+   the fill is frame-accurate and rewinds when you let go early. */
+.ember-card-close {
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 9px;
+  opacity: 0;
+  transform: scale(0.7);
+  --hold: 0;
+}
+
+.ember-card-close::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--c-attention) calc(var(--hold) * 360deg),
+    transparent calc(var(--hold) * 360deg)
+  );
+  /* Punch out the middle so the gradient reads as a ring, not a pie. */
+  mask: radial-gradient(circle, transparent 58%, #000 60%);
+  opacity: 0;
+  transition: opacity 120ms var(--ease-move);
+  pointer-events: none;
+}
+
+.ember-card-close.is-holding::before {
+  opacity: 1;
+}
+
+.ember-card-close.is-holding {
+  background: color-mix(in srgb, var(--c-attention) 20%, transparent);
+  color: var(--c-attention);
+  transform: scale(1.08);
+}
+
+/* ---------- inline rename ---------- */
+
+.ember-card-rename {
+  width: 100%;
+  padding: 1px 4px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
+  border-radius: 5px;
+  outline: none;
+  background: color-mix(in srgb, var(--c-bg) 85%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12.5px;
+}
+
+.ember-card:hover .ember-card-close {
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+.ember-card-close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--c-fg) 16%, transparent);
+}
+
+.ember-newtab {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-family: var(--ui-font);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-newtab:hover {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-newtab:active {
+  transform: scale(0.9);
+}
+
+.ember-sidebar-toggle {
+  width: 30px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-sidebar-toggle:hover {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+  color: var(--c-fg);
+}
+
+/* ---------- app dock (local chat/mail clients) ---------- */
+
+/* ---------- dock popover (notifications & reply) ---------- */
+
+/* ---------- vitals strip ---------- */
+
+.ember-vitals {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--c-bg) 30%, transparent);
+}
+
+.ember-vitals-spacer {
+  flex: 1;
+}
+
+.ember-vitals-chip {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  white-space: nowrap;
+}
+
+.ember-vitals-chip.is-hidden {
+  display: none;
+}
+
+.ember-vitals-chip.is-low {
+  color: var(--c-attention);
+}
+
+/* The plan's windows, on the left of the strip. Same voice as CPU and MEM until a
+   window is most of the way used, then warmer, then the attention colour. Clicking
+   any of them fetches again. */
+/* A row of the table: caption in the margin, values packed to the right in cells of
+   one width, so the numbers of one row stand under the numbers of the other. */
+.ember-vitals-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.ember-vitals-row.is-empty {
+  display: none;
+}
+
+.ember-vitals-cap {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-right: auto;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: color-mix(in srgb, var(--c-fg) 24%, transparent);
+  white-space: nowrap;
+}
+
+/* Sized so caption plus three cells fit the narrowest sidebar (about 220px of
+   content): the caption gives way first, the numbers never do. */
+.ember-vitals-row .ember-vitals-chip {
+  flex: none;
+  width: 56px;
+  letter-spacing: 0.6px;
+  text-align: right;
+}
+
+.ember-vitals-chip.is-plan {
+  cursor: pointer;
+  transition: color 130ms var(--ease-move);
+}
+
+.ember-vitals-chip.is-plan:hover {
+  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+}
+
+.ember-vitals-chip.is-warn {
+  color: color-mix(in srgb, var(--c-attention) 55%, var(--c-fg));
+}
+
+.ember-vitals-chip.is-stale {
+  opacity: 0.55;
+}
+
+/* On air: something is listening or watching. Fluent glyph plus "LIVE", pulsing
+   gently — visible at a glance without shouting. */
+.ember-vitals-chip.is-live {
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
+  font-size: 9px;
+  color: #e8556d;
+  animation: ember-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ember-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Computer use: a third row while a Claude is (or was) driving the desktop. The state
+   chip on the left of the values, what it is doing in the middle (given all the room
+   and cut with an ellipsis), and the switch on the right — red while it can stop
+   something, quiet green once it has. */
+.ember-vitals-desk .ember-vitals-chip {
+  width: auto;
+}
+
+.ember-vitals-chip.is-desk-what {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  letter-spacing: 0.3px;
+  text-transform: none;
+}
+
+.ember-vitals-chip.is-desk-state {
+  flex: none;
+}
+
+.ember-vitals-chip.is-desk-busy {
+  color: #ff8a2a;
+  animation: ember-live-pulse 1.2s ease-in-out infinite;
+}
+
+.ember-vitals-chip.is-desk-halted {
+  color: #8bd17c;
+}
+
+.ember-vitals-chip.is-desk-switch {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  color: #fff;
+  background: #c8383d;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    transform 130ms var(--ease-move);
+}
+
+.ember-vitals-chip.is-desk-switch:hover {
+  background: #e5484d;
+  transform: translateY(-1px);
+}
+
+.ember-vitals-chip.is-desk-switch.is-resume {
+  background: color-mix(in srgb, #8bd17c 28%, var(--c-bg));
+  color: #bfe7b4;
+}
+
+.ember-vitals-chip.is-desk-switch.is-resume:hover {
+  background: color-mix(in srgb, #8bd17c 45%, var(--c-bg));
+}
+
+
+/* Equaliser bars: scaleY so the animation never touches layout. Paused they slump
+   low and dim; playing they dance out of phase, one duration per bar so the loop
+   never visibly repeats. */
+.ember-np-art {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+}
+
+.ember-np-art.has-art {
+  box-shadow: 0 1px 6px color-mix(in srgb, #000 40%, transparent);
+}
+
+.ember-np-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+/* Over album art the bars need their own contrast. */
+.ember-np-art.has-art .ember-np-eq span {
+  box-shadow: 0 0 4px rgb(0 0 0 / 55%);
+}
+
+.ember-np-eq span {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px;
+  background: #1db954;
+  opacity: 0.4;
+  transform: scaleY(0.22);
+  transform-origin: bottom;
+  transition:
+    transform 300ms var(--ease-move),
+    opacity 300ms var(--ease-move);
+}
+
+@keyframes ember-np-eq {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.ember-np-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ember-np-title {
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+}
+
+.ember-np-titletext {
+  display: inline-block;
+  --np-shift: 0px;
+}
+
+/* Titles wider than the column slide back and forth, dwelling at each end. The
+   fade masks only appear once the text actually moves. */
+.ember-np-title.is-overflowing {
+  mask-image: linear-gradient(90deg, transparent, #000 6px, #000 calc(100% - 10px), transparent);
+}
+
+.ember-np-title.is-overflowing .ember-np-titletext {
+  animation: ember-np-marquee 14s linear infinite;
+}
+
+@keyframes ember-np-marquee {
+  0%,
+  14% {
+    transform: translateX(0);
+  }
+  44%,
+  56% {
+    transform: translateX(var(--np-shift));
+  }
+  86%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.ember-np-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+}
+
+.ember-np-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.ember-np-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
+  font-size: 10px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition:
+    background 130ms var(--ease-move),
+    color 130ms var(--ease-move),
+    transform 180ms var(--ease-snap);
+}
+
+.ember-np-btn:hover {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-np-btn:active {
+  transform: scale(0.86);
+  transition-duration: 90ms;
+}
+
+.ember-np-btn.is-primary {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 85%, transparent);
+}
+
+.ember-wincontrols {
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+.ember-winbtn {
+  width: 46px;
+  height: var(--titlebar-h);
+  font-size: 10px;
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+}
+
+.ember-winbtn:hover {
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-winbtn.close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* ---------- pane stack ---------- */
+
+.ember-stack {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  overflow: hidden;
+  /* A surface the terminals sit in, a little darker than the frame and rounded, so
+     the grid reads as a document on a desk rather than paint to the window's edge. A
+     uniform radius is what keeps this cheap: Chromium clips uniform rounded corners in
+     the compositor without a mask layer. */
+  margin: 8px 8px 8px 0;
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+}
+
+/* The stack with no tab in it. The class sets display, so the attribute needs its own rule. */
+.ember-empty[hidden] {
+  display: none;
+}
+
+.ember-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--ui-font);
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-empty h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--c-fg);
+}
+
+.ember-empty p {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+}
+
+.ember-empty kbd {
+  font: inherit;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+}
+
+.ember-empty-new {
+  margin-top: 6px;
+  padding: 8px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 130ms var(--ease-move);
+}
+
+.ember-empty-new:hover,
+.ember-empty-new:focus-visible {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+  outline: none;
+}
+
+/* The rounded surface needs no gutter against a maximised window's flat frame on the
+   sides that meet it, but it keeps its inner edges. */
+body.is-maximized .ember-stack {
+  margin-right: 8px;
+}
+
+/* Transform, opacity and blur are all written by App's spring loop each frame —
+   deliberately no CSS transition here, or the two would fight each other. */
+.ember-group {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: row;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  /* Not `filter`: promising a filter makes the compositor keep an offscreen surface the
+     size of the window for every tab, and re-composite through it on every frame, for
+     a blur whose default radius is zero. Transform and opacity animate on the layer as
+     it is. When switchBlur is set the filter is written per frame and costs what it costs. */
+  will-change: opacity, transform;
+}
+
+/* The terminals. Always takes what the panel is not using, so opening the panel is a
+   single spring on one flex-basis rather than two sizes kept in step. */
+.ember-group-panes {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ember-group-panes[data-dir='row'] {
+  flex-direction: row;
+}
+
+.ember-group-panes[data-dir='column'] {
+  flex-direction: column;
+}
+
+.ember-slot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ember-pane {
+  position: absolute;
+  inset: 0;
+}
+
+/* Split seam. The hit area is wider than the visible line so it can actually be
+   grabbed without pixel hunting. */
+.ember-divider {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 5;
+  background: color-mix(in srgb, var(--c-dim) 22%, transparent);
+  transition: background 130ms var(--ease-move);
+}
+
+.ember-group-panes[data-dir='row'] > .ember-divider {
+  width: 1px;
+  cursor: col-resize;
+}
+
+.ember-group-panes[data-dir='column'] > .ember-divider {
+  height: 1px;
+  cursor: row-resize;
+}
+
+.ember-divider::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+.ember-group-panes[data-dir='row'] > .ember-divider::after {
+  inset: 0 -4px;
+}
+
+.ember-group-panes[data-dir='column'] > .ember-divider::after {
+  inset: -4px 0;
+}
+
+.ember-divider:hover,
+.ember-divider.is-dragging {
+  background: var(--c-accent);
+  box-shadow: 0 0 10px var(--c-accent);
+}
+
+/* While dragging, nothing else should take the pointer or show a text caret. */
+body.is-resizing,
+body.is-resizing * {
+  cursor: inherit !important;
+  user-select: none !important;
+}
+
+/* Only mark the focused pane when there is actually a choice to make. */
+.ember-slot:has(.ember-pane.is-focused)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 4px;
+}
+
+/* ---------- effects overlay ----------
+   Scanlines, vignette and an activity-reactive glow, layered above the grid.
+
+   This is an overlay, not true bloom: xterm's WebGL context is created without
+   preserveDrawingBuffer, so its framebuffer cannot be read back and post-processed
+   without patching xterm. Doing it in CSS costs nothing per frame — only the ambient
+   variable changes, and only when output rate changes. */
+.ember-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  --fx-ambient: 0;
+  background:
+    radial-gradient(
+      120% 90% at 50% 45%,
+      rgba(255, 168, 107, calc(var(--fx-glow, 0) * var(--fx-ambient) * 0.16)) 0%,
+      transparent 65%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, calc(var(--fx-scanlines, 0) * 0.55)) 0px,
+      rgba(0, 0, 0, calc(var(--fx-scanlines, 0) * 0.55)) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(130% 110% at 50% 50%, transparent 55%, rgba(5, 2, 12, calc(var(--fx-vignette, 0) * 0.75)) 100%);
+  transition: background 600ms linear;
+}
+
+/* ---------- find bar ---------- */
+
+.ember-search {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 94%, transparent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  pointer-events: none;
+  transition:
+    opacity 130ms var(--ease-move),
+    transform 180ms var(--ease-snap);
+}
+
+.ember-search.is-open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.ember-search.is-empty {
+  border-color: color-mix(in srgb, #ff3b6b 55%, transparent);
+}
+
+.ember-search-input {
+  width: 210px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12.5px;
+}
+
+.ember-search-status {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-search-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 130ms var(--ease-move);
+}
+
+.ember-search-btn:hover {
+  background: color-mix(in srgb, var(--c-fg) 14%, transparent);
+  color: var(--c-fg);
+}
+
+/* ---------- toast ---------- */
+
+.ember-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  z-index: 120;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translate(-50%, 12px) scale(0.95);
+  pointer-events: none;
+  transition:
+    opacity 140ms var(--ease-move),
+    transform 220ms var(--ease-snap);
+}
+
+.ember-toast.is-in {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+/* Broadcast is dangerous enough that it needs to be visible at all times. */
+body.is-broadcasting .ember-stack::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border: 2px solid color-mix(in srgb, var(--c-attention) 65%, transparent);
+  box-shadow: inset 0 0 26px color-mix(in srgb, var(--c-attention) 22%, transparent);
+}
+
+.ember-group-panes.is-zoomed .ember-slot:not(:has(.ember-pane.is-focused)) {
+  opacity: 0;
+}
+
+/* ---------- focus ring ---------- */
+
+.ember-focus-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 7;
+  pointer-events: none;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--c-accent) 12%, transparent);
+  opacity: 0;
+  transition: opacity 140ms var(--ease-move);
+  will-change: transform, width, height;
+}
+
+.ember-focus-ring.is-on {
+  opacity: 1;
+}
+
+/* ---------- launch ---------- */
+
+.ember-root {
+  transform-origin: 50% 45%;
+  transition:
+    opacity 260ms var(--ease-move),
+    transform 300ms var(--ease-snap);
+}
+
+body.is-launching .ember-root {
+  opacity: 0;
+  transform: scale(0.965) translateY(8px);
+}
+
+/* ---------- card extras ---------- */
+
+
+.ember-card.is-dragging {
+  z-index: 30;
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--c-fg) 16%, transparent);
+}
+
+/* ---------- odometer ----------
+   One element per character, so a tick turns the digit that changed and nothing else.
+   The line used to slide as a whole, which read as the label flinching once a second
+   rather than as a clock running. */
+
+.ember-odo {
+  display: inline-flex;
+  /* Digits must all be one width or the cells jostle as the numbers change — the
+     difference between a counter and a caption that keeps resizing. */
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}
+
+/* The seam springs back after being dragged past a pane's minimum. */
+.ember-divider {
+  transition:
+    background 130ms var(--ease-move),
+    transform 240ms var(--ease-snap);
+}
+
+.ember-divider.is-dragging {
+  transition: background 130ms var(--ease-move);
+}
+
+/* ---------- command rail + sticky header ---------- */
+
+/* One tick per command down the right edge: the whole session legible at a glance,
+   and clickable to jump. Sits inside the pane, above the grid. */
+.ember-rail {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  bottom: 0;
+  width: 10px;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.ember-rail-tick {
+  position: absolute;
+  right: 2px;
+  width: 6px;
+  height: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  pointer-events: auto;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    width 130ms var(--ease-snap);
+}
+
+.ember-rail-tick:hover {
+  width: 10px;
+  background: var(--c-accent);
+}
+
+.ember-rail-tick[data-outcome='fail'] {
+  background: color-mix(in srgb, #ff3b6b 75%, transparent);
+  height: 3px;
+}
+
+.ember-rail-tick[data-outcome='running'] {
+  background: var(--c-working);
+}
+
+/* Names the command that produced whatever output you are scrolled into. */
+.ember-block-header {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 9;
+  max-width: 70%;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-family: var(--ui-font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition:
+    opacity 130ms var(--ease-move),
+    transform 180ms var(--ease-snap);
+}
+
+.ember-block-header.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.ember-block-header[data-outcome='fail'] {
+  border-color: color-mix(in srgb, #ff3b6b 55%, transparent);
+}
+
+/* ---------- card chips ---------- */
+
+/* Stacked, not side by side: a branch name and a URL together always overflowed a
+   244px card and got clipped. */
+.ember-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 3px;
+  overflow: hidden;
+}
+
+.ember-chip {
+  flex: none;
+  max-width: 100%;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 5px;
+  font-family: var(--ui-font);
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 58%, transparent);
+}
+
+.ember-chip.is-git[data-dirty='true'] {
+  color: var(--c-attention);
+  background: color-mix(in srgb, var(--c-attention) 14%, transparent);
+}
+
+/* What the Claude session in the tab reports about itself: model, context, cost.
+   Ember's own accent, so it reads as Claude's number and not as git's. */
+.ember-chip.is-claude {
+  color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+
+.ember-chip.is-claude[data-hot='true'] {
+  color: var(--c-attention);
+  background: color-mix(in srgb, var(--c-attention) 14%, transparent);
+}
+
+.ember-chip.is-url {
+  cursor: pointer;
+  color: var(--c-cyan, #2de2e6);
+  background: color-mix(in srgb, #2de2e6 14%, transparent);
+  transition: background 130ms var(--ease-move);
+}
+
+.ember-chip.is-url:hover {
+  background: color-mix(in srgb, #2de2e6 28%, transparent);
+}
+
+/* Unread output on a background session. */
+.ember-card.has-unread .ember-card-title::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 6px var(--c-accent);
+  vertical-align: middle;
+}
+
+/* ---------- zen mode ---------- */
+
+/* Everything but the terminal goes away. The sidebar width is already a spring, so
+   only the title bar needs collapsing here. */
+body.is-zen .ember-titlebar {
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.is-zen .ember-root {
+  grid-template-rows: 0px 1fr;
+}
+
+body.is-zen .ember-sidebar,
+body.is-zen .ember-rail,
+body.is-zen .ember-fx {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ember-titlebar,
+.ember-root {
+  transition:
+    height 220ms var(--ease-snap),
+    grid-template-rows 220ms var(--ease-snap),
+    opacity 180ms var(--ease-move);
+}
+
+/* ---------- settings ---------- */
+
+.ember-settings,
+.ember-cheatsheet {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: start center;
+  padding: 7vh 4vw;
+  background: color-mix(in srgb, #05020c 62%, transparent);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 130ms var(--ease-move);
+  overflow: auto;
+}
+
+.ember-settings.is-open,
+.ember-cheatsheet.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ember-settings-panel,
+.ember-cheatsheet-panel {
+  width: min(760px, 100%);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 94%, transparent);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  transform: translateY(-12px) scale(0.985);
+  opacity: 0;
+  transition:
+    transform 240ms var(--ease-snap),
+    opacity 160ms var(--ease-move);
+}
+
+.ember-settings.is-open .ember-settings-panel,
+.ember-cheatsheet.is-open .ember-cheatsheet-panel {
+  transform: none;
+  opacity: 1;
+}
+
+.ember-settings-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
+}
+
+.ember-settings-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--c-fg);
+}
+
+.ember-settings-path {
+  flex: 1;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+.ember-settings-reset {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    color 130ms var(--ease-move);
+}
+
+.ember-settings-reset:hover {
+  color: var(--c-fg);
+  border-color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+/* Armed state: the button becomes its own confirmation. */
+.ember-settings-reset.is-armed {
+  border-color: #ff3b6b;
+  color: #ff6b8b;
+  background: color-mix(in srgb, #ff3b6b 14%, transparent);
+}
+
+.ember-settings-close {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.ember-settings-close:hover {
+  background: color-mix(in srgb, var(--c-fg) 14%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-settings-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 10px 18px 0;
+}
+
+.ember-settings-tab {
+  padding: 6px 12px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 130ms var(--ease-move),
+    border-color 130ms var(--ease-move);
+}
+
+.ember-settings-tab:hover {
+  color: var(--c-fg);
+}
+
+.ember-settings-tab.is-current {
+  color: var(--c-fg);
+  border-bottom-color: var(--c-accent);
+}
+
+.ember-settings-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px 18px 18px;
+}
+
+.ember-settings-section {
+  padding-top: 14px;
+}
+
+.ember-settings-section h3 {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-accent) 78%, transparent);
+}
+
+.ember-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 32px;
+  padding: 3px 0;
+}
+
+.ember-settings-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--c-fg) 84%, transparent);
+}
+
+.ember-settings-label em {
+  font-style: normal;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+.ember-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px;
+}
+
+.ember-range input {
+  flex: 1;
+  accent-color: var(--c-accent);
+}
+
+.ember-range output {
+  width: 46px;
+  text-align: right;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-input,
+.ember-select {
+  width: 240px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.ember-input.is-number {
+  width: 120px;
+}
+
+.ember-input:focus,
+.ember-select:focus {
+  border-color: var(--c-accent);
+}
+
+.ember-toggle {
+  width: 34px;
+  height: 18px;
+  accent-color: var(--c-accent);
+  cursor: pointer;
+}
+
+/* ---------- notes ----------
+   A note tab has no panes, so this fills the pane area outright. The two states are
+   swapped with a data attribute rather than by rebuilding, so the textarea keeps its
+   scroll position and selection when you go to the list and come back. */
+
+.ember-notes {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---------- the overview ----------
+   Every session on one screen. A row each: state in the margin, then the tab, where it
+   is, and what its Claude last said — the one sentence that tells you what is going on
+   without going there — with a box to type into it from here. */
+.ember-overview {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  outline: none;
+}
+
+/* Under the head: the cards across the page, and the orchestrator docked along the
+   bottom while the page holds it — open to its conversation, or folded to a strip
+   that is just its head and composer. */
+.ember-overview-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.ember-overview-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The dock: one exchange with the orchestrator along the bottom — who, what it last
+   said, and a line to answer. Never a log. */
+.ember-overview-dock {
+  flex: none;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(280px, 420px);
+  align-items: center;
+  gap: 8px 18px;
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--hairline);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--c-accent) 4%, transparent), transparent 60%),
+    color-mix(in srgb, var(--c-bg) 26%, transparent);
+  font-family: var(--ui-font);
+}
+
+@media (max-width: 1100px) {
+  .ember-overview-dock {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .ember-overview-dock > .ember-overview-ask {
+    grid-column: 1 / -1;
+  }
+}
+
+.ember-overview-dock-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  white-space: nowrap;
+}
+
+.ember-overview-dock-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c-accent) 70%, var(--c-fg));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.ember-overview-dock-dot.is-busy {
+  animation: ember-live-pulse 1.1s ease-in-out infinite;
+}
+
+.ember-overview-dock-said {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ember-overview-dock-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.ember-overview-dock-text.is-quiet {
+  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  font-style: italic;
+}
+
+.ember-overview-dock-did {
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ember-overview-dock-did[hidden] {
+  display: none;
+}
+
+/* The dock's line is always awake, unlike a card's. */
+.ember-overview-ask.is-dock {
+  opacity: 1;
+  margin: 0;
+  padding: 4px 4px 4px 14px;
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+}
+
+.ember-overview-ask.is-dock .ember-overview-send {
+  opacity: 1;
+}
+
+.ember-overview-ask.is-dock .ember-overview-input {
+  font-size: 12.5px;
+  padding: 5px 0;
+}
+
+/* Cards, as many across as fit. */
+.ember-overview-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 12px;
+  align-content: start;
+  padding: 14px 16px 20px;
+  font-family: var(--ui-font);
+}
+
+.ember-overview-empty[hidden] {
+  display: none;
+}
+
+.ember-overview-empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 36%, transparent);
+}
+
+.ember-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 20%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 42%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--c-fg) 3%, transparent) inset;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    transform 160ms var(--ease-move);
+}
+
+.ember-overview-card:hover {
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+  transform: translateY(-1px);
+}
+
+.ember-overview-card.is-active {
+  border-color: color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+
+.ember-overview-card[data-state='attention'] {
+  border-color: color-mix(in srgb, var(--c-attention) 55%, transparent);
+  background: color-mix(in srgb, var(--c-attention) 6%, transparent);
+}
+
+.ember-overview-card[data-state='exited'] {
+  opacity: 0.6;
+}
+
+/* The todo list and the notes: cards about a surface, not about a shell. Their own
+   colour and a mark instead of a state dot, so they read as a different kind of thing
+   at a glance rather than as a session that happens to be quiet. */
+.ember-overview-card[data-kind='todo'],
+.ember-overview-card[data-kind='notes'] {
+  border-color: color-mix(in srgb, var(--c-cyan, #2de2e6) 26%, transparent);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--c-cyan, #2de2e6) 9%, transparent) 0 3px,
+    color-mix(in srgb, var(--c-bg) 42%, transparent) 3px
+  );
+}
+
+.ember-overview-card[data-kind='notes'] {
+  border-color: color-mix(in srgb, #e08bff 26%, transparent);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, #e08bff 9%, transparent) 0 3px,
+    color-mix(in srgb, var(--c-bg) 42%, transparent) 3px
+  );
+}
+
+.ember-overview-card[data-kind='todo']:hover,
+.ember-overview-card[data-kind='notes']:hover {
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+}
+
+/* Attention under a surface still wins the card's colour: something wants you. */
+.ember-overview-card[data-kind][data-state='attention'] {
+  border-color: color-mix(in srgb, var(--c-attention) 55%, transparent);
+  background: color-mix(in srgb, var(--c-attention) 6%, transparent);
+}
+
+.ember-overview-mark {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 9.5px;
+  line-height: 1;
+  color: var(--c-cyan, #2de2e6);
+  background: color-mix(in srgb, var(--c-cyan, #2de2e6) 16%, transparent);
+}
+
+.ember-overview-mark[hidden] {
+  display: none;
+}
+
+.ember-overview-card[data-kind='notes'] .ember-overview-mark {
+  color: #e08bff;
+  background: color-mix(in srgb, #e08bff 16%, transparent);
+}
+
+.ember-overview-dot[hidden] {
+  display: none;
+}
+
+.ember-chip.is-under {
+  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+
+.ember-chip.is-under[hidden] {
+  display: none;
+}
+
+/* The top line: state on the left, how old the sentence is on the right. */
+.ember-overview-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ember-overview-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9a7bc0;
+}
+
+.ember-overview-card[data-state='working'] .ember-overview-dot {
+  background: #c74eff;
+  box-shadow: 0 0 8px #c74eff;
+  animation: ember-live-pulse 1.6s ease-in-out infinite;
+}
+
+.ember-overview-card[data-state='attention'] .ember-overview-dot {
+  background: var(--c-attention);
+  box-shadow: 0 0 8px var(--c-attention);
+}
+
+.ember-overview-card[data-state='exited'] .ember-overview-dot {
+  background: color-mix(in srgb, var(--c-fg) 25%, transparent);
+}
+
+.ember-overview-state {
+  flex: 1 1 auto;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ember-overview-card[data-state='attention'] .ember-overview-state {
+  color: var(--c-attention);
+}
+
+.ember-overview-when {
+  flex: none;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  white-space: nowrap;
+}
+
+.ember-overview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ember-overview-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ember-overview-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ember-overview-where {
+  flex: none;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  white-space: nowrap;
+}
+
+.ember-overview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 0;
+}
+
+.ember-overview-chips:empty {
+  display: none;
+}
+
+/* The sentence: up to three lines, then an ellipsis. */
+.ember-overview-text {
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 86%, transparent);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.ember-overview-text.is-quiet {
+  color: color-mix(in srgb, var(--c-fg) 36%, transparent);
+  font-style: italic;
+}
+
+.ember-overview-doing {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-accent) 80%, var(--c-fg));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Arrival: a card rises in once, when its session appears. */
+@keyframes ember-overview-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ember-overview-card {
+  animation: ember-overview-card-in 260ms var(--ease-snap) both;
+}
+
+/* A working card breathes at its edge; a card waiting for you glows warm. */
+.ember-overview-card[data-state='working'] {
+  border-color: color-mix(in srgb, var(--c-accent) 35%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 8%, transparent), 0 8px 24px -18px var(--c-accent);
+}
+
+.ember-overview-card[data-state='attention'] {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-attention) 10%, transparent), 0 10px 28px -18px var(--c-attention);
+}
+
+/* Sent: a brief flash on the edge, so a press has a visible result here too. */
+.ember-overview-card.is-sent {
+  border-color: color-mix(in srgb, var(--c-accent) 80%, transparent);
+  transition: border-color 60ms var(--ease-move);
+}
+
+/* The state, as a pill. */
+.ember-overview-state {
+  flex: 0 1 auto;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  font-weight: 500;
+}
+
+.ember-overview-card[data-state='working'] .ember-overview-state {
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--c-accent) 70%, var(--c-fg));
+}
+
+.ember-overview-card[data-state='attention'] .ember-overview-state {
+  background: color-mix(in srgb, var(--c-attention) 16%, transparent);
+}
+
+.ember-overview-card-top .ember-overview-when {
+  margin-left: auto;
+}
+
+/* Context used, as a hairline that fills. Warm past 80%. */
+.ember-overview-ctx {
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  overflow: hidden;
+}
+
+.ember-overview-ctx[hidden] {
+  display: none;
+}
+
+.ember-overview-ctx > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c-accent) 55%, transparent), var(--c-accent));
+  transition: width 400ms var(--ease-move);
+}
+
+.ember-overview-ctx[data-hot='true'] > span {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c-attention) 55%, transparent), var(--c-attention));
+}
+
+/* The sentence reads as a quote: a hairline in the margin, the model's own words. */
+.ember-overview-text {
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+
+.ember-overview-text.is-quiet {
+  border-left-color: color-mix(in srgb, var(--c-fg) 12%, transparent);
+}
+
+.ember-overview-doing::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 7px 1px 2px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
+  border-top-color: transparent;
+  animation: ember-overview-spin 900ms linear infinite;
+}
+
+@keyframes ember-overview-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ember-overview-doing[hidden] {
+  display: none;
+}
+
+/* The composer: a pill at the foot of the card, quiet until the card is hovered or a
+   question is waiting; Enter or the key sends. */
+.ember-overview-ask {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 3px 4px 3px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 22%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 46%, transparent);
+  opacity: 0.6;
+  transition:
+    opacity 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    box-shadow 130ms var(--ease-move);
+}
+
+.ember-overview-ask[hidden] {
+  display: none;
+}
+
+.ember-overview-card:hover .ember-overview-ask,
+.ember-overview-ask:focus-within {
+  opacity: 1;
+}
+
+.ember-overview-ask:focus-within {
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+
+.ember-overview-card[data-attention='question'] .ember-overview-ask {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--c-attention) 50%, transparent);
+}
+
+.ember-overview-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.ember-overview-input::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+}
+
+.ember-overview-send {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 0;
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  color: var(--c-fg);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 130ms var(--ease-move),
+    background 130ms var(--ease-move);
+}
+
+.ember-overview-ask:focus-within .ember-overview-send,
+.ember-overview-card[data-attention='question'] .ember-overview-send {
+  opacity: 1;
+}
+
+.ember-overview-send:hover {
+  background: color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+
+/* "live" in the head, with a pulse: the page is a feed, not a snapshot. */
+.ember-overview > .ember-todo-head .ember-todo-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2de2a6;
+  box-shadow: 0 0 6px #2de2a6;
+  animation: ember-live-pulse 1.8s ease-in-out infinite;
+  vertical-align: 1px;
+}
+
+/* The todo list: its own surface. */
+.ember-todo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ember-todo-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--ui-font);
+}
+
+.ember-todo-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.ember-todo-count {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-todo-status {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+.ember-todo-sources {
+  margin-right: 0;
+}
+
+/* Under the list: the archive. A count that reads as a footnote until it is opened,
+   then the cleared items by day, dim, each with a way back. */
+.ember-todo-foot {
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: 6px 16px 12px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--ui-font);
+}
+
+.ember-todo-archive-toggle {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+}
+
+.ember-todo-archive-toggle:hover {
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+}
+
+.ember-todo-archive {
+  padding: 4px 0 0 2px;
+}
+
+.ember-todo-archive-day {
+  margin: 8px 0 3px;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+}
+
+.ember-todo-archive-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+}
+
+.ember-todo-archive-item > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-todo-archive-back {
+  flex: none;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 130ms var(--ease-move);
+}
+
+.ember-todo-archive-item:hover .ember-todo-archive-back {
+  opacity: 1;
+}
+
+.ember-todo-archive-back:hover {
+  color: var(--c-fg);
+}
+
+/* Notes or the todo list over a shell: the same surface, laid over the terminal slots
+   rather than beside them. The slots stay in layout (a terminal must not lose its size)
+   but out of sight. */
+.ember-group-panes.has-note > .ember-notes,
+.ember-group-panes.has-note > .ember-todo,
+.ember-group-panes.has-note > .ember-overview {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+}
+
+.ember-group-panes.has-note > .ember-slot,
+.ember-group-panes.has-note > .ember-divider {
+  visibility: hidden;
+}
+
+.ember-notes-leave {
+  flex: none;
+  margin-right: 4px;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ember-notes-leave:hover {
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-notes[data-mode='list'] .ember-notes-edit,
+.ember-notes[data-mode='edit'] .ember-notes-list {
+  display: none;
+}
+
+.ember-notes-list,
+.ember-notes-edit {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ember-notes-head,
+.ember-notes-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.ember-notes-head h2 {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.ember-notes-count {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-notes-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Wide enough to search in, not the whole width of the window: a search box that
+     spans two thousand pixels reads as a title bar. */
+  max-width: 360px;
+  margin-left: auto;
+  padding: 6px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 55%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.ember-notes-search:focus {
+  border-color: var(--c-accent);
+}
+
+.ember-notes-new,
+.ember-notes-reveal,
+.ember-notes-back,
+.ember-notes-delete {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    color 130ms var(--ease-move);
+}
+
+.ember-notes-new:hover,
+.ember-notes-reveal:hover,
+.ember-notes-back:hover,
+.ember-notes-delete:hover {
+  color: var(--c-fg);
+  border-color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+.ember-notes-new {
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-notes-delete.is-armed {
+  border-color: #ff3b6b;
+  color: #ff6b8b;
+  background: color-mix(in srgb, #ff3b6b 14%, transparent);
+}
+
+.ember-notes-status {
+  flex: 1 1 auto;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-notes-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+/* Title and timestamp on one line, preview under it — the shape you can scan without
+   reading, which is what a list of your own notes is for. */
+.ember-notes-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 120ms var(--ease-move),
+    border-color 120ms var(--ease-move);
+}
+
+.ember-notes-row:hover {
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  border-color: color-mix(in srgb, var(--c-dim) 30%, transparent);
+}
+
+.ember-notes-title {
+  font-family: var(--ui-font);
+  font-size: 13px;
+  color: var(--c-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-notes-when {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  white-space: nowrap;
+}
+
+.ember-notes-preview {
+  grid-column: 1 / -1;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-notes-empty {
+  margin: 22px 12px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+/* The writing surface. Terminal font on purpose: this is a tab in a terminal, and a
+   note that suddenly looks like a word processor would read as a different application. */
+.ember-notes-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  /* A measure. Text set across a 2000px window is not readable and does not look
+     written; the column is centred and capped like a page. */
+  max-width: 88ch;
+  align-self: center;
+  padding: 22px 26px 40px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--app-font, var(--ui-font));
+  font-size: var(--app-size, 14px);
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.ember-notes-area::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+}
+
+/* ---------- tasks: a note as a list ---------- */
+
+.ember-notes-check {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ember-notes-check:hover {
+  background: color-mix(in srgb, var(--c-accent) 24%, transparent);
+}
+
+.ember-notes-check:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* What the check said. Click to dismiss; the items themselves are already in the list. */
+.ember-notes-report {
+  flex: none;
+  max-height: 32%;
+  overflow-y: auto;
+  margin: 10px 16px 0;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.ember-notes-report.is-error {
+  background: color-mix(in srgb, #ff3b6b 10%, transparent);
+}
+
+.ember-notes-edit[data-view='tasks'] .ember-notes-area {
+  display: none;
+}
+
+.ember-notes-edit[data-view='text'] .ember-tasks {
+  display: none;
+}
+
+.ember-notes-mode {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ember-notes-mode:hover {
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-tasks {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 100ch;
+  align-self: center;
+  padding: 18px 22px 40px;
+  overflow-y: auto;
+  font-family: var(--app-font, var(--ui-font));
+  /* The size is the terminal's (Settings > Text), so the list reads like the rest. */
+  font-size: var(--app-size, 14px);
+  --task-line: 1.5em;
+}
+
+/* One item per row: box, text, then where it came from and the way to hand it on. The
+   controls sit on the first line of the text, whatever its size, so a wrapped item
+   keeps its box at the top and its meta beside the first line. */
+.ember-task {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 8px 8px 2px;
+  border-radius: 0;
+}
+
+/* A hairline between items, not around them. */
+.ember-task.is-task + .ember-task.is-task {
+  border-top: 1px solid var(--hairline);
+}
+
+/* Centre a control of a given height on the text's first line (line height 1.5em,
+   plus the textarea's 3px of top padding). */
+.ember-task-grip {
+  margin-top: calc(3px + (var(--task-line) - 14px) / 2);
+}
+
+.ember-task-meta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--task-line);
+  margin-top: 3px;
+}
+
+/* One press: the item goes to a new Claude session. Always there, quiet until hovered. */
+.ember-task-go {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 120ms var(--ease-move),
+    color 120ms var(--ease-move);
+}
+
+.ember-task-go svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ember-task-go:hover {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+  color: var(--c-fg);
+}
+
+/* Where an item came from: a small mark between the box and the text, always there. */
+.ember-src {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0.85;
+  transition:
+    opacity 120ms var(--ease-move),
+    background 120ms var(--ease-move);
+}
+
+.ember-src svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.ember-src.is-gmail {
+  color: #ea4335;
+}
+
+.ember-src.is-outlook {
+  color: #0f6cbd;
+}
+
+.ember-src:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+}
+
+.ember-task.is-done .ember-src {
+  opacity: 0.4;
+}
+
+.ember-task.is-dragging {
+  opacity: 0.4;
+}
+
+/* Where a dragged item will land: a line above or below the row under the pointer. */
+.ember-task.is-drop-before::before,
+.ember-task.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 26px;
+  right: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--c-accent);
+}
+
+.ember-task.is-drop-before::before {
+  top: -1px;
+}
+
+.ember-task.is-drop-after::after {
+  bottom: -1px;
+}
+
+.ember-task-grip {
+  flex: none;
+  width: 14px;
+  color: color-mix(in srgb, var(--c-fg) 22%, transparent);
+  font-size: 11px;
+  letter-spacing: -2px;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms var(--ease-move);
+  user-select: none;
+}
+
+.ember-task:hover .ember-task-grip,
+.ember-task:focus-within .ember-task-grip {
+  opacity: 1;
+}
+
+.ember-task-box {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  /* On the first line of the text: line height 1.5em plus the textarea's 3px top
+     padding, and two more because glyphs sit low in their line box and the eye aligns
+     the box with the letters. */
+  margin: calc(5px + (var(--task-line) - 15px) / 2) 0 0;
+  appearance: none;
+  border-radius: 4px;
+  border: 1.5px solid color-mix(in srgb, var(--c-fg) 40%, transparent);
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background 120ms var(--ease-move),
+    border-color 120ms var(--ease-move);
+}
+
+.ember-task-box:checked {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+.ember-task-box:checked::after {
+  content: '';
+  width: 4px;
+  height: 8px;
+  margin-top: -2px;
+  border: solid var(--c-bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.ember-task.is-text .ember-task-box {
+  display: none;
+}
+
+/* A plain line keeps the checkbox's column so text lines up with items. */
+.ember-task.is-text .ember-task-text {
+  margin-left: 25px;
+}
+
+.ember-task-text {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  padding: 3px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--c-fg);
+  font: inherit;
+  line-height: 1.5;
+  /* A textarea that wraps and grows; it never scrolls and never shows a resize grip. */
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ember-task-text::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 28%, transparent);
+}
+
+.ember-task.is-done .ember-task-text {
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+}
+
+.ember-task.is-heading .ember-task-text {
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 6px;
+}
+
+.ember-task.is-blank {
+  min-height: 12px;
+}
+
+/* ---------- settings filter + presets ---------- */
+
+.ember-settings-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 200px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  outline: none;
+}
+
+.ember-settings-filter:focus {
+  border-color: var(--c-accent);
+}
+
+.ember-settings-filter::-webkit-search-cancel-button {
+  filter: grayscale(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.ember-settings-empty {
+  margin: 18px 2px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+.ember-preset {
+  display: flex;
+  gap: 6px;
+  width: 240px;
+  justify-content: flex-end;
+}
+
+.ember-preset-btn {
+  flex: none;
+  padding: 4px 16px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    color 130ms var(--ease-move);
+}
+
+.ember-preset-btn:hover {
+  color: var(--c-fg);
+  border-color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+.ember-preset-btn.is-current {
+  border-color: var(--c-accent);
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+}
+
+/* ---------- secret field ---------- */
+
+/* The row is wider than the 240px controls above it, so it wraps its own status line
+   underneath rather than stretching the settings column for every other field. */
+.ember-secret {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 240px;
+}
+
+.ember-secret .ember-input {
+  width: 100%;
+  /* Dots at the terminal's font metrics are unreadably tight; the UI font spaces them. */
+  font-family: var(--ui-font);
+  letter-spacing: 0.08em;
+}
+
+.ember-secret-save,
+.ember-secret-clear {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move),
+    color 130ms var(--ease-move);
+}
+
+.ember-secret-save:hover:not(:disabled),
+.ember-secret-clear:hover {
+  color: var(--c-fg);
+  border-color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+.ember-secret-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ember-secret-status {
+  flex-basis: 100%;
+  text-align: right;
+  font-size: 11px;
+  font-style: normal;
+  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+  min-height: 13px;
+}
+
+/* ---------- font picker ---------- */
+
+.ember-fontpick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 240px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  color: var(--c-fg);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 130ms var(--ease-move);
+}
+
+.ember-fontpick:hover,
+.ember-fontpick:focus-visible {
+  border-color: var(--c-accent);
+  outline: none;
+}
+
+.ember-fontpick-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* An inherited value is a statement about another setting, not a font — so it is
+   never drawn in one. */
+.ember-fontpick.is-inherited .ember-fontpick-value {
+  color: color-mix(in srgb, var(--c-fg) 46%, transparent);
+  font-style: italic;
+}
+
+.ember-fontpick-caret {
+  flex: none;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-fontpick-menu {
+  position: fixed;
+  z-index: 140;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 97%, transparent);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 110ms var(--ease-move),
+    transform 140ms var(--ease-snap);
+}
+
+.ember-fontpick-menu.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+.ember-fontpick-filter {
+  flex: none;
+  padding: 9px 11px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  outline: none;
+}
+
+.ember-fontpick-filter::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+}
+
+.ember-fontpick-list {
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.ember-fontpick-group {
+  padding: 8px 8px 4px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-accent) 72%, transparent);
+}
+
+.ember-fontpick-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--c-fg) 86%, transparent);
+  cursor: pointer;
+}
+
+.ember-fontpick-row.is-active {
+  background: color-mix(in srgb, var(--c-accent) 22%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-fontpick-row.is-current {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+
+/* Not installed: the preview would be a lie, so say so rather than show it. */
+.ember-fontpick-row.is-missing {
+  opacity: 0.45;
+}
+
+.ember-fontpick-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ember-fontpick-sample {
+  flex: none;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-fg) 44%, transparent);
+}
+
+.ember-fontpick-note {
+  padding: 10px 9px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+}
+
+.ember-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  /* There are enough palettes now that an unbounded grid would push every other
+     setting off the panel, so it scrolls within its own section. */
+  max-height: 232px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--c-fg) 22%, transparent) transparent;
+}
+
+.ember-settings-count {
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+.ember-theme {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    border-color 130ms var(--ease-move);
+}
+
+.ember-theme:hover {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+}
+
+.ember-theme.is-current {
+  border-color: var(--c-accent);
+  color: var(--c-fg);
+}
+
+.ember-theme-swatch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 4px 5px;
+  border-radius: 6px;
+}
+
+.ember-theme-swatch i {
+  width: 5px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.ember-theme-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- cheatsheet ---------- */
+
+.ember-cheatsheet-panel header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
+}
+
+.ember-cheatsheet-panel h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ember-cheatsheet-panel header span {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+.ember-cheatsheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 4px 28px;
+  padding: 12px 18px 20px;
+}
+
+.ember-cheatsheet-grid h3 {
+  margin: 12px 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-accent) 78%, transparent);
+}
+
+.ember-cheatsheet-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.ember-keys {
+  display: flex;
+  gap: 3px;
+  flex: none;
+  width: 168px;
+}
+
+.ember-keys kbd {
+  padding: 2px 6px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 46%, transparent);
+  border-bottom-width: 2px;
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+  font-family: var(--ui-font);
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+}
+
+.ember-cheatsheet-what {
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+}
+
+/* ---------- command palette ---------- */
+
+.ember-palette {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding-top: 12vh;
+  /* A tint, not a backdrop blur. The blur re-rendered the whole window through a filter
+     on every frame of the fade — 40 to 100ms frames on an integrated GPU — for a soft
+     focus that a slightly deeper tint gives for free. */
+  background: color-mix(in srgb, #05020c 66%, transparent);
+  display: none;
+}
+
+/* Instant. A command line that slides in is a command line you wait for. */
+.ember-palette.is-open {
+  display: grid;
+}
+
+.ember-palette-panel {
+  width: min(560px, 84vw);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.ember-palette-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
+}
+
+.ember-palette-input::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+}
+
+.ember-palette-list {
+  max-height: 38vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+@keyframes ember-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Adaptive quality: shed the expensive decoration before frames start dropping. */
+:root[data-quality='reduced'] .ember-fx,
+:root[data-quality='minimal'] .ember-fx {
+  display: none;
+}
+
+:root[data-quality='minimal'] .ember-palette {
+  backdrop-filter: none;
+}
+
+:root[data-quality='minimal'] .ember-card-dot {
+  animation: none !important;
+}
+
+.ember-palette-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 11px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  cursor: pointer;
+}
+
+.ember-palette-row.is-cursor {
+  background: color-mix(in srgb, var(--c-accent) 22%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-palette-group {
+  flex: none;
+  min-width: 62px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+}
+
+/* The words you would type, in the terminal's own face. */
+.ember-palette-cli {
+  flex: none;
+  min-width: 150px;
+  font-family: var(--term-font);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ember-palette-cli b {
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.ember-palette-group {
+  min-width: 150px;
+}
+
+.ember-palette-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-palette-hint {
+  flex: none;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+}
+
+.ember-palette-empty {
+  padding: 18px 14px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-pane .xterm {
+  height: 100%;
+  /* Must live here rather than on .ember-pane — see the note in Session.ts. */
+  padding: var(--pane-pad, 0);
+  /* Stated rather than inherited: the grid follows the terminal font even when the
+     chrome has been pointed at a different one. */
+  font-family: var(--term-font);
+}
+
+/* No scrollbar-width here either — it would opt the terminal's viewport out of the
+   pill at the top of this file and back into a grey bar down the side of the grid. */
+.ember-pane .xterm-viewport {
+  background: transparent !important;
+}
+
+.ember-pane .xterm-screen {
+  position: relative;
+}
+
+/* The caret canvas rides above the WebGL grid but must never eat pointer events. */
+.ember-cursor-layer {
+  /* Small and travelling: SmoothCursor sizes and places it around the caret with a
+     transform, so it is never pane-sized. */
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 10;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember-pane,
+  .ember-card,
+  .ember-card-indicator,
+  .ember-root {
+    transition-duration: 1ms !important;
+  }
+  .ember-pane {
+    filter: none !important;
+  }
+  .ember-card-dot,
+  .ember-card {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------- voice */
+
+/* The talking view is a tab, not a modal: it fills its group exactly like a
+   terminal pane does, so switching to it uses the same slide as any other session. */
+/* ---------- voice ----------
+   The speech frame has no visible surface at all — it holds the microphone and the
+   synthesiser and nothing else. Kept in the layout rather than display:none, because a
+   detached frame is torn down and would take both loaded models with it. */
+
+.ember-speech {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The two switches sit in the title bar, not over the grid: anything floating on the
+   terminal lands on top of whatever the CLI is drawing. */
+.ember-voicetoggles {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.ember-voicetoggles.is-hidden,
+.ember-voicetoggle.is-hidden,
+.ember-visualize.is-hidden {
+  display: none;
+}
+
+/* The Visualize button: a word, not a glyph, because it is an instruction to the session
+   rather than a switch on the chrome. */
+.ember-visualize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0 10px 0 8px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background 130ms var(--ease-move);
+}
+
+.ember-visualize:hover {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+}
+
+.ember-visualize-mark {
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 12px;
+}
+
+.ember-voicetoggle {
+  width: 30px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 140ms var(--ease-move),
+    color 140ms var(--ease-move);
+}
+
+/* Inline SVG is baseline-aligned by default, which put the orchestrator's mark a couple
+   of pixels below the panel button's glyph even though the buttons themselves were level.
+   Blocking it takes it off the baseline so the grid centring is the only thing deciding
+   where it sits. */
+.ember-voicetoggle svg {
+  display: block;
+}
+
+.ember-voicetoggle:hover {
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-voicetoggle.is-on {
+  color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 15%, transparent);
+}
+
+/* On means armed; live means it is hearing you or talking right now. The difference
+   matters most when you are not looking at the screen, which is when this is used. */
+.ember-voicetoggle.is-live {
+  color: var(--c-working);
+  background: color-mix(in srgb, var(--c-working) 18%, transparent);
+  animation: ember-breathe 1.4s var(--ease-move) infinite;
+}
+
+/* ---------- the orchestrator ----------
+   A drawer over the right of the window rather than a per-tab panel: the agent is
+   app-level, it can see and act on every session, and pinning it to whichever tab
+   happens to be in front would misrepresent what it is. */
+
+.ember-orch {
+  /* A column, not an overlay. As a drawer it buried the visualisation panel whenever
+     both were open; as a column the stage narrows and the two share what is left. Width
+     comes from the --orch-w spring, so nothing here transitions size — a CSS transition
+     fighting the spring would give the edge two opinions about where it is. */
+  /* Under the session list, inside the left column: a card of its own that takes the
+     height the list does not need. Absent from layout when closed; on opening it is laid
+     out once and then arrives with a compositor-only rise. */
+  position: relative;
+  display: none;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 4px 8px 8px 8px;
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+  font-family: var(--ui-font);
+}
+
+.ember-orch.is-open {
+  display: flex;
+  animation: ember-orch-in 260ms var(--ease-snap) both;
+}
+
+@keyframes ember-orch-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sliding after a column change: transforms only, and a promise to the compositor that
+   is withdrawn the moment the slide lands. The sidebar rides above the stage while its
+   width eases past the edge of its track (see App.setColumn). */
+.ember-sidebar.is-shifting,
+.ember-stack.is-shifting {
+  will-change: transform;
+}
+
+.ember-sidebar.is-shifting {
+  z-index: 4;
+}
+
+/* Everything inside keeps its own width while the column animates, so the conversation
+   reflows once on arrival rather than on every frame of the slide. */
+.ember-orch > * {
+  min-width: 320px;
+}
+
+/* A live call is the panel's loudest state, because the one thing you must never
+   wonder is whether the microphone is open. */
+.ember-orch.is-oncall {
+  border-right-color: var(--c-working);
+  box-shadow:
+    18px 0 44px rgba(0, 0, 0, 0.4),
+    inset -2px 0 0 var(--c-working);
+}
+
+/* The orchestrator's switch, in the sidebar head between the label and "+". Same
+   element class as the title-bar toggles so every call state it already had still
+   applies; only the size is the sidebar's. */
+.ember-sidebar-orch {
+  width: 26px;
+  height: 24px;
+  border-radius: 7px;
+}
+
+body.sidebar-mini .ember-sidebar-orch {
+  width: 100%;
+}
+
+/* Vitals sit inside the rounded sidebar now, so their own top rule is enough. */
+.ember-vitals {
+  background: transparent;
+}
+
+.ember-orch-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.ember-orch-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-fg);
+  letter-spacing: 0.02em;
+}
+
+.ember-orch-pill {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-dim);
+}
+
+.ember-orch-pill.is-live,
+.ember-orch-pill.is-connecting {
+  color: var(--c-working);
+}
+
+.ember-orch-pill.is-live::before,
+.ember-orch-pill.is-connecting::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  animation: ember-breathe 1.5s var(--ease-move) infinite;
+}
+
+.ember-orch-pill.is-failed {
+  color: #ff6b8a;
+}
+
+.ember-orch-call {
+  flex: none;
+  padding: 5px 13px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background 140ms var(--ease-move);
+}
+
+.ember-orch-call:hover {
+  background: color-mix(in srgb, var(--c-accent) 30%, transparent);
+}
+
+.ember-orch-call.is-live {
+  border-color: color-mix(in srgb, #ff6b8a 60%, transparent);
+  background: color-mix(in srgb, #ff6b8a 20%, transparent);
+}
+
+.ember-orch-x {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ember-orch-x:hover {
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-orch-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ember-orch-empty {
+  margin: auto;
+  max-width: 30ch;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+}
+
+.ember-orch-turn {
+  font-size: 12.5px;
+  line-height: 1.62;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ember-orch-turn.is-you {
+  align-self: flex-end;
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 12px 12px 3px 12px;
+  background: color-mix(in srgb, var(--c-accent) 17%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-orch-turn.is-agent {
+  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+}
+
+.ember-orch-turn.is-system {
+  font-size: 11.5px;
+  color: var(--c-attention);
+  border-left: 2px solid color-mix(in srgb, var(--c-attention) 50%, transparent);
+  padding-left: 10px;
+}
+
+/* Which channel a turn came in on. Not decoration — after a call it is the only way to
+   tell what you said out loud from what you typed. */
+.ember-orch-turn.is-spoken::after {
+  content: 'spoken';
+  display: block;
+  margin-top: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-working) 70%, transparent);
+}
+
+/* What it did to answer. The tools are most of the value, so hiding them would make a
+   dispatch look identical to a guess. */
+.ember-orch-did {
+  margin-bottom: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--c-accent) 75%, transparent);
+}
+
+.ember-orch-turn.is-thinking {
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  font-style: italic;
+  animation: ember-breathe 1.4s var(--ease-move) infinite;
+}
+
+.ember-orch-foot {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 12px 14px;
+  border-top: 1px solid var(--hairline);
+}
+
+.ember-orch-box {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  max-height: 160px;
+  resize: none;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 30%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-bg) 45%, transparent);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  outline: none;
+  user-select: text;
+}
+
+.ember-orch-box:focus {
+  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.ember-orch-send {
+  flex: none;
+  padding: 8px 15px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.ember-orch-send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-accent) 32%, transparent);
+}
+
+.ember-orch-send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- the call ----------
+   The one hidden frame that holds the microphone, and the button that is also its only
+   status light. During a call you are usually not looking at the screen, so the four
+   states have to be distinguishable at a glance when you do. */
+
+.ember-realtime {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The orchestrator mark is drawn rather than set in the icon font, so it needs the
+   button's colour rather than its font. */
+.ember-voicetoggle.is-orch svg {
+  display: block;
+}
+
+.ember-voicetoggle.is-orch.is-connecting {
+  color: var(--c-attention);
+}
+
+/* On a call. The hub pulses and the spokes do not — the centre is the thing that is
+   live, and animating the whole mark would read as loading rather than as listening. */
+.ember-voicetoggle.is-orch.is-oncall {
+  color: var(--c-working);
+  background: color-mix(in srgb, var(--c-working) 16%, transparent);
+}
+
+.ember-voicetoggle.is-orch.is-oncall .ember-orch-hub {
+  animation: ember-hub 2.2s var(--ease-move) infinite;
+}
+
+.ember-voicetoggle.is-orch.is-hearing .ember-orch-hub,
+.ember-voicetoggle.is-orch.is-speaking .ember-orch-hub {
+  animation-duration: 0.9s;
+}
+
+/* A question is out with Claude — the gap the holding line covers, and the one state
+   that most needs to look like something rather than nothing. */
+.ember-voicetoggle.is-orch.is-thinking {
+  color: var(--c-attention);
+  background: color-mix(in srgb, var(--c-attention) 16%, transparent);
+}
+
+.ember-voicetoggle.is-orch.is-failed {
+  color: #ff6b8a;
+}
+
+@keyframes ember-hub {
+  0%,
+  100% {
+    r: 2.3;
+    opacity: 1;
+  }
+  50% {
+    r: 3;
+    opacity: 0.7;
+  }
+}
+
+/* What was said, under the terminal. Only while the call is up and only when asked for —
+   the point of talking is not having to read. */
+.ember-voicestrip {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translate(-50%, 8px);
+  width: min(760px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 180ms var(--ease-move),
+    transform 180ms var(--ease-move);
+  z-index: 8;
+}
+
+.ember-voicestrip.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.ember-voiceline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-voiceline.is-user {
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-voiceline.is-voice {
+  color: var(--c-accent);
+}
+
+/* The panel switch. It is its own element in the strip rather than a third voice
+   toggle, so it survives a machine with no Azure key — which hides the other two. */
+.ember-paneltoggle {
+  position: relative;
+  margin-right: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.ember-paneltoggle.is-hidden {
+  display: none;
+}
+
+/* Something arrived while the panel was shut. Placed on the corner of the glyph
+   rather than beside it: at 30px there is no beside. */
+.ember-paneltoggle.has-unseen::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--c-accent) 70%, transparent);
+}
+
+/* ---------- visualisation panel ----------
+   The right half of a v2 tab. Width comes from a spring in Group, written to flex, so
+   nothing here transitions size — a CSS transition fighting the spring would give the
+   slide two different opinions about where the edge is. */
+
+.ember-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  /* Its own rounded surface beside the terminals rather than a hard split of the stage,
+     so it matches the sidebar and the orchestrator. The gutter is on the left only; the
+     stage already provides the right and vertical edges. */
+  margin: 8px 8px 8px 0;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+}
+
+/* In flight. Out of the flow at its final size, moved by a transform, over the
+   terminals: the compositor does the whole slide and nothing is laid out until it has
+   landed (see Group.applyPanel). */
+.ember-panel.is-moving {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  bottom: 8px;
+  margin: 0;
+  z-index: 3;
+  will-change: transform;
+}
+
+/* Fade the contents rather than the box: a half-open panel showing half a document is
+   worse than one that arrives as it lands. */
+.ember-panel > * {
+  opacity: 0;
+  transition: opacity 160ms var(--ease-move);
+}
+
+.ember-panel.is-open > * {
+  opacity: 1;
+}
+
+.ember-panel-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  padding: 0 4px 0 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 18%, transparent);
+  background: color-mix(in srgb, var(--c-bg) 30%, transparent);
+}
+
+.ember-panel-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c-fg) 66%, transparent);
+}
+
+/* The address bar replaces the title only while the panel is a browser; a document
+   has no address worth showing. */
+.ember-panel-address {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c-bg) 55%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  outline: none;
+  user-select: text;
+}
+
+.ember-panel-address:focus {
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+
+.ember-panel.is-browsing .ember-panel-title {
+  display: none;
+}
+
+.ember-panel.is-browsing .ember-panel-address {
+  display: block;
+}
+
+/* Back and forward are only shown once they mean something — a browser chrome with
+   two permanently dead arrows reads as broken. */
+.ember-panel-btn {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 130ms var(--ease-move),
+    color 130ms var(--ease-move),
+    opacity 130ms var(--ease-move);
+}
+
+.ember-panel-btn:hover {
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-panel-btn.is-back,
+.ember-panel-btn.is-fwd,
+.ember-panel-btn.is-reload {
+  display: none;
+}
+
+.ember-panel.is-browsing .ember-panel-btn.is-back,
+.ember-panel.is-browsing .ember-panel-btn.is-fwd,
+.ember-panel.is-browsing .ember-panel-btn.is-reload {
+  display: grid;
+}
+
+.ember-panel-bar:not(.can-back) .ember-panel-btn.is-back,
+.ember-panel-bar:not(.can-fwd) .ember-panel-btn.is-fwd {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.ember-panel-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  display: flex;
+  background: transparent;
+}
+
+.ember-panel-empty {
+  position: absolute;
+  inset: 30px 0 0;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--c-fg) 32%, transparent);
+  pointer-events: none;
+}
+
+/* ---------- resizing the panel ----------
+   The left edge is a grip. It draws nothing until the pointer is over it: the seam
+   between terminal and panel stays a seam, and only lights up as an accent line when
+   there is something to take hold of. The hit area is wider than the line. */
+.ember-panel-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 7px;
+  z-index: 6;
+  cursor: col-resize;
+}
+
+.ember-panel-grip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--c-accent);
+  opacity: 0;
+  transition: opacity 130ms var(--ease-move);
+}
+
+.ember-panel-grip:hover::after,
+.ember-panel-grip.is-dragging::after {
+  opacity: 1;
+  box-shadow: 0 0 10px var(--c-accent);
+}
+
+/* The grip only means something while the panel is open; closed, it would sit over the
+   last pixels of the terminal. */
+.ember-panel:not(.is-open) .ember-panel-grip {
+  display: none;
+}
+
+/* While the edge is being dragged the pointer is over the webview, another process
+   that would otherwise take the events. Pointer capture keeps them on the grip; this
+   makes sure of it. */
+.ember-panel.is-resizing .ember-panel-frame {
+  pointer-events: none;
+}
+
+/* ---------- pointing at something on the panel ----------
+   The picker's highlight lives inside the guest document; everything here is the part
+   Ember draws over it. The popover is a real element in this window rather than in the
+   page, which is what lets it be styled like the rest of the app and — the reason that
+   matters — makes its text box a field whose focus the dictation router can see. */
+
+.ember-panel-btn.is-pick.is-on {
+  color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+}
+
+.ember-panel.is-picking {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+
+.ember-pick-pop {
+  position: absolute;
+  z-index: 6;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px 11px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--c-bg) 96%, transparent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  font-family: var(--ui-font);
+}
+
+.ember-panel.has-pick .ember-pick-pop {
+  display: flex;
+  animation: ember-pop-in 150ms var(--ease-move);
+}
+
+@keyframes ember-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.ember-pick-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ember-pick-what {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ember-pick-x {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ember-pick-x:hover {
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+  color: var(--c-fg);
+}
+
+/* Three lines of what was picked. Enough to be sure you pointed at the right thing,
+   not so much that the popover becomes the panel. */
+.ember-pick-quote {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+}
+
+.ember-pick-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ember-pick-chip {
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 30%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 120ms var(--ease-move),
+    border-color 120ms var(--ease-move),
+    color 120ms var(--ease-move);
+}
+
+.ember-pick-chip:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--c-fg);
+}
+
+.ember-pick-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.ember-pick-box {
+  flex: 1;
+  min-width: 0;
+  max-height: 120px;
+  resize: none;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 30%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  outline: none;
+  user-select: text;
+}
+
+.ember-pick-box:focus {
+  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.ember-pick-send {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.ember-pick-send:hover {
+  background: color-mix(in srgb, var(--c-accent) 30%, transparent);
+}
+
+.ember-voicepane {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
+}
+
+.ember-voicepane-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  border-radius: inherit;
+}
+
+.ember-voicepane-status {
+  place-self: center;
+  padding: 24px;
+  text-align: center;
+  font-family: var(--mono-font, monospace);
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.ember-voicepane-status.is-error {
+  opacity: 1;
+  color: color-mix(in srgb, #ff6b8a 80%, var(--c-fg));
+}
+
+/* The mic sits beside +, so it must read as the same class of control. */
+.ember-voicetab svg {
+  display: block;
+}
+
+/* ---------------------------------------------------------------- pairing sheet
+   Shown once, to point a phone camera at. Deliberately the brightest thing on screen:
+   a QR on a dark translucent terminal is hard for a camera to lock onto, so the code
+   sits on white regardless of the theme. */
+.ember-pair {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 6, 12, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-app-region: no-drag;
+}
+.ember-pair.is-open { display: flex; }
+
+.ember-pair-card {
+  width: min(340px, calc(100vw - 48px));
+  border-radius: 14px;
+  border: 1px solid var(--ember-line, rgba(255, 255, 255, 0.12));
+  background: var(--ember-surface, #14141d);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  animation: ember-pair-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes ember-pair-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.ember-pair-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--ember-line, rgba(255, 255, 255, 0.08));
+}
+.ember-pair-x {
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+.ember-pair-x:hover { opacity: 1; }
+
+.ember-pair-body {
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.ember-pair-status {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.ember-pair-status.is-on { color: #7ee3a8; border-color: rgba(126, 227, 168, 0.35); background: rgba(126, 227, 168, 0.1); }
+.ember-pair-status.is-wait { color: #e8c37a; border-color: rgba(232, 195, 122, 0.32); background: rgba(232, 195, 122, 0.09); }
+.ember-pair-status.is-off,
+.ember-pair-status.is-none { color: rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.14); }
+
+.ember-pair-qr {
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+  width: 260px;
+  height: 260px;
+}
+
+.ember-pair-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+.ember-pair-warn {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.5;
+}
+
+.ember-pair-go {
+  border-radius: 8px;
+  border: 1px solid var(--ember-accent, #a06bff);
+  background: color-mix(in srgb, var(--ember-accent, #a06bff) 18%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.ember-pair-go:hover { background: color-mix(in srgb, var(--ember-accent, #a06bff) 28%, transparent); }
+
+.ember-pair-row { display: flex; gap: 8px; }
+.ember-pair-minor {
+  border-radius: 7px;
+  border: 1px solid var(--ember-line, rgba(255, 255, 255, 0.14));
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.ember-pair-minor:hover { opacity: 1; }
+.ember-pair-minor.is-danger:hover { border-color: rgba(255, 120, 120, 0.5); color: #ff9898; }

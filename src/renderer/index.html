@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      `connect-src` is what lets the renderer reach the phone relay. Without it the
+      WebSocket never opens, `default-src 'self'` having silently covered it, and the link
+      sits in "connecting" forever while the desk looks paired and unreachable.
+
+      Scoped to herokuapp.com because that is where the relay is deployed. Pointing Ember
+      at a relay on another host means changing this line too — the failure will look like
+      a network problem rather than a policy one.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; frame-src http://localhost:5178 http://127.0.0.1:*; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://*.herokuapp.com wss://*.herokuapp.com"
+    />
+    <title>Ember</title>
+  </head>
+  <body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Claude's cursor</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  /* The one thing on this window that can be pressed. Everything else lets the mouse through. */
+  #stop {
+    position: fixed; right: 18px; bottom: 64px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px 9px 12px;
+    border-radius: 999px;
+    font: 600 12.5px/1 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    letter-spacing: 0.4px;
+    color: #fff;
+    background: rgba(24, 8, 10, 0.72);
+    border: 1px solid rgba(255, 138, 42, 0.55);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 220ms ease, transform 220ms ease, background 160ms ease;
+  }
+  #stop.show { opacity: 1; transform: none; }
+  #stop:hover { background: rgba(229, 72, 77, 0.92); border-color: rgba(255, 255, 255, 0.5); }
+  #stop .dot { width: 9px; height: 9px; border-radius: 2px; background: #e5484d; box-shadow: 0 0 10px #e5484d; }
+  #stop.halted { background: rgba(40, 40, 44, 0.85); border-color: rgba(255, 255, 255, 0.25); }
+  #stop.halted .dot { background: #8bd17c; box-shadow: 0 0 10px #8bd17c; border-radius: 50%; }
+  #stop.halted:hover { background: rgba(60, 100, 60, 0.9); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="stop"><span class="dot"></span><span id="stopText">Stop Claude</span></div>
+<script>
+  const cv = document.getElementById('c')
+  const ctx = cv.getContext('2d')
+  const stop = document.getElementById('stop')
+  const stopText = document.getElementById('stopText')
+  const ACCENT = '#ff8a2a'
+  let dpr = 1
+  function size() {
+    dpr = window.devicePixelRatio || 1
+    cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  }
+  addEventListener('resize', size); size()
+
+  // Target (from Ember, in this window's CSS pixels) and the eased position that is drawn.
+  const s = { x: -200, y: -200, tx: -200, ty: -200, label: 'Claude', action: 'move', visible: false, pulse: 0, pendingPulse: false, halted: false, lastAt: 0 }
+  window.__desk = s   // read by scripts/probe-desk.mjs
+
+  window.overlay.onState((st) => {
+    if (st.point) { s.tx = st.point.x; s.ty = st.point.y }
+    if (st.label) s.label = st.label
+    if (st.action) {
+      s.action = st.action
+      if (st.action === 'click' || st.action === 'drag') s.pendingPulse = true
+    }
+    s.halted = !!st.halted
+    s.visible = !!st.visible
+    s.lastAt = performance.now()
+    stop.classList.toggle('show', st.showStop !== false && (s.visible || s.halted))
+    stop.classList.toggle('halted', s.halted)
+    stopText.textContent = s.halted ? 'Resume Claude' : 'Stop Claude'
+  })
+
+  // Click-through everywhere except the pill: tell Ember when the mouse is over it.
+  let interactive = false
+  addEventListener('mousemove', (e) => {
+    const r = stop.getBoundingClientRect()
+    const over = stop.classList.contains('show') && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+    if (over !== interactive) { interactive = over; window.overlay.interactive(over) }
+  })
+  stop.addEventListener('click', () => window.overlay.stop())
+
+  function arrow(x, y, scale) {
+    // A pointer with a soft glow: white edge, orange body. Tip at (x, y).
+    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale)
+    ctx.beginPath()
+    ctx.moveTo(0, 0); ctx.lineTo(0, 17); ctx.lineTo(4.2, 13.2); ctx.lineTo(7.4, 20.2)
+    ctx.lineTo(10.4, 18.8); ctx.lineTo(7.2, 12.2); ctx.lineTo(12.6, 12.2); ctx.closePath()
+    ctx.shadowColor = 'rgba(255, 138, 42, 0.75)'; ctx.shadowBlur = 14 / scale
+    ctx.fillStyle = ACCENT; ctx.fill()
+    ctx.shadowBlur = 0
+    ctx.lineJoin = 'round'; ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke()
+    ctx.restore()
+  }
+
+  function pill(x, y, text) {
+    ctx.save()
+    ctx.font = '600 12px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif'
+    const w = ctx.measureText(text).width + 22, h = 24, r = 12
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3
+    ctx.fillStyle = 'rgba(22, 10, 4, 0.82)'
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill()
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0
+    ctx.strokeStyle = 'rgba(255, 138, 42, 0.55)'; ctx.lineWidth = 1; ctx.stroke()
+    ctx.fillStyle = '#ffd9b8'; ctx.textBaseline = 'middle'
+    ctx.fillText(text, x + 11, y + h / 2 + 0.5)
+    ctx.restore()
+  }
+
+  function frame(now) {
+    ctx.clearRect(0, 0, innerWidth, innerHeight)
+    // Ease toward the target; snap when close so the pulse fires where the click landed.
+    s.x += (s.tx - s.x) * 0.32; s.y += (s.ty - s.y) * 0.32
+    if (Math.abs(s.tx - s.x) < 0.8 && Math.abs(s.ty - s.y) < 0.8) {
+      s.x = s.tx; s.y = s.ty
+      if (s.pendingPulse) { s.pulse = 1; s.pendingPulse = false }
+    }
+    if (s.visible && !s.halted) {
+      const k = 1.25
+      if (s.pulse > 0) {
+        const rr = 6 + (1 - s.pulse) * 26
+        ctx.beginPath(); ctx.arc(s.x, s.y, rr, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(255, 138, 42, ${0.85 * s.pulse})`; ctx.lineWidth = 2.5; ctx.stroke()
+        s.pulse = Math.max(0, s.pulse - 0.06)
+      }
+      arrow(s.x, s.y, k)
+      const busy = now - s.lastAt < 1500
+      const text = busy && s.label ? `Claude · ${s.label}` : 'Claude'
+      pill(s.x + 18, s.y + 22, text.length > 46 ? text.slice(0, 45) + '…' : text)
+    }
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+</script>
+</body>
+</html>

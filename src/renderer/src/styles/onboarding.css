@@ -1,0 +1,413 @@
+/* ---------- Labs off ----------
+   The voice call is Labs (it needs keys). Off, its button leaves the orchestrator rather
+   than sitting there dead; the orchestrator itself runs on the agent CLI. */
+
+body.labs-off .ember-orch-call {
+  display: none !important;
+}
+
+/* ---------- the agent picker (Settings › Agent and the onboarding) ---------- */
+
+.ember-agents-nokeys {
+  margin: 2px 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 8%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+}
+
+.ember-agents-nokeys strong {
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+.ember-agents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ember-agent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 160ms var(--ease-snap),
+    background 160ms var(--ease-snap);
+}
+
+.ember-agent:hover {
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+}
+
+.ember-agent.is-chosen {
+  border-color: color-mix(in srgb, var(--c-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 9%, transparent);
+}
+
+.ember-agent.is-missing .ember-agent-text {
+  opacity: 0.62;
+}
+
+.ember-agent-pick {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--c-fg) 40%, transparent);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ember-agent.is-chosen .ember-agent-pick {
+  border-color: var(--c-accent);
+  background: radial-gradient(circle, var(--c-accent) 0 42%, transparent 46%);
+}
+
+.ember-agent-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ember-agent-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.ember-agent-vendor {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+}
+
+.ember-agent-badge {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  border: 1px solid var(--hairline);
+}
+
+.ember-agent-badge.is-ok {
+  color: var(--c-working);
+  border-color: color-mix(in srgb, var(--c-working) 40%, transparent);
+}
+
+.ember-agent-blurb {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+}
+
+.ember-agent-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ember-agents-btn {
+  padding: 5px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  color: var(--c-fg);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.ember-agents-btn:hover {
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+}
+
+.ember-agents-btn.is-quiet {
+  border-color: var(--hairline);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+}
+
+.ember-agents-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ember-agents-link {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  text-decoration: none;
+}
+
+.ember-agents-link:hover {
+  color: var(--c-accent);
+}
+
+.ember-agents-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+}
+
+/* ---------- onboarding ---------- */
+
+.ember-onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--c-bg) 55%, transparent);
+  backdrop-filter: blur(14px);
+  opacity: 0;
+  transition: opacity 220ms var(--ease-enter);
+}
+
+.ember-onboard.is-open {
+  opacity: 1;
+}
+
+.ember-onboard-card {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--c-bg) 94%, transparent);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+  transform: translateY(10px) scale(0.985);
+  transition: transform 320ms var(--ease-enter);
+  overflow: hidden;
+}
+
+.ember-onboard.is-open .ember-onboard-card {
+  transform: none;
+}
+
+.ember-onboard-dots {
+  display: flex;
+  gap: 6px;
+  padding: 16px 24px 0;
+}
+
+.ember-onboard-dot {
+  width: 22px;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c-fg) 14%, transparent);
+  cursor: pointer;
+}
+
+.ember-onboard-dot.is-done {
+  background: color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+
+.ember-onboard-dot.is-current {
+  width: 40px;
+  background: var(--c-accent);
+}
+
+.ember-onboard-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px 8px;
+  color: var(--c-fg);
+}
+
+.ember-onboard-body h1 {
+  margin: 8px 0 8px;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.4px;
+}
+
+.ember-onboard-body h2 {
+  margin: 4px 0 6px;
+  font-size: 19px;
+  font-weight: 620;
+}
+
+.ember-onboard-lead {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--c-fg) 68%, transparent);
+}
+
+.ember-onboard-lead code,
+.ember-onboard-lead :is(kbd) {
+  font-family: var(--font-mono, inherit);
+}
+
+.ember-onboard-mascot {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.ember-onboard-points {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 6px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.ember-onboard-points li {
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+}
+
+.ember-onboard-points strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: var(--c-fg);
+}
+
+.ember-onboard-themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.ember-onboard-theme {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 2px solid transparent;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.ember-onboard-theme.is-current {
+  border-color: var(--c-accent);
+}
+
+.ember-onboard-swatch {
+  display: flex;
+  gap: 4px;
+}
+
+.ember-onboard-swatch i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.ember-onboard-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 6px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  cursor: pointer;
+}
+
+.ember-onboard-keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ember-onboard-key {
+  padding: 11px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
+}
+
+.ember-onboard-key div {
+  display: flex;
+  gap: 4px;
+}
+
+.ember-onboard-key kbd {
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--c-fg) 18%, transparent);
+  border-bottom-width: 2px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--c-accent);
+}
+
+.ember-onboard-key p {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+}
+
+.ember-onboard-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.ember-onboard-btn {
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.ember-onboard-btn.is-primary {
+  border-color: var(--c-accent);
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font-weight: 600;
+}
+
+.ember-onboard-btn.is-quiet:hover {
+  color: var(--c-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember-onboard,
+  .ember-onboard-card {
+    transition: none;
+  }
+}

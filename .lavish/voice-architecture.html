@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ember Voice — architecture</title>
+<style>
+  /* Ember's own palette, taken from src/main/config.ts and src/main/panelDoc.ts.
+     The artifact is about Ember, so it should look like Ember rather than like a
+     generic deck. */
+  :root {
+    color-scheme: dark;
+    --bg: #1A0E2E;
+    --bg-2: #221338;
+    --fg: #D9D2EA;
+    --fg-bright: #F0EAFB;
+    --accent: #C74EFF;
+    --accent-soft: rgba(199, 78, 255, 0.13);
+    --accent-line: rgba(199, 78, 255, 0.22);
+    --dim: #8A6FB5;
+    --dim-2: #6E5C8A;
+    --cyan: #2DE2E6;
+    --green: #4CE0B3;
+    --amber: #FFC857;
+    --red: #FF6B8A;
+    --mono: "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, li, td, th, h1, h2, h3) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+
+  html, body { margin: 0; background: var(--bg); }
+  body {
+    color: var(--fg);
+    font: 14px/1.65 var(--mono);
+    padding: 0 0 80px;
+  }
+  main { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- masthead ---------- */
+  .top {
+    border-bottom: 1px solid var(--accent-line);
+    background: linear-gradient(180deg, rgba(199,78,255,0.10), transparent 70%);
+    padding: 54px 0 40px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(26px, 4vw, 40px);
+    line-height: 1.15;
+    margin: 0 0 18px;
+    color: var(--fg-bright);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .lede { font-size: 15.5px; max-width: 68ch; color: var(--fg); margin: 0; }
+  .lede strong { color: var(--fg-bright); font-weight: 600; }
+
+  h2 {
+    font-size: 19px;
+    color: var(--fg-bright);
+    font-weight: 600;
+    margin: 56px 0 6px;
+    padding-top: 20px;
+    border-top: 1px solid var(--accent-line);
+    letter-spacing: -0.01em;
+  }
+  h2:first-of-type { margin-top: 0; border-top: 0; padding-top: 0; }
+  h2 .num {
+    color: var(--accent);
+    font-weight: 400;
+    margin-right: 10px;
+    font-size: 15px;
+  }
+  h3 { font-size: 14px; color: var(--fg-bright); font-weight: 600; margin: 26px 0 8px; }
+  .sub { color: var(--dim); font-size: 13px; margin: 0 0 22px; max-width: 74ch; }
+  p { margin: 0 0 14px; max-width: 76ch; }
+  strong { color: var(--fg-bright); font-weight: 600; }
+  code {
+    background: var(--accent-soft);
+    border: 1px solid rgba(199, 78, 255, 0.18);
+    border-radius: 4px;
+    padding: 0.08em 0.36em;
+    font-size: 0.92em;
+    color: #E9DDFB;
+  }
+  a { color: #E08BFF; text-underline-offset: 3px; }
+
+  /* ---------- diagram frame ---------- */
+  .frame {
+    border: 1px solid var(--accent-line);
+    border-radius: 12px;
+    background: rgba(12, 6, 22, 0.45);
+    padding: 22px;
+    margin: 22px 0;
+    overflow-x: auto;
+  }
+  .frame .mermaid { text-align: center; }
+  .caption {
+    font-size: 12px;
+    color: var(--dim);
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(199, 78, 255, 0.12);
+    max-width: none;
+  }
+
+  /* ---------- cards ---------- */
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); }
+  .card {
+    border: 1px solid var(--accent-line);
+    border-radius: 11px;
+    background: var(--bg-2);
+    padding: 17px 19px;
+  }
+  .card h3 { margin-top: 0; }
+  .card p:last-child { margin-bottom: 0; }
+  .card.is-now { border-color: rgba(255, 107, 138, 0.32); }
+  .card.is-next { border-color: rgba(76, 224, 179, 0.34); }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-bottom: 11px;
+    border: 1px solid currentColor;
+  }
+  .tag.now { color: var(--red); }
+  .tag.next { color: var(--green); }
+  .tag.keep { color: var(--cyan); }
+
+  /* ---------- stats ---------- */
+  .stats { display: grid; gap: 1px; background: var(--accent-line); border: 1px solid var(--accent-line); border-radius: 11px; overflow: hidden; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+  .stat { background: var(--bg-2); padding: 18px 20px; }
+  .stat .k { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+  .stat .v { font-size: 26px; color: var(--fg-bright); margin: 6px 0 3px; font-weight: 600; letter-spacing: -0.02em; }
+  .stat .d { font-size: 12px; color: var(--dim); }
+  .stat .v.good { color: var(--green); }
+  .stat .v.warn { color: var(--amber); }
+
+  /* ---------- latency bars ---------- */
+  .bars { margin: 20px 0 0; }
+  .bar-row { display: grid; grid-template-columns: minmax(0, 168px) 1fr minmax(0, 74px); gap: 14px; align-items: center; margin-bottom: 9px; font-size: 12.5px; }
+  .bar-row .lbl { color: var(--fg); }
+  .bar-row .ms { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .track { background: rgba(199, 78, 255, 0.09); border-radius: 4px; height: 20px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 4px; }
+  .fill.stt { background: rgba(255, 107, 138, 0.55); }
+  .fill.think { background: rgba(255, 200, 87, 0.55); }
+  .fill.tts { background: rgba(199, 78, 255, 0.55); }
+  .fill.rt { background: rgba(76, 224, 179, 0.6); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11.5px; color: var(--dim); margin-top: 16px; }
+  .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .l-stt::before { background: rgba(255, 107, 138, 0.55); }
+  .legend .l-think::before { background: rgba(255, 200, 87, 0.55); }
+  .legend .l-tts::before { background: rgba(199, 78, 255, 0.55); }
+  .legend .l-rt::before { background: rgba(76, 224, 179, 0.6); }
+
+  /* ---------- table ---------- */
+  .tw { overflow-x: auto; border: 1px solid var(--accent-line); border-radius: 11px; margin: 20px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 11px 15px; text-align: left; border-bottom: 1px solid rgba(199, 78, 255, 0.12); vertical-align: top; }
+  th { background: var(--accent-soft); color: var(--fg-bright); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.built { color: var(--green); white-space: nowrap; }
+  td.new { color: var(--amber); white-space: nowrap; }
+
+  /* ---------- callout ---------- */
+  .note {
+    border-left: 2px solid var(--accent);
+    background: rgba(199, 78, 255, 0.07);
+    padding: 14px 18px;
+    border-radius: 0 9px 9px 0;
+    margin: 22px 0;
+  }
+  .note.warn { border-left-color: var(--amber); background: rgba(255, 200, 87, 0.07); }
+  .note p:last-child { margin-bottom: 0; }
+  .note .h { color: var(--fg-bright); font-weight: 600; display: block; margin-bottom: 6px; }
+  .note.warn .h { color: var(--amber); }
+
+  /* ---------- decisions ---------- */
+  .q { border: 1px solid var(--accent-line); border-radius: 11px; background: var(--bg-2); padding: 20px 22px; margin-bottom: 16px; }
+  .q .qh { color: var(--fg-bright); font-weight: 600; font-size: 14.5px; margin: 0 0 4px; }
+  .q .qs { color: var(--dim); font-size: 12.5px; margin: 0 0 15px; }
+  .opts { display: grid; gap: 9px; margin-bottom: 15px; }
+  .opt {
+    display: flex; gap: 11px; align-items: flex-start;
+    border: 1px solid rgba(199, 78, 255, 0.16);
+    border-radius: 8px; padding: 11px 14px; cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  .opt:hover { border-color: rgba(199, 78, 255, 0.45); background: rgba(199, 78, 255, 0.05); }
+  .opt input { accent-color: var(--accent); margin-top: 3px; flex: none; }
+  .opt .ot { color: var(--fg-bright); font-size: 13px; }
+  .opt .od { color: var(--dim); font-size: 12px; display: block; margin-top: 2px; }
+  .opt:has(input:checked) { border-color: var(--accent); background: rgba(199, 78, 255, 0.1); }
+  .send {
+    background: rgba(199, 78, 255, 0.18);
+    border: 1px solid rgba(199, 78, 255, 0.5);
+    color: var(--fg-bright);
+    font-family: inherit; font-size: 12.5px;
+    padding: 8px 17px; border-radius: 8px; cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .send:hover { background: rgba(199, 78, 255, 0.32); }
+  .sent { color: var(--green); font-size: 12px; margin-left: 12px; }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--accent-line); color: var(--dim-2); font-size: 11.5px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <main>
+    <p class="eyebrow">Ember · voice · proposed architecture</p>
+    <h1>Split the ears and the mouth from the brain</h1>
+    <p class="lede">
+      ChatGPT's voice call feels like a person because <strong>one model hears the audio and
+      speaks the reply</strong> — nothing is flattened into text in between, so it catches your
+      hesitation, emits real prosody, and can be cut off mid-sentence. Ember can have that feel
+      without moving your thinking to a model that doesn't know your business:
+      <strong>OpenAI's Realtime API becomes the conversational layer, and Claude stays the brain.</strong>
+    </p>
+  </main>
+</div>
+
+<main>
+
+<h2><span class="num">01</span>The shape</h2>
+<p class="sub">Two loops at different speeds. The fast loop never waits for the slow one.</p>
+
+<div class="frame">
+<pre class="mermaid">
+flowchart TB
+    subgraph you[" "]
+        U["🎙️ You<br/><small>talking, interrupting,<br/>thinking out loud</small>"]
+    end
+
+    subgraph fast["FAST LOOP — conversational, ~300-800ms"]
+        RT["OpenAI Realtime<br/>gpt-realtime-2.1<br/><small>ears · mouth · turn-taking · barge-in</small>"]
+    end
+
+    subgraph ember["EMBER — the host"]
+        BR["Bridge<br/><small>loopback HTTP, already built</small>"]
+        PN["Visualisation panel<br/><small>diagrams, tables, numbers</small>"]
+    end
+
+    subgraph slow["SLOW LOOP — substantive, 2-20s"]
+        CL["Claude Opus 5<br/><small>your context, your memory,<br/>the ventures vault</small>"]
+        MEM[("Memory<br/><small>notes the session writes<br/>and reads back</small>")]
+    end
+
+    U -->|"audio in<br/>WebRTC"| RT
+    RT -->|"audio out<br/>voice, prosody"| U
+    RT -->|"ask_claude(question)<br/><small>tool call</small>"| BR
+    BR --> CL
+    CL --> MEM
+    MEM --> CL
+    CL -->|"streamed answer"| BR
+    BR -->|"tool result<br/><small>spoken as it arrives</small>"| RT
+    CL -->|"show_panel"| PN
+    PN -.->|"you point at a row<br/>and ask about it"| BR
+
+    classDef fastNode fill:#1F3D33,stroke:#4CE0B3,color:#DFF7EE
+    classDef slowNode fill:#2A1A44,stroke:#C74EFF,color:#E9DDFB
+    classDef hostNode fill:#241A34,stroke:#8A6FB5,color:#D9D2EA
+    classDef userNode fill:#3A2A1A,stroke:#FFC857,color:#FFEFCF
+    class RT fastNode
+    class CL,MEM slowNode
+    class BR,PN hostNode
+    class U userNode
+</pre>
+<p class="caption">
+  The realtime model is a <em>conversationalist</em>, not an oracle. It owns listening, turn-taking
+  and speech; the moment a question has substance it delegates. Claude never touches audio, so it
+  keeps the full 1M context, your memory, and the panel.
+</p>
+</div>
+
+<h2><span class="num">02</span>Why today's voice doesn't feel like that</h2>
+<p class="sub">It isn't the model. It's that four things happen in a row that should overlap.</p>
+
+<div class="grid g2">
+  <div class="card is-now">
+    <span class="tag now">Ember today</span>
+    <h3>A walkie-talkie</h3>
+    <p>Azure STT waits for you to <em>finish</em>, hands a final transcript to the prompt, Claude answers in full, then Azure TTS reads it out. Four stages, strictly serialized.</p>
+    <p>No barge-in — once it starts talking you wait. No prosody — the TTS is reading text written to be <em>read</em>. And it's narrating a coding agent's transcript, not holding a conversation.</p>
+  </div>
+  <div class="card is-next">
+    <span class="tag next">Proposed</span>
+    <h3>A phone call</h3>
+    <p>Audio streams continuously. Server-side voice activity detection decides when you've stopped, not a silence timer. The model can acknowledge instantly while Claude is still thinking, and you can talk over it.</p>
+    <p>Claude's answer streams into speech sentence by sentence, so you hear the first clause while the last is still being written.</p>
+  </div>
+</div>
+
+<h2><span class="num">03</span>Where the time goes</h2>
+<p class="sub">A single exchange, from the moment you stop speaking to the moment you hear a word back.</p>
+
+<div class="frame">
+  <div class="bars">
+    <h3 style="margin-top:0">Today — Azure pipeline, serialized</h3>
+    <div class="bar-row">
+      <span class="lbl">Silence timer + final STT</span>
+      <div class="track"><div class="fill stt" style="width:34%"></div></div>
+      <span class="ms">~900ms</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl">Claude, full answer</span>
+      <div class="track"><div class="fill think" style="width:62%"></div></div>
+      <span class="ms">~1.6s+</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl">TTS synthesis, then play</span>
+      <div class="track"><div class="fill tts" style="width:26%"></div></div>
+      <span class="ms">~700ms</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl" style="color:var(--fg-bright)">First word heard</span>
+      <div class="track"><div class="fill" style="width:100%;background:rgba(255,107,138,0.28)"></div></div>
+      <span class="ms" style="color:var(--red)">~3.2s</span>
+    </div>
+
+    <h3>Proposed — realtime front, Claude behind</h3>
+    <div class="bar-row">
+      <span class="lbl">VAD detects your turn ended</span>
+      <div class="track"><div class="fill rt" style="width:8%"></div></div>
+      <span class="ms">~200ms</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl">Realtime speaks immediately</span>
+      <div class="track"><div class="fill rt" style="width:14%"></div></div>
+      <span class="ms">~400ms</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl" style="color:var(--dim)">Claude answers <em>underneath</em></span>
+      <div class="track"><div class="fill think" style="width:62%;opacity:0.45"></div></div>
+      <span class="ms">(overlapped)</span>
+    </div>
+    <div class="bar-row">
+      <span class="lbl" style="color:var(--fg-bright)">First word heard</span>
+      <div class="track"><div class="fill" style="width:22%;background:rgba(76,224,179,0.3)"></div></div>
+      <span class="ms" style="color:var(--green)">~600ms</span>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="l-stt">speech → text</span>
+    <span class="l-think">Claude thinking</span>
+    <span class="l-tts">text → speech</span>
+    <span class="l-rt">realtime, audio-to-audio</span>
+  </div>
+  <p class="caption">
+    Claude does not get faster. The trick is that it stops being <em>in front of</em> the first
+    word you hear. Rough figures for shape, not measurements — the spike is what turns them into
+    real numbers.
+  </p>
+</div>
+
+<h2><span class="num">04</span>One exchange, end to end</h2>
+<p class="sub">Including the two things that make it feel human: the instant acknowledgement, and being interruptible.</p>
+
+<div class="frame">
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant You
+    participant RT as Realtime layer
+    participant E as Ember bridge
+    participant C as Claude
+
+    You->>RT: "so what should I do about Jendoo pricing"
+    Note over RT: VAD: turn ended (~200ms)
+    RT-->>You: "Let me think about that properly."
+    RT->>E: ask_claude("Jendoo pricing — what should he do?")
+    E->>C: full context: memory, ventures vault, history
+    Note over C: thinking, ~4s
+    C-->>E: streamed answer, first clause
+    E-->>RT: tool result (streaming)
+    RT-->>You: speaks it as it arrives
+    C->>E: show_panel(pricing comparison)
+    Note over You: table appears beside the terminal
+    You->>RT: "wait — what about the annual tier"
+    Note over RT: barge-in: stops mid-word
+    RT->>E: ask_claude("annual tier?", same thread)
+</pre>
+<p class="caption">
+  Step 3 is the whole trick. The acknowledgement costs nothing, buys four seconds, and is the
+  difference between a pause that feels like thinking and one that feels like a dropped call.
+  Step 12 is the other half — you can cut it off, which no turn-based pipeline allows.
+</p>
+</div>
+
+<h2><span class="num">05</span>What it costs</h2>
+<p class="sub">Audio tokens are billed separately and are the expensive part. You've said this range is fine — this is here so the shape is on record.</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="k">Per minute talking</div>
+    <div class="v">$0.05</div>
+    <div class="d">gpt-realtime-2.1</div>
+  </div>
+  <div class="stat">
+    <div class="k">An hour</div>
+    <div class="v">~$3</div>
+    <div class="d">≈ €2.75</div>
+  </div>
+  <div class="stat">
+    <div class="k">Mini model</div>
+    <div class="v good">~$1/hr</div>
+    <div class="d">$0.016/min — worth testing first</div>
+  </div>
+  <div class="stat">
+    <div class="k">Claude, behind it</div>
+    <div class="v">text rates</div>
+    <div class="d">only on substantive turns</div>
+  </div>
+</div>
+
+<div class="note warn">
+  <span class="h">The trap is precisely your use case</span>
+  <p>
+    Realtime costs run <em>above</em> the per-minute math on long calls, because every turn
+    re-processes the growing audio context. A two-hour business session is where that bites
+    hardest — the naive version could be several times the sticker.
+  </p>
+  <p>
+    This is a second, independent reason for the split: the realtime layer keeps a
+    <strong>short rolling context</strong> — the last few turns, enough for conversational
+    continuity — while Claude carries the actual history. Long sessions then cost roughly what
+    short ones do.
+  </p>
+</div>
+
+<h2><span class="num">06</span>What Ember already has</h2>
+<p class="sub">Most of this is plumbing you built for other reasons.</p>
+
+<div class="tw">
+<table>
+  <thead>
+    <tr><th>Piece</th><th>Status</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Loopback bridge to a session</td><td class="built">built</td><td><code>src/main/bridge.ts</code> — already carries pushes in and actions back out</td></tr>
+    <tr><td>Audio-permitted origin</td><td class="built">built</td><td><code>voice.ts</code> grants mic only to the bridge origin; the realtime page lives there too</td></tr>
+    <tr><td>A frame that owns the mic</td><td class="built">built</td><td><code>Speech.ts</code> — one ear for the whole window, already exclusive</td></tr>
+    <tr><td>Visualisation panel</td><td class="built">built</td><td>Claude can draw while you talk; you can point at a row and ask about it</td></tr>
+    <tr><td>Memory across sessions</td><td class="built">built</td><td>The <code>~/.claude</code> memory files the CLI already reads and writes</td></tr>
+    <tr><td>WebRTC session to OpenAI</td><td class="new">new</td><td>Ephemeral-token mint in main, peer connection in the frame</td></tr>
+    <tr><td><code>ask_claude</code> tool + streaming bridge</td><td class="new">new</td><td>Realtime tool call → bridge → CLI → streamed result back</td></tr>
+    <tr><td>Rolling-context policy</td><td class="new">new</td><td>What the realtime layer forgets, and when</td></tr>
+    <tr><td>An OpenAI API key</td><td class="new">new</td><td>Stored beside the Azure key in <code>~/.ember/secrets.json</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <span class="h">The honest risk</span>
+  <p>
+    The seamless feel comes from one model doing everything. Every hop out to Claude reintroduces
+    latency on exactly the turns you care most about. The acknowledgement trick hides it well —
+    but whether "well" is good enough is a thing you have to <em>hear</em>, not reason about.
+    That's the entire argument for a throwaway spike before any of this touches Ember properly.
+  </p>
+</div>
+
+<h2><span class="num">07</span>Two things I need from you</h2>
+<p class="sub">Pick and send — it comes straight back to the session.</p>
+
+<form class="q" data-lavish-question="scope" onsubmit="event.preventDefault(); const v = new FormData(event.currentTarget).get('scope'); if(!v) return; window.lavish.queuePrompt('Voice architecture — build scope: ' + v, { tag: 'choice', text: 'Scope: ' + v, element: event.currentTarget, data: { question: 'scope', answer: v } }); event.currentTarget.querySelector('.sent').textContent = '✓ queued';">
+  <p class="qh">How much do you want built first?</p>
+  <p class="qs">My recommendation is the spike — the feel is the only thing worth deciding on, and it's a day not a week.</p>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="scope" value="throwaway spike — one tab, talk to it, one ask_claude tool, judge the feel">
+      <span><span class="ot">Throwaway spike <em style="color:var(--green);font-style:normal">(recommended)</em></span>
+      <span class="od">One page outside Ember. You talk, it answers, one <code>ask_claude</code> tool wired to the bridge. Deleted afterwards either way.</span></span></label>
+    <label class="opt"><input type="radio" name="scope" value="build it into Ember properly as a voice tab">
+      <span><span class="ot">Straight into Ember</span>
+      <span class="od">A real voice tab, settings, key handling, rolling context. Bigger commitment before you've heard it.</span></span></label>
+    <label class="opt"><input type="radio" name="scope" value="fix the existing Azure pipeline instead — streaming STT, barge-in, sentence-wise TTS">
+      <span><span class="ot">Fix the Azure pipeline instead</span>
+      <span class="od">Streaming STT, barge-in, sentence-wise TTS. Cheaper and no new vendor — closes maybe half the gap, never matches prosody.</span></span></label>
+  </div>
+  <button type="submit" class="send" data-lavish-action>Queue this answer</button><span class="sent"></span>
+</form>
+
+<form class="q" data-lavish-question="key" onsubmit="event.preventDefault(); const v = new FormData(event.currentTarget).get('key'); if(!v) return; window.lavish.queuePrompt('Voice architecture — OpenAI API key: ' + v, { tag: 'choice', text: 'Key: ' + v, element: event.currentTarget, data: { question: 'key', answer: v } }); event.currentTarget.querySelector('.sent').textContent = '✓ queued';">
+  <p class="qh">Do you have an OpenAI API key?</p>
+  <p class="qs">This is the one hard blocker — nothing runs without it, and I can't create one for you.</p>
+  <div class="opts">
+    <label class="opt"><input type="radio" name="key" value="yes, I have one — tell me where to put it">
+      <span><span class="ot">Yes</span><span class="od">I'll tell you exactly where to put it and never print it back.</span></span></label>
+    <label class="opt"><input type="radio" name="key" value="no — I'll create one at platform.openai.com">
+      <span><span class="ot">No, I'll make one</span><span class="od">platform.openai.com → API keys. Needs billing enabled for realtime.</span></span></label>
+    <label class="opt"><input type="radio" name="key" value="build everything that doesn't need the key first, I'll add it later">
+      <span><span class="ot">Build around it for now</span><span class="od">I do the bridge and tool plumbing; the key slots in last.</span></span></label>
+  </div>
+  <button type="submit" class="send" data-lavish-action>Queue this answer</button><span class="sent"></span>
+</form>
+
+<footer>
+  Ember voice architecture · drawn in Ember's own palette (<code>src/main/config.ts</code>).
+  Latency figures are shape, not measurement. Pricing from published gpt-realtime-2.1 rates,
+  Aug 2026 — verify before committing spend.
+</footer>
+
+</main>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+
+  // The page is committed to Ember's dark palette, so Mermaid is pinned to a matching
+  // theme rather than following the viewer's OS preference — a light diagram on this
+  // background would be a hole in the page.
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    securityLevel: "strict",
+    fontFamily: '"CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace',
+    themeVariables: {
+      background: "transparent",
+      primaryColor: "#2A1A44",
+      primaryTextColor: "#E9DDFB",
+      primaryBorderColor: "#C74EFF",
+      secondaryColor: "#1F1436",
+      tertiaryColor: "#160E28",
+      lineColor: "#8A6FB5",
+      textColor: "#D9D2EA",
+      mainBkg: "#2A1A44",
+      nodeBorder: "#C74EFF",
+      clusterBkg: "rgba(199, 78, 255, 0.055)",
+      clusterBorder: "rgba(199, 78, 255, 0.28)",
+      edgeLabelBackground: "#1A0E2E",
+      actorBkg: "#2A1A44",
+      actorBorder: "#C74EFF",
+      actorTextColor: "#E9DDFB",
+      actorLineColor: "#8A6FB5",
+      signalColor: "#D9D2EA",
+      signalTextColor: "#D9D2EA",
+      labelBoxBkgColor: "#2A1A44",
+      labelBoxBorderColor: "#C74EFF",
+      labelTextColor: "#E9DDFB",
+      loopTextColor: "#D9D2EA",
+      noteBkgColor: "rgba(199, 78, 255, 0.13)",
+      noteBorderColor: "rgba(199, 78, 255, 0.4)",
+      noteTextColor: "#E9DDFB",
+      sequenceNumberColor: "#1A0E2E",
+    },
+  });
+
+  const nodes = [...document.querySelectorAll(".mermaid")];
+  mermaid.run({ nodes }).catch((err) => console.error("mermaid failed:", err));
+</script>
+
+</body>
+</html>

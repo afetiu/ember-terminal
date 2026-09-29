@@ -1,0 +1,7 @@
+# pnpm 11 reads build-script approval from here, not from package.json.
+# electron downloads its binary in postinstall; esbuild verifies its platform binary.
+allowBuilds:
+  esbuild: true
+  electron: true
+  # Squirrel packaging — unused, we ship an NSIS installer.
+  electron-winstaller: false

@@ -1,0 +1,12 @@
+keystore/
+node_modules/
+android/app/build/
+android/build/
+android/.gradle/
+.gradle/
+www/protocol.js
+www/rtc.js
+www/realtime.html
+*.apk
+www/account.js
+www/mermaid.min.js

@@ -1,0 +1,27 @@
+# Cloudflare Pages redirects for ember.deepanswerlabs.com
+#
+# THE ONE PLACE TO CHANGE WHERE DOWNLOADS POINT. Every download button on the site
+# links to a stable /download/* path on this domain; this file maps those paths to
+# wherever the binaries actually live. Moving hosting (GitHub Releases -> R2, a
+# different repo, a CDN) is an edit here and a redeploy, never an HTML change.
+#
+# Hosting today: GitHub Releases, via .../releases/latest/download/<file>, which
+# GitHub resolves to the newest non-draft, non-prerelease release. That only works
+# because electron-builder.yml gives the artifacts version-free names; every release
+# must upload exactly these three files.
+#
+# The public repo is afetiu/ember-terminal. If it moves (a Deep Answer Labs org),
+# change owner/repo below and REPO_URL in site/main.js together.
+#
+# If the binaries move to R2 instead, point these at the bucket's public/custom-domain
+# URL, e.g. https://dl.deepanswerlabs.com/ember/latest/Ember-Setup-win-x64.exe
+#
+# 302 (not 301) on purpose: browsers cache 301s forever, and "latest" changes.
+
+/download/windows          https://github.com/afetiu/ember-terminal/releases/latest/download/Ember-Setup-win-x64.exe  302
+/download/windows-zip      https://github.com/afetiu/ember-terminal/releases/latest/download/Ember-win-x64.zip        302
+/download/windows-targz    https://github.com/afetiu/ember-terminal/releases/latest/download/Ember-win-x64.tar.gz     302
+
+# Convenience aliases.
+/download                  /download/windows  302
+/download/windows/         /download/windows  302

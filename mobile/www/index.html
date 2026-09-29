@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b0b12">
+<title>Ember</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Joining. Shown once, ever — after this the phone knows the account, not a laptop. -->
+<section id="pair" class="screen">
+  <div class="brand"><span class="mark"></span><h1>Ember</h1></div>
+  <p class="lede">This build does not carry an account.<br>On any machine running Ember, press <b>Ctrl+K</b> and choose <b>Connect your phone</b> — then scan the code it shows, or paste it below.</p>
+
+  <video id="cam" playsinline muted></video>
+  <div id="camNote" class="note"></div>
+
+  <button id="scan" class="primary">Scan the code</button>
+
+  <details id="manual">
+    <summary>Paste it instead</summary>
+    <textarea id="pasted" rows="3" spellcheck="false" placeholder="ember://join?..."></textarea>
+    <button id="usePasted" class="minor">Use this</button>
+  </details>
+</section>
+
+<!-- Which machine. The list is live: what is running is what is listed. -->
+<section id="devices" class="screen">
+  <header class="bar">
+    <div class="who">
+      <span class="mark"></span>
+      <div>
+        <div class="name">Your machines</div>
+        <div id="dstatus" class="status">connecting…</div>
+      </div>
+    </div>
+    <button id="menu" class="icon" aria-label="Settings">⋯</button>
+  </header>
+  <div id="devlist" class="devlist"></div>
+</section>
+
+<!-- The conversation. One agent, reached from here or from the machine itself. -->
+<section id="talk" class="screen">
+  <header class="bar">
+    <button id="back" class="icon" aria-label="Back to your machines">‹</button>
+    <div class="who">
+      <span class="mark"></span>
+      <div>
+        <div id="devname" class="name">Ember</div>
+        <div id="status" class="status">connecting…</div>
+      </div>
+    </div>
+    <button id="panelshow" class="icon is-hidden" aria-label="Show the panel">◱</button>
+  </header>
+
+  <div id="log" class="log"></div>
+
+  <!-- The visualisation panel. Same document the desk shows, carried whole over the
+       relay and dropped into a frame with no origin of its own — it can run its own
+       scripts and draw its own diagrams, and it cannot reach the account key. -->
+  <section id="panel" class="panel">
+    <header class="panelbar">
+      <span id="paneltitle" class="paneltitle">Panel</span>
+      <button id="panelclose" class="icon" aria-label="Hide the panel">✕</button>
+    </header>
+    <iframe id="panelframe" sandbox="allow-scripts allow-popups" referrerpolicy="no-referrer"></iframe>
+  </section>
+
+  <div class="composer">
+    <button id="call" class="call" aria-label="Call Ember"></button>
+    <textarea id="box" rows="1" placeholder="Ask, or hand out work…" spellcheck="false"></textarea>
+    <button id="send" class="send" aria-label="Send"></button>
+  </div>
+</section>
+
+<!-- The call, in the frame that owns the microphone. Byte-identical to the one the
+     desktop app runs, so there is one implementation of the hard part. -->
+<iframe id="rtc" src="realtime.html" allow="microphone; autoplay" hidden></iframe>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
