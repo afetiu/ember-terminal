@@ -10,7 +10,7 @@
 // VERSION is the version the site advertises; keep it in step with package.json on
 // each release. [data-version] elements show it, [data-repo] gets REPO_URL and
 // [data-releases] gets the release list.
-const VERSION = '0.44.0'
+const VERSION = '1.0.0'
 const REPO_URL = 'https://github.com/afetiu/ember-terminal'
 // ---------------------------------------------------------------------------------
 

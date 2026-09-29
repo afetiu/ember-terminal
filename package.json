@@ -1,6 +1,6 @@
 {
   "name": "ember",
-  "version": "0.44.0",
+  "version": "1.0.0",
   "description": "A terminal for working alongside coding agents — Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot. No API keys.",
   "license": "MIT",
   "homepage": "https://ember.deepanswerlabs.com",
@@ -21,7 +21,6 @@
     "dist:dir": "npm run build && electron-builder --win dir"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.122.0",
     "@lydell/node-pty": "1.2.0-beta.14",
     "@lydell/node-pty-win32-x64": "1.2.0-beta.14"
   },
@@ -41,7 +40,6 @@
     "electron-vite": "^5.0.0",
     "elkjs": "0.12.0",
     "mermaid": "^11.17.2",
-    "microsoft-cognitiveservices-speech-sdk": "^1.51.0",
     "qrcode": "^1.5.4",
     "typescript": "^5.7.0",
     "vite": "^7.0.0"

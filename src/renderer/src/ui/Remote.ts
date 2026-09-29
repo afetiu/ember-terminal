@@ -149,14 +149,6 @@ export class Remote {
           this.hooks.onSpoken(m['who'] === 'user' ? 'user' : 'voice', String(m['text'] ?? ''))
           break
 
-        // A session secret for the phone's call. Minted here, valid for minutes, and the
-        // only credential that ever leaves this machine.
-        case 'secret': {
-          this.stats.secrets++
-          const auth = await window.ember.voice.secret(String(m['voice'] ?? ''), String(m['model'] ?? ''))
-          await reply({ t: 'secret', auth })
-          break
-        }
       }
     } catch (err) {
       const why = `${kind}: ${(err as Error).message}`

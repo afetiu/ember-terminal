@@ -15,13 +15,6 @@ const out = join(root, 'resources', 'vendor')
 
 const files = [
   ['node_modules/mermaid/dist/mermaid.min.js', 'mermaid.min.js'],
-  // The Azure Speech SDK. Ember's speech works with this file and `resources/speech/`
-  // alone — no other machine-local directory — which is the point: the app is not
-  // supposed to need a second project checked out beside it to be able to talk.
-  [
-    'node_modules/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js',
-    'azure-speech-sdk.js',
-  ],
 ]
 
 mkdirSync(out, { recursive: true })
@@ -29,7 +22,7 @@ for (const [from, to] of files) {
   const src = join(root, from)
   if (!existsSync(src)) {
     // A missing vendor file degrades a feature, it does not break the build: diagrams
-    // fall back to showing their source, and speech reports that it is unavailable.
+    // fall back to showing their source.
     console.warn(`[ember] resources: ${from} is missing, skipping`)
     continue
   }

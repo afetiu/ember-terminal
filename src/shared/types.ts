@@ -368,7 +368,6 @@ export interface EmberConfig {
    * promise is that it runs on the CLIs you already have and asks for no keys.
    */
   labs: { enabled: boolean }
-  voice: VoiceConfig
 }
 
 export interface AgentConfig {
@@ -378,44 +377,6 @@ export interface AgentConfig {
   onboarded: boolean
 }
 
-/**
- * Speech settings.
- *
- * Azure does both directions and is the only engine Ember carries. The local
- * alternatives were built, measured and dropped: Whisper is a 74M-parameter model that
- * answers near-silence with a confident sentence nobody said, Kokoro synthesises at
- * roughly half the speed of playback, and between them they wanted 850MB of runtime and
- * weights. Azure's client is 0.4MB, hears you correctly, and is the better voice.
- *
- * The cost is that speech needs a key in `~/.ember/secrets.json` and sends what it says
- * and hears to Microsoft. Without a key the two toggles are simply unavailable.
- */
-export interface VoiceConfig {
-  /**
-   * The spoken conversation — a different thing from narration and dictation, which are
-   * both one-way. Here you talk and it talks back, and it can put your questions to the
-   * Claude session running in the tab.
-   */
-  realtime: {
-    /**
-     * OpenAI realtime model. `gpt-realtime-2.1` is the good one at roughly $3/hour of
-     * talking; `gpt-realtime-2.1-mini` is about a third of that and worth trying first.
-     */
-    model: string
-    /** Which voice it speaks in — `alloy`, `ash`, `ballad`, `cedar`, `marin`, `verse`, … */
-    voice: string
-    /**
-     * The model behind the written half. Same agent, same tools — a different way in,
-     * for when you are somewhere you cannot talk.
-     */
-    textModel: string
-    /**
-     * Show what was said, under the terminal. Off by default: the point of a call is not
-     * having to read, and the strip is mostly useful while tuning the thing.
-     */
-    showTranscript: boolean
-  }
-}
 
 export interface PanelConfig {
   /** Fraction of the stage the panel takes when open, 0.2–0.8. */
@@ -712,14 +673,6 @@ export interface EmberBridge {
     todoState(): Promise<{ lastCheckedAt?: string; sources?: string[] }>
   }
   voice: {
-    /** Mint a client secret for one session. The account key never crosses this line. */
-    secret(voice: string, model: string): Promise<RealtimeAuth>
-    /** Whether a key is stored, where it lives, and its last four characters. */
-    configured(): Promise<{ configured: boolean; path: string; hint: string }>
-    /** Store the account key, or clear it with ''. The key only ever travels this way. */
-    setKey(key: string): Promise<{ ok: boolean; configured: boolean; hint: string }>
-    /** Fires when the key is set or cleared, so the call controls can wake without a restart. */
-    onConfigured(cb: (status: { configured: boolean; path: string; hint: string }) => void): () => void
     /** Put a spoken question to the Claude session in a tab and wait for the whole turn. */
     ask(tabId: string, sessionId: string, question: string): Promise<AskResult>
     /** Abandon whatever question is in flight for a tab — the call ended, or the tab did. */
@@ -729,24 +682,7 @@ export interface EmberBridge {
     /** What the tab's transcript watcher is tailing. Diagnostic. */
     watch(tabId: string): Promise<unknown>
   }
-  /**
-   * The orchestrator's written half — the same agent as the voice, reached by typing.
-   * One turn per call: main makes the request, the renderer runs whatever tools come
-   * back, then calls again with the results.
-   */
-  secret: {
-    /** Whether a provider's key is stored, where, and its last four. Never the key. */
-    status(provider: 'openai' | 'anthropic'): Promise<{ configured: boolean; path: string; hint: string }>
-    set(provider: 'openai' | 'anthropic', key: string): Promise<{ ok: boolean; configured: boolean; hint: string }>
-  }
-  brain: {
-    /** One spoken turn through the Claude orchestrator. `live` is per-turn state. */
-    speak(tabId: string, question: string, live: string): Promise<{ ok: boolean; text: string; error?: string }>
-    configured(): Promise<boolean>
-    forget(tabId?: string): void
-  }
   orch: {
-    turn(history: TurnMessage[], model: string): Promise<TurnResult>
     /** One orchestrator turn through the chosen agent CLI. No key. */
     cli(text: string, recap: string): Promise<{ ok: boolean; text: string; error?: string }>
     /** A tool call from that turn, for the renderer to run and answer with toolResult. */

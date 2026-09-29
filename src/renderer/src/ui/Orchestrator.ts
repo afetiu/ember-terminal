@@ -1,4 +1,3 @@
-import type { CallState } from './Realtime'
 
 /**
  * The orchestrator, as something you can see and write to.
@@ -17,8 +16,6 @@ import type { CallState } from './Realtime'
 export interface OrchestratorHooks {
   /** Send typed text as a turn. Resolves when the whole turn (including tools) is done. */
   onSend: (text: string) => Promise<void>
-  /** Start or end the call. */
-  onToggleCall: () => void
   onClose: () => void
 }
 
@@ -37,7 +34,6 @@ export class Orchestrator {
   readonly el: HTMLElement
   private readonly log: HTMLElement
   private readonly box: HTMLTextAreaElement
-  private readonly callBtn: HTMLButtonElement
   private readonly pill: HTMLElement
   private readonly sendBtn: HTMLButtonElement
 
@@ -59,10 +55,6 @@ export class Orchestrator {
     this.pill = document.createElement('span')
     this.pill.className = 'ember-orch-pill'
 
-    this.callBtn = document.createElement('button')
-    this.callBtn.className = 'ember-orch-call'
-    this.callBtn.addEventListener('click', () => this.hooks.onToggleCall())
-
     const close = document.createElement('button')
     close.className = 'ember-orch-x'
     close.textContent = '✕'
@@ -70,7 +62,7 @@ export class Orchestrator {
     close.tabIndex = -1
     close.addEventListener('click', () => this.hooks.onClose())
 
-    head.append(title, this.pill, this.callBtn, close)
+    head.append(title, this.pill, close)
 
     // ---- the conversation ----
     this.log = document.createElement('div')
@@ -184,26 +176,10 @@ export class Orchestrator {
     this.log.scrollTop = this.log.scrollHeight
   }
 
-  /** The call, made visible. This panel is where its state actually lives on screen. */
-  setCall(state: CallState, hearing: boolean, speaking: boolean): void {
-    const live = state === 'live'
-    this.el.classList.toggle('is-oncall', live)
-    this.pill.className = `ember-orch-pill is-${state}`
-    this.pill.textContent =
-      state === 'live'
-        ? hearing
-          ? 'listening'
-          : speaking
-            ? 'speaking'
-            : 'on a call'
-        : state === 'connecting'
-          ? 'connecting…'
-          : state === 'failed'
-            ? 'call failed'
-            : ''
-    this.callBtn.textContent = live || state === 'connecting' ? 'Hang up' : 'Call'
-    this.callBtn.title = live || state === 'connecting' ? 'End the call  (Ctrl+Shift+L)' : 'Talk to it  (Ctrl+Shift+L)'
-    this.callBtn.classList.toggle('is-live', live)
+  /** Which agent CLI answers, said in the header. */
+  setAgent(name: string): void {
+    this.pill.className = 'ember-orch-pill'
+    this.pill.textContent = name
   }
 
   // ---------------------------------------------------------------- open/close

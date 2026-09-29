@@ -8,9 +8,8 @@ Agent, OpenCode and Copilot CLI** — and **never asks for an LLM API key**. Eve
 in with your own plan. The first launch walks through picking one, with Install buttons for
 the ones that are missing. The orchestrator — the agent that sees every session and hands
 them work — is a headless turn of that same CLI with a small MCP server attached
-(`resources/mcp-orch.mjs`), whose tools reach the tabs through Ember's local bridge. The
-one feature that does need keys of its own, the voice call, lives behind Settings › Labs
-and is off by default.
+(`resources/mcp-orch.mjs`), whose tools reach the tabs through Ember's local bridge.  Ember
+stores no credentials of any kind; Settings › Labs holds only the experimental phone link.
 
 | CLI | Panel (MCP) | Status on the card | Map / headless |
 | --- | --- | --- | --- |
@@ -326,225 +325,26 @@ bridge → renderer → pty → pwsh makes that file exist.
 
 ## The orchestrator
 
-One agent, integrated into Ember, that runs your Claude sessions. Two ways to reach it:
+One agent that sees every session and hands them work. `Ctrl+Shift+M` (or the hub button
+in the sidebar) opens it under the session cards, and you type to it.
 
-- **`Ctrl+Shift+M`**, or the hub button in the sidebar's header, opens its column and you type to it.
-- **`Ctrl+Shift+L`**, or the Call button inside it, starts a call and you talk. Escape hangs up.
+It is not a model Ember calls: each turn is one headless run of the agent CLI you chose in
+Settings › Agent, with a small MCP server attached (`resources/mcp-orch.mjs`). Its tools —
+`list_sessions`, `send_work`, `ask_session`, `start_session`, `check_work`, `list_projects`,
+`show_session`, `close_session` — come back through Ember's local bridge (`/orch/tool`) and
+run in the window, which is where the tabs are. The conversation lives in the window and
+goes to each turn as a recap, so no CLI session state is needed. No API key is involved.
 
-Both are the same conversation. A thread you start out loud carries on when you start
-typing, and the other way round — which is the point rather than a nicety. Talking only
-works when you are alone; an assistant you can only reach by speaking is unreachable for
-most of a working day in an office.
-
-The orchestrator is the **left column's other face**. It was a third column beside the
-sessions and never sat right — a second card, a second edge, the stage pushed aside for a
-conversation. It is the thing that runs the sessions, so it takes their place: the list
-turns away, the conversation turns in, in the same column, which widens a little because a
-conversation needs more room than a list. The stage keeps almost all of its width, and a
-tab's visualisation panel is never buried underneath. `scripts/probe-layout.mjs` measures that: it opens both,
-asserts the rectangles do not intersect, that the terminal actually gave up the room, and
-that the panel is still wide enough to read. Any one of those alone passes while the bug
-is present.
-
-There is one button, in the sidebar header next to "+", not two in the title bar. A
-phone beside a speech bubble was two controls for one agent, and made a call look like a
-separate feature rather than a way of reaching the same thing. Its ✕, or the same
-shortcut, turns the column back to the sessions. The mark is a hub with three nodes wired to it — drawn rather
-than taken from the icon font, because every glyph close enough to reach for described a
-front end (a bubble says "chat", a phone says "call") instead of what the thing is.
-
-A call is deliberately loud: the column takes a green edge, its header shows a breathing
-pill reading *listening* / *speaking* / *on a call*, and the hub in the sidebar turns
-green and pulses. That last part is load-bearing precisely *because* the button no longer
-starts calls — with the panel closed it is the only thing on screen saying the microphone
-is open.
-
-**The ears and mouth are not the brain.** On a call, OpenAI's realtime model runs the conversation:
-it hears the audio directly, decides when your turn ended from the shape of it rather
-than from a silence timer, speaks with real prosody, and can be cut off mid-sentence.
-What it does *not* have is any idea who you are. Everything substantive goes to the Claude
-session already running in that tab, through one tool — `ask_claude` — and comes back to
-be spoken. Claude keeps its context, its memory, its files and the panel; the voice keeps
-the turn moving.
-
-That split is also what makes it affordable. Realtime audio is billed per token and long
-calls cost *more* than the per-minute rate suggests, because every turn re-processes the
-growing audio context. The realtime layer keeps a short rolling context while Claude
-carries the actual history, so a two-hour conversation costs roughly what a ten-minute one
-does. Roughly $3/hour on `gpt-realtime-2.1`, about a third of that on the mini — both
-selectable in settings. The written half runs on a normal chat model — same brief, same
-tools, same history, no audio to pay for.
-
-The single most important line in the whole feature is in the session instructions: *say
-one short natural line before you call the tool.* Claude takes seconds to answer, and a
-four-second silence is indistinguishable from a dropped call. "Let me think about that
-properly" costs nothing and buys the whole gap.
-
-### It runs the crew, it does not just relay to one session
-
-The voice can see every session, hand work to any of them, and open new ones. Seven tools:
-`list_sessions`, `ask_claude`, `send_work`, `start_session`, `check_work`, `list_projects`,
-`show_session`.
-
-The judgement that matters is **wait or don't**. `ask_claude` blocks the call until the
-turn completes, which is right when you are sitting there listening for the answer and
-wrong for anything else. `send_work` returns in about five milliseconds, the session works
-in the background, and when it goes quiet the voice is told and can mention it — "that
-migration came back, by the way". So you can set something going and carry straight on
-talking about something else, which is the whole point.
-
-`start_session` opens a tab, starts Claude in it and briefs it, without blocking either:
-coming up takes several seconds, far too long to hold the floor, so the id comes back at
-once and the brief goes in the moment the session announces itself.
-
-Finishes arrive as a `conversation.item.create` with `response.create` **only when the
-floor is free**. A background job interrupting you mid-sentence to report itself is
-exactly the behaviour that makes assistants unbearable; the note goes into context either
-way and the model raises it when there is a gap.
-
-`crew.ts` keeps a journal per session — what it was asked, what it has said, whether it
-has gone quiet — and starts watching from the moment work is dispatched rather than from
-the first time someone asks. A journal that starts on the first question misses precisely
-the work that happened while you were busy, which is all of it.
-
-**Sessions dispatched to run with whatever permissions your Claude config gives them.**
-With auto-approve on, a spoken sentence can start real work unattended. That is the
-feature; it is worth knowing it is the feature.
-
-### How the question reaches Claude
-
-`ask_claude` types the question into the tab's focused pane and reads the answer back off
-Claude Code's transcript. Both halves are deliberate:
-
-- **Typing into the pty** rather than calling the Anthropic API. An API call from main
-  would produce a Claude with no tools, no project context, no memory and no panel — a
-  worse assistant than the one already sitting in the tab. The session stays the session,
-  and the voice becomes another way to talk to it.
-- **Reading the JSONL** rather than the terminal, for the same reason narration does: the
-  CLI is a TUI that redraws itself, so anything scraped off the grid is spinner frames.
-  `stop_reason: end_turn` in the transcript is the only reliable "it has finished" signal
-  — from outside, a session thinking hard and a session that is done look identical.
-
-The transcript watcher takes subscribers now, so narration and a call can read the same
-tab at once; an earlier shape where starting one replaced the other meant whichever
-started second silently stole the first one's tail.
-
-### Credentials
-
-Settings → Claude → **OpenAI key**. Paste it, press Enter, and both halves of the
-orchestrator come up without a restart — main broadcasts the new status and the call
-controls re-arm on it.
-
-The field writes `~/.ember/secrets.json`, which is still a perfectly good place to put the
-key by hand:
-
-```json
-{ "openai": { "key": "sk-…" } }
-```
-
-Deliberately not `config.json`: that file is watched, broadcast to every renderer, shown
-by path at the top of the settings panel, and wiped by *Reset to defaults*. Four reasons a
-credential should not live in it. The settings field exists because the alternative on a
-fresh machine was copying a live key between computers by hand, which is the kind of
-errand that ends with a key in a chat log.
-
-The key is write-only from the renderer's side: it goes in through IPC, and only
-`configured` and the last four characters come back. There is no way to read it out of the
-UI — if you cannot remember which key you pasted, replace it.
-
-It never leaves the main process. What the call page gets is an ephemeral `ek_…` client
-secret good for one session, with the instructions and the tool list baked in at mint
-time — so a web context that goes wrong costs one conversation, and cannot repoint the
-voice at something else.
-
-Two API facts worth writing down, because the obvious answers are both wrong now and both
-were checked against the live API rather than recalled: `POST /v1/realtime/sessions`
-**404s**, and `POST /v1/realtime?model=…` answers *"The Realtime Beta API is no longer
-supported. Please use /v1/realtime/calls for the GA API."* The GA pair is
-`POST /v1/realtime/client_secrets` to mint and `POST /v1/realtime/calls?model=…` to
-exchange SDP. `scripts/probe-voice.mjs` mints a real secret on every run, so a third move
-fails the probe rather than the call.
-
-The page runs on the bridge's origin because that is the only origin the microphone is
-granted to, and it talks WebRTC rather than a WebSocket so the browser owns jitter
-buffering, echo cancellation and playback timing — three things it would otherwise be
-hand-rolling badly inside the one component whose job is to not add latency.
-
-## Voice, per tab
-
-Two switches in the title bar, both scoped to the tab you are looking at, both live to
-flip mid-task. Neither changes anything about the session underneath — the shell, the
-CLI and the conversation carry on exactly as they were — so going hands-free and coming
-back to the keyboard costs nothing either way. That was the requirement, not a voice
-mode you enter and leave.
-
-`Ctrl+Shift+M` opens a tab already set up to be talked to: a real `claude` session with
-the microphone on and narration reading it back. It was once an iframe over a separate
-application — a headless SDK session with its own speech and its own canvas, which meant
-a second project had to be running beside Ember and the session inside it had no slash
-commands and no skills. It is an ordinary tab now. Everything that made the talking view
-worth having already exists here, and the thing you are talking to is the actual CLI.
-
-**Dictate** (`Ctrl+Shift+D`) types a finished utterance into the prompt. It never
-presses Enter: the CLI is modal — permission prompts, plan mode, `/` menus — and a
-mis-transcription that answers a permission dialog on your behalf is not a trade worth
-making.
-
-**Narrate** (`Ctrl+Shift+N`) reads what the session is doing aloud. It
-reads the *transcript*, not the terminal: the CLI is a full-screen TUI that redraws
-constantly, so anything scraped off the grid is a race against the next repaint and
-arrives as spinner frames. Claude Code already appends a structured record of the same
-session to `~/.claude/projects/<slug>/<id>.jsonl`, so Ember tails that. Tool calls are
-said the way a person would say them — "Reading Panel.ts", "Editing App.ts" — a `Bash`
-call is announced by its description rather than its command line, bookkeeping tools
-stay silent, and fenced code becomes a mention instead of being spelled out.
-
-Narration is armed per tab and audible only for the tab on screen. Switching away hushes
-mid-sentence rather than letting the line finish, and lines from a background tab are
-dropped rather than queued — a queue would empty itself at you on return, reading out
-minutes of work you have already scrolled past. Dictation is exclusive across tabs,
-because there is one microphone.
-
-### The engine
-
-Azure Speech, both directions, and the only one Ember carries. The local alternatives
-were built, measured, and dropped:
-
-| | verdict |
-| --- | --- |
-| Whisper (`base.en`, 363MB with runtime) | answers near-silence with a confident sentence nobody said — "you", "Thank you", "Thanks for watching". Not tuning; it is what a small generative model does with noise |
-| Kokoro (484MB) | 0.57x realtime at best, measured on WebGPU/fp32 with 20 threads. 6.7s of compute for 3.8s of speech, so it falls further behind every line |
-| Piper (18MB + a patched phonemizer build) | keeps up at 1.3-1.6x and sounds like text-to-speech |
-| **Azure** (**0.4MB** client) | 4.2x realtime, the best voice of the four, and a recogniser that reports *no match* instead of guessing |
-
-So Ember ships `azure.js`, a small `Player`, and the Azure SDK — 0.4MB, and the installer
-is unchanged at 97MB. It needs a key in `~/.ember/secrets.json`; without one the two
-toggles are simply not there.
-
-The key never leaves the main process. The speech page gets an authorization token minted
-from it, good for ten minutes, requested through its parent — so the worst a compromised
-web context can do is talk to Azure until that expires. `secrets.json` is deliberately
-not `config.json`: the config is watched, rewritten by the settings panel, and is the
-file you would paste into a chat when something breaks.
-
-It runs in one hidden frame on the bridge's origin because the microphone is granted per
-origin. That frame is the only thing in the app that can ever hold the permission — not
-the terminal panes, and not the panels, which show whatever a model decided to write.
-
-### Which transcript
-
-Claude Code puts `CLAUDE_CODE_SESSION_ID` into the environment of every MCP server it
-spawns, and names the transcript after it. Ember already runs an MCP server in each
-session for the panel, and that server already knows its tab from the `EMBER_TAB_ID` it
-inherited from the pty — it is the only process where both facts exist, so it reports the
-pair and the binding is exact.
-
-There is no fallback, and there was: the first version took the newest `.jsonl` in the
-folder. That is wrong in two ways at once. A folder holds one file per session, so two
-Ember tabs in one directory get crossed — the tab on screen goes silent while another
-session's work is read out. And a `claude` running in Windows Terminal writes to the same
-folder, so Ember would read out a session in a different application entirely. A tab now
-reads the session that announced itself from inside it, or it reads nothing.
+- **Handing out work.** `send_work` types the brief into a session's prompt. For Claude
+  Code the finish is read off its transcript (`stop_reason: end_turn`); for every other
+  CLI it is read off the card — seen working, then quiet — and the screen's last lines are
+  the report. You get a toast either way.
+- **Starting sessions.** `start_session` opens a tab, starts your chosen CLI, and waits
+  until it is up before typing the brief. If the CLI stops on a prompt of its own (a
+  folder trust question, a login), Ember waits and tells you rather than typing into it.
+- **Headless approvals.** The tools carry MCP annotations; everything except
+  `close_session` is marked non-destructive, which is what lets headless Codex run them
+  without an approval prompt nobody is there to answer.
 
 ## Command palette
 

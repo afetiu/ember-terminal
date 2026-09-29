@@ -17,7 +17,7 @@ import { Odometer } from './Odometer'
  * hub is a separate element so a live call can pulse the centre without touching the
  * spokes.
  */
-const ORCH_TITLE = 'Orchestrator  —  write to it, or call it from inside  (Ctrl+Shift+M · ember orch)'
+const ORCH_TITLE = 'Orchestrator  —  hands your sessions work, through your agent CLI  (Ctrl+Shift+M · ember orch)'
 
 const ORCH_MARK = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
   <path d="M8 5.5 L8 3.6 M5.77 9.85 L4.47 10.93 M10.23 9.85 L11.53 10.93"

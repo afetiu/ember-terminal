@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
-import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, extname, join, resolve, sep } from 'node:path'
+import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
 import { app, BrowserWindow } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
@@ -275,62 +275,6 @@ function broadcast(channel: string, payload: unknown): void {
 
 const FORMATS = new Set(['markdown', 'code', 'mermaid', 'html', 'url', 'ask'])
 
-/**
- * Where the speech page fetches its code from: Ember's own resources, and nowhere else.
- *
- * This used to reach into `~/voice` for Piper, Whisper and Kokoro. That made a second
- * project on the machine a hidden requirement of the app, and it bought nothing —
- * measured against the 0.4MB Azure client that ships here, Piper is 18MB and needs a
- * patched phonemizer build, Whisper's runtime and model are 363MB for a recogniser that
- * invents sentences, and Kokoro's are 484MB for a voice that synthesises at half the
- * speed of playback. All three lost on their merits before they lost on their size.
- */
-const MOUNTS: Array<{ prefix: string; root: string }> = [
-  { prefix: '/vendor/azure/', root: resourcePath('vendor') },
-  { prefix: '/realtime/', root: resourcePath('realtime') },
-  { prefix: '/', root: resourcePath('speech') },
-]
-
-const TYPES: Record<string, string> = {
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.wasm': 'application/wasm',
-  '.onnx': 'application/octet-stream',
-  '.bin': 'application/octet-stream',
-  '.data': 'application/octet-stream',
-  '.txt': 'text/plain; charset=utf-8',
-}
-
-/**
- * Map a URL path onto a file under one of the mounts.
- *
- * The containment check is the whole security of this: the handler turns a URL into a
- * file path, so without it `/models/../../../.ssh/id_rsa` is a valid request. Decoding
- * happens before resolution, so an encoded `%2e%2e` cannot slip past either.
- */
-function voiceAsset(pathname: string): { file: string; type: string } | null {
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(pathname)
-  } catch {
-    return null
-  }
-  if (decoded.includes('\0')) return null
-
-  const ext = extname(decoded).toLowerCase()
-  const type = TYPES[ext]
-  if (!type) return null
-
-  for (const { prefix, root } of MOUNTS) {
-    if (!decoded.startsWith(prefix)) continue
-    const file = resolve(root, `.${decoded.slice(prefix.length - 1)}`)
-    const within = resolve(root)
-    if (file !== within && !file.startsWith(within + sep)) continue
-    if (existsSync(file) && statSync(file).isFile()) return { file, type }
-  }
-  return null
-}
 
 /**
  * Coerce whatever a session sent as `options` into buttons.
@@ -430,46 +374,6 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' })
     createReadStream(file).pipe(res)
     return
-  }
-
-  // The speech page, and the recogniser and voice it runs.
-  if (req.method === 'GET' && url.pathname === '/speech') {
-    const file = resourcePath('speech.html')
-    if (!existsSync(file)) return send(res, 404, '<!doctype html><title>no speech page</title>', 'text/html')
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
-    createReadStream(file).pipe(res)
-    return
-  }
-
-  // The realtime call. Served from this origin because that is the only origin the
-  // microphone is granted to — see `voice.ts`.
-  if (req.method === 'GET' && url.pathname === '/realtime') {
-    const file = resourcePath('realtime.html')
-    if (!existsSync(file)) return send(res, 404, '<!doctype html><title>no voice page</title>', 'text/html')
-    // Under a probe, and only under a probe, the page gets a diagnostic hook so turn
-    // sequences can be driven without a live call (see `scripts/probe-turns.mjs`). It is
-    // injected here rather than shipped in the page because it can feed synthetic events
-    // into the call: harmless in the renderer's own frame, and not something to leave
-    // sitting on an origin that also serves model-authored panel documents.
-    if (process.env['EMBER_PROBE'] === '1') {
-      const html = readFileSync(file, 'utf8').replace(
-        '<script src="/realtime/rtc.js">',
-        '<script>window.__emberProbe = true</script><script src="/realtime/rtc.js">'
-      )
-      return send(res, 200, html, 'text/html; charset=utf-8')
-    }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
-    createReadStream(file).pipe(res)
-    return
-  }
-
-  if (req.method === 'GET') {
-    const asset = voiceAsset(url.pathname)
-    if (asset) {
-      res.writeHead(200, { 'content-type': asset.type, 'cache-control': 'max-age=86400' })
-      createReadStream(asset.file).pipe(res)
-      return
-    }
   }
 
   if (req.method === 'GET' && url.pathname === '/health') {

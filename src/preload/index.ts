@@ -5,9 +5,6 @@ import type {
   CrewNote,
   NoteMeta,
   CrewReport,
-  RealtimeAuth,
-  TurnMessage,
-  TurnResult,
   PtyDataEvent,
   PtyExitEvent,
   SpawnRequest,
@@ -109,54 +106,13 @@ const bridge: EmberBridge = {
     onAsk: (cb) => on<MapAskEvent>('ember:map:ask', cb),
   },
   voice: {
-    secret: (voice: string, model: string) =>
-      ipcRenderer.invoke('ember:voice:secret', voice, model) as Promise<RealtimeAuth>,
-    configured: () =>
-      ipcRenderer.invoke('ember:voice:configured') as Promise<{
-        configured: boolean
-        path: string
-        hint: string
-      }>,
-    setKey: (key: string) =>
-      ipcRenderer.invoke('ember:voice:setKey', key) as Promise<{
-        ok: boolean
-        configured: boolean
-        hint: string
-      }>,
-    onConfigured: (cb) => on<{ configured: boolean; path: string; hint: string }>('ember:voice:configured:changed', cb),
     ask: (tabId: string, sessionId: string, question: string) =>
       ipcRenderer.invoke('ember:voice:ask', tabId, sessionId, question) as Promise<AskResult>,
     cancel: (tabId: string) => ipcRenderer.send('ember:voice:cancel', tabId),
     ready: (tabId: string) => ipcRenderer.invoke('ember:voice:ready', tabId) as Promise<boolean>,
     watch: (tabId: string) => ipcRenderer.invoke('ember:voice:watch', tabId) as Promise<unknown>,
   },
-  secret: {
-    status: (provider: 'openai' | 'anthropic') =>
-      ipcRenderer.invoke('ember:secret:status', provider) as Promise<{
-        configured: boolean
-        path: string
-        hint: string
-      }>,
-    set: (provider: 'openai' | 'anthropic', key: string) =>
-      ipcRenderer.invoke('ember:secret:set', provider, key) as Promise<{
-        ok: boolean
-        configured: boolean
-        hint: string
-      }>,
-  },
-  brain: {
-    speak: (tabId: string, question: string, live: string) =>
-      ipcRenderer.invoke('ember:brain:speak', tabId, question, live) as Promise<{
-        ok: boolean
-        text: string
-        error?: string
-      }>,
-    configured: () => ipcRenderer.invoke('ember:brain:configured') as Promise<boolean>,
-    forget: (tabId?: string) => ipcRenderer.send('ember:brain:forget', tabId),
-  },
   orch: {
-    turn: (history: TurnMessage[], model: string) =>
-      ipcRenderer.invoke('ember:orch:turn', history, model) as Promise<TurnResult>,
     cli: (text: string, recap: string) => ipcRenderer.invoke('ember:orch:cli', text, recap),
     onTool: (cb) => on<{ reqId: string; run: string; name: string; args: Record<string, unknown> }>('ember:orch:tool', cb),
     toolResult: (reqId: string, result: string) => ipcRenderer.send('ember:orch:toolResult', reqId, result),

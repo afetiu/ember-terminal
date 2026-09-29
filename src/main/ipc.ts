@@ -20,11 +20,9 @@ import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, forgetTab, pushFromMain, resolveCmd } from './bridge.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { watchState } from './transcript.js'
-import { keyConfigured, keyHint, openaiConfigured, openaiKeyHint, realtimeSecret, setOpenaiKey, setProviderKey, type SecretProvider, OPENAI_SECRETS_PATH } from './openai.js'
-import { cliTurn, textTurn, type TurnMessage } from './orchestrator.js'
+import { cliTurn } from './orchestrator.js'
 import { orchEnv, resolveOrchTool } from './bridge.js'
 import { randomUUID as orchRunId } from 'node:crypto'
-import { brainConfigured, forgetBrain, speak } from './brain.js'
 import { askClaude, canAsk, cancelAsk } from './converse.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import * as maps from './systemMap.js'
@@ -158,41 +156,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     else void shell.openPath(NOTES_DIR)
   })
 
-  // Same arrangement for OpenAI: the account key stays here, and the realtime page gets a
-  // client secret good for one session. The session's instructions and its single tool are
-  // baked in at mint time, so the page receives a session it cannot renegotiate.
-  ipcMain.handle('ember:voice:secret', (_e, voice: string, model: string) => realtimeSecret(voice, model))
-  ipcMain.handle('ember:voice:configured', () => ({
-    configured: openaiConfigured(),
-    path: OPENAI_SECRETS_PATH,
-    hint: openaiKeyHint(),
-  }))
-  // Setting the key is one-way on purpose: it goes in from the settings panel and the
-  // panel only ever gets `configured` and the last four back. A renderer that can read
-  // the key back is a renderer that can leak it, and nothing in the UI needs it.
-  // Same shape for any provider. The voice needs the OpenAI key; the orchestrator needs
-  // the Anthropic one, and a machine with only one of them is half an orchestrator.
-  ipcMain.handle('ember:secret:status', (_e, provider: SecretProvider) => ({
-    configured: keyConfigured(provider),
-    path: OPENAI_SECRETS_PATH,
-    hint: keyHint(provider),
-  }))
-  ipcMain.handle('ember:secret:set', (_e, provider: SecretProvider, key: string) => {
-    const ok = setProviderKey(provider, key)
-    const status = { configured: keyConfigured(provider), path: OPENAI_SECRETS_PATH, hint: keyHint(provider) }
-    if (ok && provider === 'openai') broadcast('ember:voice:configured:changed', status)
-    return { ok, ...status }
-  })
-
-  ipcMain.handle('ember:voice:setKey', (_e, key: string) => {
-    const ok = setOpenaiKey(key)
-    const status = { configured: openaiConfigured(), path: OPENAI_SECRETS_PATH, hint: openaiKeyHint() }
-    // Announce it. The renderer reads this status once at boot to decide whether the call
-    // controls do anything, so without the broadcast a key pasted into settings would sit
-    // on disk, unused, until the next launch — the exact silence this field exists to end.
-    if (ok) broadcast('ember:voice:configured:changed', status)
-    return { ok, ...status }
-  })
   // The voice's one tool. It types into the tab's focused pane and reads the answer back
   // off Claude Code's transcript — see `converse.ts` for why that beats calling the API.
   ipcMain.handle('ember:voice:ask', (_e, tabId: string, sessionId: string, question: string) =>
@@ -204,17 +167,8 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   // pipeline whose every failure mode is silence.
   ipcMain.handle('ember:voice:watch', (_e, tabId: string) => watchState(tabId))
 
-  // The orchestrator's actual brain. The voice forwards here and speaks what comes back;
-  // see brain.ts for why the thinking moved out of the realtime model entirely.
-  ipcMain.handle('ember:brain:speak', (_e, tabId: string, question: string, live: string) =>
-    speak(tabId, question, live)
-  )
-  ipcMain.handle('ember:brain:configured', () => brainConfigured())
-  ipcMain.on('ember:brain:forget', (_e, tabId?: string) => forgetBrain(tabId))
-
   // The orchestrator's written half. One turn per call: main makes the request because
   // it holds the key, the renderer runs the tools because it holds the sessions.
-  ipcMain.handle('ember:orch:turn', (_e, history: TurnMessage[], model: string) => textTurn(history, model))
   // The same agent on the person's own CLI: one headless turn with ember-orch attached.
   // Its tool calls come back through the bridge to the renderer (ember:orch:tool).
   ipcMain.handle('ember:orch:cli', (_e, text: string, recap: string) =>

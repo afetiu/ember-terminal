@@ -2,7 +2,7 @@ import type { EmberConfig, FontOption, ThemeConfig } from '@shared/types'
 import { FontPicker } from './FontPicker'
 import { AgentPicker, noKeysNote } from './AgentPicker'
 
-type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | 'font' | 'secret' | 'preset'
+type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | 'font' | 'preset'
 
 /**
  * The two ends of the look/speed trade, as measured rather than guessed.
@@ -42,8 +42,6 @@ interface Field {
   options?: string[]
   /** For 'font': the label shown for the empty value. Omit to require a font. */
   inherit?: string
-  /** For 'secret': which provider's key this field edits. */
-  provider?: 'openai' | 'anthropic'
 }
 
 interface Section {
@@ -59,12 +57,6 @@ interface Section {
 export const SETTINGS_TABS = ['Look', 'Motion', 'Agent', 'Todo', 'Behaviour', 'Labs'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
-/** What the panel is allowed to know about the stored key: that it exists, and its tail. */
-interface SecretState {
-  configured: boolean
-  path: string
-  hint: string
-}
 
 /** Read/write a dotted path on the config object. */
 function get(obj: unknown, path: string): unknown {
@@ -99,8 +91,6 @@ export class Settings {
   private fontsReady: Promise<FontOption[]> | null = null
   private open = false
   private saveTimer: number | null = null
-  /** Per-provider key status: on disk or not, and its last four. Never the key. */
-  private secrets = new Map<string, SecretState>()
   /** Lower-cased filter text. Empty means show everything. */
   private query = ''
   /** The tab showing. A filter looks across all of them. */
@@ -266,55 +256,7 @@ export class Settings {
           path: 'labs.enabled',
           label: 'Labs',
           kind: 'toggle',
-          hint: 'the voice call and the key-based orchestrator. These need API keys of their own, unlike the rest of Ember',
-        },
-      ],
-    },
-    {
-      title: 'Keys & voice',
-      tab: 'Labs',
-      labsOnly: true,
-      fields: [
-        {
-          // Not a config path — this one writes to ~/.ember/secrets.json. See buildSecret.
-          path: 'openai.key',
-          label: 'OpenAI key',
-          kind: 'secret',
-          provider: 'openai',
-          hint: 'the voice — hearing and speaking. Stored outside config.json',
-        },
-        {
-          path: 'anthropic.key',
-          label: 'Anthropic key',
-          kind: 'secret',
-          provider: 'anthropic',
-          hint: 'the orchestrator’s actual thinking. Without it the voice has nothing to say',
-        },
-        {
-          path: 'voice.realtime.model',
-          label: 'Call model',
-          kind: 'select',
-          options: ['gpt-realtime-2.1', 'gpt-realtime-2.1-mini'],
-          hint: 'Ctrl+Shift+L talks to this session. ~$3/hour, or about a third of that on mini',
-        },
-        {
-          path: 'voice.realtime.voice',
-          label: 'Call voice',
-          kind: 'select',
-          options: ['cedar', 'marin', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'],
-          hint: 'OpenAI realtime voices',
-        },
-        {
-          path: 'voice.realtime.textModel',
-          label: 'Written model',
-          kind: 'select',
-          options: ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5'],
-          hint: 'Ctrl+Shift+M writes to the same agent — same crew, same conversation',
-        },
-        {
-          path: 'voice.realtime.showTranscript',
-          label: 'Show what was said on a call',
-          kind: 'toggle',
+          hint: 'the phone link, which goes through a relay Deep Answer Labs runs. Experimental',
         },
       ],
     },
@@ -469,12 +411,7 @@ export class Settings {
     this.draft = structuredClone(config)
     if (!this.themes.length) this.themes = await window.ember.listThemes()
     this.fonts = await this.loadFonts()
-    // Read every open rather than once: the file can be hand-edited, and a panel that
-    // says "not set" over a key that is set would send you looking in the wrong place.
-    for (const p of ['openai', 'anthropic'] as const) {
-      const st = await window.ember.secret.status(p).catch(() => null)
-      if (st) this.secrets.set(p, st)
-    }
+    // Look for agent CLIs again on every open: one may have been installed since.
     if (this.agents && this.tab === 'Agent') void this.agents.refresh()
     this.build()
     this.open = true
@@ -680,102 +617,6 @@ export class Settings {
     return wrap
   }
 
-  /**
-   * The OpenAI key field.
-   *
-   * The one control here that does not edit the config draft. The key belongs in
-   * `secrets.json`, not `config.json`: the latter is watched, broadcast to every
-   * renderer, shown by path at the top of this panel, and wiped by "Reset to defaults" —
-   * four separate reasons a credential should not be in it.
-   *
-   * So it writes straight through IPC, and reads back only `configured` and the last four
-   * characters. There is deliberately no way to see the stored key again: if you cannot
-   * remember which one you pasted, replace it.
-   */
-  private buildSecret(provider: 'openai' | 'anthropic'): HTMLElement {
-    const wrap = document.createElement('span')
-    wrap.className = 'ember-secret'
-    const state = () => this.secrets.get(provider) ?? null
-
-    const input = document.createElement('input')
-    input.type = 'password'
-    input.className = 'ember-input'
-    input.autocomplete = 'off'
-    input.spellcheck = false
-    const placeholder = () => {
-      const st = state()
-      return st?.configured ? `stored — ends ${st.hint}` : provider === 'openai' ? 'sk-…' : 'sk-ant-…'
-    }
-    input.placeholder = placeholder()
-
-    const action = document.createElement('button')
-    action.className = 'ember-secret-save'
-    action.textContent = 'Save'
-    action.disabled = true
-
-    const status = document.createElement('em')
-    status.className = 'ember-secret-status'
-
-    const apply = async (key: string, done: string): Promise<void> => {
-      action.disabled = true
-      const res = await window.ember.secret.set(provider, key).catch(() => null)
-      if (!res?.ok) {
-        status.textContent = `could not write ${state()?.path ?? 'secrets.json'}`
-        action.disabled = false
-        return
-      }
-      this.secrets.set(provider, { path: state()?.path ?? '', configured: res.configured, hint: res.hint })
-      input.value = ''
-      input.placeholder = placeholder()
-      status.textContent = done
-      window.setTimeout(() => {
-        if (status.textContent === done) status.textContent = ''
-      }, 4000)
-      this.renderSecretClear(wrap, input, status, provider)
-    }
-
-    input.addEventListener('input', () => {
-      action.disabled = !input.value.trim()
-      status.textContent = ''
-    })
-    input.addEventListener('keydown', (e) => {
-      // Enter is what you reach for after pasting; the button is for people who don't.
-      if (e.key === 'Enter' && input.value.trim()) {
-        e.preventDefault()
-        void apply(input.value, 'saved')
-      }
-    })
-    action.addEventListener('click', () => void apply(input.value, 'saved'))
-
-    wrap.append(input, action, status)
-    this.renderSecretClear(wrap, input, status, provider)
-    return wrap
-  }
-
-  /** The Clear button only exists while there is something to clear. */
-  private renderSecretClear(
-    wrap: HTMLElement,
-    input: HTMLInputElement,
-    status: HTMLElement,
-    provider: 'openai' | 'anthropic',
-  ): void {
-    wrap.querySelector('.ember-secret-clear')?.remove()
-    if (!this.secrets.get(provider)?.configured) return
-    const clear = document.createElement('button')
-    clear.className = 'ember-secret-clear'
-    clear.textContent = 'Clear'
-    clear.addEventListener('click', async () => {
-      const res = await window.ember.secret.set(provider, '').catch(() => null)
-      if (!res?.ok) return
-      const prev = this.secrets.get(provider)
-      this.secrets.set(provider, { path: prev?.path ?? '', configured: res.configured, hint: res.hint })
-      input.placeholder = provider === 'openai' ? 'sk-…' : 'sk-ant-…'
-      status.textContent = 'cleared'
-      clear.remove()
-    })
-    wrap.insertBefore(clear, status)
-  }
-
   private buildControl(field: Field): HTMLElement {
     const value = get(this.draft, field.path)
     const commit = (v: unknown) => {
@@ -824,7 +665,6 @@ export class Settings {
       return picker.el
     }
 
-    if (field.kind === 'secret') return this.buildSecret(field.provider ?? 'openai')
 
     if (field.kind === 'preset') {
       const wrap = document.createElement('span')

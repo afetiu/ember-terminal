@@ -168,19 +168,6 @@ export const DEFAULT_CONFIG: EmberConfig = {
   labs: {
     enabled: false,
   },
-  voice: {
-    realtime: {
-      // The full model rather than the mini: this is for long working conversations
-      // where being understood the first time is worth more than the difference in
-      // price. Swap to `gpt-realtime-2.1-mini` here to spend roughly a third as much.
-      model: 'gpt-realtime-2.1',
-      voice: 'cedar',
-      // The written half of the same agent. Tool-capable and fast enough that typing to
-      // it feels like typing to a person rather than submitting a job.
-      textModel: 'gpt-5.5',
-      showTranscript: false,
-    },
-  },
 }
 
 /** Shallow-per-section merge: a user config may override any subset of keys. */

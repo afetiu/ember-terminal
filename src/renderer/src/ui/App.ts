@@ -1,4 +1,4 @@
-import type { ClaudeStatus, EmberConfig, GitStatus, SessionBrief, ThemeConfig, TurnMessage, VoiceLine } from '@shared/types'
+import type { ClaudeStatus, EmberConfig, GitStatus, SessionBrief, ThemeConfig, TurnMessage } from '@shared/types'
 import type { OverviewOrch, OverviewRow } from './Overview'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
@@ -13,7 +13,6 @@ import { Settings, SETTINGS_TABS, type SettingsTab } from './Settings'
 import { FontPicker } from './FontPicker'
 import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel } from './Sidebar'
-import { Realtime, type CallState } from './Realtime'
 import { Remote } from './Remote'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
@@ -51,13 +50,10 @@ export class App {
   private readonly sidebar: Sidebar
   private readonly vitals: Vitals
   private readonly titleBar: TitleBar
-  private readonly realtime: Realtime
   private readonly orchestrator: Orchestrator
   private readonly remote: Remote
   private readonly pairSheet: PairSheet
   /** False without an OpenAI key, which hides the call button. */
-  private callUsable = false
-  private warnedNoKey = false
   private readonly palette: Palette
   private readonly search: Search
   private readonly focusRing: FocusRing
@@ -207,24 +203,10 @@ export class App {
     )
     this.cheatsheet = new Cheatsheet()
 
-    // The other use of that one microphone. Dictation and a call cannot both have it, so
-    // starting one stops the other — see `startCall`.
-    this.realtime = new Realtime({
-      onTool: (tabId, name, args) => this.runVoiceTool(tabId, name, args),
-      onChange: () => this.syncVoiceChrome(),
-      onLine: (line) => {
-        this.pushVoiceLine(line)
-        this.rememberSpoken(line)
-      },
-      onError: (message) => this.flashToast(`Voice: ${message}`),
-    })
-    this.root.appendChild(this.realtime.el)
-
     // The other way in. Same agent, same conversation — this one works in a room with
     // other people in it, which the call does not.
     this.orchestrator = new Orchestrator({
       onSend: async (text) => void (await this.sendToOrchestrator(text)),
-      onToggleCall: () => this.toggleCall(),
       onClose: () => this.toggleOrchestrator(),
     })
     this.sidebar.mountBelowCards(this.orchestrator.el)
@@ -371,32 +353,6 @@ export class App {
       /** Collapse or expand the sidebar, for the chrome probe. */
       sidebar: () => this.toggleSidebar(),
       broadcasting: () => this.broadcasting,
-      /** The realtime call: frame state, counters, and the last words either way. */
-      call: () => ({
-        ...this.realtime.stats,
-        notes: this.crewNotes,
-        state: this.realtime.state,
-        tab: this.realtime.activeTab,
-        hearing: this.realtime.hearing,
-        speaking: this.realtime.speaking,
-        thinking: this.realtime.thinking,
-        usable: this.callUsable,
-        frame: this.realtime.el.getAttribute('src') ?? '',
-        transcript: this.voiceLines.map((l) => `${l.who}: ${l.text}`),
-      }),
-      /**
-       * Put the call chrome into a state without placing a real call.
-       *
-       * The bug this exists to catch only appears when the call belongs to one tab and
-       * you are looking at another — which cannot be staged honestly, because a real call
-       * costs money, needs a microphone, and would have to be held open while the probe
-       * switches tabs. It sets what the chrome reads and nothing else: no connection, no
-       * secret, no audio.
-       */
-      pretendCall: (state: CallState, tabId: string | null) => {
-        this.realtime.pretend(state, tabId)
-        this.syncVoiceChrome()
-      },
       /** The phone link: whether it is up, whether the phone is there, what it has done. */
       remote: () => ({
         ...this.remote.stats,
@@ -438,14 +394,6 @@ export class App {
         open: this.orchestrator.isOpen,
       }),
       orchestrator: () => this.toggleOrchestrator(),
-      /**
-       * Ask the call page whether Ember grants it the microphone.
-       *
-       * The page has to answer this itself — it is cross-origin, so anything out here
-       * calling `getUserMedia` on its behalf gets a SecurityError and learns nothing
-       * about the permission it was trying to test. Read the answer off `call().mic`.
-       */
-      micCheck: () => this.realtime.checkMic(),
       /**
        * Run one `ask_claude` round trip without a microphone.
        *
@@ -1271,7 +1219,6 @@ export class App {
     window.ember.crew.forget(id)
     this.claudeByTab.delete(id)
     this.crewTasks.delete(id)
-    this.realtime.forget(id)
     // A closed tab must not keep the microphone or go on being read aloud.
 
     if (this.groups.length === 0) {
@@ -1583,36 +1530,10 @@ export class App {
    * having moved. That was the point — not a voice mode you enter and leave.
    */
   private wireVoice(): void {
-    void window.ember.panel.origin().then(async (origin) => {
-      if (!origin) return
-      // Same origin, same reason: it is the only one the microphone is granted to.
-      this.realtime.attach(origin)
-    })
-
     // The phone link comes up at boot and stays up. It is not started on demand because
     // the demand arrives from the other side: the point is that the user can reach a laptop
     // that has been sitting untouched for hours.
     void window.ember.remote.account().then((account) => this.remote.start(account))
-
-    // One key for both halves of the orchestrator, checked once. This used to live in a
-    // method that also configured Azure speech; that whole subsystem is gone, but the
-    // check is not optional — without it every control here is dead and says nothing
-    // about why.
-    const applyKeyStatus = (status: { configured: boolean; path: string }, announce: boolean) => {
-      const was = this.callUsable
-      this.callUsable = status.configured
-      if (!status.configured && !this.warnedNoKey && this.config.labs?.enabled) {
-        this.warnedNoKey = true
-        this.flashToast('The orchestrator needs an OpenAI key — add one in Settings')
-      }
-      // Saying so once is worth it: the controls light up silently otherwise, and the
-      // person who just pasted a key has no way to tell whether it took.
-      if (announce && status.configured && !was) {
-        this.warnedNoKey = false
-        this.flashToast('OpenAI key saved — the orchestrator and the call are live')
-      }
-      this.syncVoiceChrome()
-    }
 
     // `note`/`notes`, typed in any shell, arriving via the bridge. A shell cannot open a
     // tab; it says what it wants and this decides what that means.
@@ -1640,8 +1561,6 @@ export class App {
       }
     })
 
-    void window.ember.voice.configured().then((status) => applyKeyStatus(status, false))
-    window.ember.voice.onConfigured((status) => applyKeyStatus(status, true))
 
 
     // A session the voice handed work to has gone quiet. This is the whole difference
@@ -1652,56 +1571,17 @@ export class App {
       const title = group?.displayTitle ?? note.tabId
       this.crewNotes++
       const said = `Session "${title}" (${note.tabId}) has finished. It said: ${note.text}`
-      this.realtime.notice(said)
+      this.notice(said)
       // The other half of handing work out while driving. The phone decides whether to
       // say it aloud — that needs to know if anyone is mid-sentence, which only it sees.
       void this.remote.note(said)
-      if (!this.realtime.isLive) this.flashToast(`"${title}" finished`)
+      this.flashToast(`"${title}" finished`)
     })
   }
 
 
 
 
-
-  /**
-   * Start or end a spoken conversation about the tab you are looking at.
-   *
-   * Dictation is stopped first, and not as tidiness: there is one microphone, and a
-   * recogniser holding it means the call connects to silence. The two are different
-   * things anyway — dictation types what you say, a call answers it.
-   */
-  private toggleCall(): void {
-    const group = this.activeGroup
-    if (!group) return
-    if (!this.labsGate()) return
-    if (!this.callUsable) {
-      this.flashToast('Voice calls need an OpenAI key in ~/.ember/secrets.json')
-      return
-    }
-
-    // Any live-or-connecting call hangs up, whichever tab it belongs to — matching the
-    // button, which now says "Hang up" whenever there is one. Catching `connecting` too
-    // matters: pressing during the two seconds it takes to connect used to fall through
-    // and start a second call rather than cancelling the first.
-    if (this.realtime.state !== 'idle') {
-      this.realtime.stop()
-      this.flashToast('Call ended')
-      return
-    }
-
-    this.voiceLines.length = 0
-    const { model, voice } = this.config.voice.realtime
-    void this.realtime.start(group.id, voice, model).then(() => {
-      // Hand the call whatever has already been said or typed. Without this, picking up
-      // the phone would meet something with no idea what you were just discussing — two
-      // agents wearing one name, which is exactly what this design is trying not to be.
-      const recap = this.recentConversation()
-      if (recap) this.realtime.notice(`Context so far, from the written thread: ${recap}`)
-    })
-    if (!this.orchestrator.isOpen) this.toggleOrchestrator()
-    this.flashToast('Calling — just talk. Escape hangs up.')
-  }
 
   // ---------------------------------------------------------------- the orchestrator
 
@@ -1743,14 +1623,30 @@ export class App {
    * column widens a little because a conversation needs more room than a list. The tabs
    * stay in view and clickable the whole time.
    */
-  /**
-   * The call and the key-based orchestrator are Labs: they need API keys of their own,
-   * which the rest of Ember promises never to ask for. Off, they say where to turn them on.
-   */
-  private labsGate(): boolean {
-    if (this.config.labs?.enabled) return true
-    this.flashToast('Voice calls are a Labs feature and need an API key — Settings › Labs')
-    return false
+  /** The last few turns as plain prose, for the phone as it connects. */
+  private recentConversation(): string {
+    return this.turns
+      .slice(-8)
+      .map((t) => `${t.who === 'you' ? 'The user' : t.who === 'agent' ? 'You' : 'Note'}: ${t.text}`)
+      .join(' — ')
+      .slice(0, 2000)
+  }
+
+  /** What was said on the phone, folded into the same thread. */
+  private rememberSpoken(line: { who: 'user' | 'voice'; text: string }): void {
+    const text = line.text.trim()
+    if (!text) return
+    this.history.push({ role: line.who === 'user' ? 'user' : 'assistant', content: text })
+    this.turns.push({ who: line.who === 'user' ? 'you' : 'agent', text, spoken: true })
+    this.trimHistory()
+    this.paintOrchestrator()
+  }
+
+  /** Something the orchestrator should know happened: shown in its thread. */
+  private notice(line: string): void {
+    this.turns.push({ who: 'system', text: line })
+    this.trimHistory()
+    this.paintOrchestrator()
   }
 
   private toggleOrchestrator(): void {
@@ -1855,29 +1751,6 @@ export class App {
    * something out loud, hang up, start typing, and be met by something with no idea what
    * you had just been discussing.
    */
-  /** The last few turns as plain prose, for handing to a call as it connects. */
-  private recentConversation(): string {
-    return this.turns
-      .slice(-8)
-      .map((t) => `${t.who === 'you' ? 'The user' : t.who === 'agent' ? 'You' : 'Note'}: ${t.text}`)
-      .join(' — ')
-      .slice(0, 2000)
-  }
-
-  private rememberSpoken(line: VoiceLine): void {
-    const text = line.text.trim()
-    if (!text) return
-    if (line.who === 'user') {
-      this.history.push({ role: 'user', content: text })
-      this.turns.push({ who: 'you', text, spoken: true })
-    } else {
-      this.history.push({ role: 'assistant', content: text })
-      this.turns.push({ who: 'agent', text, spoken: true })
-    }
-    this.trimHistory()
-    this.paintOrchestrator()
-  }
-
   /**
    * Everything the voice can do, dispatched by name.
    *
@@ -1886,43 +1759,10 @@ export class App {
    * something it can say out loud — an exception would leave the call silent with nothing
    * to recover from.
    */
-  /**
-   * What is true right now and cannot be in the cached briefing.
-   *
-   * Kept to a few lines on purpose. Everything durable — memory, the project list, repo
-   * state — lives in the briefing behind the cache breakpoint; this is only the part that
-   * changes between one sentence and the next, and every token of it is paid for at full
-   * price on every turn.
-   */
-  private liveState(): string {
-    const g = this.activeGroup
-    const where = g?.focused?.cwd || g?.focused?.initialCwd || ''
-    const busy = this.groups
-      .filter((x) => x.aggregate(performance.now()).state === 'working')
-      .map((x) => x.displayTitle)
-    const lines = [`[Right now: he is in the "${g?.displayTitle ?? 'no'}" tab${where ? `, in ${where}` : ''}.`]
-    if (busy.length) lines.push(`Working sessions: ${busy.join(', ')}.`)
-    lines.push('Answer his next line.]')
-    return lines.join(' ')
-  }
-
   private async runVoiceTool(tabId: string, name: string, args: Record<string, unknown>): Promise<string> {
     const arg = (k: string): string => String(args[k] ?? '').trim()
 
     switch (name) {
-      // The default path for everything the user actually says. The voice knows nothing; this
-      // hands the question to Claude with his memory and machine in front of it, and hands
-      // back a sentence to say. `live` is the state the standing briefing cannot hold —
-      // it is passed per turn so it stays on the volatile side of the prompt cache.
-      case 'consult': {
-        const res = await window.ember.brain.speak(tabId, arg('question'), this.liveState())
-        if (res.ok) return res.text
-        // A missing key must be sayable. Going silent is how the old orchestrator failed.
-        return res.error === 'no anthropic key'
-          ? 'I have no Anthropic key, so I cannot think. Add one in Settings, under Speed.'
-          : `The orchestrator did not answer: ${res.error ?? 'unknown'}.`
-      }
-
       case 'ask_claude':
         return this.askClaude(this.resolveTab(arg('session')) ?? tabId, arg('question'))
 
@@ -2123,9 +1963,9 @@ export class App {
     const task = this.crewTasks.get(tabId)
     this.crewNotes++
     const line = `Session "${title}" (${tabId}) has finished${task ? ` "${task.slice(0, 120)}"` : ''}. Its screen ends: ${said}`
-    this.realtime.notice(line)
+    this.notice(line)
     void this.remote.note(line)
-    if (!this.realtime.isLive) this.flashToast(`"${title}" finished`)
+    this.flashToast(`"${title}" finished`)
   }
 
   /**
@@ -2196,7 +2036,7 @@ export class App {
           asked = true
           const line = `"${group.displayTitle}" is asking you something before it can start — answer it and the brief goes in.`
           this.flashToast(line)
-          this.realtime.notice(line)
+          this.notice(line)
         }
         upSince = 0
         continue
@@ -2214,7 +2054,7 @@ export class App {
       void this.watchTurn(tabId).then((said) => this.crewDone(tabId, said))
       return
     }
-    this.realtime.notice(`Session ${tabId} never finished starting. Ask the user to look at it.`)
+    this.notice(`Session ${tabId} never finished starting. Ask the user to look at it.`)
   }
 
   private async briefWhenReady(tabId: string, sessionId: string, task: string): Promise<void> {
@@ -2225,19 +2065,19 @@ export class App {
 
       if (!task) {
         window.ember.crew.follow(tabId)
-        this.realtime.notice(`Session ${tabId} is up and idle.`)
+        this.notice(`Session ${tabId} is up and idle.`)
         return
       }
       const result = await window.ember.crew.dispatch(tabId, sessionId, task)
       this.crewTasks.set(tabId, task)
-      this.realtime.notice(
+      this.notice(
         result.ok
           ? `Session ${tabId} is up and has started on: ${task}`
           : `Session ${tabId} came up but would not take the work: ${result.error}`
       )
       return
     }
-    this.realtime.notice(`Session ${tabId} never finished starting. Tell the user to look at it.`)
+    this.notice(`Session ${tabId} never finished starting. Tell the user to look at it.`)
   }
 
   /** Match a spoken folder name against his real project directories. */
@@ -2273,65 +2113,19 @@ export class App {
   /** Hand-offs that have reported finishing. Counted whether or not a call heard them. */
   private crewNotes = 0
 
-  /** The last few lines of the call, for the strip under the terminal. */
-  private readonly voiceLines: VoiceLine[] = []
-
-  private pushVoiceLine(line: VoiceLine): void {
-    this.voiceLines.push(line)
-    if (this.voiceLines.length > 6) this.voiceLines.shift()
-    this.renderVoiceStrip()
-  }
-
-
-  /**
-   * The call strip: what was said, under the terminal.
-   *
-   * Off unless asked for. The whole point of talking is not having to read, and a strip
-   * that is always there turns a call back into a chat window — but while tuning the
-   * voice it is the only way to see what it actually heard.
-   */
-  private renderVoiceStrip(): void {
-    if (!this.voiceStrip) {
-      this.voiceStrip = document.createElement('div')
-      this.voiceStrip.className = 'ember-voicestrip'
-      this.stack.appendChild(this.voiceStrip)
-    }
-    const on = this.config.voice.realtime.showTranscript && this.realtime.isLive && this.voiceLines.length > 0
-    this.voiceStrip.classList.toggle('is-on', on)
-    if (!on) return
-
-    this.voiceStrip.textContent = ''
-    for (const line of this.voiceLines) {
-      const row = document.createElement('div')
-      row.className = `ember-voiceline is-${line.who}`
-      row.textContent = line.text
-      this.voiceStrip.appendChild(row)
-    }
-  }
-
-  private voiceStrip: HTMLElement | null = null
 
   private syncVoiceChrome(): void {
-    this.renderVoiceStrip()
-    // The call is the window's, not the tab's.
-    //
-    // Both of these used to read `activeTab === id ? state : 'idle'`, from when a call was
-    // a property of the tab you started it in. It is one agent now, and the tab it is
-    // bound to only decides where unqualified work lands — so with a call live in one tab
-    // and the user looking at another (which happens by itself, since show_session switches
-    // tabs) the button read "Call" during a live call and there was no visible way to
-    // hang up. State shown is now the real state, wherever he is standing.
-    this.orchestrator.setCall(this.realtime.state, this.realtime.hearing, this.realtime.speaking)
+    this.orchestrator.setAgent(`via ${(AGENTS[this.config.agent.default] ?? AGENTS.claude).name}`)
     this.sidebar.setOrchestrator({
       // Deliberately not gated on the key. Hiding this button when OpenAI is not set up
       // hides the only way to reach the panel that says OpenAI is not set up — the
       // failure explains itself only if you can get to it.
       available: !!this.activeGroup,
       open: this.orchestrator.isOpen,
-      call: this.realtime.state,
-      hearing: this.realtime.hearing,
-      speaking: this.realtime.speaking,
-      thinking: this.realtime.thinking,
+      call: 'idle',
+      hearing: false,
+      speaking: false,
+      thinking: this.orchBusy,
     })
     this.titleBar.setVisualize(this.activeGroup?.focused?.activity.current.isClaude === true)
     this.titleBar.setPanel({
@@ -2945,15 +2739,6 @@ export class App {
         },
       },
       {
-        id: 'call',
-        group: 'Voice',
-        title: this.realtime.isLive ? 'Hang up' : 'Talk to this session',
-        hint: 'Ctrl+Shift+L',
-        cli: 'call',
-        aliases: ['c'],
-        run: () => this.toggleCall(),
-      },
-      {
         id: 'orchestrator',
         group: 'Voice',
         title: this.orchestrator.isOpen ? 'Hand the orchestrator something, or close it' : 'Hand the orchestrator something, or open it',
@@ -3431,21 +3216,6 @@ export class App {
         if (ctrl && e.shiftKey && e.code === 'KeyE') {
           e.preventDefault()
           this.togglePanelPicking()
-          return
-        }
-        // Not V — that is paste, and a chord that hangs up the call when you meant to
-        // paste would be found the hard way. L for "live".
-        if (ctrl && e.shiftKey && e.code === 'KeyL') {
-          e.preventDefault()
-          this.toggleCall()
-          return
-        }
-        // Escape hangs up, but only while a call is actually running — Escape belongs to
-        // the terminal the rest of the time and stealing it would break every TUI.
-        if (e.key === 'Escape' && this.realtime.isLive) {
-          e.preventDefault()
-          this.realtime.stop()
-          this.flashToast('Call ended')
           return
         }
         if (ctrl && e.shiftKey && e.code === 'KeyO') {
