@@ -1,4 +1,5 @@
 // Ember landing page. No build step, no dependencies.
+// The hero film and the "See it work" demos live in film.js (an ES module).
 
 // ---- Downloads -------------------------------------------------------------------
 // Download links are plain same-site paths in the HTML (/download/windows,
@@ -117,34 +118,9 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   reduceMotion.addEventListener?.('change', () => { schedule(); index = stops.length - 1; place(true) })
 })()
 
-// ---- Typing in the hero terminal ---------------------------------------------------
-;(function typer() {
-  const el = document.querySelector('[data-typer]')
-  if (!el || reduceMotion.matches) return
-  const lines = ['fix it and add a test', 'show me the diff first', 'yes, ship it']
-  let li = 0, ci = lines[0].length, deleting = true
-  el.textContent = lines[0]
-  function tick() {
-    const line = lines[li]
-    if (deleting) {
-      ci--
-      el.textContent = line.slice(0, ci)
-      if (ci <= 0) { deleting = false; li = (li + 1) % lines.length }
-      setTimeout(tick, 28)
-    } else {
-      const next = lines[li]
-      ci++
-      el.textContent = next.slice(0, ci)
-      if (ci >= next.length) { deleting = true; setTimeout(tick, 2600); return }
-      setTimeout(tick, 55 + Math.random() * 70)
-    }
-  }
-  setTimeout(tick, 2600)
-})()
-
 // ---- Reveal on scroll --------------------------------------------------------------
 ;(function reveal() {
-  const targets = document.querySelectorAll('.feat, .cli__grid > *, .steps li, .also li, .cheats > div, .faq__list details')
+  const targets = document.querySelectorAll('.steps li, .faq__list details, .clis li')
   if (!('IntersectionObserver' in window) || reduceMotion.matches) return
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {

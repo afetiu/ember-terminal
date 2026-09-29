@@ -27,7 +27,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="modulepreload" href="assets/cinder.js">
 <script src="main.js" defer></script>
+<script src="film.js" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -39,9 +41,8 @@
       <span>Ember</span>
     </a>
     <nav class="topnav" aria-label="Sections">
-      <a href="#cli">Your CLI</a>
-      <a href="#tour">Tour</a>
-      <a href="#keys">Keys</a>
+      <a href="#see">See it work</a>
+      <a href="#how">How</a>
       <a href="#faq">FAQ</a>
     </nav>
     <a class="btn btn--small" data-download href="/download/windows">Download</a>
@@ -53,334 +54,382 @@
 <!-- ============================ HERO ============================ -->
 <section class="hero" id="top">
   <div class="wrap hero__text">
-    <p class="eyebrow"><span class="dot" aria-hidden="true"></span> A terminal for Windows · by Deep Answer Labs</p>
-    <h1 class="hero__title" data-caret-host>
-      <span data-caret-stop>A terminal</span> <span data-caret-stop>that keeps up</span>
-      <span class="hl" data-caret-stop>with your agents.</span>
-    </h1>
-    <p class="hero__pitch">
-      Ember is built for people who run AI coding CLIs all day. Every session is a card that
-      says what it's doing, every terminal has a panel the agent can draw on, and your project
-      gets a map that stays current. PowerShell underneath, untouched.
-    </p>
-    <div class="hero__cta">
-      <a class="btn btn--primary" data-download href="/download/windows">
-        <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M2 3.6 8.4 2.7v6.2H2zM9.2 2.6 18 1.4v7.5H9.2zM2 9.7h6.4v6.2L2 15zM9.2 9.7H18v7.5L9.2 16z" fill="currentColor"/></svg>
-        Download for Windows
-      </a>
-      <a class="btn btn--ghost" data-repo href="https://github.com/afetiu/ember-terminal">View on GitHub</a>
+    <div class="hero__lead">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> A terminal for Windows · by Deep Answer Labs</p>
+      <h1 class="hero__title" data-caret-host>
+        <span data-caret-stop>A terminal</span> <span data-caret-stop>that keeps up</span>
+        <br><span class="hl" data-caret-stop>with your agents.</span>
+      </h1>
     </div>
-    <p class="hero__meta mono"><span data-version></span>free <i>·</i> open <i>·</i> no API keys <i>·</i> Windows 10/11, x64</p>
-    <p class="dl-alt mono">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable, no installer)</span></p>
-
-    <aside class="hero__clis" aria-labelledby="hero-clis-title">
-      <p id="hero-clis-title" class="hero__clis-title mono">Drives the CLI you already use</p>
-      <ul>
-        <li>Claude Code</li>
-        <li>OpenAI Codex</li>
-        <li>Gemini CLI</li>
-        <li>Cursor Agent</li>
-        <li>OpenCode</li>
-        <li>GitHub Copilot CLI</li>
-      </ul>
-      <p class="hero__nokey"><strong>No API keys.</strong> Your CLI, your login, your subscription.</p>
-    </aside>
+    <div class="hero__side">
+      <p class="hero__pitch">Runs the AI coding CLI you already use. <strong class="nowrap">No API keys.</strong></p>
+      <div class="hero__cta">
+        <a class="btn btn--primary" data-download href="/download/windows">
+          <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M2 3.6 8.4 2.7v6.2H2zM9.2 2.6 18 1.4v7.5H9.2zM2 9.7h6.4v6.2L2 15zM9.2 9.7H18v7.5L9.2 16z" fill="currentColor"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn--ghost" data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
+      </div>
+      <p class="hero__meta mono"><span data-version></span>free <i>·</i> open <i>·</i> Windows 10/11, x64</p>
+      <p class="dl-alt mono">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable)</span></p>
+    </div>
   </div>
 
-  <!-- The hero window. A faithful HTML mock of Ember's layout: sidebar cards, terminal, panel.
-       SCREENSHOT: hero — full Ember window, 3 session cards (working / waiting / idle),
-       a CLI session streaming in the terminal, the panel showing a diagram or table.
-       Swap the .appmock below for <img src="assets/hero.png" ...> when a capture exists. -->
+  <!-- ===== The film: one Ember window, four beats. Timings live in data-at / data-until /
+       data-type (seconds into the beat) and are played by film.js. Without JS the first
+       beat shows as a still. ===== -->
   <div class="wrap hero__stage">
-    <div class="appmock" role="img" aria-label="Ember window: a sidebar of three session cards, a terminal running an agent, and a panel beside it showing a diagram the agent drew.">
-      <div class="appmock__bar">
-        <span class="appmock__menu" aria-hidden="true"></span>
-        <span class="appmock__title"><i class="glowdot"></i>Ember</span>
-        <span class="appmock__win" aria-hidden="true"><b></b><b></b><b></b></span>
+    <div class="film" data-film="hero">
+      <div class="film__view">
+        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; a map of the whole project lays itself out and shows a session editing the API.">
+          <div class="win__bar">
+            <span class="win__menu"></span>
+            <span class="win__title"><i class="glowdot"></i>Ember</span>
+            <span class="win__usage mono">plan 38%</span>
+            <span class="win__ctl"><b></b><b></b><b></b></span>
+          </div>
+
+          <div class="win__body">
+            <!-- ---------- sidebar: stays put through every beat ---------- -->
+            <div class="side">
+              <p class="side__head mono">SESSIONS <span>+</span></p>
+              <div class="scard" data-card="api"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>api</b><small class="mono">working</small></span><em class="scard__br mono">main</em></div>
+              <div class="scard" data-card="docs"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>docs</b><small class="mono">idle</small></span><em class="scard__br mono">main</em></div>
+              <div class="scard" data-card="web"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>web</b><small class="mono">waiting on you</small></span><em class="scard__br mono">ui ✱3</em></div>
+              <div class="scard" data-card="scratch"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>scratch</b><small class="mono">idle</small></span><em class="scard__br mono"></em></div>
+
+              <!-- orchestrator pane (beat 2) -->
+              <div class="orch" data-scene="orch">
+                <div class="orch__in" data-at="0.3">
+                  <p class="orch__h"><b>Orchestrator</b><span class="orch__pill mono">text</span><span class="orch__x">✕</span></p>
+                  <div class="orch__log">
+                    <p class="bub bub--you" data-at="2.1">ship the login fix and update the docs</p>
+                    <p class="bub bub--ai" data-at="2.6">On it. <b>api</b> takes the fix, <b>docs</b> the write-up.</p>
+                    <p class="did mono" data-at="2.85"><i>→</i> sent to api</p>
+                    <p class="did mono" data-at="3.05"><i>→</i> sent to docs</p>
+                    <p class="bub bub--ai" data-at="6.3"><b>api</b> is done. Redirect fixed, 42 tests pass.</p>
+                  </div>
+                  <p class="orch__box"><span class="orch__ph" data-at="0" data-until="0.8">Tell it what to do…</span><span data-type="0.8,2.0" data-until="2.1">ship the login fix and update the docs</span></p>
+                </div>
+              </div>
+
+              <p class="side__foot mono">CPU 12% · MEM 41%</p>
+            </div>
+
+            <!-- ---------- main area: the content morphs per beat ---------- -->
+            <div class="main">
+              <div class="crumb">
+                <p class="crumb__i is-active" data-scene="panel"><b>api</b> <span>~/code/api</span> <em>main ↑1</em></p>
+                <p class="crumb__i" data-scene="orch"><b>api</b> <span>│</span> <b>docs</b> <em>split</em></p>
+                <p class="crumb__i" data-scene="todo"><b>Todo</b> <span>over api</span> <em>Ctrl Shift D</em></p>
+                <p class="crumb__i" data-scene="map"><b>Map</b> <span>shop</span> <em>Ctrl Shift G</em></p>
+                <p class="crumb__i" data-scene="cli"><b>New session</b> <span>pick a CLI</span></p>
+                <p class="crumb__i" data-scene="splits"><b>api</b> <span>~/code/api</span> <em>3 panes</em></p>
+                <p class="crumb__i" data-scene="palette"><b>api</b> <span>~/code/api</span> <em>Ctrl K</em></p>
+              </div>
+
+              <div class="scenes">
+
+                <!-- ===== BEAT 1: the panel ===== -->
+                <div class="scene scene--panel is-active" data-scene="panel">
+                  <div class="term">
+                    <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main ↑1</span></p>
+                    <p><span class="c-acc">❯</span> <span data-type="0.3,1.7">show me how auth flows through the API</span></p>
+                    <p class="t-gap"></p>
+                    <p class="t-tool" data-at="2.0"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/middleware.ts</span></p>
+                    <p class="t-tool" data-at="2.25"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/session.ts</span></p>
+                    <p class="t-tool" data-at="2.5"><span class="c-acc">●</span> Search <span class="c-yl">"verifyToken"</span> <span class="t-dim">7 matches</span></p>
+                    <p class="t-tool" data-at="2.8"><span class="c-acc">●</span> Drew the flow on the panel <span class="c-acc">→</span></p>
+                    <p class="t-say" data-at="3.3">Requests pass the gateway, then verifyToken() checks the session. On refresh it runs twice.</p>
+                    <p class="t-gap"></p>
+                    <p data-at="5.9"><span class="c-acc">❯</span> <span data-type="6.0,6.45">run the tests</span></p>
+                    <p class="t-tool" data-at="6.75"><span class="c-acc">●</span> Bash <span class="c-yl">npm test</span></p>
+                    <p class="t-ok" data-at="7.35"><span class="c-gr">✓</span> 42 passed <span class="t-dim">3.1s</span></p>
+                  </div>
+                  <div class="pnl" data-at="2.95">
+                    <p class="pnl__bar mono">Auth flow <span>◎ ↑ ↓ ✕</span></p>
+                    <svg class="diag" viewBox="0 0 400 300" aria-hidden="true">
+                      <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" class="ahead"/></marker></defs>
+                      <path class="de" data-at="3.45" pathLength="1" d="M200 50 V82" marker-end="url(#ah)"/>
+                      <path class="de" data-at="3.7" pathLength="1" d="M200 118 V148" marker-end="url(#ah)"/>
+                      <path class="de" data-at="3.95" pathLength="1" d="M170 186 C 170 210, 105 204, 105 226" marker-end="url(#ah)"/>
+                      <path class="de" data-at="4.05" pathLength="1" d="M230 186 C 230 210, 295 204, 295 226" marker-end="url(#ah)"/>
+                      <path class="de de--hot" data-at="4.4" pathLength="1" d="M362 244 C 392 244, 392 166, 290 166" marker-end="url(#ah)"/>
+                      <text class="dlabel" data-at="4.5" x="338" y="210">refresh</text>
+                      <g class="dn" data-at="3.3"><rect x="140" y="14" width="120" height="36" rx="7"/><text x="200" y="37">browser</text></g>
+                      <g class="dn" data-at="3.55"><rect x="140" y="82" width="120" height="36" rx="7"/><text x="200" y="105">gateway</text></g>
+                      <g class="dn dn--hot" data-at="3.8"><rect x="120" y="148" width="160" height="38" rx="7"/><text x="200" y="172">verifyToken()</text></g>
+                      <g class="dn" data-at="4.0"><rect x="40" y="226" width="130" height="36" rx="7"/><text x="105" y="249">session store</text></g>
+                      <g class="dn" data-at="4.1"><rect x="230" y="226" width="130" height="36" rx="7"/><text x="295" y="249">api routes</text></g>
+                    </svg>
+                    <p class="pnl__note" data-at="4.6"><code>verifyToken()</code> runs twice on refresh.</p>
+                    <div class="pnl__btns" data-at="4.9">
+                      <span class="chip chip--go flip" data-cursor="tests" data-at="5.65" data-until="5.95">Run the tests</span>
+                      <span class="chip">Show the diff</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== BEAT 2: the orchestrator (main shows the two sessions it drives) ===== -->
+                <div class="scene scene--orch" data-scene="orch">
+                  <div class="split2">
+                    <div class="pane">
+                      <p class="pane__h mono"><i></i>api</p>
+                      <div class="term term--sm">
+                        <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
+                        <p><span class="c-acc">❯</span> <span data-type="3.1,3.45">fix the login redirect loop</span> <span class="from mono" data-at="3.1">from orchestrator</span></p>
+                        <p class="t-tool" data-at="3.7"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/redirect.ts</span></p>
+                        <p class="t-tool" data-at="4.15"><span class="c-acc">●</span> Edit <span class="c-yl">redirect.ts</span> <span class="c-gr">+4</span> <span class="c-rd">−2</span></p>
+                        <p class="t-tool" data-at="4.7"><span class="c-acc">●</span> Bash <span class="c-yl">npm test</span></p>
+                        <p class="t-ok" data-at="5.3"><span class="c-gr">✓</span> 42 passed</p>
+                        <p class="t-say" data-at="5.6">Done. ?next= now survives the login.</p>
+                      </div>
+                    </div>
+                    <div class="pane">
+                      <p class="pane__h mono"><i></i>docs</p>
+                      <div class="term term--sm">
+                        <p class="t-dim">PS <span class="c-cy">~/code/docs</span> <span class="c-pk">main</span></p>
+                        <p><span class="c-acc">❯</span> <span data-type="3.3,3.75">update auth.md for the redirect fix</span> <span class="from mono" data-at="3.3">from orchestrator</span></p>
+                        <p class="t-tool" data-at="4.0"><span class="c-acc">●</span> Read <span class="c-yl">docs/auth.md</span></p>
+                        <p class="t-tool" data-at="4.9"><span class="c-acc">●</span> Edit <span class="c-yl">auth.md</span> <span class="c-gr">+12</span> <span class="c-rd">−3</span></p>
+                        <p class="t-tool" data-at="5.8"><span class="c-acc">●</span> Writing the example…</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== BEAT 3: todo & notes ===== -->
+                <div class="scene scene--todo" data-scene="todo">
+                  <div class="todo">
+                    <div class="todo__head">
+                      <h4>Todo</h4>
+                      <span class="todo__count mono" data-seq="0|3 open;1.6|4 open;2.05|5 open;2.5|6 open;2.95|7 open;4.0|6 open;4.4|5 open;4.8|4 open"></span>
+                      <span class="todo__status mono" data-seq="0|;1.05|going through your sources…;3.5|ticking what's done…;5.3|added 4 · cleared 3"></span>
+                      <span class="todo__check flip" data-cursor="check" data-at="0.9" data-until="1.15"><i>✦</i> Check todos</span>
+                    </div>
+                    <div class="todo__scan flip" data-at="1.05" data-until="5.2"><i></i></div>
+                    <ul class="todo__list">
+                      <li class="ti" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.0"></span><span class="ti__txt">Fix the login redirect loop</span><span class="ti__why mono" data-at="4.0">handled · api fixed it</span></div></li>
+                      <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Rotate the staging secrets</span></div></li>
+                      <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Draft the release notes</span></div></li>
+                      <li class="ti ti--new" data-at="1.6"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Reply to the invoice thread</span><span class="src src--mail mono">Mail</span></div></li>
+                      <li class="ti ti--new" data-at="2.05" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.4"></span><span class="ti__txt">Review PR #214 · login redirect</span><span class="ti__why mono" data-at="4.4">handled · merged</span><span class="src src--gh mono">GitHub</span></div></li>
+                      <li class="ti ti--new" data-at="2.5"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">WEB-88 · checkout button clipped on iOS</span><span class="src src--jira mono">Jira</span></div></li>
+                      <li class="ti ti--new" data-at="2.95" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.8"></span><span class="ti__txt">#deploys: is the queue fix live?</span><span class="ti__why mono" data-at="4.8">handled · answered</span><span class="src src--slack mono">Slack</span></div></li>
+                    </ul>
+                    <p class="todo__arch mono flip" data-at="5.3"><span data-seq="0|▸ archive · 12;5.3|▸ archive · 15"></span></p>
+                  </div>
+                  <div class="notes" data-at="5.4">
+                    <p class="notes__h"><b>Notes</b><span class="mono" data-seq="0|2;5.8|3"></span></p>
+                    <ul class="notes__list">
+                      <li>Auth flow</li>
+                      <li>Release checklist</li>
+                      <li class="notes__new" data-at="5.8">Login redirect fix <em class="mono">by api</em></li>
+                    </ul>
+                    <div class="notes__body" data-at="6.0">
+                      <p class="nb-h mono"># Login redirect fix</p>
+                      <p class="nb-p"><span data-type="6.1,7.3">Cookie path was /app, so ?next= got lost. Now /. 42 tests pass.</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== BEAT 4: the map ===== -->
+                <div class="scene scene--map" data-scene="map">
+                  <div class="map">
+                    <div class="map__in">
+                    <div class="mz" data-at="1.2" style="left:28px;top:24px;width:400px;height:246px"><span>product</span></div>
+                    <div class="mz mz--b" data-at="1.3" style="left:452px;top:24px;width:220px;height:246px"><span>data</span></div>
+                    <div class="mz mz--x" data-at="1.4" style="left:696px;top:24px;width:236px;height:246px"><span>third party</span></div>
+                    <div class="mz mz--i" data-at="1.5" style="left:28px;top:292px;width:904px;height:150px"><span>infra</span></div>
+                    <svg class="medges" viewBox="0 0 960 470" aria-hidden="true">
+                      <path class="me" data-at="1.7" pathLength="1" d="M206 97 H250"/>
+                      <path class="me" data-at="1.85" pathLength="1" d="M400 97 H482"/>
+                      <path class="me" data-at="1.95" pathLength="1" d="M372 122 C 372 209, 420 209, 482 209"/>
+                      <path class="me" data-at="2.05" pathLength="1" d="M642 209 H730"/>
+                      <path class="me" data-at="2.15" pathLength="1" d="M400 112 C 470 156, 660 156, 730 112"/>
+                      <path class="me me--dash" data-at="2.3" d="M214 377 H300"/>
+                      <path class="me me--dash" data-at="2.35" d="M560 377 H470"/>
+                      <path class="me me--dash" data-at="2.4" d="M790 377 H710"/>
+                      <path class="me me--dash" data-at="2.45" d="M350 352 C 350 300, 131 300, 131 122"/>
+                      <path class="me me--dash" data-at="2.5" d="M420 352 C 420 290, 300 280, 300 122"/>
+                      <path class="mp" data-pulse="2.8,3.25;5.6,6.05" pathLength="1" d="M206 97 H250"/>
+                      <path class="mp" data-pulse="3.3,4.1;6.1,6.9" pathLength="1" d="M400 112 C 470 156, 660 156, 730 112"/>
+                    </svg>
+                    <div class="mn" data-at="0.2" style="left:56px;top:72px;width:150px">web app</div>
+                    <div class="mn" data-at="0.3" style="left:250px;top:72px;width:150px">API</div>
+                    <div class="mn mn--db" data-at="0.4" style="left:482px;top:72px;width:160px">database</div>
+                    <div class="mn" data-at="0.5" style="left:482px;top:184px;width:160px">queue</div>
+                    <div class="mn mn--x" data-at="0.6" style="left:730px;top:72px;width:170px">payments</div>
+                    <div class="mn mn--x" data-at="0.7" style="left:730px;top:184px;width:170px">email</div>
+                    <div class="mn mn--i" data-at="0.8" style="left:64px;top:352px;width:150px">DNS</div>
+                    <div class="mn mn--i" data-at="0.9" style="left:300px;top:352px;width:170px">hosting</div>
+                    <div class="mn mn--i" data-at="1.0" style="left:560px;top:352px;width:150px">CI</div>
+                    <div class="mn mn--i" data-at="1.1" style="left:790px;top:352px;width:120px">secrets</div>
+                    <!-- live bits -->
+                    <div class="mflash flip" data-at="3.25" data-until="3.6" style="left:250px;top:72px;width:150px"></div>
+                    <div class="mring" data-at="3.6" style="left:250px;top:72px;width:150px"></div>
+                    <p class="mchip mono" data-at="3.7" style="left:250px;top:34px"><i></i>a session is editing it</p>
+                    <div class="mchanged flip" data-at="4.8" style="left:482px;top:72px;width:160px"></div>
+                    <p class="mbadge mono" data-at="4.85" style="left:594px;top:60px">changed</p>
+                    </div>
+                    <div class="mtl" data-at="1.6">
+                      <span class="mtl__lab mono">history</span>
+                      <div class="mtl__track">
+                        <i style="left:0%"></i><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i><i class="mtl__now" style="left:100%"></i>
+                        <b class="mtl__fill flip" data-at="5.3"></b>
+                        <span class="mtl__knob flip" data-at="5.3"></span>
+                      </div>
+                      <span class="mtl__v mono" data-seq="0|v16 · yesterday;5.4|now · 1 part changed"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== extra scenes, used by "See it work" ===== -->
+                <div class="scene scene--cli" data-scene="cli">
+                  <div class="pick">
+                    <p class="pick__h">Which CLI should Ember use?</p>
+                    <ul class="pick__list">
+                      <li class="pr pr--a flip" data-at="0" data-until="3.3"><span class="radio"></span><b>Claude Code</b><span class="tag tag--ok mono">found</span></li>
+                      <li class="pr pr--b flip" data-at="3.3" data-cursor="codex"><span class="radio"></span><b>OpenAI Codex</b><span class="tag tag--ok mono">found</span></li>
+                      <li class="pr"><span class="radio"></span><b>Gemini CLI</b>
+                        <span class="tag mono" data-seq="0|install;1.3|installing…;2.7|found" data-cursor="install"></span><span class="tag__bar flip" data-at="1.3" data-until="2.7"><i></i></span><span class="tag__ok flip" data-at="2.7"></span></li>
+                      <li class="pr"><span class="radio"></span><b>Cursor Agent</b><span class="tag mono">install</span></li>
+                      <li class="pr"><span class="radio"></span><b>OpenCode</b><span class="tag mono">install</span></li>
+                      <li class="pr"><span class="radio"></span><b>GitHub Copilot CLI</b><span class="tag mono">install</span></li>
+                    </ul>
+                    <p class="pick__foot mono" data-at="3.8"><span class="c-gr">✓</span> Uses your Codex login. No API key.</p>
+                  </div>
+                </div>
+
+                <div class="scene scene--splits" data-scene="splits">
+                  <div class="sp">
+                    <div class="term sp__a">
+                      <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
+                      <p><span class="c-acc">❯</span> npm run dev</p>
+                      <p class="t-dim">  ready on :3000</p>
+                      <p class="t-dim">  GET /login 200 12ms</p>
+                      <p class="t-dim">  GET /api/me 200 4ms</p>
+                    </div>
+                    <div class="sp__b" data-at="1.0">
+                      <div class="term sp__b1">
+                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
+                        <p><span class="c-acc">❯</span> <span data-type="1.4,1.9">git log --oneline</span></p>
+                        <p class="t-dim" data-at="2.0"><span class="c-yl">a41c9e2</span> fix login redirect</p>
+                      </div>
+                      <div class="term sp__b2" data-at="2.3">
+                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
+                        <p><span class="c-acc">❯</span> <span data-type="2.6,3.0">npm test -- --watch</span></p>
+                        <p class="t-ok" data-at="3.1"><span class="c-gr">✓</span> 42 passed</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="keycap mono" data-at="0.5" data-until="1.5"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd></p>
+                  <p class="keycap mono" data-at="1.8" data-until="2.8"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>−</kbd></p>
+                  <p class="themechip mono" data-at="3.3" data-seq="0|;3.4|# Tokyo Night;4.2|# Catppuccin;5.0|# Gruvbox;5.8|# Nord;6.6|# Ember"></p>
+                </div>
+
+                <div class="scene scene--palette" data-scene="palette">
+                  <div class="sp">
+                    <div class="term sp__a">
+                      <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
+                      <p><span class="c-acc">❯</span> npm run dev</p>
+                      <p class="t-dim">  ready on :3000</p>
+                    </div>
+                    <div class="sp__b" data-at="4.3">
+                      <div class="term sp__b1 sp__b1--full">
+                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
+                        <p><span class="c-acc">❯</span> <span data-type="5.0,5.7">ember theme nord</span></p>
+                        <p class="t-dim" data-at="5.9">theme → Nord</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="keycap mono" data-at="0.2" data-until="0.9"><kbd>Ctrl</kbd><kbd>K</kbd></p>
+                  <div class="pal" data-at="0.45" data-until="2.25">
+                    <p class="pal__in mono"><span class="c-acc">›</span> <span data-type="0.7,1.4">theme tokyo</span></p>
+                    <ul class="pal__list">
+                      <li class="is-sel flip" data-at="1.9" data-until="2.1"># Tokyo Night <span>theme</span></li>
+                      <li data-at="1.2"># Tokyo Night Storm <span>theme</span></li>
+                      <li data-at="1.3"># Tokyo Night Light <span>theme</span></li>
+                    </ul>
+                  </div>
+                  <p class="keycap mono" data-at="2.7" data-until="3.3"><kbd>Ctrl</kbd><kbd>K</kbd></p>
+                  <div class="pal" data-at="2.9" data-until="4.35">
+                    <p class="pal__in mono"><span class="c-acc">›</span> <span data-type="3.1,3.7">split right</span></p>
+                    <ul class="pal__list">
+                      <li class="is-sel flip" data-at="4.0" data-until="4.2">Split right <span>Alt Shift +</span></li>
+                      <li data-at="3.5">Split down <span>Alt Shift −</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- the orchestrator's hand-off lines (drawn by film.js from the card positions) -->
+            <svg class="wires" data-scene="orch" aria-hidden="true">
+              <path class="wire" data-wire="api" data-at="2.85" pathLength="1"/>
+              <path class="wire" data-wire="docs" data-at="3.05" pathLength="1"/>
+              <path class="wire-p" data-wire="api" data-pulse="2.85,3.35" pathLength="1"/>
+              <path class="wire-p" data-wire="docs" data-pulse="3.05,3.55" pathLength="1"/>
+            </svg>
+          </div>
+
+          <p class="toast" data-scene="orch"><span data-at="5.9" data-until="7.4"><i></i><b>api</b> finished</span></p>
+          <span class="cursor" aria-hidden="true"><svg viewBox="0 0 20 24" width="20" height="24"><path d="M2 2 L2 19 L6.5 15 L9.5 22 L12.5 20.7 L9.6 14 L16 14 Z"/></svg><i></i></span>
+        </div>
       </div>
-      <div class="appmock__body">
-        <aside class="mock-side">
-          <p class="mock-side__head mono">SESSIONS <span>+</span></p>
-          <div class="card card--active">
-            <span class="sprite" data-state="working"></span>
-            <span class="card__text"><b>api</b><small class="mono">working · 1m 12s</small></span>
-          </div>
-          <div class="card">
-            <span class="sprite" data-state="attention"></span>
-            <span class="card__text"><b>site</b><small class="mono">waiting on you</small></span>
-          </div>
-          <div class="card">
-            <span class="sprite" data-state="idle"></span>
-            <span class="card__text"><b>scratch</b><small class="mono">idle</small></span>
-          </div>
-          <p class="mock-side__foot mono">CPU 12% · MEM 41%</p>
-        </aside>
-        <div class="mock-term mono" aria-hidden="true">
-          <p><span class="c-cy">~/api</span> <span class="c-dim">main ↑1</span></p>
-          <p><span class="c-pk">▶</span> <span class="c-cy">your-cli</span> "why does checkout double-charge?"</p>
-          <p class="c-dim">&nbsp;</p>
-          <p class="hang"><span class="c-or">●</span> Reading <span class="c-yl">src/payments/charge.ts</span></p>
-          <p class="hang"><span class="c-or">●</span> Reading <span class="c-yl">src/payments/retry.ts</span></p>
-          <p class="hang"><span class="c-or">●</span> The retry wraps the whole charge, not the network call. A timeout after the provider accepted it charges twice. Flow's on the panel →</p>
-          <p class="c-dim">&nbsp;</p>
-          <p class="typeline"><span class="c-pk">▶</span> <span data-typer>fix it and add a test</span><span class="caret" aria-hidden="true"></span></p>
-        </div>
-        <div class="mock-panel">
-          <p class="mock-panel__bar mono">Checkout flow <span aria-hidden="true">◎ ✕</span></p>
-          <div class="flow">
-            <span class="node">cart</span><span class="edge"></span>
-            <span class="node node--hot">retry()</span><span class="edge"></span>
-            <span class="node">charge</span><span class="edge"></span>
-            <span class="node">provider</span>
-          </div>
-          <p class="flow__note">Retry scope includes <code>charge</code>. Move it inside, around the request only.</p>
-          <div class="mock-panel__btns">
-            <span class="chip chip--go">Apply the fix</span>
-            <span class="chip">Show the diff first</span>
-          </div>
-        </div>
+
+      <div class="film__nav" role="group" aria-label="Film chapters">
+        <button type="button" class="beat" data-go="panel"><span class="beat__n mono">1</span>Panel<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="orch"><span class="beat__n mono">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="todo"><span class="beat__n mono">3</span><span class="beat__full">Todo &amp; notes</span><span class="beat__short" aria-hidden="true">Todo</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="map"><span class="beat__n mono">4</span>Map<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
     </div>
     <div class="hero__glow" aria-hidden="true"></div>
   </div>
 </section>
 
-<!-- ============================ BRING YOUR OWN CLI ============================ -->
-<section class="cli" id="cli" aria-labelledby="cli-title">
-  <div class="wrap cli__grid">
-    <div class="cli__copy">
-      <p class="kicker mono">01 — Bring your own CLI</p>
-      <h2 id="cli-title">It never asks for an API key.</h2>
-      <p class="lede">
-        Ember drives the coding CLI you already have installed, signed in the way you already are,
-        on your own subscription. You choose which one it uses. There's no key field to fill in and
-        no Ember account.
-      </p>
-      <p>
-        On first launch Ember checks which CLIs are on your machine and offers a one-click install
-        for the rest.
-      </p>
-    </div>
-    <!-- Mock of the onboarding CLI picker. SCREENSHOT: onboarding — "pick your CLI" step. -->
-    <div class="picker" role="group" aria-label="Supported CLIs">
-      <p class="picker__head mono">Which CLI should Ember use?</p>
-      <ul class="picker__list">
-        <li class="is-picked"><span class="radio" aria-hidden="true"></span><b>Claude Code</b><span class="tag tag--ok mono">found</span></li>
-        <li><span class="radio" aria-hidden="true"></span><b>OpenAI Codex</b><span class="tag tag--ok mono">found</span></li>
-        <li><span class="radio" aria-hidden="true"></span><b>Gemini CLI</b><span class="tag mono">install</span></li>
-        <li><span class="radio" aria-hidden="true"></span><b>Cursor Agent</b><span class="tag mono">install</span></li>
-        <li><span class="radio" aria-hidden="true"></span><b>OpenCode</b><span class="tag mono">install</span></li>
-        <li><span class="radio" aria-hidden="true"></span><b>GitHub Copilot CLI</b><span class="tag mono">install</span></li>
-      </ul>
-      <p class="picker__foot mono">Uses your existing login. Change it any time.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ FEATURE TOUR ============================ -->
-<section class="tour" id="tour" aria-labelledby="tour-title">
-  <div class="wrap">
-    <p class="kicker mono">02 — The tour</p>
-    <h2 id="tour-title" class="tour__title">Built around the way agents actually work: <em>several at once, mostly while you're looking elsewhere.</em></h2>
-  </div>
-
-  <!-- Feature 1: sidebar cards -->
-  <article class="feat wrap">
-    <div class="feat__copy">
-      <h3>Sessions are cards that tell you what they're doing.</h3>
-      <p>
-        Sessions sit in a sidebar, not a tab strip, because each one carries real state.
-        Ember reads the state off the screen itself: <b>working</b>, <b>waiting on you</b>, or
-        <b>idle</b>. A small animated sprite on each card shows it, so you can see which
-        agent needs you without opening anything.
-      </p>
-      <p class="fine">Cards also carry the git branch and dirty count, and the one waiting on you tints amber with a quiet chime. Nothing goes to the notification centre.</p>
-    </div>
-    <!-- SCREENSHOT: sidebar — close crop of 4–5 session cards in mixed states (use the new mascot). -->
-    <div class="feat__mock stack" aria-hidden="true">
-      <div class="card card--lg card--active"><span class="sprite" data-state="working"></span><span class="card__text"><b>api</b><small class="mono">working · 3m 40s · main ✱2</small></span></div>
-      <div class="card card--lg card--attn"><span class="sprite" data-state="attention"></span><span class="card__text"><b>site</b><small class="mono">waiting on you · permission</small></span></div>
-      <div class="card card--lg"><span class="sprite" data-state="working"></span><span class="card__text"><b>migrations</b><small class="mono">working · 22s</small></span></div>
-      <div class="card card--lg"><span class="sprite" data-state="idle"></span><span class="card__text"><b>scratch</b><small class="mono">idle · ~/Downloads</small></span></div>
-    </div>
-  </article>
-
-  <!-- Feature 2: the panel -->
-  <article class="feat feat--flip wrap">
-    <div class="feat__copy">
-      <h3>A panel beside every terminal, for the agent to draw on.</h3>
-      <p>
-        Each terminal has a second half. Over MCP, the agent puts the shape of its answer there:
-        a diagram, a table, a mockup, a chart. The panel stays closed until there's something
-        on it, then springs open.
-      </p>
-      <p>
-        It works both ways. Buttons in the panel type into the terminal beside it. Point at a row
-        and ask about it, and your question goes to the session with that row quoted.
-      </p>
-    </div>
-    <!-- SCREENSHOT: panel — terminal + panel with a table, a hovered row and its popover. -->
-    <div class="feat__mock panelmock" aria-hidden="true">
-      <p class="mock-panel__bar mono">Used cars <span>◎ ↑ ↓ ✕</span></p>
-      <table class="ptable">
-        <thead><tr><th>Car</th><th>Year</th><th>Price</th></tr></thead>
-        <tbody>
-          <tr><td>Ford Focus</td><td>2014</td><td>4 500</td></tr>
-          <tr class="is-pointed"><td>Golf</td><td>2016</td><td>7 200</td></tr>
-          <tr><td>Octavia</td><td>2017</td><td>8 100</td></tr>
-        </tbody>
-      </table>
-      <div class="popover">
-        <p class="mono">row 2 — "Golf | 2016 | 7200"</p>
-        <p class="popover__ask">is this one worth it<span class="caret caret--sm"></span></p>
-      </div>
-      <div class="mock-panel__btns"><span class="chip chip--go">Compare all three</span><span class="chip">Only under 8k</span></div>
-    </div>
-  </article>
-
-  <!-- Feature 3: the map -->
-  <article class="feat wrap">
-    <div class="feat__copy">
-      <h3>The Map: your project's architecture, kept current.</h3>
-      <p>
-        <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd> opens a zoomable picture of a project:
-        areas, repos, apps, services, data stores and the connections between them. The agent
-        surveys it once, then keeps it up to date. When something actually changes, it updates
-        the parts that moved instead of redrawing, so the picture stays where you learned it.
-      </p>
-      <p class="fine">Sessions at work show up as live rings on the parts they're editing. New and changed parts glow, and every version is kept so you can scrub back.</p>
-    </div>
-    <!-- SCREENSHOT: map — a real project map with one or two live session rings. -->
-    <div class="feat__mock mapmock" aria-hidden="true">
-      <svg viewBox="0 0 420 280" class="mapsvg">
-        <rect x="8" y="10" width="200" height="260" rx="14" class="zone"/>
-        <rect x="222" y="10" width="190" height="170" rx="14" class="zone zone--b"/>
-        <text x="22" y="32" class="zlabel">web</text>
-        <text x="236" y="32" class="zlabel">backend</text>
-        <path d="M118 84 C 170 84, 190 98, 262 98" class="wire"/>
-        <path d="M118 180 C 180 180, 200 120, 262 110" class="wire"/>
-        <path d="M318 122 L 318 150" class="wire"/>
-        <path d="M340 98 C 380 98, 390 220, 330 232" class="wire wire--ext"/>
-        <rect x="30" y="62" width="88" height="44" rx="8" class="part"/>
-        <text x="74" y="89" class="plabel">storefront</text>
-        <rect x="30" y="158" width="88" height="44" rx="8" class="part part--new"/>
-        <text x="74" y="185" class="plabel">admin</text>
-        <text x="112" y="152" class="newtag">NEW</text>
-        <rect x="262" y="76" width="78" height="44" rx="8" class="part part--live"/>
-        <text x="301" y="103" class="plabel">api</text>
-        <circle cx="301" cy="98" r="44" class="ring"/>
-        <ellipse cx="318" cy="156" rx="30" ry="8" class="db"/>
-        <path d="M288 156 v18 a30 8 0 0 0 60 0 v-18" class="db"/>
-        <text x="318" y="178" class="plabel">postgres</text>
-        <rect x="262" y="212" width="116" height="40" rx="20" class="part part--cloud"/>
-        <text x="320" y="237" class="plabel">payments (ext)</text>
-      </svg>
-      <span class="mapchip mono"><i></i> api · editing retry.ts</span>
-    </div>
-  </article>
-
-  <!-- Feature 4: overview -->
-  <article class="feat feat--flip wrap">
-    <div class="feat__copy">
-      <h3>Overview: every session on one screen.</h3>
-      <p>
-        <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd> lays out every session as a card: its state
-        and for how long, its folder and branch, how much context it has used, and the last thing
-        its agent said. Cards that need you sort first. Type into any of them from right there.
-      </p>
-    </div>
-    <!-- SCREENSHOT: overview — the Ctrl+Shift+S grid with a waiting card first. -->
-    <div class="feat__mock ovmock" aria-hidden="true">
-      <div class="ov ov--attn"><p class="pill mono">waiting on you</p><b>site</b><q>Want me to delete the old /blog routes too?</q><span class="bar"><i style="width:34%"></i></span></div>
-      <div class="ov"><p class="pill pill--work mono">working · 3m</p><b>api</b><q>Moving the retry inside the request.</q><span class="bar"><i style="width:62%"></i></span></div>
-      <div class="ov"><p class="pill pill--work mono">working · 22s</p><b>migrations</b><q>Adding the index first, then backfill.</q><span class="bar"><i style="width:18%"></i></span></div>
-      <div class="ov ov--idle"><p class="pill pill--idle mono">idle</p><b>scratch</b><q>Done. 3 files renamed.</q><span class="bar"><i style="width:8%"></i></span></div>
-    </div>
-  </article>
-
-  <!-- Smaller features -->
-  <div class="wrap">
-    <h3 class="also__title">And the rest of a terminal you'd want to live in</h3>
-    <ul class="also">
-      <li>
-        <h4>Notes and a todo list</h4>
-        <p>Plain Markdown files in a folder you own. The agent reads and writes them with the <code>notes</code> and <code>todo</code> commands, no tool setup needed.</p>
-      </li>
-      <li>
-        <h4><kbd>Ctrl</kbd><kbd>K</kbd> and the <code>ember</code> CLI</h4>
-        <p>Every action the window has is one command. Run it from the command line, a button, or <code>ember split right</code> in any shell, agents included.</p>
-      </li>
-      <li>
-        <h4>Splits</h4>
-        <p>Put a terminal beside or below the one you're in, then drag the seam.</p>
-      </li>
-      <li>
-        <h4>49 themes</h4>
-        <p>Ember's own palettes plus ports of Tokyo Night, Catppuccin, Dracula, Nord, Gruvbox and more. Each one re-tints the whole window, not only the text.</p>
-      </li>
-      <li>
-        <h4>A caret that travels</h4>
-        <p>Two springs, a stiff head and a slack tail. It stretches with speed and settles to nothing. You can tune it or turn it off.</p>
-      </li>
-      <li>
-        <h4>Acrylic glass</h4>
-        <p>Frosted while you're in the window, plain see-through glass when you're not. Mica or flat are one setting away.</p>
-      </li>
-      <li>
-        <h4>Zen mode</h4>
-        <p><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd> hides all the chrome. Just the terminal.</p>
-      </li>
-      <li>
-        <h4>Your shell, untouched</h4>
-        <p>PowerShell runs through the same ConPTY Windows Terminal ships with. Your profile, oh-my-posh and PSReadLine behave exactly as before.</p>
-      </li>
+<!-- ============================ NO API KEYS ============================ -->
+<section class="nokey" aria-labelledby="nokey-title">
+  <div class="wrap nokey__in">
+    <h2 id="nokey-title">No API keys. <span>Your CLI, your login, your subscription.</span></h2>
+    <ul class="clis mono" aria-label="Supported CLIs">
+      <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li>
     </ul>
   </div>
 </section>
 
-<!-- ============================ HOW IT WORKS ============================ -->
-<section class="how" aria-labelledby="how-title">
+<!-- ============================ SEE IT WORK ============================ -->
+<section class="see" id="see" aria-labelledby="see-title">
   <div class="wrap">
-    <p class="kicker mono">03 — How it works</p>
-    <h2 id="how-title">Three steps, none of them a sign-up form.</h2>
-    <ol class="steps">
-      <li>
-        <span class="steps__n mono">1</span>
-        <h3>Install</h3>
-        <p>Run the installer. It installs just for you, so there's no admin prompt, and adds Start Menu and desktop shortcuts.</p>
-      </li>
-      <li>
-        <span class="steps__n mono">2</span>
-        <h3>Pick your CLI</h3>
-        <p>Ember finds the coding CLIs you already have. Choose one, or install another with one click.</p>
-      </li>
-      <li>
-        <span class="steps__n mono">3</span>
-        <h3>Work</h3>
-        <p>Open sessions, hand them tasks, and keep an eye on all of them from the sidebar. The panel and the Map fill in as you go.</p>
-      </li>
-    </ol>
+    <h2 id="see-title">See it work.</h2>
+    <div class="see__tabs" role="tablist" aria-label="Features">
+      <button type="button" role="tab" class="stab" data-demo="panel" aria-selected="true" aria-controls="see-stage">Panel</button>
+      <button type="button" role="tab" class="stab" data-demo="orch" aria-selected="false" aria-controls="see-stage" tabindex="-1">Orchestrator</button>
+      <button type="button" role="tab" class="stab" data-demo="todo" aria-selected="false" aria-controls="see-stage" tabindex="-1">Todo &amp; notes</button>
+      <button type="button" role="tab" class="stab" data-demo="map" aria-selected="false" aria-controls="see-stage" tabindex="-1">Map</button>
+      <button type="button" role="tab" class="stab" data-demo="cli" aria-selected="false" aria-controls="see-stage" tabindex="-1">Any CLI</button>
+      <button type="button" role="tab" class="stab" data-demo="splits" aria-selected="false" aria-controls="see-stage" tabindex="-1">Splits &amp; themes</button>
+      <button type="button" role="tab" class="stab" data-demo="palette" aria-selected="false" aria-controls="see-stage" tabindex="-1">Command line</button>
+    </div>
+    <div class="see__stage" id="see-stage" role="tabpanel" aria-live="polite">
+      <div class="see__mount" data-film-mount></div>
+      <p class="see__cap"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
+    </div>
   </div>
 </section>
 
-<!-- ============================ KEYS ============================ -->
-<section class="keys" id="keys" aria-labelledby="keys-title">
-  <div class="wrap keys__grid">
-    <div>
-      <p class="kicker mono">04 — Keys</p>
-      <h2 id="keys-title">The keys you'll use most.</h2>
-      <p>Press <kbd>F1</kbd> inside Ember for the full list. Most things are also a word in <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
-    </div>
-    <dl class="cheats">
-      <div><dt><kbd>Ctrl</kbd><kbd>K</kbd></dt><dd>Command line for every action</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></dt><dd>Command palette</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></dt><dd>New session</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></dt><dd>Overview of every session</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd></dt><dd>The Map</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></dt><dd>Show or hide the panel</dd></div>
-      <div><dt><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd></dt><dd>Split right (<kbd>-</kbd> for down)</dd></div>
-      <div><dt><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd></dt><dd>Zen mode</dd></div>
-    </dl>
+<!-- ============================ HOW IT WORKS ============================ -->
+<section class="how" id="how" aria-labelledby="how-title">
+  <div class="wrap">
+    <h2 id="how-title">Three steps. No sign-up.</h2>
+    <ol class="steps">
+      <li><span class="steps__n mono">1</span><h3>Install</h3><p>No admin prompt.</p></li>
+      <li><span class="steps__n mono">2</span><h3>Pick your CLI</h3><p>Ember finds the ones you have.</p></li>
+      <li><span class="steps__n mono">3</span><h3>Work</h3><p>Hand out tasks. Watch the cards.</p></li>
+    </ol>
   </div>
 </section>
 
@@ -388,11 +437,10 @@
 <section class="faq" id="faq" aria-labelledby="faq-title">
   <div class="wrap faq__grid">
     <div>
-      <p class="kicker mono">05 — Questions</p>
-      <h2 id="faq-title">Asked before you download.</h2>
+      <h2 id="faq-title">Questions.</h2>
     </div>
     <div class="faq__list">
-      <details open>
+      <details>
         <summary>Do I need an API key?</summary>
         <p>No. Ember never asks for an LLM API key. It runs the coding CLI you already have installed (Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode or Copilot CLI) using that CLI's own login and your own subscription. Ember doesn't bill you for anything. The only keys it ever takes are for the optional voice features, and only if you choose to turn them on.</p>
       </details>
@@ -423,7 +471,7 @@
 <!-- ============================ CLOSING CTA ============================ -->
 <section class="closer" aria-labelledby="closer-title">
   <div class="wrap closer__inner">
-    <img src="assets/icon-256.png" alt="" width="88" height="88" class="closer__icon">
+    <canvas class="closer__cinder" data-cinder-big width="240" height="240" aria-hidden="true"></canvas>
     <h2 id="closer-title">Bring your CLI. Ember does the rest.</h2>
     <a class="btn btn--primary" data-download href="/download/windows">Download for Windows</a>
     <p class="hero__meta mono"><span data-version></span>free <i>·</i> open <i>·</i> no API keys</p>
@@ -435,7 +483,7 @@
 
 <footer class="foot">
   <div class="wrap foot__inner">
-    <p>Made by <a href="https://deepanswerlabs.com">Deep Answer Labs</a>, a one-person studio run by Agon Fetiu.</p>
+    <p>Made by <a href="https://deepanswerlabs.com">Deep Answer Labs</a></p>
     <p class="foot__links">
       <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
       <a data-releases href="https://github.com/afetiu/ember-terminal/releases">Releases</a>
