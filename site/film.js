@@ -336,7 +336,8 @@ class Film {
     this.last = now
     this.clock += dt
     if (!this.hover) {
-      this.t += dt
+      // The hero plays slower than the demos: it is watched, not clicked through.
+      this.t += dt * (this.mode === 'hero' ? HERO_SPEED : 1)
       if (this.t >= this.scene.dur) {
         const next = this.mode === 'hero' ? (this.idx + 1) % this.order.length : this.idx
         this.activate(this.order[next])
@@ -553,6 +554,8 @@ class Film {
 // ---- the hero ------------------------------------------------------------------
 const heroRoot = document.querySelector('[data-film="hero"]')
 const BEATS = ['panel', 'orch', 'todo', 'map']
+/** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
+const HERO_SPEED = 0.7
 let hero = null
 
 // The demo stage is a copy of the hero window, taken before the hero starts playing.

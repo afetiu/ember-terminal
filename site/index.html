@@ -25,11 +25,11 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1.0.1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1.0.2">
 <link rel="modulepreload" href="assets/cinder.js">
-<script src="main.js?v=1.0.1" defer></script>
-<script src="film.js?v=1.0.1" type="module"></script>
+<script src="main.js?v=1.0.2" defer></script>
+<script src="film.js?v=1.0.2" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -70,8 +70,8 @@
         </a>
         <a class="btn btn--ghost" data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
       </div>
-      <p class="hero__meta mono"><span data-version></span>free <i>·</i> open <i>·</i> Windows 10/11, x64</p>
-      <p class="dl-alt mono">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable)</span></p>
+      <p class="hero__meta"><span data-version></span>free <i>·</i> open <i>·</i> Windows 10/11, x64</p>
+      <p class="dl-alt">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable)</span></p>
     </div>
   </div>
 
@@ -443,10 +443,10 @@
       </div>
 
       <div class="film__nav" role="group" aria-label="Film chapters">
-        <button type="button" class="beat" data-go="panel"><span class="beat__n mono">1</span>Panel<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="orch"><span class="beat__n mono">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="todo"><span class="beat__n mono">3</span><span class="beat__full">Todo &amp; notes</span><span class="beat__short" aria-hidden="true">Todo</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="map"><span class="beat__n mono">4</span>Map<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="orch"><span class="beat__n">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span><span class="beat__full">Todo &amp; notes</span><span class="beat__short" aria-hidden="true">Todo</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="map"><span class="beat__n">4</span>Map<i class="beat__bar"><b></b></i></button>
         <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
     </div>
@@ -458,7 +458,7 @@
 <section class="nokey" aria-labelledby="nokey-title">
   <div class="wrap nokey__in">
     <h2 id="nokey-title">No API keys. <span>Your CLI, your login, your subscription.</span></h2>
-    <ul class="clis mono" aria-label="Supported CLIs">
+    <ul class="clis" aria-label="Supported CLIs">
       <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li>
     </ul>
   </div>
@@ -489,9 +489,9 @@
   <div class="wrap">
     <h2 id="how-title">Three steps. No sign-up.</h2>
     <ol class="steps">
-      <li><span class="steps__n mono">1</span><h3>Install</h3><p>No admin prompt.</p></li>
-      <li><span class="steps__n mono">2</span><h3>Pick your CLI</h3><p>Ember finds the ones you have.</p></li>
-      <li><span class="steps__n mono">3</span><h3>Work</h3><p>Hand out tasks. Watch the cards.</p></li>
+      <li><span class="steps__n">1</span><h3>Install</h3><p>No admin prompt.</p></li>
+      <li><span class="steps__n">2</span><h3>Pick your CLI</h3><p>Ember finds the ones you have.</p></li>
+      <li><span class="steps__n">3</span><h3>Work</h3><p>Hand out tasks. Watch the cards.</p></li>
     </ol>
   </div>
 </section>
@@ -537,8 +537,8 @@
     <canvas class="closer__cinder" data-cinder-big width="240" height="240" aria-hidden="true"></canvas>
     <h2 id="closer-title">Bring your CLI. Ember does the rest.</h2>
     <a class="btn btn--primary" data-download href="/download/windows">Download for Windows</a>
-    <p class="hero__meta mono"><span data-version></span>free <i>·</i> open <i>·</i> no API keys</p>
-    <p class="dl-alt mono">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable, no installer)</span></p>
+    <p class="hero__meta"><span data-version></span>free <i>·</i> open <i>·</i> no API keys</p>
+    <p class="dl-alt">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable, no installer)</span></p>
   </div>
 </section>
 
