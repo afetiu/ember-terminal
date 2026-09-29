@@ -26,10 +26,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=1.0.1">
 <link rel="modulepreload" href="assets/cinder.js">
-<script src="main.js" defer></script>
-<script src="film.js" type="module"></script>
+<script src="main.js?v=1.0.1" defer></script>
+<script src="film.js?v=1.0.1" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -81,7 +81,7 @@
   <div class="wrap hero__stage">
     <div class="film" data-film="hero">
       <div class="film__view">
-        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; a map of the whole project lays itself out and shows a session editing the API.">
+        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
           <div class="win__bar">
             <span class="win__menu"></span>
             <span class="win__title"><i class="glowdot"></i>Ember</span>
@@ -233,57 +233,120 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 4: the map ===== -->
+                <!-- ===== BEAT 4: the map =====
+                     Built like the app's Map: areas are soft zones, parts are cards shaped by
+                     kind, lines are routed orthogonally through the gaps and drawn above the
+                     cards. Coordinates are the map's own; film.js moves a camera over them
+                     (SCENES.map.mcam), rounds the routes (data-pts) and toggles state classes
+                     in time windows (data-cls="class:from,to"). ===== -->
                 <div class="scene scene--map" data-scene="map">
                   <div class="map">
-                    <div class="map__in">
-                    <div class="mz" data-at="1.2" style="left:28px;top:24px;width:400px;height:246px"><span>product</span></div>
-                    <div class="mz mz--b" data-at="1.3" style="left:452px;top:24px;width:220px;height:246px"><span>data</span></div>
-                    <div class="mz mz--x" data-at="1.4" style="left:696px;top:24px;width:236px;height:246px"><span>third party</span></div>
-                    <div class="mz mz--i" data-at="1.5" style="left:28px;top:292px;width:904px;height:150px"><span>infra</span></div>
-                    <svg class="medges" viewBox="0 0 960 470" aria-hidden="true">
-                      <path class="me" data-at="1.7" pathLength="1" d="M206 97 H250"/>
-                      <path class="me" data-at="1.85" pathLength="1" d="M400 97 H482"/>
-                      <path class="me" data-at="1.95" pathLength="1" d="M372 122 C 372 209, 420 209, 482 209"/>
-                      <path class="me" data-at="2.05" pathLength="1" d="M642 209 H730"/>
-                      <path class="me" data-at="2.15" pathLength="1" d="M400 112 C 470 156, 660 156, 730 112"/>
-                      <path class="me me--dash" data-at="2.3" d="M214 377 H300"/>
-                      <path class="me me--dash" data-at="2.35" d="M560 377 H470"/>
-                      <path class="me me--dash" data-at="2.4" d="M790 377 H710"/>
-                      <path class="me me--dash" data-at="2.45" d="M350 352 C 350 300, 131 300, 131 122"/>
-                      <path class="me me--dash" data-at="2.5" d="M420 352 C 420 290, 300 280, 300 122"/>
-                      <path class="mp" data-pulse="2.8,3.25;5.6,6.05" pathLength="1" d="M206 97 H250"/>
-                      <path class="mp" data-pulse="3.3,4.1;6.1,6.9" pathLength="1" d="M400 112 C 470 156, 660 156, 730 112"/>
-                    </svg>
-                    <div class="mn" data-at="0.2" style="left:56px;top:72px;width:150px">web app</div>
-                    <div class="mn" data-at="0.3" style="left:250px;top:72px;width:150px">API</div>
-                    <div class="mn mn--db" data-at="0.4" style="left:482px;top:72px;width:160px">database</div>
-                    <div class="mn" data-at="0.5" style="left:482px;top:184px;width:160px">queue</div>
-                    <div class="mn mn--x" data-at="0.6" style="left:730px;top:72px;width:170px">payments</div>
-                    <div class="mn mn--x" data-at="0.7" style="left:730px;top:184px;width:170px">email</div>
-                    <div class="mn mn--i" data-at="0.8" style="left:64px;top:352px;width:150px">DNS</div>
-                    <div class="mn mn--i" data-at="0.9" style="left:300px;top:352px;width:170px">hosting</div>
-                    <div class="mn mn--i" data-at="1.0" style="left:560px;top:352px;width:150px">CI</div>
-                    <div class="mn mn--i" data-at="1.1" style="left:790px;top:352px;width:120px">secrets</div>
-                    <!-- live bits -->
-                    <div class="mflash flip" data-at="3.25" data-until="3.6" style="left:250px;top:72px;width:150px"></div>
-                    <div class="mring" data-at="3.6" style="left:250px;top:72px;width:150px"></div>
-                    <p class="mchip mono" data-at="3.7" style="left:250px;top:34px"><i></i>a session is editing it</p>
-                    <div class="mchanged flip" data-at="4.8" style="left:482px;top:72px;width:160px"></div>
-                    <p class="mbadge mono" data-at="4.85" style="left:594px;top:60px">changed</p>
-                    </div>
-                    <div class="mtl" data-at="1.6">
-                      <span class="mtl__lab mono">history</span>
-                      <div class="mtl__track">
-                        <i style="left:0%"></i><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i><i class="mtl__now" style="left:100%"></i>
-                        <b class="mtl__fill flip" data-at="5.3"></b>
-                        <span class="mtl__knob flip" data-at="5.3"></span>
+                    <div class="mworld" data-cls="in-flow:1.45,3.6;in-blast:6.4,7.6;in-past:8.2,8.8">
+                      <!-- areas -->
+                      <div class="marea" data-at="0.05" data-cls="is-dim:1.45,3.6" style="--hue:#7aa2f7;left:20px;top:20px;width:400px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Product</p></div>
+                      <div class="marea" data-at="0.12" data-cls="is-dim:1.45,3.6" style="--hue:#9ece6a;left:448px;top:20px;width:236px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Data</p></div>
+                      <div class="marea" data-at="0.19" data-cls="is-dim:1.45,3.6" style="--hue:#bb9af7;left:712px;top:20px;width:268px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Third party</p></div>
+                      <div class="marea" data-at="0.26" data-cls="is-dim:1.45,3.6" style="--hue:#e0af68;left:20px;top:364px;width:960px;height:140px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Infra</p></div>
+
+                      <!-- parts -->
+                      <div class="mnode k-app" data-at="0.15" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:1.5,1.95;b2:6.4,7.6" style="--hue:#7aa2f7;left:40px;top:64px;width:160px;height:92px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6h12M4 4.5h.01M5.6 4.5h.01"/></svg></span><b class="mnode-name">web app</b><i class="mnode-dot"></i></p><p class="mnode-sum">Storefront, cart and checkout pages</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">app</span></p></div>
+                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:1.5,1.95">1</span>
                       </div>
-                      <span class="mtl__v mono" data-seq="0|v16 · yesterday;5.4|now · 1 part changed"></span>
+                      <div class="mnode k-service" data-at="0.25" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:1.95,2.5;is-live:4.3,9.6;b1:6.4,7.6" style="--hue:#7aa2f7;left:236px;top:64px;width:164px;height:92px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="4.5" rx="1"/><rect x="2" y="9" width="12" height="4.5" rx="1"/><path d="M4.5 4.75h.01M4.5 11.25h.01"/></svg></span><b class="mnode-name">API</b><i class="mnode-dot"></i></p><p class="mnode-sum" data-seq="0|REST routes, auth and orders;4.7|REST routes, auth with refresh tokens;8.2|REST routes, auth and orders;8.8|REST routes, auth with refresh tokens">REST routes, auth and orders</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">service</span><span class="mnode-pips"><span class="mpip t-pr" data-at="4.95">PR <b>1</b></span></span></p></div>
+                        <p class="mnode-tags"><span class="mtag is-delta" data-at="4.75">Δ changed</span></p>
+                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:1.95,2.5">2</span>
+                        <p class="mnode-live" data-at="3.7"><span class="mlive-chip"><canvas data-cinder width="76" height="76"></canvas><b>api</b> editing auth/refresh.ts</span></p>
+                      </div>
+                      <div class="mnode k-job" data-at="0.35" data-status="ok" style="--hue:#7aa2f7;left:236px;top:218px;width:164px;height:92px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8.5" r="5.5"/><path d="M8 5.5v3l2 1.5M6 1.5h4"/></svg></span><b class="mnode-name">worker</b><i class="mnode-dot"></i></p><p class="mnode-sum">Receipts and retrying failed charges</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">job</span></p></div>
+                      </div>
+                      <div class="mnode k-datastore" data-at="0.45" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:2.9,3.35;b0:6.4,7.6" style="--hue:#9ece6a;left:468px;top:56px;width:196px;height:108px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><ellipse cx="8" cy="3.8" rx="5.5" ry="2"/><path d="M2.5 3.8v8.4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V3.8M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2"/></svg></span><b class="mnode-name">database</b><i class="mnode-dot"></i></p><p class="mnode-sum">Orders, users, stock</p><p class="mnode-meta"><span class="mnode-kindword">data</span><span class="mpip t-risk" data-at="0">backups <b>daily</b></span></p></div>
+                        <p class="mnode-tags mnode-tags--r"><span class="mtag is-blast" data-cls="is-on:6.4,7.6">if this goes down</span></p>
+                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:2.9,3.35">3</span>
+                      </div>
+                      <div class="mnode k-datastore k-small" data-at="5.2" data-status="ok" data-cls="is-lit:5.2,6.4;is-then:8.2,8.8" style="--hue:#9ece6a;left:468px;top:182px;width:196px;height:66px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><ellipse cx="8" cy="3.8" rx="5.5" ry="2"/><path d="M2.5 3.8v8.4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V3.8M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2"/></svg></span><b class="mnode-name">cache</b><i class="mnode-dot"></i></p><p class="mnode-sum">Sessions, 24 h</p></div>
+                        <p class="mnode-tags mnode-tags--r"><span class="mtag is-new" data-at="5.25">NEW</span></p>
+                      </div>
+                      <div class="mnode k-queue" data-at="0.52" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:3.35,3.6" style="--hue:#9ece6a;left:468px;top:266px;width:196px;height:60px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="1.5" y="5" width="13" height="6" rx="3"/><path d="M5 5v6M8 5v6M11 5v6"/></svg></span><b class="mnode-name">queue</b><i class="mnode-dot"></i></p><p class="mnode-sum">Jobs for the worker</p></div>
+                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:3.35,3.6">4</span>
+                      </div>
+                      <div class="mnode k-external" data-at="0.6" data-cls="is-flow:1.45,3.6;is-step:2.5,2.9" style="--hue:#bb9af7;left:732px;top:64px;width:228px;height:84px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M4.5 12.5a3 3 0 0 1-.3-6 4 4 0 0 1 7.7-.7 2.8 2.8 0 0 1 .3 5.6z"/></svg></span><b class="mnode-name">payments</b><i class="mnode-dot"></i></p><p class="mnode-sum">Card charges and refunds</p><p class="mnode-meta"><span class="mnode-kindword">external</span><span class="mpip t-cost">2.9% <b>/ charge</b></span></p></div>
+                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:2.5,2.9">↗</span>
+                      </div>
+                      <div class="mnode k-external" data-at="0.66" style="--hue:#bb9af7;left:732px;top:218px;width:228px;height:84px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M4.5 12.5a3 3 0 0 1-.3-6 4 4 0 0 1 7.7-.7 2.8 2.8 0 0 1 .3 5.6z"/></svg></span><b class="mnode-name">email</b><i class="mnode-dot"></i></p><p class="mnode-sum">Receipts and password resets</p><p class="mnode-meta"><span class="mnode-kindword">external</span></p></div>
+                      </div>
+                      <div class="mnode k-infra" data-at="0.72" data-status="ok" style="--hue:#e0af68;left:40px;top:404px;width:206px;height:82px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">DNS</b><i class="mnode-dot"></i></p><p class="mnode-sum">Domain and TLS certificates</p></div>
+                      </div>
+                      <div class="mnode k-infra" data-at="0.78" data-status="ok" style="--hue:#e0af68;left:276px;top:404px;width:206px;height:82px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">hosting</b><i class="mnode-dot"></i></p><p class="mnode-sum">Runs the web app, API and worker</p></div>
+                      </div>
+                      <div class="mnode k-infra" data-at="0.84" data-status="warn" style="--hue:#e0af68;left:512px;top:404px;width:206px;height:82px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">CI</b><i class="mnode-dot"></i></p><p class="mnode-sum">Tests and deploys on every push</p><p class="mnode-meta"><span class="mpip t-risk">1 flaky test</span></p></div>
+                      </div>
+                      <div class="mnode k-infra" data-at="0.9" data-status="ok" style="--hue:#e0af68;left:748px;top:404px;width:212px;height:82px">
+                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">secrets</b><i class="mnode-dot"></i></p><p class="mnode-sum">Keys for payments and email</p></div>
+                      </div>
+
+                      <!-- lines: drawn above the parts, user → used -->
+                      <svg class="medges" viewBox="0 0 1000 524" aria-hidden="true">
+                        <g class="me" data-at="0.85" data-pts="200,110 236,110" data-flow="1.6,1.95" data-cls="is-flow:1.45,3.6;show-label:1.55,2.5;is-blast:6.4,7.6"><text>calls</text></g>
+                        <g class="me" data-at="0.95" data-pts="372,64 372,10 846,10 846,64" data-flow="2.0,2.5" data-cls="is-flow:1.45,3.6;show-label:2.0,2.95"><text>charges</text></g>
+                        <g class="me" data-at="0.9" data-pts="400,96 468,96" data-flow="2.6,2.9" data-cls="is-flow:1.45,3.6;show-label:2.6,3.35;is-blast:6.4,7.6;show-label:6.4,7.6"><text>reads/writes</text></g>
+                        <g class="me" data-at="1.0" data-pts="400,146 428,146 428,280 468,280" data-flow="3.0,3.35" data-cls="is-flow:1.45,3.6;show-label:3.0,3.6"><text>enqueues</text></g>
+                        <g class="me" data-at="1.05" data-pts="400,300 468,300"><text>consumes</text></g>
+                        <g class="me" data-at="1.1" data-pts="318,310 318,352 846,352 846,302"><text>sends</text></g>
+                        <g class="me" data-at="1.15" data-pts="246,445 276,445"><text>points to</text></g>
+                        <g class="me" data-at="1.2" data-pts="512,445 482,445"><text>deploys to</text></g>
+                        <g class="me" data-at="1.25" data-pts="718,445 748,445"><text>reads</text></g>
+                        <g class="me me--new" data-at="5.35" data-pts="400,122 440,122 440,214 468,214" data-lab="447,173,start" data-cls="show-label:5.5,6.4;is-hot:5.35,6.4;is-then:8.2,8.8"><text>stores sessions</text></g>
+                      </svg>
+                    </div>
+
+                    <!-- chrome on the canvas -->
+                    <div class="mhud mhud--tl" data-at="0">
+                      <span class="mhud__g"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg></span>
+                      <span class="mhud__t"><b>shop</b><small data-seq="0|surveying…;1.2|11 parts · up to date;5.3|12 parts · 1 new, 1 changed;8.2|v16 · yesterday;8.8|12 parts · 1 new, 1 changed"></small></span>
+                    </div>
+                    <div class="mhud mhud--tr" data-at="0.1">
+                      <span class="mbtn" data-cls="is-on:1.45,3.6"><svg viewBox="0 0 16 16"><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="4" r="1.5"/><circle cx="13" cy="12" r="1.5"/><path d="M4.5 8h3.5M8 8c1.5 0 2-4 3.5-4M8 8c1.5 0 2 4 3.5 4"/></svg>Flows</span>
+                      <span class="mbtn" data-cls="is-on:6.4,7.6"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="4.5" stroke-dasharray="2 1.6"/><circle cx="8" cy="8" r="7" stroke-dasharray="1.5 2"/></svg>Blast</span>
+                      <span class="mbtn" data-cls="is-on:7.7,9.6"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>Timeline</span>
+                      <span class="mbtn mbtn--acc"><svg viewBox="0 0 16 16"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5z"/></svg>Ask</span>
+                    </div>
+
+                    <!-- one line along the bottom: the flow, the blast, the timeline -->
+                    <div class="mbar mbar--flow" data-at="1.45" data-until="3.6">
+                      <span class="mbar__k">Flow · Checkout</span>
+                      <span class="mbar__s" data-seq="0|;1.5|The web app sends the cart to the API;1.95|The API charges the card;2.5|Payment ok · the API saves the order;2.9|The API queues the receipt email;3.35|4 steps · 1 external call"></span>
+                      <span class="mbar__dots"><i data-cls="is-now:1.5,1.95;is-done:1.95,9"></i><i data-cls="is-now:1.95,2.5;is-done:2.5,9"></i><i data-cls="is-now:2.5,2.9;is-done:2.9,9"></i><i data-cls="is-now:2.9,3.35;is-done:3.35,9"></i></span>
+                    </div>
+                    <div class="mbar mbar--blast" data-at="6.45" data-until="7.6">
+                      <span class="mbar__k">If database goes down</span>
+                      <span class="mbar__s"><b>API</b> fails first, then the <b>web app</b>. Checkout stops.</span>
+                    </div>
+                    <div class="mbar mbar--tl" data-at="7.7">
+                      <span class="mbar__k">Timeline</span>
+                      <span class="mtl2"><i style="left:0%"></i><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i><i style="left:100%"></i><b class="mtl2__fill" data-cls="is-past:7.95,8.75"></b><b class="mtl2__knob" data-cls="is-past:7.95,8.75"></b></span>
+                      <span class="mbar__v" data-seq="0|v17 · now;8.15|v16 · yesterday;8.8|v17 · now · +cache, API changed"></span>
+                    </div>
+
+                    <div class="mstrip" data-at="0.2">
+                      <span class="mstrip__live"><em class="mstrip__quiet" data-until="4.3">no one working here</em><span class="mstrip__chip" data-at="4.3"><i></i><b>api</b> on API</span></span>
+                      <span class="mstrip__ev"><i class="is-add">+</i>worker <small>yesterday</small></span>
+                      <span class="mstrip__ev"><i class="is-warn">!</i>CI · 1 flaky test <small>2 h</small></span>
+                      <span class="mstrip__ev is-fresh" data-at="4.8"><i class="is-delta">Δ</i>API · auth with refresh tokens <small>now</small></span>
+                      <span class="mstrip__ev is-fresh is-major" data-at="5.4"><i class="is-add">+</i>cache <small>now</small></span>
                     </div>
                   </div>
                 </div>
-
                 <!-- ===== extra scenes, used by "See it work" ===== -->
                 <div class="scene scene--cli" data-scene="cli">
                   <div class="pick">

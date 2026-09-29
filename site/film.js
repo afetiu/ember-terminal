@@ -62,10 +62,16 @@ const SCENES = {
     },
   },
   map: {
-    dur: 8.4, still: 6.8, sel: 'api',
-    cam: [[0, 700, 360, 1.25], [2.6, 700, 360, 1.25], [3.3, 585, 260, 1.7], [4.6, 585, 250, 1.7], [5.2, 720, 520, 1.45], [6.6, 720, 520, 1.45], [7.4, 700, 360, 1.25]],
+    dur: 9.6, still: 5.8, sel: 'api',
+    // On a phone the window camera just frames the map; the map's own camera does the moving.
+    cam: [[0, 720, 360, 1.22]],
+    // The map's camera, in map coordinates: [t, x, y, zoom]. Whole system, the flow, into
+    // the API while a session edits it, out again for the blast and the timeline.
+    mcam: [[0, 500, 262, 1.02], [1.3, 500, 262, 0.9], [3.6, 500, 262, 0.9], [4.3, 390, 160, 1.42], [5.1, 390, 170, 1.42], [5.6, 430, 200, 1.3], [6.05, 430, 200, 1.3], [6.5, 500, 262, 0.9]],
+    mcamS: [[0, 500, 262, 0.84], [1.3, 500, 262, 0.84], [1.7, 250, 130, 1.55], [2.0, 250, 110, 1.55], [2.45, 620, 110, 1.25], [2.7, 620, 110, 1.25], [3.05, 470, 190, 1.5], [3.6, 470, 200, 1.5], [4.3, 360, 145, 1.8], [5.1, 360, 150, 1.8], [5.6, 440, 180, 1.55], [6.1, 440, 180, 1.55], [6.5, 350, 170, 1.3], [7.6, 350, 170, 1.3], [8.0, 500, 262, 0.9]],
+    mstill: [500, 262, 0.9],
     cards: {
-      api: [[0, 'working', null, 'editing auth']],
+      api: [[0, 'idle', null, 'idle'], [3.7, 'working', null, 'editing auth']],
       docs: [[0, 'attention', 'handoff', 'done']],
       web: idle(),
       scratch: idle(),
@@ -92,6 +98,10 @@ const SCENES = {
 }
 
 const SEEDS = { api: 0.3, docs: 1.7, web: 2.9, scratch: 4.1 }
+const MINI = { state: 'working', attention: null }
+// Where the map's camera looks from: the middle of the canvas between its top and bottom bars.
+const MAP_CX = 480
+const MAP_CY = 318
 
 function fmt(s) {
   s = Math.max(0, Math.floor(s))
@@ -111,6 +121,79 @@ function offsetIn(el, root) {
 
 function parseTimes(s) {
   return s.split(';').filter(Boolean).map((p) => p.split(',').map(Number))
+}
+
+// ---- the map's lines ------------------------------------------------------------------
+// Each <g class="me" data-pts="x,y x,y …"> is an orthogonal route (as the app's layout
+// hands them over). Here it becomes what the app draws: a dark halo, the line with rounded
+// corners, a notched arrowhead at the used end, its label on the longest run, and, for a
+// line on a traced flow (data-flow="from,to"), a pulse of light that travels it.
+const SVGNS = 'http://www.w3.org/2000/svg'
+
+function roundedPath(pts, r) {
+  let d = `M${pts[0][0]} ${pts[0][1]}`
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1]
+    const a = Math.min(r, Math.hypot(x - px, y - py) / 2, Math.hypot(nx - x, ny - y) / 2)
+    const ux = Math.sign(x - px), uy = Math.sign(y - py), vx = Math.sign(nx - x), vy = Math.sign(ny - y)
+    d += ` L${x - ux * a} ${y - uy * a} Q${x} ${y} ${x + vx * a} ${y + vy * a}`
+  }
+  const [lx, ly] = pts[pts.length - 1]
+  return `${d} L${lx} ${ly}`
+}
+
+function buildEdges(root) {
+  for (const g of root.querySelectorAll('.me[data-pts]')) {
+    const pts = g.dataset.pts.trim().split(/\s+/).map((p) => p.split(',').map(Number))
+    const n = pts.length
+    const [ex, ey] = pts[n - 1]
+    const [bx, by] = pts[n - 2]
+    const len = Math.hypot(ex - bx, ey - by) || 1
+    const ux = (ex - bx) / len, uy = (ey - by) / len
+    // The line stops where the arrowhead's notch starts, so the tip stays sharp.
+    const cut = pts.map((p) => p.slice())
+    cut[n - 1] = [ex - ux * 6, ey - uy * 6]
+    const d = roundedPath(cut, 12)
+    const mk = (tag, cls, attrs) => {
+      const el = document.createElementNS(SVGNS, tag)
+      el.setAttribute('class', cls)
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      return el
+    }
+    const halo = mk('path', 'me__halo', { d })
+    const line = mk('path', 'me__l', { d, pathLength: '1' })
+    // notched head, 10 long, 9 wide, tip on the part's edge
+    const px = -uy, py = ux
+    const at = (along, side) => `${(ex - ux * along + px * side).toFixed(1)} ${(ey - uy * along + py * side).toFixed(1)}`
+    const head = mk('path', 'me__a', { d: `M${at(0, 0)} L${at(10, 4.5)} L${at(7.4, 0)} L${at(10, -4.5)} Z` })
+    const label = g.querySelector('text')
+    g.prepend(halo, line, head)
+    if (label) {
+      // On the longest run, over the line on its halo; a short hop between two parts
+      // is too narrow for that, so its label sits just above it.
+      let best = 0, lx = 0, ly = 0, flat = false
+      for (let i = 1; i < n; i++) {
+        const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+        if (l > best) { best = l; lx = (pts[i][0] + pts[i - 1][0]) / 2; ly = (pts[i][1] + pts[i - 1][1]) / 2; flat = pts[i][1] === pts[i - 1][1] }
+      }
+      label.setAttribute('class', 'me__t')
+      label.setAttribute('x', String(lx))
+      label.setAttribute('y', String(flat && best < 100 ? ly - 10 : ly))
+      // a hand-placed spot, where the route runs past something the label would cover
+      if (g.dataset.lab) {
+        const [x, y, anchor] = g.dataset.lab.split(',')
+        label.setAttribute('x', x)
+        label.setAttribute('y', y)
+        if (anchor) label.style.textAnchor = anchor
+      }
+      g.append(label)
+    }
+    if (g.dataset.flow) {
+      const pulse = mk('path', 'mp mp--flow', { d: roundedPath(pts, 12), pathLength: '1' })
+      pulse.dataset.pulse = g.dataset.flow
+      g.append(pulse)
+    }
+  }
 }
 
 class Film {
@@ -148,6 +231,11 @@ class Film {
       text: '',
     }))
 
+    // The map's lines, and the little Cinders that ride on its live-session chips.
+    buildEdges(root)
+    this.minis = [...root.querySelectorAll('canvas[data-cinder]')].map((c) => c.getContext('2d'))
+    this.mworld = root.querySelector('.mworld')
+
     // Timed elements, grouped by the scene that owns them.
     this.parts = {}
     this.items = {}
@@ -155,12 +243,21 @@ class Film {
       const name = part.dataset.scene
       ;(this.parts[name] ||= []).push(part)
       const list = (this.items[name] ||= [])
-      const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse]')]
+      const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse],[data-cls]')]
       if (part.matches('[data-at],[data-until]')) els.unshift(part)
       for (const el of els) {
         const it = { el }
         if (el.dataset.at != null) it.at = +el.dataset.at
         if (el.dataset.until != null) it.until = +el.dataset.until
+        if (el.dataset.cls) {
+          // "class:from,to;class:from,to" — the class is on inside any of its windows
+          it.cls = el.dataset.cls.split(';').filter(Boolean).map((p) => {
+            const [c, r] = p.split(':')
+            const [a, b] = r.split(',').map(Number)
+            return [c, a, b ?? Infinity]
+          })
+          it.names = [...new Set(it.cls.map((c) => c[0]))]
+        }
         if (el.dataset.type) {
           it.type = el.dataset.type.split(',').map(Number)
           it.full = el.textContent
@@ -176,14 +273,6 @@ class Film {
         if (el.dataset.pulse) it.pulse = parseTimes(el.dataset.pulse)
         list.push(it)
       }
-    }
-
-    // Map nodes fly in from the middle of the map.
-    for (const n of root.querySelectorAll('.mn')) {
-      const cx = parseFloat(n.style.left) + parseFloat(n.style.width) / 2
-      const cy = parseFloat(n.style.top) + 24
-      n.style.setProperty('--dx', `${480 - cx}px`)
-      n.style.setProperty('--dy', `${230 - cy}px`)
     }
 
     const ro = new ResizeObserver(() => { this.layout(); this.frame() })
@@ -319,6 +408,13 @@ class Film {
       const { el } = it
       if (it.at != null) el.classList.toggle('on', t >= it.at)
       if (it.until != null) el.classList.toggle('gone', t >= it.until)
+      if (it.cls) {
+        for (const c of it.names) {
+          let on = false
+          for (const [n, a, b] of it.cls) if (n === c && t >= a && t < b) on = true
+          el.classList.toggle(c, on)
+        }
+      }
       if (it.type) {
         const [a, b] = it.type
         const len = it.full.length
@@ -366,6 +462,7 @@ class Film {
   drawCards() {
     const time = this.static ? 1.3 : this.clock
     for (const c of this.cards) drawMascot(c.ctx, 76, c.mood, time, SEEDS[c.name] || 0)
+    if (this.order[this.idx] === 'map') for (const ctx of this.minis) drawMascot(ctx, 76, MINI, time, SEEDS.api)
   }
 
   point(target) {
@@ -399,8 +496,7 @@ class Film {
     cur.classList.toggle('click', click)
   }
 
-  camAt(sc, t) {
-    const kfs = sc.cam
+  camAt(sc, t, kfs = sc.cam) {
     let i = 0
     while (i < kfs.length - 1 && t >= kfs[i + 1][0]) i++
     const a = kfs[i]
@@ -430,6 +526,17 @@ class Film {
     const tx = this.vw / 2 - cx * s
     const ty = this.vh / 2 - cy * s
     this.win.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})`
+
+    // The map zooms and pans inside its own canvas, the way the app's map does; a phone
+    // gets a closer camera that follows the action.
+    if (sc.mcam && this.mworld) {
+      let m
+      if (this.static && sc.mstill) m = { cx: sc.mstill[0], cy: sc.mstill[1], z: sc.mstill[2] }
+      else m = this.camAt(sc, t, this.small && sc.mcamS ? sc.mcamS : sc.mcam)
+      const mx = MAP_CX - m.cx * m.z
+      const my = MAP_CY - m.cy * m.z
+      this.mworld.style.transform = `translate(${mx.toFixed(2)}px, ${my.toFixed(2)}px) scale(${m.z.toFixed(4)})`
+    }
   }
 
   updateTheme(sc, t) {
