@@ -26,10 +26,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1.0.3">
+<link rel="stylesheet" href="styles.css?v=1.0.4">
 <link rel="modulepreload" href="assets/cinder.js">
-<script src="main.js?v=1.0.3" defer></script>
-<script src="film.js?v=1.0.3" type="module"></script>
+<script src="main.js?v=1.0.4" defer></script>
+<script src="film.js?v=1.0.4" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -76,13 +76,13 @@
     </div>
   </div>
 
-  <!-- ===== The film: one Ember window, four beats. Timings live in data-at / data-until /
+  <!-- ===== The film: one Ember window, five beats. Timings live in data-at / data-until /
        data-type (seconds into the beat) and are played by film.js. Without JS the first
        beat shows as a still. ===== -->
   <div class="wrap hero__stage">
     <div class="film" data-film="hero">
       <div class="film__view">
-        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
+        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
           <div class="win__bar">
             <span class="win__menu"></span>
             <span class="win__title"><i class="glowdot"></i>Ember</span>
@@ -123,6 +123,8 @@
                 <p class="crumb__i is-active" data-scene="panel"><b>api</b> <span>~/code/api</span> <em>main ↑1</em></p>
                 <p class="crumb__i" data-scene="orch"><b>api</b> <span>│</span> <b>docs</b> <em>split</em></p>
                 <p class="crumb__i" data-scene="todo"><b>Todo</b> <span>over api</span> <em>Ctrl Shift D</em></p>
+                <p class="crumb__i" data-scene="notes" data-cls="is-hid:2.0,7.4"><b>api</b> <span>~/code/api</span> <em>main</em></p>
+                <p class="crumb__i" data-scene="notes" data-cls="is-hid:0,2.0;is-hid:7.4,99"><b>Notes</b> <span>over api</span> <em>Documents\Ember Notes</em></p>
                 <p class="crumb__i" data-scene="map"><b>Map</b> <span>shop</span> <em>Ctrl Shift G</em></p>
                 <p class="crumb__i" data-scene="cli"><b>New session</b> <span>pick a CLI</span></p>
                 <p class="crumb__i" data-scene="splits"><b>api</b> <span>~/code/api</span> <em>3 panes</em></p>
@@ -199,7 +201,7 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 3: todo & notes ===== -->
+                <!-- ===== BEAT 3: the todo list ===== -->
                 <div class="scene scene--todo" data-scene="todo">
                   <div class="todo">
                     <div class="todo__head">
@@ -220,21 +222,64 @@
                     </ul>
                     <p class="todo__arch mono flip" data-at="5.3"><span data-seq="0|▸ archive · 12;5.3|▸ archive · 15"></span></p>
                   </div>
-                  <div class="notes" data-at="5.4">
-                    <p class="notes__h"><b>Notes</b><span class="mono" data-seq="0|2;5.8|3"></span></p>
-                    <ul class="notes__list">
-                      <li>Auth flow</li>
-                      <li>Release checklist</li>
-                      <li class="notes__new" data-at="5.8">Login redirect fix <em class="mono">by api</em></li>
-                    </ul>
-                    <div class="notes__body" data-at="6.0">
-                      <p class="nb-h mono"># Login redirect fix</p>
-                      <p class="nb-p"><span data-type="6.1,7.3">Cookie path was /app, so ?next= got lost. Now /. 42 tests pass.</span></p>
-                    </div>
-                  </div>
                 </div>
 
-                <!-- ===== BEAT 4: the map =====
+                <!-- ===== BEAT 4: notes =====
+                     Built like the app's Notes (ui/Notes.ts): one surface over the tab with two
+                     states, a page editor and the list, never side by side. The api session
+                     writes the fix up with the notes command; `notes new --open` lays the page
+                     over its own tab, each `notes append` lands on it live (the folder is
+                     watched), and Esc hands back the shell, which kept running underneath. ===== -->
+                <div class="scene scene--notes" data-scene="notes">
+                  <div class="term">
+                    <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
+                    <p class="t-dim"><span class="c-acc">❯</span> fix the login redirect loop</p>
+                    <p class="t-say t-dim">Done. ?next= now survives the login.</p>
+                    <p class="t-gap"></p>
+                    <p data-at="0.15"><span class="c-acc">❯</span> <span data-type="0.35,1.3">write the fix up in a note</span></p>
+                    <p class="t-tool" data-at="1.6"><span class="c-acc">●</span> Bash <span class="c-yl">notes new --open "Login redirect fix"</span></p>
+                    <p class="t-tool" data-at="2.7"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "What broke: …"</span></p>
+                    <p class="t-tool" data-at="3.6"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "Fix: …"</span></p>
+                    <p class="t-tool" data-at="4.5"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "Tests: …"</span></p>
+                    <p class="t-say" data-at="5.0">Wrote it up in <span class="c-cy">Login redirect fix.md</span>.</p>
+                  </div>
+
+                  <div class="nv" data-at="2.0" data-until="7.4">
+                    <!-- the page -->
+                    <div class="nv__edit" data-cls="is-off:5.75,99">
+                      <p class="nv__bar">
+                        <span class="nv__btn" data-cursor="allnotes" data-cls="is-press:5.62,5.8">← All notes</span>
+                        <span class="nv__status"></span>
+                        <span class="nv__btn">List</span>
+                        <span class="nv__btn">Show file</span>
+                        <span class="nv__btn">Delete</span>
+                      </p>
+                      <div class="nv__page mono">
+                        <p class="nv__l">Login redirect fix</p>
+                        <p class="nv__l nv__add" data-at="2.8">What broke: the login page dropped ?next= on the way back, because the session cookie's path was /app.</p>
+                        <p class="nv__l nv__add" data-at="3.7">Fix: the cookie path is now /, in src/auth/redirect.ts (+4 −2).</p>
+                        <p class="nv__l nv__add" data-at="4.6">Tests: 42 pass. The docs session updated auth.md.</p>
+                      </div>
+                    </div>
+                    <!-- the list -->
+                    <div class="nv__list" data-cls="is-off:0,5.75">
+                      <p class="nv__head">
+                        <b>Notes</b><span class="nv__count">3</span>
+                        <span class="nv__search">Search notes</span>
+                        <span class="nv__btn nv__btn--new">New note</span>
+                        <span class="nv__btn">Open folder</span>
+                      </p>
+                      <div class="nv__rows">
+                        <p class="nv__row is-fresh"><b>Login redirect fix</b><span>just now</span><em>What broke: the login page dropped ?next= on the way back, because the session cookie's path was /app.</em></p>
+                        <p class="nv__row"><b>Auth flow</b><span>2h ago</span><em>Requests pass the gateway, then verifyToken() checks the session.</em></p>
+                        <p class="nv__row"><b>Release checklist</b><span>yesterday</span><em>Bump the version, tag it, draft the release notes.</em></p>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="keycap keycap--mid mono" data-at="6.95" data-until="7.75"><kbd>Esc</kbd></p>
+                </div>
+
+                <!-- ===== BEAT 5: the map =====
                      Built like the app's Map: areas are soft zones, parts are cards shaped by
                      kind, lines are routed orthogonally through the gaps and drawn above the
                      cards. Coordinates are the map's own; film.js moves a camera over them
@@ -446,8 +491,9 @@
       <div class="film__nav" role="group" aria-label="Film chapters">
         <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="orch"><span class="beat__n">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span><span class="beat__full">Todo &amp; notes</span><span class="beat__short" aria-hidden="true">Todo</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="map"><span class="beat__n">4</span>Map<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span>Todo<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="notes"><span class="beat__n">4</span>Notes<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="map"><span class="beat__n">5</span>Map<i class="beat__bar"><b></b></i></button>
         <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
     </div>
@@ -472,7 +518,8 @@
     <div class="see__tabs" role="tablist" aria-label="Features">
       <button type="button" role="tab" class="stab" data-demo="panel" aria-selected="true" aria-controls="see-stage">Panel</button>
       <button type="button" role="tab" class="stab" data-demo="orch" aria-selected="false" aria-controls="see-stage" tabindex="-1">Orchestrator</button>
-      <button type="button" role="tab" class="stab" data-demo="todo" aria-selected="false" aria-controls="see-stage" tabindex="-1">Todo &amp; notes</button>
+      <button type="button" role="tab" class="stab" data-demo="todo" aria-selected="false" aria-controls="see-stage" tabindex="-1">Todo</button>
+      <button type="button" role="tab" class="stab" data-demo="notes" aria-selected="false" aria-controls="see-stage" tabindex="-1">Notes</button>
       <button type="button" role="tab" class="stab" data-demo="map" aria-selected="false" aria-controls="see-stage" tabindex="-1">Map</button>
       <button type="button" role="tab" class="stab" data-demo="cli" aria-selected="false" aria-controls="see-stage" tabindex="-1">Any CLI</button>
       <button type="button" role="tab" class="stab" data-demo="splits" aria-selected="false" aria-controls="see-stage" tabindex="-1">Splits &amp; themes</button>

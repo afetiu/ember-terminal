@@ -214,7 +214,7 @@ section p { color: var(--muted); }
 .win[data-theme="cat"] { --w-bg: #1e1e2e; --w-bar: #181825; --w-side: #181825; --w-term: #1e1e2e; --w-panel: #232336; --w-node: #313244; --w-text: #cdd6f4; --w-mut: #bac2de; --w-dim: #7f849c; --w-acc: #cba6f7; --w-rgb: 203, 166, 247; --w-cy: #89dceb; --w-pk: #f5c2e7; --w-yl: #f9e2af; --w-gr: #a6e3a1; }
 .win[data-theme="gruv"] { --w-bg: #282828; --w-bar: #1d2021; --w-side: #1d2021; --w-term: #282828; --w-panel: #32302f; --w-node: #3c3836; --w-text: #ebdbb2; --w-mut: #d5c4a1; --w-dim: #928374; --w-acc: #fe8019; --w-rgb: 254, 128, 25; --w-cy: #8ec07c; --w-pk: #d3869b; --w-yl: #fabd2f; --w-gr: #b8bb26; }
 .win[data-theme="nord"] { --w-bg: #2e3440; --w-bar: #272c36; --w-side: #272c36; --w-term: #2e3440; --w-panel: #353c4a; --w-node: #3b4252; --w-text: #d8dee9; --w-mut: #c2c9d6; --w-dim: #7b88a1; --w-acc: #88c0d0; --w-rgb: 136, 192, 208; --w-cy: #8fbcbb; --w-pk: #b48ead; --w-yl: #ebcb8b; --w-gr: #a3be8c; }
-.win, .win__bar, .side, .main, .crumb, .pnl, .notes, .pick, .pal, .scard, .sp__b, .sp__b2 { transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease; }
+.win, .win__bar, .side, .main, .crumb, .pnl, .nv, .pick, .pal, .scard, .sp__b, .sp__b2 { transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease; }
 .win p { margin: 0; color: inherit; }
 .win b { color: inherit; }
 
@@ -312,6 +312,7 @@ section p { color: var(--muted); }
 .crumb { position: relative; height: 36px; flex: none; border-bottom: 1px solid var(--w-line); background: rgba(0, 0, 0, 0.14); }
 .crumb__i { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 18px; font: 12px/1 var(--font-mono); color: var(--w-dim); opacity: 0; transition: opacity 0.45s; }
 .crumb__i.is-active { opacity: 1; }
+.crumb__i.is-active.is-hid { opacity: 0; }
 .crumb__i b { color: var(--w-text); font-weight: 600; }
 .crumb__i em { margin-left: auto; font-style: normal; font-size: 11px; }
 .scenes { position: relative; flex: 1; overflow: hidden; }
@@ -368,8 +369,8 @@ section p { color: var(--muted); }
 .term--sm { top: 32px; padding: 16px 18px; font-size: 12.5px; }
 .from { font-size: 10px; color: var(--w-acc); border: 1px solid rgba(var(--w-rgb), 0.4); border-radius: 4px; padding: 1px 6px; margin-left: 4px; vertical-align: 0.1em; white-space: nowrap; }
 
-/* beat 3: todo & notes */
-.todo { position: absolute; left: 0; top: 0; bottom: 0; width: 600px; padding: 26px 32px; }
+/* beat 3: the todo list */
+.todo { position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 640px; margin: 0 auto; padding: 26px 32px; }
 .todo__head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .todo__head h4 { font: 700 24px/1 var(--font-display); letter-spacing: -0.02em; }
 .todo__count { font-size: 12px; color: var(--w-dim); display: inline-block; }
@@ -404,20 +405,35 @@ section p { color: var(--muted); }
 .todo__arch { margin-top: 12px !important; font-size: 12px; color: var(--w-dim); transition: color 0.4s; }
 .todo__arch span { display: inline-block; }
 .todo__arch.on { color: var(--w-acc); }
-.notes { position: absolute; right: 0; top: 0; bottom: 0; width: 360px; padding: 24px 22px; background: var(--w-panel); border-left: 1px solid var(--w-line); box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.6); }
-.film.is-js .notes:not(.on) { transform: translateX(60px); }
-.scene .notes { transition: opacity 0.35s, transform 0.7s var(--spring), background-color 0.5s; }
-.notes__h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px !important; }
-.notes__h b { font: 700 20px/1 var(--font-display); }
-.notes__h span { font-size: 12px; color: var(--w-dim); }
-.notes__list { list-style: none; margin: 0; padding: 0; }
-.notes__list li { padding: 9px 10px; border-radius: 7px; font-size: 14px; color: var(--w-mut); }
-.notes__list li.notes__new { color: var(--w-text); background: rgba(var(--w-rgb), 0.1); box-shadow: inset 2px 0 0 var(--w-acc); }
-.notes__new em { font-style: normal; font-size: 10.5px; color: var(--w-acc); margin-left: 8px; }
-.film.is-js .notes__new:not(.on) { transform: translateY(-8px); }
-.notes__body { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--w-line); }
-.nb-h { font-size: 13px; color: var(--w-acc); margin-bottom: 6px !important; }
-.nb-p { font-size: 14px; line-height: 1.6; }
+/* beat 4: notes — the app's Notes over a tab (ui/Notes.ts, app.css .ember-notes-*): one
+   surface that is either the page or the list, laid over the terminal, which stays put. */
+.nv { position: absolute; inset: 0; z-index: 2; background: var(--w-term); }
+.film.is-js .nv:not(.on), .film.is-js .nv.gone { transform: translateY(10px); }
+.scene .nv { transition: opacity 0.35s, transform 0.6s var(--out), background-color 0.5s; }
+.nv__edit, .nv__list { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.25s; }
+.nv__edit.is-off, .nv__list.is-off { opacity: 0; visibility: hidden; }
+.nv__bar, .nv__head { display: flex; align-items: center; gap: 10px; flex: none; height: 56px; padding: 0 20px; border-bottom: 1px solid var(--w-line); }
+.nv__status { flex: 1; }
+.nv__btn { flex: none; padding: 6px 13px; border-radius: 6px; border: 1px solid var(--w-line2); color: var(--w-mut); font: 500 12.5px/1.2 var(--font-body); white-space: nowrap; transition: transform 0.15s, background-color 0.15s, color 0.15s; }
+.nv__btn--new { border-color: rgba(var(--w-rgb), 0.55); color: var(--w-text); }
+.nv__btn.is-press { transform: scale(0.94); background: var(--w-acc); border-color: var(--w-acc); color: #1c0f0a; }
+.nv__page { width: 100%; max-width: 680px; margin: 0 auto; padding: 30px 30px 40px; font-size: 15px; line-height: 1.7; color: var(--w-text); }
+.nv__l { white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 4px; }
+.nv__add { margin-top: 1.7em !important; }
+.nv__add.on { animation: newrow 1.8s ease-out; }
+.film.is-js .nv__add:not(.on) { transform: translateY(6px); }
+.nv__head b { font: 600 17px/1 var(--font-body); }
+.nv__count { font-size: 13px; color: var(--w-dim); }
+.nv__search { flex: 0 1 300px; min-width: 0; margin-left: auto; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--w-line2); background: rgba(0, 0, 0, 0.2); font-size: 13px; color: var(--w-dim); white-space: nowrap; overflow: hidden; }
+.nv__rows { padding: 8px; }
+.nv__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; padding: 12px 14px; border-radius: 9px; }
+.nv__row b { font-size: 15px; font-weight: 500; color: var(--w-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nv__row span { font-size: 12.5px; color: var(--w-dim); white-space: nowrap; }
+.nv__row em { grid-column: 1 / -1; font-style: normal; font-size: 13px; color: var(--w-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nv__list:not(.is-off) .nv__row.is-fresh { animation: newrow 1.8s ease-out; }
+.keycap.keycap--mid { top: 400px; right: auto; left: 448px; }
+/* On a phone the camera frames the middle of the tab, so the bars gather there too. */
+.film.is-small .nv__bar, .film.is-small .nv__head, .film.is-small .nv__rows { padding-left: 176px; padding-right: 176px; }
 
 /* beat 4: the map — the app's Map, in its own visual language (map-canvas.css):
    parts are cards shaped by kind with a status dot, areas are soft zones of their own hue,
@@ -707,7 +723,7 @@ section p { color: var(--muted); }
 .pal__list li.is-sel.on:not(.gone) { background: rgba(var(--w-rgb), 0.34); }
 
 /* ---------- chapter buttons under the hero film ---------- */
-.film__nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 48px; gap: 8px; margin: 16px auto 0; max-width: 760px; }
+.film__nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) 48px; gap: 8px; margin: 16px auto 0; max-width: 860px; }
 .beat {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 9px;
   min-height: 46px; padding: 0 12px; overflow: hidden;
@@ -727,12 +743,12 @@ section p { color: var(--muted); }
 .film__pause .i-play, .film.is-paused .film__pause .i-pause { display: none; }
 .film.is-paused .film__pause .i-play { display: block; }
 @media (max-width: 559px) {
-  .film__nav { grid-template-columns: repeat(4, minmax(0, 1fr)) 44px; gap: 6px; }
+  .film__nav { grid-template-columns: repeat(5, minmax(0, 1fr)) 44px; gap: 6px; }
   .beat { flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 0.8rem; min-height: 50px; text-align: center; }
   .beat__full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 @media (min-width: 560px) { .beat__short { display: none; } }
-@media (prefers-reduced-motion: reduce) { .film__pause { display: none; } .film__nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .film__pause { display: none; } .film__nav { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
 /* ---------- no API keys ---------- */
 .nokey { padding: clamp(56px, 7vw, 88px) 0; border-top: 1px solid var(--line); background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
@@ -766,6 +782,7 @@ section p { color: var(--muted); }
 .see__keys { display: inline-flex; }
 .see__keys kbd:first-child { margin-left: 0; }
 .see__nokey { font-size: 0.8rem; padding: 5px 10px; border-radius: 6px; color: var(--green); border: 1px solid rgba(110, 226, 179, 0.4); background: rgba(110, 226, 179, 0.06); }
+.see__cmd { font-size: 0.8rem; padding: 5px 10px; border-radius: 6px; color: var(--text); border: 1px solid var(--line-2); background: rgba(217, 210, 234, 0.04); }
 
 /* ---------- how it works ---------- */
 .how { padding: var(--s-section) 0; background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

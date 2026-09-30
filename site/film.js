@@ -51,12 +51,25 @@ const SCENES = {
     },
   },
   todo: {
-    dur: 8.2, still: 6.9, sel: 'api',
-    cam: [[0, 560, 330, 1.7], [5.2, 560, 330, 1.7], [5.9, 930, 320, 1.7]],
-    cursor: [[0.2, [620, 360]], [0.85, '[data-cursor=check]', 'click'], [1.3, [720, 330]]],
+    dur: 7.2, still: 6.0, sel: 'api',
+    cam: [[0, 720, 330, 1.7]],
+    cursor: [[0.2, [760, 360]], [0.85, '[data-cursor=check]', 'click'], [1.3, [860, 330]]],
     cards: {
-      api: [[0, 'idle', null, 'idle'], [5.8, 'working', null, 'writing a note']],
+      api: idle(),
       docs: [[0, 'working', null, 'working · {t}', 142]],
+      web: idle(),
+      scratch: idle(),
+    },
+  },
+  // The api session writes its fix up as a note. The page opens over its own tab, the
+  // appends land on it live, the list follows, and Esc gives the shell back.
+  notes: {
+    dur: 8.8, still: 5.0, sel: 'api',
+    cam: [[0, 560, 300, 1.6], [1.7, 560, 300, 1.6], [2.3, 720, 350, 1.6], [7.3, 720, 350, 1.6], [7.9, 560, 300, 1.6]],
+    cursor: [[4.95, [620, 300]], [5.65, '[data-cursor=allnotes]', 'click'], [6.2, [640, 330]]],
+    cards: {
+      api: [[0, 'idle', null, 'idle'], [1.35, 'working', null, 'working · {t}', 0], [2.6, 'working', null, 'writing a note'], [5.1, 'attention', 'handoff', 'done']],
+      docs: [[0, 'attention', 'handoff', 'done']],
       web: idle(),
       scratch: idle(),
     },
@@ -244,7 +257,7 @@ class Film {
       ;(this.parts[name] ||= []).push(part)
       const list = (this.items[name] ||= [])
       const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse],[data-cls]')]
-      if (part.matches('[data-at],[data-until]')) els.unshift(part)
+      if (part.matches('[data-at],[data-until],[data-cls]')) els.unshift(part)
       for (const el of els) {
         const it = { el }
         if (el.dataset.at != null) it.at = +el.dataset.at
@@ -553,7 +566,7 @@ class Film {
 
 // ---- the hero ------------------------------------------------------------------
 const heroRoot = document.querySelector('[data-film="hero"]')
-const BEATS = ['panel', 'orch', 'todo', 'map']
+const BEATS = ['panel', 'orch', 'todo', 'notes', 'map']
 /** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
 const HERO_SPEED = 0.7
 let hero = null
@@ -594,8 +607,9 @@ const CAPS = {
   panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
   orch: ['Say what you want done. It hands the work to your sessions.', ['Ctrl', 'Shift', 'M']],
   todo: ['AI fills the list from your sources, and clears what is done.', ['Ctrl', 'Shift', 'D']],
+  notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
   map: ['Your whole project, kept current. Sessions glow where they work.', ['Ctrl', 'Shift', 'G']],
-  cli: ['Runs the CLI you already use. Never asks for an API key.', null],
+  cli: ['Runs the CLI you already use. Never asks for an API key.', 'no API key'],
   splits: ['Split any pane. 49 themes re-tint the whole window.', ['Alt', 'Shift', '+']],
   palette: ['Every action is one command away. Agents can run them too.', ['Ctrl', 'K']],
 }
@@ -625,8 +639,15 @@ if (mount && demoView) {
     const [text, k] = CAPS[name]
     cap.textContent = text
     keys.replaceChildren()
-    if (k) for (const key of k) { const kbd = document.createElement('kbd'); kbd.textContent = key; keys.appendChild(kbd) }
-    else { const s = document.createElement('span'); s.className = 'see__nokey mono'; s.textContent = 'no API key'; keys.appendChild(s) }
+    // Keys are a shortcut; a string is a badge: the promise for "Any CLI", the command for
+    // a surface that has none of its own.
+    if (Array.isArray(k)) for (const key of k) { const kbd = document.createElement('kbd'); kbd.textContent = key; keys.appendChild(kbd) }
+    else if (k) {
+      const s = document.createElement('span')
+      s.className = k === 'no API key' ? 'see__nokey mono' : 'see__cmd mono'
+      s.textContent = k
+      keys.appendChild(s)
+    }
   }
   tabs.forEach((tab, i) => {
     tab.addEventListener('click', () => select(tab))
