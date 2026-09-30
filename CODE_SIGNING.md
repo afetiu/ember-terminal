@@ -1,22 +1,23 @@
 # Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by
-[SignPath Foundation](https://signpath.org).
+**Ember's releases are not code signed yet.** Windows SmartScreen may warn the first time
+you run the installer: choose "More info", then "Run anyway". Ember installs for your user
+only and never asks for admin rights.
 
-## What is signed
+## How to check a download
 
-Every Windows release of Ember published on this repository's
-[Releases](https://github.com/afetiu/ember-terminal/releases) page and linked from
-https://ember.deepanswerlabs.com:
+Every Windows release on this repository's
+[Releases](https://github.com/afetiu/ember-terminal/releases) page, and linked from
+https://ember.deepanswerlabs.com, is built from this repository's source by GitHub Actions
+([`.github/workflows/release.yml`](.github/workflows/release.yml)). Nothing built on a
+personal machine is published. Each release carries `SHA256SUMS.txt`; compare it with
 
-- `Ember.exe`, inside the installer and the portable `.zip` / `.tar.gz`
-- `Ember-Setup-win-x64.exe`, the installer
+```powershell
+Get-FileHash .\Ember-Setup-win-x64.exe -Algorithm SHA256
+```
 
-Binaries are built from this repository's source by GitHub Actions
-([`.github/workflows/release.yml`](.github/workflows/release.yml)) and submitted to
-SignPath from that build; nothing built on a personal machine is signed. The artifact
-configurations are in [`.signpath/`](.signpath). Third-party binaries that ship with the
-app (Electron's runtime, ConPTY) are left as their authors published them.
+The release workflow is ready to sign through a code-signing service once one is in place;
+this page will say so when releases are signed.
 
 ## Team roles
 

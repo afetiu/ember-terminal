@@ -127,7 +127,7 @@
   </table></div>
   <p>All three always point at the latest release on <a data-releases href="https://github.com/afetiu/ember-terminal/releases">GitHub Releases</a>, where you also find <code>SHA256SUMS.txt</code> to check the files. The portable builds keep their settings in <code>~/.ember</code> like the installed one, so nothing is written next to the exe.</p>
   <div class="note">
-    <p><strong>SmartScreen.</strong> Releases are signed through the SignPath Foundation. If Windows still warns the first time you run the installer, choose <b>More info</b>, then <b>Run anyway</b>.</p>
+    <p><strong>SmartScreen.</strong> Releases are not code signed yet, so Windows may warn the first time you run the installer, choose <b>More info</b>, then <b>Run anyway</b>.</p>
   </div>
   <p>Ember replaces the window, not your shell. It starts <strong>PowerShell 7</strong> (<code>pwsh.exe</code>) through the same ConPTY Windows Terminal uses, so your profile, modules, oh-my-posh and PSReadLine behave as before. If PowerShell 7 is not installed, it falls back to Windows PowerShell.</p>
 </section>
@@ -771,7 +771,6 @@ desk halt | desk resume | desk status          <span class="c">the STOP switch</
       <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md">Code signing policy</a>
       <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">Privacy</a>
     </p>
-    <p class="foot__fine">Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
     <p class="foot__fine">Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode and GitHub Copilot CLI are trademarks of their respective owners. Ember isn't affiliated with any of them.</p>
   </div>
 </footer>

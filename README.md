@@ -32,11 +32,9 @@ modules and PSReadLine behave exactly as before.
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by
-[SignPath Foundation](https://signpath.org). Releases are built from this repository by
-GitHub Actions and every signing request is approved by hand — see
-[CODE_SIGNING.md](CODE_SIGNING.md) for what is signed, the team roles and the privacy
-policy.
+Releases are not code signed yet. They are built from this repository by GitHub Actions
+and ship with `SHA256SUMS.txt` — see [CODE_SIGNING.md](CODE_SIGNING.md) for how to check a
+download, the team roles and the privacy policy.
 
 ## What's actually different
 
