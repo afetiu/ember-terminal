@@ -111,7 +111,11 @@ kbd {
 .topnav { display: flex; gap: 26px; margin-left: auto; }
 .topnav a { color: var(--muted); text-decoration: none; font-size: 0.94rem; padding: 10px 0; }
 .topnav a:hover { color: var(--text); }
-@media (max-width: 719px) { .topnav { display: none; } .topbar__inner .btn { margin-left: auto; } }
+@media (max-width: 719px) {
+  .topnav { gap: 0; }
+  .topnav a:not(.topnav__docs) { display: none; }
+  .topnav a { padding: 12px 4px; }
+}
 
 /* ---------- section scaffolding ---------- */
 section { position: relative; }
@@ -812,7 +816,7 @@ section p { color: var(--muted); }
 .foot p { margin: 0; color: var(--muted); }
 .foot a { color: var(--text); text-decoration-color: rgba(255, 154, 99, 0.6); text-underline-offset: 3px; }
 .foot a:hover { color: var(--accent); }
-.foot__links { display: flex; gap: 20px; }
+.foot__links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .foot__fine { font-size: 0.82rem; color: var(--dim) !important; }
 
 /* ---------- reveal on scroll ---------- */

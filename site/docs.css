@@ -1,0 +1,106 @@
+/* Ember docs — loaded after styles.css, reuses its tokens. Plain CSS, no build step. */
+
+.topnav a[aria-current="page"] { color: var(--text); }
+
+/* ---------- page head ---------- */
+.dochead { padding: clamp(40px, 6vw, 72px) 0 clamp(28px, 4vw, 40px); border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+.dochead h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); letter-spacing: -0.03em; margin-bottom: 14px; }
+.dochead p { color: var(--muted); max-width: 44rem; margin: 0; }
+.dochead .eyebrow { margin-bottom: 16px; }
+
+/* ---------- layout ---------- */
+.docs { display: grid; gap: 0; padding-top: 24px; padding-bottom: var(--s-section); }
+@media (min-width: 1000px) {
+  .docs { grid-template-columns: 232px minmax(0, 1fr); gap: 56px; padding-top: 40px; }
+}
+
+/* ---------- table of contents ---------- */
+.toc { font-size: 0.92rem; }
+.toc__toggle { display: none; }
+.toc__title { font: 600 0.78rem/1 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); margin: 0 0 12px; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc > .toc__list > li { margin-bottom: 14px; }
+.toc__group { display: block; font-weight: 600; color: var(--text); margin-bottom: 4px; font-size: 0.86rem; }
+.toc a { display: block; padding: 5px 0 5px 12px; color: var(--muted); text-decoration: none; border-left: 1px solid var(--line-2); line-height: 1.35; }
+.toc a:hover { color: var(--text); border-left-color: rgba(255, 154, 99, 0.5); }
+.toc a.is-current { color: var(--accent); border-left: 2px solid var(--accent); padding-left: 11px; }
+
+@media (min-width: 1000px) {
+  .toc { position: sticky; top: 84px; align-self: start; max-height: calc(100vh - 104px); overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: var(--surface-2) transparent; }
+}
+
+/* Mobile: the list collapses behind a button (only when JS is there to open it). */
+@media (max-width: 999px) {
+  .toc { position: sticky; top: 60px; z-index: 10; margin: 0 calc(var(--gutter) * -1) 8px; padding: 0 var(--gutter); background: rgba(18, 13, 28, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .js .toc__toggle {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    min-height: 48px; padding: 0; background: none; border: 0; cursor: pointer;
+    font: 600 0.95rem/1.2 var(--font-body); color: var(--text); text-align: left;
+  }
+  .toc__toggle span:first-child { flex: none; }
+  .toc__toggle span:last-child { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .toc__toggle::after { content: ""; flex: none; width: 9px; height: 9px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.2s; }
+  .toc.is-open .toc__toggle::after { transform: rotate(225deg) translate(-2px, -2px); }
+  .toc__panel { padding: 8px 0 16px; }
+  .js .toc__panel { display: none; max-height: calc(100vh - 140px); overflow-y: auto; }
+  .js .toc.is-open .toc__panel { display: block; }
+  .js .toc__title { display: none; }
+}
+
+/* ---------- article ---------- */
+.doc { min-width: 0; max-width: 46rem; }
+.doc section { padding-top: 8px; }
+.doc section + section { margin-top: 56px; padding-top: 48px; border-top: 1px solid var(--line); }
+.doc h2 { font-size: clamp(1.7rem, 3.2vw, 2.2rem); margin-bottom: 18px; scroll-margin-top: 84px; }
+.doc h3 { font-size: 1.25rem; letter-spacing: -0.015em; margin: 36px 0 12px; scroll-margin-top: 84px; }
+.doc h4 { font-size: 1.02rem; letter-spacing: -0.01em; margin: 24px 0 8px; color: var(--text); }
+.doc p, .doc li { color: var(--muted); }
+.doc p { margin: 0 0 1em; }
+.doc strong { color: var(--text); font-weight: 600; }
+.doc a { color: var(--text); text-decoration-color: rgba(255, 154, 99, 0.6); text-underline-offset: 3px; }
+.doc a:hover { color: var(--accent); }
+.doc ul, .doc ol { padding-left: 1.25em; margin: 0 0 1em; }
+.doc li { margin-bottom: 0.4em; }
+.doc li::marker { color: var(--accent-2); }
+@media (max-width: 999px) { .doc h2, .doc h3 { scroll-margin-top: 124px; } }
+
+/* heading anchors */
+.anchor { margin-left: 0.35em; color: var(--dim) !important; text-decoration: none; font-weight: 500; opacity: 0; transition: opacity 0.15s; }
+h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
+@media (hover: none) { .anchor { opacity: 0.6; } }
+
+/* code */
+.doc pre {
+  margin: 0 0 1.2em; padding: 14px 16px; overflow-x: auto;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--r);
+  font: 400 0.86rem/1.6 var(--font-mono); color: var(--text);
+  scrollbar-width: thin; scrollbar-color: var(--surface-2) transparent;
+}
+.doc pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+.doc code { overflow-wrap: anywhere; }
+.doc pre .c { color: var(--dim); }
+
+/* tables */
+.tbl { margin: 0 0 1.4em; overflow-x: auto; border: 1px solid var(--line-2); border-radius: var(--r); scrollbar-width: thin; scrollbar-color: var(--surface-2) transparent; }
+.tbl table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tbl th, .tbl td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl th { font-weight: 600; color: var(--text); background: rgba(217, 210, 234, 0.035); white-space: nowrap; }
+.tbl td { color: var(--muted); }
+.tbl td:first-child { color: var(--text); }
+.tbl td.nw, .tbl .keys { white-space: nowrap; }
+.tbl caption { caption-side: top; text-align: left; padding: 10px 14px 0; font-weight: 600; color: var(--text); }
+
+/* callouts */
+.note { margin: 0 0 1.4em; padding: 14px 16px; border: 1px solid var(--line-2); border-left: 3px solid var(--accent-2); border-radius: var(--r-sm); background: rgba(217, 210, 234, 0.03); }
+.note p:last-child { margin-bottom: 0; }
+.note--safe { border-left-color: var(--green); }
+.note--warn { border-left-color: var(--amber); }
+.note strong:first-child { color: var(--text); }
+
+/* definition-style lists for FAQ/troubleshooting */
+.qa dt { color: var(--text); font-weight: 600; margin: 22px 0 6px; }
+.qa dd { margin: 0; color: var(--muted); }
+
+/* the "on this page" tail */
+.doc__foot { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 0.95rem; }
