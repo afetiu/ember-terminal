@@ -170,6 +170,26 @@ export const AREA_HUES = ['#7aa2f7', '#9ece6a', '#e0af68', '#bb9af7', '#7dcfff',
 /** Colours for live sessions, distinct from the area hues' job. */
 export const SESSION_HUES = ['#ff7eb6', '#4ce0b3', '#ffc857', '#6ea8ff', '#c49bff', '#ff9966', '#5ee7ff']
 
+/**
+ * The same two palettes for a light theme, index for index, so an area keeps its colour
+ * when the theme flips. The dark ones are pastels picked to glow on near-black; on paper
+ * they wash out, and the parts' names and glyphs are drawn in them.
+ */
+const AREA_HUES_LIGHT = ['#3562c9', '#4f8a1f', '#a8701a', '#7a4fd0', '#1f80b8', '#c93a58', '#1d8f7f', '#c25a1c', '#5a6491']
+const SESSION_HUES_LIGHT = ['#c8327a', '#0b8a62', '#a86a00', '#2f63c4', '#7a4fd0', '#c2541c', '#0a7f99']
+
+const onLight = () => document.body.classList.contains('is-light')
+
+/** The area palette for the theme that is on now. */
+export function areaHues(): string[] {
+  return onLight() ? AREA_HUES_LIGHT : AREA_HUES
+}
+
+/** The live-session palette for the theme that is on now. */
+export function sessionHues(): string[] {
+  return onLight() ? SESSION_HUES_LIGHT : SESSION_HUES
+}
+
 export function hueFor(key: string, palette: string[]): string {
   let h = 0
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0

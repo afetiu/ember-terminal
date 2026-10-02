@@ -265,6 +265,45 @@ th { background: rgba(199, 78, 255, 0.1); color: #F0EAFB; font-weight: 600; }
 `
 
 /**
+ * The same page for a light palette, laid over the one above.
+ *
+ * The panel's design is a dark one — pale lavender on a transparent webview over the
+ * stage — and on a light theme that is pale text on paper, i.e. nothing. This keeps
+ * the purple as the accent and inverts the rest. The renderer asks for it (?tone=light)
+ * because only the renderer knows which theme is on; this page cannot read the app's CSS.
+ */
+const LIGHT_STYLE = `
+:root { color-scheme: light; }
+body { color: #2E2640; }
+h1, h2, h3, h4, h5, h6, strong, th { color: #1B1426; }
+a { color: #7A22AE; }
+em { color: #4A3F5E; }
+code { background: rgba(130, 39, 184, 0.08); border-color: rgba(130, 39, 184, 0.18); color: #3B2156; }
+pre.code { background: rgba(46, 38, 64, 0.05); border-color: rgba(130, 39, 184, 0.16); }
+pre.code code, .ember-raw { color: #2E2640; }
+blockquote { border-left-color: rgba(130, 39, 184, 0.45); color: #564A6B; }
+li::marker { color: #8227B8; }
+hr { border-top-color: rgba(130, 39, 184, 0.2); }
+th, td { border-color: rgba(130, 39, 184, 0.2); }
+th { background: rgba(130, 39, 184, 0.07); }
+`
+
+/** The controls and scrollbars on paper. Alone, this is what an authored page gets: its own design is left alone. */
+const LIGHT_INTERACT = `
+::-webkit-scrollbar-thumb { background: rgba(130, 39, 184, 0.16); background-clip: padding-box; }
+:hover::-webkit-scrollbar-thumb { background: rgba(130, 39, 184, 0.34); background-clip: padding-box; }
+.ember-act { border-color: rgba(130, 39, 184, 0.4); background: rgba(130, 39, 184, 0.08); color: #3B2156; }
+.ember-act:hover { background: rgba(130, 39, 184, 0.16); border-color: rgba(130, 39, 184, 0.65); }
+.ember-act.is-sent { background: rgba(11, 122, 92, 0.12); border-color: rgba(11, 122, 92, 0.45); }
+.ember-ask { border-color: rgba(130, 39, 184, 0.22); background: rgba(130, 39, 184, 0.04); }
+.ember-ask-opt { border-color: rgba(130, 39, 184, 0.28); background: rgba(130, 39, 184, 0.05); color: #1B1426; }
+.ember-ask-opt:hover { background: rgba(130, 39, 184, 0.13); border-color: rgba(130, 39, 184, 0.55); }
+.ember-ask-opt .hint { color: #5E5373; }
+.ember-ask-free textarea { border-color: rgba(130, 39, 184, 0.28); background: rgba(255, 255, 255, 0.7); color: #1B1426; }
+.ember-ask-sent { color: #0B7A5C; }
+`
+
+/**
  * Scrollbars that read as part of the panel rather than as part of a browser.
  *
  * Three things do the work. The thumb is a pill floated off the edge by a transparent
@@ -503,7 +542,40 @@ function runtime(actSecret: string, viaParent = false): string {
  * already parsed by the time the script arrives. Failures degrade to the diagram
  * source: a panel showing the text you wrote beats a panel showing nothing.
  */
-const MERMAID_BOOT = `
+const MERMAID_DARK = {
+  background: 'transparent',
+  primaryColor: '#2A1A44',
+  primaryTextColor: '#E9DDFB',
+  primaryBorderColor: '#C74EFF',
+  secondaryColor: '#1F1436',
+  tertiaryColor: '#160E28',
+  lineColor: '#8A6FB5',
+  textColor: '#D9D2EA',
+  mainBkg: '#2A1A44',
+  nodeBorder: '#C74EFF',
+  clusterBkg: 'rgba(199, 78, 255, 0.07)',
+  clusterBorder: 'rgba(199, 78, 255, 0.3)',
+  edgeLabelBackground: '#1A0E2E',
+}
+
+/** The diagram on paper: pale lavender boxes, the purple kept for the borders. */
+const MERMAID_LIGHT = {
+  background: 'transparent',
+  primaryColor: '#F1E8FA',
+  primaryTextColor: '#1B1426',
+  primaryBorderColor: '#8227B8',
+  secondaryColor: '#F6F0FB',
+  tertiaryColor: '#FBF8FD',
+  lineColor: '#7A6496',
+  textColor: '#2E2640',
+  mainBkg: '#F1E8FA',
+  nodeBorder: '#8227B8',
+  clusterBkg: 'rgba(130, 39, 184, 0.05)',
+  clusterBorder: 'rgba(130, 39, 184, 0.3)',
+  edgeLabelBackground: '#FBF8FD',
+}
+
+const mermaidBoot = (light: boolean) => `
 <script src="/vendor/mermaid.min.js"></script>
 <script>
   (function () {
@@ -518,21 +590,7 @@ const MERMAID_BOOT = `
       theme: 'base',
       securityLevel: 'strict',
       fontFamily: 'inherit',
-      themeVariables: {
-        background: 'transparent',
-        primaryColor: '#2A1A44',
-        primaryTextColor: '#E9DDFB',
-        primaryBorderColor: '#C74EFF',
-        secondaryColor: '#1F1436',
-        tertiaryColor: '#160E28',
-        lineColor: '#8A6FB5',
-        textColor: '#D9D2EA',
-        mainBkg: '#2A1A44',
-        nodeBorder: '#C74EFF',
-        clusterBkg: 'rgba(199, 78, 255, 0.07)',
-        clusterBorder: 'rgba(199, 78, 255, 0.3)',
-        edgeLabelBackground: '#1A0E2E'
-      }
+      themeVariables: ${JSON.stringify(light ? MERMAID_LIGHT : MERMAID_DARK)}
     })
     window.mermaid.run({ nodes: blocks }).then(fixContrast).catch(function () {
       blocks.forEach(function (b) { b.className = 'code' })
@@ -570,13 +628,13 @@ const MERMAID_BOOT = `
   })()
 </script>`
 
-function shell(body: string, act: string, viaParent = false): string {
-  const head = body.includes('class="mermaid"') ? MERMAID_BOOT : ''
+function shell(body: string, act: string, viaParent = false, light = false): string {
+  const head = body.includes('class="mermaid"') ? mermaidBoot(light) : ''
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}</style>
+<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}</style>
 </head><body>${body}${head}${runtime(act, viaParent)}</body></html>`
 }
 
@@ -635,6 +693,18 @@ h1, h2, h3, h4, h5, h6 { color: #F0EAFB; }
 a { color: #E08BFF; }
 img, svg, canvas, video { max-width: 100%; }`
 
+/** HTML_BASE for a light palette: dark ink, so an unstyled page still reads on paper. */
+const HTML_BASE_LIGHT = `
+:root { color-scheme: light; }
+html, body { margin: 0; background: transparent; }
+body {
+  color: #2E2640;
+  font: 13.5px/1.6 "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+}
+h1, h2, h3, h4, h5, h6 { color: #1B1426; }
+a { color: #7A22AE; }
+img, svg, canvas, video { max-width: 100%; }`
+
 /** True when the page is a document of its own rather than a fragment to be given one. */
 function isDocument(page: string): boolean {
   return /^\s*(<!doctype\b|<html\b)/i.test(page)
@@ -661,23 +731,23 @@ function unfence(page: string): string {
  * gets Ember's own document around it instead, styled like a markdown panel, and a full
  * document gets `HTML_BASE` ahead of its own head so an unstyled body still reads.
  */
-function graft(page: string, act: string, viaParent = false): string {
+function graft(page: string, act: string, viaParent = false, light = false): string {
   const source = unfence(page)
   // The scrollbars go in too. A model-authored page is still a page inside Ember's
   // panel, and a browser-default bar down the side of it is the one part that gives
   // away that it is a webview.
-  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}</style>${runtime(act, viaParent)}`
+  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_INTERACT : ''}</style>${runtime(act, viaParent)}`
 
   if (!isDocument(source)) {
     return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}</style>
+<style>${STYLE}${light ? LIGHT_STYLE : ''}</style>
 </head><body class="ember-fragment">${source}${addition}</body></html>`
   }
 
-  const withBase = withDefaults(source, `<style>${HTML_BASE}</style>`)
+  const withBase = withDefaults(source, `<style>${light ? HTML_BASE_LIGHT : HTML_BASE}</style>`)
   const close = withBase.toLowerCase().lastIndexOf('</body>')
   return close === -1 ? withBase + addition : withBase.slice(0, close) + addition + withBase.slice(close)
 }
@@ -713,35 +783,36 @@ function withDefaults(page: string, head: string): string {
  */
 export type PanelTarget = 'bridge' | 'phone'
 
-export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge'): string {
+export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false): string {
   const act = push.act ?? ''
   const viaParent = target === 'phone'
-  const html = renderFor(push, act, viaParent)
+  const html = renderFor(push, act, viaParent, light)
   // The phone bundles mermaid rather than fetching it from a bridge it cannot see.
   return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : html
 }
 
-function renderFor(push: PanelPush, act: string, viaParent: boolean): string {
+function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean): string {
   switch (push.format) {
     case 'html':
       // Passed through as its own document. It is untrusted, and it is contained by
       // being on this origin in a webview rather than by being filtered here — a
       // sanitiser that has to be right every time is a worse bet than an isolation
       // boundary that does not.
-      return graft(push.content, act, viaParent)
+      return graft(push.content, act, viaParent, light)
 
     case 'code':
       return shell(
         `<pre class="code"><code data-lang="${escapeHtml(push.language ?? '')}">${escapeHtml(push.content)}</code></pre>`,
         act,
-        viaParent
+        viaParent,
+        light
       )
 
     case 'mermaid':
-      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, act, viaParent)
+      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, act, viaParent, light)
 
     case 'ask':
-      return shell(askCard(push), act, viaParent)
+      return shell(askCard(push), act, viaParent, light)
 
     case 'url':
       // On the desk a url push navigates the webview instead of building a page. The
@@ -749,11 +820,12 @@ function renderFor(push: PanelPush, act: string, viaParent: boolean): string {
       return shell(
         `<p>Opening <a href="${escapeHtml(push.content)}" target="_blank" rel="noreferrer">${escapeHtml(push.content)}</a>…</p>`,
         act,
-        viaParent
+        viaParent,
+        light
       )
 
     case 'markdown':
     default:
-      return shell(markdownToHtml(push.content), act, viaParent)
+      return shell(markdownToHtml(push.content), act, viaParent, light)
   }
 }

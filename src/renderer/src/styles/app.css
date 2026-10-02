@@ -20,6 +20,40 @@
   --orch-w: 0px;
   --c-working: #4ce0b3;
   --c-attention: #ffc857;
+  /* Something wrong: a failed command, a destructive button, an error line. */
+  --c-danger: #ff6b8a;
+  /* A link-ish cyan for URLs a session printed. */
+  --c-cyan: #2de2e6;
+  /* What a surface sinks toward to sit below its neighbour, and what a shadow is made of.
+     Black on a dark theme; App swaps both under body.is-light. */
+  --c-shade: #000;
+  --c-shadow: #000;
+  /* The veil behind a modal sheet. */
+  --c-scrim: #05020c;
+  /* How much of its faintness secondary text keeps. Text dimmed by mixing the
+     foreground into transparency is written as calc(100% - X * var(--fade)), X being how
+     much it gives up: all of it on dark, where a faint grey still reads, and half of it on
+     light, where the same alpha falls under 3:1. The hierarchy survives, the
+     illegibility does not. */
+  --fade: 1;
+  /* The accent as text; App deepens it on light palettes. This is the fallback. */
+  --c-accent-ink: var(--c-accent);
+}
+
+/* A light palette (see ui/tone.ts). Surfaces darken toward a deeper paper rather than
+   black, shadows are a soft tint of the ink, and the state colours become their deep
+   versions: mint and amber that glow on near-black are near-invisible on white. */
+body.is-light {
+  --c-working: #0b7a5c;
+  --c-attention: #9a5f00;
+  --c-danger: #c4253f;
+  --c-cyan: #0a7684;
+  --c-shade: color-mix(in srgb, var(--c-fg) 18%, var(--c-bg));
+  --c-shadow: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  --c-scrim: color-mix(in srgb, var(--c-fg) 38%, var(--c-bg));
+  --fade: 0.5;
+  /* Hairlines are slightly firmer: at 9% the edge of a pale card on a pale stage is gone. */
+  --hairline: color-mix(in srgb, var(--c-fg) 13%, transparent);
 }
 
 * {
@@ -184,7 +218,7 @@ body.is-glass.is-maximized .ember-root {
 .ember-brand-name {
   font-size: 12px;
   letter-spacing: 0.6px;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-drag {
@@ -277,7 +311,7 @@ body.sidebar-mini .ember-card-badge canvas {
   font-weight: 500;
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-sidebar-title {
@@ -422,7 +456,7 @@ body.sidebar-mini .ember-card-badge canvas {
 
 .ember-card-title {
   font-size: 12.5px;
-  color: color-mix(in srgb, var(--c-fg) 68%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 32% * var(--fade)), transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -440,7 +474,7 @@ body.sidebar-mini .ember-card-badge canvas {
   margin-top: 2px;
   font-size: 10.5px;
   letter-spacing: 0.2px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 /* Nothing to say: the mascot is carrying the state on its own. */
@@ -619,7 +653,7 @@ body.sidebar-mini .ember-card-badge canvas {
   font-size: 16px;
   font-weight: 300;
   line-height: 1;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-newtab:hover {
@@ -636,7 +670,7 @@ body.sidebar-mini .ember-card-badge canvas {
   height: 26px;
   border-radius: 7px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-sidebar-toggle:hover {
@@ -670,7 +704,7 @@ body.sidebar-mini .ember-card-badge canvas {
   font-weight: 500;
   letter-spacing: 0.8px;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   white-space: nowrap;
 }
 
@@ -707,7 +741,7 @@ body.sidebar-mini .ember-card-badge canvas {
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 1.2px;
-  color: color-mix(in srgb, var(--c-fg) 24%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 76% * var(--fade)), transparent);
   white-space: nowrap;
 }
 
@@ -726,7 +760,7 @@ body.sidebar-mini .ember-card-badge canvas {
 }
 
 .ember-vitals-chip.is-plan:hover {
-  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 25% * var(--fade)), transparent);
 }
 
 .ember-vitals-chip.is-warn {
@@ -815,6 +849,24 @@ body.sidebar-mini .ember-card-badge canvas {
   background: color-mix(in srgb, #8bd17c 45%, var(--c-bg));
 }
 
+/* The desk chips' oranges and greens are lamps on a dark strip; on paper they are their
+   deep versions, and the resume pill takes dark text on its pale green. */
+body.is-light .ember-vitals-chip.is-live {
+  color: var(--c-danger);
+}
+
+body.is-light .ember-vitals-chip.is-desk-busy {
+  color: #b04a00;
+}
+
+body.is-light .ember-vitals-chip.is-desk-halted {
+  color: #2f7a2a;
+}
+
+body.is-light .ember-vitals-chip.is-desk-switch.is-resume {
+  color: #24601f;
+}
+
 
 /* Equaliser bars: scaleY so the animation never touches layout. Paused they slump
    low and dim; playing they dance out of phase, one duration per bar so the loop
@@ -831,7 +883,7 @@ body.sidebar-mini .ember-card-badge canvas {
 }
 
 .ember-np-art.has-art {
-  box-shadow: 0 1px 6px color-mix(in srgb, #000 40%, transparent);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--c-shadow) 40%, transparent);
 }
 
 .ember-np-eq {
@@ -844,7 +896,7 @@ body.sidebar-mini .ember-card-badge canvas {
 
 /* Over album art the bars need their own contrast. */
 .ember-np-art.has-art .ember-np-eq span {
-  box-shadow: 0 0 4px rgb(0 0 0 / 55%);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--c-shadow) 55%, transparent);
 }
 
 .ember-np-eq span {
@@ -879,7 +931,7 @@ body.sidebar-mini .ember-card-badge canvas {
   overflow: hidden;
   white-space: nowrap;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
 }
 
 .ember-np-titletext {
@@ -917,7 +969,7 @@ body.sidebar-mini .ember-card-badge canvas {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 52% * var(--fade)), transparent);
 }
 
 .ember-np-controls {
@@ -935,7 +987,7 @@ body.sidebar-mini .ember-card-badge canvas {
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
   font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
   font-size: 10px;
   cursor: pointer;
@@ -958,7 +1010,7 @@ body.sidebar-mini .ember-card-badge canvas {
 
 .ember-np-btn.is-primary {
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 85%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 15% * var(--fade)), transparent);
 }
 
 .ember-wincontrols {
@@ -970,7 +1022,7 @@ body.sidebar-mini .ember-card-badge canvas {
   width: 46px;
   height: var(--titlebar-h);
   font-size: 10px;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-winbtn:hover {
@@ -1014,7 +1066,7 @@ body.sidebar-mini .ember-card-badge canvas {
   justify-content: center;
   gap: 10px;
   font-family: var(--ui-font);
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-empty h2 {
@@ -1034,7 +1086,7 @@ body.sidebar-mini .ember-card-badge canvas {
   padding: 1px 6px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 25% * var(--fade)), transparent);
 }
 
 .ember-empty-new {
@@ -1211,7 +1263,7 @@ body.is-resizing * {
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
   background: color-mix(in srgb, var(--c-bg) 94%, transparent);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--c-shadow) 45%, transparent);
   opacity: 0;
   transform: translateY(-10px) scale(0.97);
   pointer-events: none;
@@ -1242,7 +1294,7 @@ body.is-resizing * {
 
 .ember-search-status {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-search-btn {
@@ -1253,7 +1305,7 @@ body.is-resizing * {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
   font-size: 10px;
   cursor: pointer;
@@ -1277,7 +1329,7 @@ body.is-resizing * {
   font-size: 12.5px;
   color: var(--c-fg);
   background: color-mix(in srgb, var(--c-bg) 92%, transparent);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--c-shadow) 45%, transparent);
   opacity: 0;
   transform: translate(-50%, 12px) scale(0.95);
   pointer-events: none;
@@ -1347,7 +1399,7 @@ body.is-launching .ember-root {
   z-index: 30;
   transition: none;
   cursor: grabbing;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--c-shadow) 50%, transparent);
   background: color-mix(in srgb, var(--c-fg) 16%, transparent);
 }
 
@@ -1433,10 +1485,10 @@ body.is-launching .ember-root {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
   background: color-mix(in srgb, var(--c-bg) 88%, transparent);
   border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--c-shadow) 40%, transparent);
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, -8px);
@@ -1480,7 +1532,7 @@ body.is-launching .ember-root {
   overflow: hidden;
   text-overflow: ellipsis;
   background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 58%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 42% * var(--fade)), transparent);
 }
 
 .ember-chip.is-git[data-dirty='true'] {
@@ -1491,7 +1543,7 @@ body.is-launching .ember-root {
 /* What the Claude session in the tab reports about itself: model, context, cost.
    Ember's own accent, so it reads as Claude's number and not as git's. */
 .ember-chip.is-claude {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   background: color-mix(in srgb, var(--c-accent) 12%, transparent);
 }
 
@@ -1502,13 +1554,13 @@ body.is-launching .ember-root {
 
 .ember-chip.is-url {
   cursor: pointer;
-  color: var(--c-cyan, #2de2e6);
-  background: color-mix(in srgb, #2de2e6 14%, transparent);
+  color: var(--c-cyan);
+  background: color-mix(in srgb, var(--c-cyan) 14%, transparent);
   transition: background 130ms var(--ease-move);
 }
 
 .ember-chip.is-url:hover {
-  background: color-mix(in srgb, #2de2e6 28%, transparent);
+  background: color-mix(in srgb, var(--c-cyan) 28%, transparent);
 }
 
 /* Unread output on a background session. */
@@ -1566,7 +1618,7 @@ body.is-zen .ember-fx {
   display: grid;
   place-items: start center;
   padding: 7vh 4vw;
-  background: color-mix(in srgb, #05020c 62%, transparent);
+  background: color-mix(in srgb, var(--c-scrim) 62%, transparent);
   backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
@@ -1586,7 +1638,7 @@ body.is-zen .ember-fx {
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
   background: color-mix(in srgb, var(--c-bg) 94%, transparent);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--c-shadow) 60%, transparent);
   transform: translateY(-12px) scale(0.985);
   opacity: 0;
   transition:
@@ -1618,7 +1670,7 @@ body.is-zen .ember-fx {
 .ember-settings-path {
   flex: 1;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-settings-reset {
@@ -1627,7 +1679,7 @@ body.is-zen .ember-fx {
   border-radius: 7px;
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -1645,7 +1697,7 @@ body.is-zen .ember-fx {
 /* Armed state: the button becomes its own confirmation. */
 .ember-settings-reset.is-armed {
   border-color: #ff3b6b;
-  color: #ff6b8b;
+  color: var(--c-danger);
   background: color-mix(in srgb, #ff3b6b 14%, transparent);
 }
 
@@ -1655,7 +1707,7 @@ body.is-zen .ember-fx {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
   font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--ui-font);
   font-size: 9px;
   cursor: pointer;
@@ -1677,7 +1729,7 @@ body.is-zen .ember-fx {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 12px;
   cursor: pointer;
@@ -1711,7 +1763,7 @@ body.is-zen .ember-fx {
   font-weight: 600;
   letter-spacing: 1.3px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-accent) 78%, transparent);
+  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 22% * var(--fade)), transparent);
 }
 
 .ember-settings-row {
@@ -1727,13 +1779,13 @@ body.is-zen .ember-fx {
   display: flex;
   flex-direction: column;
   font-size: 12.5px;
-  color: color-mix(in srgb, var(--c-fg) 84%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 16% * var(--fade)), transparent);
 }
 
 .ember-settings-label em {
   font-style: normal;
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-range {
@@ -1752,7 +1804,7 @@ body.is-zen .ember-fx {
   width: 46px;
   text-align: right;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-input,
@@ -2413,14 +2465,14 @@ body.is-zen .ember-fx {
 
 .ember-todo-count {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-todo-status {
   flex: 1 1 auto;
   text-align: right;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-todo-sources {
@@ -2442,7 +2494,7 @@ body.is-zen .ember-fx {
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   letter-spacing: 0.2px;
@@ -2450,7 +2502,7 @@ body.is-zen .ember-fx {
 }
 
 .ember-todo-archive-toggle:hover {
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-todo-archive {
@@ -2462,7 +2514,7 @@ body.is-zen .ember-fx {
   font-size: 10px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 70% * var(--fade)), transparent);
 }
 
 .ember-todo-archive-item {
@@ -2471,7 +2523,7 @@ body.is-zen .ember-fx {
   gap: 8px;
   padding: 2px 0;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 48% * var(--fade)), transparent);
 }
 
 .ember-todo-archive-item > span {
@@ -2487,7 +2539,7 @@ body.is-zen .ember-fx {
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 70% * var(--fade)), transparent);
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
@@ -2527,7 +2579,7 @@ body.is-zen .ember-fx {
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -2571,7 +2623,7 @@ body.is-zen .ember-fx {
 .ember-notes-count {
   font-family: var(--ui-font);
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-notes-search {
@@ -2604,7 +2656,7 @@ body.is-zen .ember-fx {
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -2629,7 +2681,7 @@ body.is-zen .ember-fx {
 
 .ember-notes-delete.is-armed {
   border-color: #ff3b6b;
-  color: #ff6b8b;
+  color: var(--c-danger);
   background: color-mix(in srgb, #ff3b6b 14%, transparent);
 }
 
@@ -2637,7 +2689,7 @@ body.is-zen .ember-fx {
   flex: 1 1 auto;
   font-family: var(--ui-font);
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-notes-rows {
@@ -2682,7 +2734,7 @@ body.is-zen .ember-fx {
 .ember-notes-when {
   font-family: var(--ui-font);
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   white-space: nowrap;
 }
 
@@ -2690,7 +2742,7 @@ body.is-zen .ember-fx {
   grid-column: 1 / -1;
   font-family: var(--ui-font);
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 52% * var(--fade)), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2700,7 +2752,7 @@ body.is-zen .ember-fx {
   margin: 22px 12px;
   font-family: var(--ui-font);
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 /* The writing surface. Terminal font on purpose: this is a tab in a terminal, and a
@@ -2726,7 +2778,7 @@ body.is-zen .ember-fx {
 }
 
 .ember-notes-area::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 70% * var(--fade)), transparent);
 }
 
 /* ---------- tasks: a note as a list ---------- */
@@ -2761,7 +2813,7 @@ body.is-zen .ember-fx {
   padding: 10px 14px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--c-accent) 8%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 12px;
   line-height: 1.55;
@@ -2787,7 +2839,7 @@ body.is-zen .ember-fx {
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -2854,7 +2906,7 @@ body.is-zen .ember-fx {
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
   background: color-mix(in srgb, var(--c-accent) 10%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   white-space: nowrap;
@@ -2883,7 +2935,7 @@ body.is-zen .ember-fx {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2943,7 +2995,7 @@ body.is-zen .ember-fx {
 .ember-task-grip {
   flex: none;
   width: 14px;
-  color: color-mix(in srgb, var(--c-fg) 22%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 78% * var(--fade)), transparent);
   font-size: 11px;
   letter-spacing: -2px;
   cursor: grab;
@@ -3020,11 +3072,11 @@ body.is-zen .ember-fx {
 }
 
 .ember-task-text::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 28%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 72% * var(--fade)), transparent);
 }
 
 .ember-task.is-done .ember-task-text {
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   text-decoration: line-through;
   text-decoration-color: color-mix(in srgb, var(--c-fg) 30%, transparent);
 }
@@ -3068,7 +3120,7 @@ body.is-zen .ember-fx {
 .ember-settings-empty {
   margin: 18px 2px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
 }
 
 .ember-preset {
@@ -3084,7 +3136,7 @@ body.is-zen .ember-fx {
   border-radius: 7px;
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -3132,7 +3184,7 @@ body.is-zen .ember-fx {
   border-radius: 7px;
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 11px;
   cursor: pointer;
@@ -3158,7 +3210,7 @@ body.is-zen .ember-fx {
   text-align: right;
   font-size: 11px;
   font-style: normal;
-  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 48% * var(--fade)), transparent);
   min-height: 13px;
 }
 
@@ -3196,7 +3248,7 @@ body.is-zen .ember-fx {
 /* An inherited value is a statement about another setting, not a font — so it is
    never drawn in one. */
 .ember-fontpick.is-inherited .ember-fontpick-value {
-  color: color-mix(in srgb, var(--c-fg) 46%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 54% * var(--fade)), transparent);
   font-style: italic;
 }
 
@@ -3205,7 +3257,7 @@ body.is-zen .ember-fx {
   font-style: normal;
   font-size: 11px;
   line-height: 1;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-fontpick-menu {
@@ -3217,7 +3269,7 @@ body.is-zen .ember-fx {
   border-radius: 11px;
   border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
   background: color-mix(in srgb, var(--c-bg) 97%, transparent);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--c-shadow) 55%, transparent);
   opacity: 0;
   transform: translateY(-4px);
   transition:
@@ -3243,7 +3295,7 @@ body.is-zen .ember-fx {
 }
 
 .ember-fontpick-filter::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 66% * var(--fade)), transparent);
 }
 
 .ember-fontpick-list {
@@ -3257,7 +3309,7 @@ body.is-zen .ember-fx {
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-accent) 72%, transparent);
+  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 28% * var(--fade)), transparent);
 }
 
 .ember-fontpick-row {
@@ -3268,7 +3320,7 @@ body.is-zen .ember-fx {
   padding: 5px 8px;
   border-radius: 7px;
   font-size: 13px;
-  color: color-mix(in srgb, var(--c-fg) 86%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 14% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -3295,13 +3347,13 @@ body.is-zen .ember-fx {
 .ember-fontpick-sample {
   flex: none;
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 44%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 56% * var(--fade)), transparent);
 }
 
 .ember-fontpick-note {
   padding: 10px 9px;
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
 }
 
 .ember-theme-grid {
@@ -3322,7 +3374,7 @@ body.is-zen .ember-fx {
   padding: 1px 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--c-fg) 9%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
@@ -3336,7 +3388,7 @@ body.is-zen .ember-fx {
   border-radius: 9px;
   border: 1px solid transparent;
   background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
   font-family: var(--ui-font);
   font-size: 12px;
   cursor: pointer;
@@ -3393,7 +3445,7 @@ body.is-zen .ember-fx {
 
 .ember-cheatsheet-panel header span {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-cheatsheet-grid {
@@ -3409,7 +3461,7 @@ body.is-zen .ember-fx {
   font-weight: 600;
   letter-spacing: 1.3px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-accent) 78%, transparent);
+  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 22% * var(--fade)), transparent);
 }
 
 .ember-cheatsheet-row {
@@ -3435,11 +3487,11 @@ body.is-zen .ember-fx {
   background: color-mix(in srgb, var(--c-fg) 8%, transparent);
   font-family: var(--ui-font);
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
 }
 
 .ember-cheatsheet-what {
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
 }
 
 /* ---------- command palette ---------- */
@@ -3455,7 +3507,7 @@ body.is-zen .ember-fx {
   /* A tint, not a backdrop blur. The blur re-rendered the whole window through a filter
      on every frame of the fade — 40 to 100ms frames on an integrated GPU — for a soft
      focus that a slightly deeper tint gives for free. */
-  background: color-mix(in srgb, #05020c 66%, transparent);
+  background: color-mix(in srgb, var(--c-scrim) 66%, transparent);
   display: none;
 }
 
@@ -3470,7 +3522,7 @@ body.is-zen .ember-fx {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
   background: color-mix(in srgb, var(--c-bg) 92%, transparent);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--c-shadow) 55%, transparent);
 }
 
 .ember-palette-input {
@@ -3486,7 +3538,7 @@ body.is-zen .ember-fx {
 }
 
 .ember-palette-input::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 66% * var(--fade)), transparent);
 }
 
 .ember-palette-list {
@@ -3527,7 +3579,7 @@ body.is-zen .ember-fx {
   padding: 7px 11px;
   border-radius: 7px;
   font-size: 12.5px;
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -3542,7 +3594,7 @@ body.is-zen .ember-fx {
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 /* The words you would type, in the terminal's own face. */
@@ -3551,7 +3603,7 @@ body.is-zen .ember-fx {
   min-width: 150px;
   font-family: var(--term-font);
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-accent-ink) 85%, var(--c-fg));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3576,13 +3628,13 @@ body.is-zen .ember-fx {
 .ember-palette-hint {
   flex: none;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-palette-empty {
   padding: 18px 14px;
   font-size: 13px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-pane .xterm {
@@ -3703,7 +3755,7 @@ body.is-zen .ember-fx {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
   font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
   font-size: 13px;
   cursor: pointer;
@@ -3726,7 +3778,7 @@ body.is-zen .ember-fx {
 }
 
 .ember-voicetoggle.is-on {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   background: color-mix(in srgb, var(--c-accent) 15%, transparent);
 }
 
@@ -3803,7 +3855,7 @@ body.is-zen .ember-fx {
 .ember-orch.is-oncall {
   border-right-color: var(--c-working);
   box-shadow:
-    18px 0 44px rgba(0, 0, 0, 0.4),
+    18px 0 44px color-mix(in srgb, var(--c-shadow) 40%, transparent),
     inset -2px 0 0 var(--c-working);
 }
 
@@ -3869,7 +3921,7 @@ body.sidebar-mini .ember-sidebar-orch {
 }
 
 .ember-orch-pill.is-failed {
-  color: #ff6b8a;
+  color: var(--c-danger);
 }
 
 .ember-orch-call {
@@ -3903,7 +3955,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   font-size: 12px;
   cursor: pointer;
 }
@@ -3929,7 +3981,7 @@ body.sidebar-mini .ember-sidebar-orch {
   text-align: center;
   font-size: 12px;
   line-height: 1.6;
-  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 66% * var(--fade)), transparent);
 }
 
 .ember-orch-turn {
@@ -3949,7 +4001,7 @@ body.sidebar-mini .ember-sidebar-orch {
 }
 
 .ember-orch-turn.is-agent {
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
 }
 
 .ember-orch-turn.is-system {
@@ -3977,11 +4029,11 @@ body.sidebar-mini .ember-sidebar-orch {
   margin-bottom: 5px;
   font-size: 10.5px;
   letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--c-accent) 75%, transparent);
+  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 25% * var(--fade)), transparent);
 }
 
 .ember-orch-turn.is-thinking {
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   font-style: italic;
   animation: ember-breathe 1.4s var(--ease-move) infinite;
 }
@@ -4086,7 +4138,7 @@ body.sidebar-mini .ember-sidebar-orch {
 }
 
 .ember-voicetoggle.is-orch.is-failed {
-  color: #ff6b8a;
+  color: var(--c-danger);
 }
 
 @keyframes ember-hub {
@@ -4116,7 +4168,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--c-bg) 92%, transparent);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--c-shadow) 45%, transparent);
   font-family: var(--ui-font);
   font-size: 12px;
   line-height: 1.5;
@@ -4140,11 +4192,11 @@ body.sidebar-mini .ember-sidebar-orch {
 }
 
 .ember-voiceline.is-user {
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-voiceline.is-voice {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 /* The panel switch. It is its own element in the strip rather than a third voice
@@ -4235,7 +4287,7 @@ body.sidebar-mini .ember-sidebar-orch {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: color-mix(in srgb, var(--c-fg) 66%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 34% * var(--fade)), transparent);
 }
 
 /* The address bar replaces the title only while the panel is a browser; a document
@@ -4279,7 +4331,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -4327,7 +4379,7 @@ body.sidebar-mini .ember-sidebar-orch {
   display: grid;
   place-items: center;
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 32%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 68% * var(--fade)), transparent);
   pointer-events: none;
 }
 
@@ -4384,7 +4436,7 @@ body.sidebar-mini .ember-sidebar-orch {
    matters — makes its text box a field whose focus the dictation router can see. */
 
 .ember-panel-btn.is-pick.is-on {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   background: color-mix(in srgb, var(--c-accent) 18%, transparent);
 }
 
@@ -4402,7 +4454,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
   border-radius: 11px;
   background: color-mix(in srgb, var(--c-bg) 96%, transparent);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--c-shadow) 50%, transparent);
   font-family: var(--ui-font);
 }
 
@@ -4430,7 +4482,7 @@ body.sidebar-mini .ember-sidebar-orch {
   font-size: 11px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4445,7 +4497,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   font-size: 11px;
   cursor: pointer;
 }
@@ -4466,7 +4518,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border-left: 2px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
   font-size: 11.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
 }
 
 .ember-pick-quick {
@@ -4480,7 +4532,7 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 1px solid color-mix(in srgb, var(--c-dim) 30%, transparent);
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
   font-family: inherit;
   font-size: 11px;
   cursor: pointer;
@@ -4567,7 +4619,7 @@ body.sidebar-mini .ember-sidebar-orch {
 
 .ember-voicepane-status.is-error {
   opacity: 1;
-  color: color-mix(in srgb, #ff6b8a 80%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-danger) 80%, var(--c-fg));
 }
 
 /* The mic sits beside +, so it must read as the same class of control. */
@@ -4578,7 +4630,7 @@ body.sidebar-mini .ember-sidebar-orch {
 /* ---------------------------------------------------------------- pairing sheet
    Shown once, to point a phone camera at. Deliberately the brightest thing on screen:
    a QR on a dark translucent terminal is hard for a camera to lock onto, so the code
-   sits on white regardless of the theme. */
+   sits on white regardless of the theme. The card around it is the theme's own surface. */
 .ember-pair {
   position: fixed;
   inset: 0;
@@ -4586,7 +4638,7 @@ body.sidebar-mini .ember-sidebar-orch {
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 6, 12, 0.62);
+  background: color-mix(in srgb, var(--c-scrim) 62%, transparent);
   backdrop-filter: blur(6px);
   -webkit-app-region: no-drag;
 }
@@ -4595,9 +4647,10 @@ body.sidebar-mini .ember-sidebar-orch {
 .ember-pair-card {
   width: min(340px, calc(100vw - 48px));
   border-radius: 14px;
-  border: 1px solid var(--ember-line, rgba(255, 255, 255, 0.12));
-  background: var(--ember-surface, #14141d);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--ember-line, color-mix(in srgb, var(--c-fg) 12%, transparent));
+  background: var(--ember-surface, color-mix(in srgb, var(--c-bg) 94%, var(--c-shade)));
+  color: var(--c-fg);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--c-shadow) 55%, transparent);
   overflow: hidden;
   animation: ember-pair-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
@@ -4614,7 +4667,7 @@ body.sidebar-mini .ember-sidebar-orch {
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  border-bottom: 1px solid var(--ember-line, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--ember-line, var(--hairline));
 }
 .ember-pair-x {
   border: 0;
@@ -4644,10 +4697,10 @@ body.sidebar-mini .ember-sidebar-orch {
   border-radius: 999px;
   border: 1px solid transparent;
 }
-.ember-pair-status.is-on { color: #7ee3a8; border-color: rgba(126, 227, 168, 0.35); background: rgba(126, 227, 168, 0.1); }
-.ember-pair-status.is-wait { color: #e8c37a; border-color: rgba(232, 195, 122, 0.32); background: rgba(232, 195, 122, 0.09); }
+.ember-pair-status.is-on { color: var(--c-working); border-color: color-mix(in srgb, var(--c-working) 35%, transparent); background: color-mix(in srgb, var(--c-working) 10%, transparent); }
+.ember-pair-status.is-wait { color: var(--c-attention); border-color: color-mix(in srgb, var(--c-attention) 32%, transparent); background: color-mix(in srgb, var(--c-attention) 9%, transparent); }
 .ember-pair-status.is-off,
-.ember-pair-status.is-none { color: rgba(255, 255, 255, 0.5); border-color: rgba(255, 255, 255, 0.14); }
+.ember-pair-status.is-none { color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent); border-color: color-mix(in srgb, var(--c-fg) 14%, transparent); }
 
 .ember-pair-qr {
   border-radius: 10px;
@@ -4685,7 +4738,7 @@ body.sidebar-mini .ember-sidebar-orch {
 .ember-pair-row { display: flex; gap: 8px; }
 .ember-pair-minor {
   border-radius: 7px;
-  border: 1px solid var(--ember-line, rgba(255, 255, 255, 0.14));
+  border: 1px solid var(--ember-line, color-mix(in srgb, var(--c-fg) 14%, transparent));
   background: none;
   color: inherit;
   font: inherit;
@@ -4695,4 +4748,4 @@ body.sidebar-mini .ember-sidebar-orch {
   opacity: 0.75;
 }
 .ember-pair-minor:hover { opacity: 1; }
-.ember-pair-minor.is-danger:hover { border-color: rgba(255, 120, 120, 0.5); color: #ff9898; }
+.ember-pair-minor.is-danger:hover { border-color: color-mix(in srgb, var(--c-danger) 50%, transparent); color: var(--c-danger); }

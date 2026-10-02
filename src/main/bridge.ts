@@ -361,7 +361,8 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     const id = url.pathname.slice('/doc/'.length)
     for (const stack of stacks.values()) {
       const found = stack.find((p) => p.id === id)
-      if (found) return send(res, 200, renderPanelDocument(found), 'text/html; charset=utf-8')
+      // ?tone=light comes from the renderer, the one place that knows the theme.
+      if (found) return send(res, 200, renderPanelDocument(found, 'bridge', url.searchParams.get('tone') === 'light'), 'text/html; charset=utf-8')
     }
     return send(res, 404, '<!doctype html><title>gone</title>', 'text/html; charset=utf-8')
   }

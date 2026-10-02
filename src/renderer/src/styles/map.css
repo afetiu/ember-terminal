@@ -23,6 +23,13 @@
   color: var(--c-fg);
 }
 
+/* On paper the health colours are their deep versions, like the rest of the chrome's. */
+body.is-light .ember-map {
+  --map-ok: var(--c-working);
+  --map-warn: var(--c-attention);
+  --map-down: var(--c-danger);
+}
+
 .ember-map[data-mode='list'] > :not(.ember-map-list),
 .ember-map[data-mode='form'] > :not(.ember-map-form),
 .ember-map[data-mode='map'] > :not(.ember-map-view) {
@@ -60,7 +67,7 @@
 .ember-map-count,
 .ember-map-lede {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-map-lede {
@@ -73,7 +80,7 @@
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--c-dim) 44%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 25% * var(--fade)), transparent);
   font: 11px var(--ui-font);
   cursor: pointer;
   white-space: nowrap;
@@ -118,7 +125,7 @@
   border: 0;
   padding: 0;
   background: none;
-  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-accent-ink) 85%, var(--c-fg));
   font: inherit;
   cursor: pointer;
   text-align: left;
@@ -162,7 +169,7 @@
 
 .ember-map-row-meta {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   text-align: right;
   max-width: 420px;
   overflow: hidden;
@@ -182,7 +189,7 @@
   grid-column: 1 / -1;
   padding-right: 80px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -205,7 +212,7 @@
   padding: 0 24px;
   font-size: 13px;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-map-empty strong {
@@ -235,7 +242,7 @@
 .ember-map-formcard label {
   margin-top: 10px;
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
 }
 
 .ember-map-formcard input,
@@ -263,7 +270,7 @@
   margin: 10px 0 0;
   font-size: 11.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-map-formactions {
