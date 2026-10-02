@@ -1,6 +1,6 @@
 import type { MapBundle, MapChange, MapEdge, MapFlow, MapHistoryEntry, MapJob, MapLiveSession, MapModel, MapNode, MapSummary } from '@shared/types'
 import { clipEnd, clipStart, computeLayout, labelPoint, roundedPath, type LBox, type Layout } from './map/layout'
-import { AREA_HUES, ICON, KIND_GLYPH, KIND_WORD, NOTE_GLYPH, NOTE_WORD, SESSION_HUES, ago, hueFor, md } from './map/glyphs'
+import { ICON, KIND_GLYPH, KIND_WORD, NOTE_GLYPH, NOTE_WORD, ago, areaHues, hueFor, md, sessionHues } from './map/glyphs'
 
 /**
  * The map: a project's whole world as one zoomable picture, and nothing else on screen.
@@ -721,7 +721,8 @@ export class MapView {
     e.style.top = `${b.y}px`
     e.style.width = `${b.w}px`
     e.style.height = `${b.h}px`
-    e.style.setProperty('--hue', AREA_HUES[b.area % AREA_HUES.length]!)
+    const hues = areaHues()
+    e.style.setProperty('--hue', hues[b.area % hues.length]!)
     e.style.setProperty('--cap', `${Math.max(12, isContainer ? Math.min(b.w * 0.075, b.h * 0.12, 64) : b.h * 0.2)}px`)
     if (n.status) e.dataset['status'] = n.status
     else delete e.dataset['status']
@@ -1218,7 +1219,7 @@ export class MapView {
   }
 
   private sessionHue(s: MapLiveSession): string {
-    return hueFor(s.sessionId, SESSION_HUES)
+    return hueFor(s.sessionId, sessionHues())
   }
 
   private sessionName(s: MapLiveSession): string {
@@ -1874,7 +1875,8 @@ export class MapView {
     const model = this.model!
     const byId = new Map(model.nodes.map((x) => [x.id, x]))
     const box = this.layout?.boxes.get(n.id)
-    card.style.setProperty('--hue', AREA_HUES[(box?.area ?? 0) % AREA_HUES.length]!)
+    const hues = areaHues()
+    card.style.setProperty('--hue', hues[(box?.area ?? 0) % hues.length]!)
 
     const head = el('div', 'mcard-head')
     const trail: MapNode[] = []

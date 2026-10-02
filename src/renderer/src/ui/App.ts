@@ -23,7 +23,8 @@ import { Vitals } from './Vitals'
 import { TitleBar } from './TitleBar'
 import { quality } from '../motion/quality'
 import { sound } from '../motion/sound'
-import { drawMascot } from './Mascot'
+import { drawMascot, setBadgeSurface } from './Mascot'
+import { isLightBackground, legible } from './tone'
 import { Onboarding } from './Onboarding'
 import { AGENTS } from '@shared/agents'
 import type { ActivityState, AttentionKind } from '../core/Activity'
@@ -532,6 +533,14 @@ export class App {
     s.setProperty('--c-accent', theme.cursor)
     s.setProperty('--c-dim', theme.brightBlack)
     s.setProperty('--c-sel', theme.selectionBackground)
+    // The stylesheets keep one set of rules and swap tokens under body.is-light: what
+    // surfaces sink toward, how dark a shadow is, how faint secondary text may get.
+    const light = isLightBackground(theme.background)
+    document.body.classList.toggle('is-light', light)
+    // The accent as text. Most light palettes pick an accent that is a fine caret and
+    // too pale to read as a word (Ayu Light's is 2:1), so text gets a deepened copy.
+    s.setProperty('--c-accent-ink', light ? legible(theme.cursor, theme.foreground, theme.background) : theme.cursor)
+    setBadgeSurface(light)
     // Windows Terminal's `opacity` is a percentage over the system backdrop; the
     // window itself is transparent, so the tint lives on the content layer.
     s.setProperty('--c-tint-alpha', String(win.opacity / 100))
@@ -557,10 +566,13 @@ export class App {
   private wireConfigReload(): void {
     window.ember.onConfigChange((config) => {
       const fontChanged = config.font.family !== this.config.font.family
+      const wasLight = document.body.classList.contains('is-light')
       this.config = config
       sound.configure(config.sound)
       quality.setEnabled(config.effects.adaptive)
       this.applyCssVars()
+      // A panel's document is drawn for one side; crossing over redraws it for the other.
+      if (document.body.classList.contains('is-light') !== wasLight) for (const g of this.groups) g.panel?.retone()
       this.setColumn(this.columnWidth())
       this.settings.sync(config)
 

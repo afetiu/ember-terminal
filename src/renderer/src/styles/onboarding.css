@@ -16,11 +16,11 @@ body.labs-off .ember-orch-call {
   background: color-mix(in srgb, var(--c-accent) 8%, transparent);
   font-size: 12px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 82%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
 }
 
 .ember-agents-nokeys strong {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   font-weight: 600;
 }
 
@@ -90,7 +90,7 @@ body.labs-off .ember-orch-call {
 .ember-agent-vendor {
   font-size: 10.5px;
   font-weight: 400;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-agent-badge {
@@ -99,7 +99,7 @@ body.labs-off .ember-orch-call {
   border-radius: 99px;
   font-size: 10px;
   font-weight: 500;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   border: 1px solid var(--hairline);
 }
 
@@ -112,7 +112,7 @@ body.labs-off .ember-orch-call {
   margin-top: 3px;
   font-size: 11.5px;
   line-height: 1.45;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .ember-agent-actions {
@@ -140,7 +140,7 @@ body.labs-off .ember-orch-call {
 .ember-agents-btn.is-quiet {
   border-color: var(--hairline);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-agents-btn:disabled {
@@ -150,12 +150,12 @@ body.labs-off .ember-orch-call {
 
 .ember-agents-link {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   text-decoration: none;
 }
 
 .ember-agents-link:hover {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .ember-agents-foot {
@@ -165,7 +165,7 @@ body.labs-off .ember-orch-call {
   gap: 12px;
   margin-top: 10px;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 /* ---------- onboarding ---------- */
@@ -195,7 +195,7 @@ body.labs-off .ember-orch-call {
   border-radius: var(--r-lg);
   border: 1px solid var(--hairline);
   background: color-mix(in srgb, var(--c-bg) 94%, transparent);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--c-shadow) 45%, transparent);
   transform: translateY(10px) scale(0.985);
   transition: transform 320ms var(--ease-enter);
   overflow: hidden;
@@ -254,7 +254,7 @@ body.labs-off .ember-orch-call {
   margin: 0 0 14px;
   font-size: 13px;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--c-fg) 68%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 32% * var(--fade)), transparent);
 }
 
 .ember-onboard-lead code,
@@ -283,7 +283,7 @@ body.labs-off .ember-orch-call {
   background: color-mix(in srgb, var(--c-fg) 3%, transparent);
   font-size: 12px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
 }
 
 .ember-onboard-points strong {
@@ -335,7 +335,7 @@ body.labs-off .ember-orch-call {
   gap: 12px;
   margin: 16px 0 6px;
   font-size: 12.5px;
-  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -365,14 +365,14 @@ body.labs-off .ember-orch-call {
   border-bottom-width: 2px;
   font: inherit;
   font-size: 11px;
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .ember-onboard-key p {
   margin: 8px 0 0;
   font-size: 11.5px;
   line-height: 1.45;
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
 }
 
 .ember-onboard-nav {
@@ -388,7 +388,7 @@ body.labs-off .ember-orch-call {
   border-radius: var(--r-sm);
   border: 1px solid var(--hairline);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
   font: inherit;
   font-size: 12.5px;
   cursor: pointer;

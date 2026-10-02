@@ -18,6 +18,11 @@
   --m-ok: #4ce0b3;
   --m-warn: #ffc857;
   --m-down: #ff5d73;
+  --m-delta: #8ab4ff;
+  --m-delta-ink: #b9d0ff;
+  --m-pr: #c4a5ff;
+  --m-live: #ff9ecb;
+  --m-on-fill: #1a1400;
   --m-glass: color-mix(in srgb, var(--c-bg) 80%, transparent);
   --m-line: color-mix(in srgb, var(--c-fg) 40%, transparent);
   position: relative;
@@ -30,6 +35,23 @@
     radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--c-accent) 5%, transparent), transparent 60%),
     radial-gradient(color-mix(in srgb, var(--c-fg) 6%, transparent) 1px, transparent 1.2px);
   background-size: auto, 24px 24px;
+}
+
+/* The meanings on paper. Gold, cyan, mint and amber were chosen to glow on near-black;
+   here they are the deep versions of the same hues, dark enough to be text. */
+body.is-light .mstage {
+  --m-gold: #9a6700;
+  --m-flow: #0a7f99;
+  --m-blast: #cf2a4c;
+  --m-ok: #0b8a62;
+  --m-warn: #a86a00;
+  --m-down: #cc2944;
+  --m-delta: #2457b8;
+  --m-delta-ink: #2457b8;
+  --m-pr: #7340c9;
+  --m-live: #c2307a;
+  /* Text that sits on a filled gold or cyan pill. */
+  --m-on-fill: #fff;
 }
 
 .mstage.is-panning {
@@ -94,8 +116,8 @@
   border: 1.5px solid color-mix(in srgb, var(--hue) 34%, color-mix(in srgb, var(--c-fg) 12%, transparent));
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--c-fg) 5%, transparent), transparent 60%),
-    color-mix(in srgb, var(--hue) 7%, color-mix(in srgb, var(--c-bg) 90%, #000));
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--c-fg) 6%, transparent) inset, 0 6px 22px rgba(0, 0, 0, 0.28);
+    color-mix(in srgb, var(--hue) 7%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--c-fg) 6%, transparent) inset, 0 6px 22px color-mix(in srgb, var(--c-shadow) 28%, transparent);
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.25s, transform 0.25s;
 }
@@ -170,7 +192,7 @@
   padding: 0.15em 0.95em 0 1.1em;
   font-size: min(calc(11.5px * var(--ts)), calc(var(--cap) * 0.78));
   line-height: 1.38;
-  color: color-mix(in srgb, var(--c-fg) 64%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 36% * var(--fade)), transparent);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -184,7 +206,7 @@
   margin-top: auto;
   padding: 0.25em 0.8em 0.55em 1.1em;
   font-size: min(calc(10.5px * var(--ts)), calc(var(--cap) * 0.7));
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   min-width: 0;
 }
 
@@ -222,7 +244,7 @@
   padding: 0.1em 0.35em;
   border-radius: 99px;
   background: color-mix(in srgb, var(--c-fg) 8%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .mpip b {
@@ -232,6 +254,7 @@
 .mpip.t-risk { color: var(--m-warn); background: color-mix(in srgb, var(--m-warn) 12%, transparent); }
 .mpip.t-issue { color: var(--m-down); background: color-mix(in srgb, var(--m-down) 12%, transparent); }
 .mpip.t-pr { color: #b48cff; background: color-mix(in srgb, #b48cff 14%, transparent); }
+body.is-light .mpip.t-pr { color: var(--m-pr); background: color-mix(in srgb, var(--m-pr) 12%, transparent); }
 .mpip.t-question,
 .mpip.t-decision { color: var(--m-gold); background: color-mix(in srgb, var(--m-gold) 12%, transparent); }
 .mpip.t-cost { color: var(--m-ok); background: color-mix(in srgb, var(--m-ok) 12%, transparent); }
@@ -276,19 +299,19 @@
   border-top: 3px solid color-mix(in srgb, var(--hue) 80%, var(--c-fg));
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--hue) 16%, transparent), transparent 70%),
-    color-mix(in srgb, var(--c-bg) 88%, #000);
+    color-mix(in srgb, var(--c-bg) 88%, var(--c-shade));
 }
 
 .mnode.k-service > .mnode-body {
   border-radius: 14px;
   background:
     repeating-linear-gradient(180deg, transparent 0 calc(100% - 7px), color-mix(in srgb, var(--hue) 22%, transparent) calc(100% - 7px) calc(100% - 5px), transparent calc(100% - 5px)),
-    color-mix(in srgb, var(--hue) 9%, color-mix(in srgb, var(--c-bg) 90%, #000));
+    color-mix(in srgb, var(--hue) 9%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
 }
 
 .mnode.k-component > .mnode-body {
   border-radius: 9px;
-  background: color-mix(in srgb, var(--c-fg) 4%, color-mix(in srgb, var(--c-bg) 88%, #000));
+  background: color-mix(in srgb, var(--c-fg) 4%, color-mix(in srgb, var(--c-bg) 88%, var(--c-shade)));
 }
 
 .mnode.k-module > .mnode-body {
@@ -308,7 +331,7 @@
   border-radius: 50% / 22px;
   background:
     radial-gradient(ellipse 50% 22px at 50% 22px, color-mix(in srgb, var(--hue) 22%, transparent) 0 98%, transparent 100%),
-    color-mix(in srgb, var(--hue) 10%, color-mix(in srgb, var(--c-bg) 90%, #000));
+    color-mix(in srgb, var(--hue) 10%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
 }
 
 .mnode.k-datastore > .mnode-body::before {
@@ -330,7 +353,7 @@
   border-radius: 999px;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--hue) 18%, transparent) 0 5%, transparent 5% 95%, color-mix(in srgb, var(--hue) 18%, transparent) 95%),
-    color-mix(in srgb, var(--hue) 8%, color-mix(in srgb, var(--c-bg) 90%, #000));
+    color-mix(in srgb, var(--hue) 8%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
 }
 
 .mnode.k-queue .mnode-head,
@@ -380,7 +403,7 @@
   clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
   background:
     linear-gradient(225deg, color-mix(in srgb, var(--c-fg) 22%, transparent) 0 13px, transparent 13px),
-    color-mix(in srgb, var(--c-fg) 4%, color-mix(in srgb, var(--c-bg) 88%, #000));
+    color-mix(in srgb, var(--c-fg) 4%, color-mix(in srgb, var(--c-bg) 88%, var(--c-shade)));
 }
 
 /* ---------------------------------------------------------------- containers */
@@ -437,7 +460,7 @@
   border: 1.5px solid color-mix(in srgb, var(--hue) 45%, transparent);
   background:
     radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--hue) 16%, transparent), transparent 70%),
-    color-mix(in srgb, var(--hue) 7%, color-mix(in srgb, var(--c-bg) 90%, #000));
+    color-mix(in srgb, var(--hue) 7%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
 }
 
 .mnode.is-closed > .mnode-body::before {
@@ -473,11 +496,11 @@
   justify-content: center;
   gap: 0.3em 0.9em;
   font-size: min(calc(11.5px * var(--ts)), calc(var(--cap) * 0.6));
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .mnode-count .is-new { color: var(--m-gold); }
-.mnode-count .is-delta { color: #8ab4ff; }
+.mnode-count .is-delta { color: var(--m-delta); }
 .mnode-count .is-trouble { color: var(--m-warn); }
 
 /* ---------------------------------------------------------------- overlays on a part */
@@ -503,19 +526,19 @@
 
 .mtag.is-new {
   background: var(--m-gold);
-  color: #1a1400;
+  color: var(--m-on-fill);
   box-shadow: 0 0 1em color-mix(in srgb, var(--m-gold) 60%, transparent);
 }
 
 .mtag.is-delta {
-  background: color-mix(in srgb, #8ab4ff 22%, transparent);
-  color: #b9d0ff;
+  background: color-mix(in srgb, var(--m-delta) 22%, transparent);
+  color: var(--m-delta-ink);
   pointer-events: auto;
 }
 
 .mtag.is-ghost {
   background: color-mix(in srgb, var(--c-fg) 12%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
 }
 
 .mtag.is-blast {
@@ -553,7 +576,7 @@
   padding: 0.25em 0.7em 0.25em 0.5em;
   border-radius: 99px;
   border: 1px solid color-mix(in srgb, var(--c) 60%, transparent);
-  background: color-mix(in srgb, var(--c) 18%, color-mix(in srgb, var(--c-bg) 90%, #000));
+  background: color-mix(in srgb, var(--c) 18%, color-mix(in srgb, var(--c-bg) 90%, var(--c-shade)));
   color: var(--c-fg);
   font: 600 1em var(--ui-font);
   white-space: nowrap;
@@ -593,7 +616,7 @@
   width: 1.9em;
   height: 1.9em;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--c-bg) 70%, #000);
+  background: color-mix(in srgb, var(--c-bg) 70%, var(--c-shade));
   border: 1.5px solid var(--m-flow);
   color: var(--m-flow);
   font-weight: 700;
@@ -602,6 +625,16 @@
 .mstep.is-done {
   background: color-mix(in srgb, var(--m-flow) 30%, #000);
   color: #dffbff;
+}
+
+/* On paper a passed step is a pale cyan disc, not a dark one. */
+body.is-light .mstep.is-now {
+  color: var(--m-on-fill);
+}
+
+body.is-light .mstep.is-done {
+  background: color-mix(in srgb, var(--m-flow) 22%, var(--c-bg));
+  color: var(--m-flow);
 }
 
 .mstep.is-now {
@@ -626,7 +659,7 @@
 
 .mnode.is-selected > .mnode-body {
   border-color: var(--c-fg);
-  box-shadow: 0 0 0 1px var(--c-fg), 0 10px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px var(--c-fg), 0 10px 40px color-mix(in srgb, var(--c-shadow) 45%, transparent);
 }
 
 .mnode.is-new::after {
@@ -747,7 +780,7 @@
 }
 
 .medge-halo {
-  stroke: color-mix(in srgb, var(--c-bg) 92%, #000);
+  stroke: color-mix(in srgb, var(--c-bg) 92%, var(--c-shade));
   stroke-width: 6px;
   stroke-linecap: round;
 }
@@ -793,7 +826,7 @@
 
 .medge-dot {
   r: calc(3.4px * var(--ik));
-  fill: var(--c-accent);
+  fill: var(--c-accent-ink);
   filter: drop-shadow(0 0 2px currentColor);
 }
 
@@ -807,7 +840,7 @@
   text-anchor: middle;
   dominant-baseline: middle;
   paint-order: stroke;
-  stroke: color-mix(in srgb, var(--c-bg) 95%, #000);
+  stroke: color-mix(in srgb, var(--c-bg) 95%, var(--c-shade));
   stroke-width: calc(5px * var(--ik));
   stroke-linejoin: round;
   pointer-events: none;
@@ -867,7 +900,7 @@
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid color-mix(in srgb, var(--c-fg) 11%, transparent);
   border-radius: 14px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 34px color-mix(in srgb, var(--c-shadow) 35%, transparent);
   cursor: default;
 }
 
@@ -918,7 +951,7 @@
   gap: 7px;
   min-width: 0;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 52% * var(--fade)), transparent);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -953,7 +986,7 @@
   padding: 0;
   background: none;
   font: inherit;
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -962,11 +995,11 @@
 }
 
 .mcrumb:hover {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .mcrumb-sep {
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 70% * var(--fade)), transparent);
 }
 
 .mbtn {
@@ -979,7 +1012,7 @@
   border-radius: 9px;
   border: 1px solid transparent;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
   font: 500 12px var(--ui-font);
   white-space: nowrap;
   cursor: pointer;
@@ -1035,7 +1068,7 @@
   padding: 0;
   background: none;
   font: inherit;
-  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-accent-ink) 85%, var(--c-fg));
   cursor: pointer;
   text-align: left;
 }
@@ -1052,7 +1085,7 @@
   padding: 0 9px;
   border-radius: 9px;
   background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .msearch svg {
@@ -1109,7 +1142,7 @@
   padding: 6px 8px;
   max-width: min(760px, calc(100% - 40px));
   border-color: color-mix(in srgb, var(--m-flow) 55%, transparent);
-  box-shadow: 0 0 30px color-mix(in srgb, var(--m-flow) 18%, transparent), 0 10px 34px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--m-flow) 18%, transparent), 0 10px 34px color-mix(in srgb, var(--c-shadow) 35%, transparent);
 }
 
 .mflowbar-text {
@@ -1213,11 +1246,11 @@
 .mtimeline-label {
   min-width: 150px;
   text-align: right;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .mtimeline-empty {
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
 }
 
 .mlegend {
@@ -1253,18 +1286,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 25% * var(--fade)), transparent);
 }
 
 .mlegend-sw {
   display: inline-flex;
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .mlegend-meaning > div {
   display: block;
   margin: 3px 0;
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
 }
 
 .ml-dot {
@@ -1274,16 +1307,16 @@
   display: inline-block;
 }
 
-.ml-dot.is-ok { background: #4ce0b3; }
-.ml-dot.is-warn { background: #ffc857; margin-left: 6px; }
-.ml-dot.is-down { background: #ff5d73; margin-left: 6px; }
+.ml-dot.is-ok { background: var(--m-ok); }
+.ml-dot.is-warn { background: var(--m-warn); margin-left: 6px; }
+.ml-dot.is-down { background: var(--m-down); margin-left: 6px; }
 .mlegend-meaning span:not(.ml-new):not(.ml-delta) { display: inline-block; vertical-align: middle; margin-right: 5px; }
 .ml-live { width: 14px; height: 10px; border-radius: 4px; border: 2px solid #ff7eb6; box-shadow: 0 0 6px #ff7eb6; }
-.ml-new { padding: 0 5px; border-radius: 99px; background: #ffd166; color: #1a1400; font-weight: 700; font-size: 9.5px; }
-.ml-delta { padding: 0 5px; border-radius: 99px; background: rgba(138, 180, 255, 0.22); color: #b9d0ff; font-size: 9.5px; }
+.ml-new { padding: 0 5px; border-radius: 99px; background: var(--m-gold); color: var(--m-on-fill); font-weight: 700; font-size: 9.5px; }
+.ml-delta { padding: 0 5px; border-radius: 99px; background: color-mix(in srgb, var(--m-delta) 22%, transparent); color: var(--m-delta-ink); font-size: 9.5px; }
 .ml-ghost { width: 14px; height: 10px; border-radius: 3px; border: 1px dashed currentColor; opacity: 0.6; }
 .ml-line { width: 22px; height: 2px; background: currentColor; opacity: 0.6; }
-.ml-keys { margin-top: 8px !important; color: color-mix(in srgb, var(--c-fg) 50%, transparent) !important; }
+.ml-keys { margin-top: 8px !important; color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent) !important; }
 
 /* the strip: what is happening, along the bottom */
 .mstrip {
@@ -1321,7 +1354,7 @@
 
 .mstrip-quiet {
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   white-space: nowrap;
   padding: 0 6px;
 }
@@ -1336,7 +1369,7 @@
   border-radius: 99px;
   border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
   background: color-mix(in srgb, var(--c) 14%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 80%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 20% * var(--fade)), transparent);
   font: 11.5px var(--ui-font);
   white-space: nowrap;
   cursor: pointer;
@@ -1360,7 +1393,7 @@
   border-radius: 8px;
   border: 1px solid transparent;
   background: color-mix(in srgb, var(--c-fg) 5%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
   font: 11.5px var(--ui-font);
   white-space: nowrap;
   cursor: pointer;
@@ -1387,7 +1420,7 @@
 
 .mstrip-when {
   flex: none;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
   font-size: 10.5px;
 }
 
@@ -1401,9 +1434,9 @@
   flex-direction: column;
   width: 372px;
   max-height: calc(100% - 140px);
-  background: color-mix(in srgb, var(--c-bg) 90%, #000);
+  background: color-mix(in srgb, var(--c-bg) 90%, var(--c-shade));
   border-color: color-mix(in srgb, var(--hue) 38%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, #000 30%, transparent), 0 20px 60px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-shadow) 30%, transparent), 0 20px 60px color-mix(in srgb, var(--c-shadow) 55%, transparent);
   animation: m-card 0.22s var(--ease-enter);
   font-size: 12.5px;
   line-height: 1.5;
@@ -1429,7 +1462,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -1442,7 +1475,7 @@
   margin-bottom: 4px;
   padding-right: 30px;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .mcard-kind {
@@ -1452,7 +1485,7 @@
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .mcard-glyph {
@@ -1468,7 +1501,7 @@
   text-transform: none;
   letter-spacing: 0;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 75%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 25% * var(--fade)), transparent);
 }
 
 .mcard-title {
@@ -1485,10 +1518,11 @@
   font-size: 12px;
 }
 
-.mcard-health.s-ok { background: color-mix(in srgb, var(--m-ok, #4ce0b3) 12%, transparent); color: #4ce0b3; }
-.mcard-health.s-warn { background: color-mix(in srgb, #ffc857 13%, transparent); color: #ffc857; }
-.mcard-health.s-down { background: color-mix(in srgb, #ff5d73 15%, transparent); color: #ff7d8e; }
-.mcard-health.s-unknown { background: color-mix(in srgb, var(--c-fg) 7%, transparent); color: color-mix(in srgb, var(--c-fg) 60%, transparent); }
+.mcard-health.s-ok { background: color-mix(in srgb, var(--m-ok) 12%, transparent); color: var(--m-ok); }
+.mcard-health.s-warn { background: color-mix(in srgb, var(--m-warn) 13%, transparent); color: var(--m-warn); }
+.mcard-health.s-down { background: color-mix(in srgb, var(--m-down) 15%, transparent); color: #ff7d8e; }
+body.is-light .mcard-health.s-down { color: var(--m-down); }
+.mcard-health.s-unknown { background: color-mix(in srgb, var(--c-fg) 7%, transparent); color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent); }
 
 .mcard-ends {
   display: flex;
@@ -1512,7 +1546,7 @@
 }
 
 .mcard-ends-arrow {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   font-size: 11.5px;
 }
 
@@ -1526,7 +1560,7 @@
 .mcard-summary {
   margin: 2px 0 8px;
   font-size: 13px;
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
 }
 
 .mcard-chips {
@@ -1540,7 +1574,7 @@
   padding: 1px 8px;
   border-radius: 99px;
   background: color-mix(in srgb, var(--c-fg) 8%, transparent);
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
   font-size: 11px;
 }
 
@@ -1557,7 +1591,7 @@
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: color-mix(in srgb, var(--c-fg) 48%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 52% * var(--fade)), transparent);
 }
 
 .mcard-sec-h svg {
@@ -1565,13 +1599,14 @@
   height: 13px;
 }
 
-.mcard-sec.is-live .mcard-sec-h { color: #ff9ecb; }
-.mcard-sec.t-risk .mcard-sec-h { color: #ffc857; }
+.mcard-sec.is-live .mcard-sec-h { color: var(--m-live); }
+.mcard-sec.t-risk .mcard-sec-h { color: var(--m-warn); }
 .mcard-sec.t-issue .mcard-sec-h { color: #ff7d8e; }
-.mcard-sec.t-pr .mcard-sec-h { color: #c4a5ff; }
+.mcard-sec.t-pr .mcard-sec-h { color: var(--m-pr); }
 .mcard-sec.t-question .mcard-sec-h,
-.mcard-sec.t-decision .mcard-sec-h { color: #ffd166; }
-.mcard-sec.t-cost .mcard-sec-h { color: #4ce0b3; }
+.mcard-sec.t-decision .mcard-sec-h { color: var(--m-gold); }
+.mcard-sec.t-cost .mcard-sec-h { color: var(--m-ok); }
+body.is-light .mcard-sec.t-issue .mcard-sec-h { color: var(--m-down); }
 
 .mcard-live {
   --c: var(--c-accent);
@@ -1595,7 +1630,7 @@
 }
 
 .mcard-live-what {
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 40% * var(--fade)), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1603,7 +1638,7 @@
 
 .mcard-live-said {
   margin-top: 4px;
-  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 28% * var(--fade)), transparent);
   font-style: italic;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1616,7 +1651,7 @@
   grid-template-columns: 62px 1fr;
   gap: 8px;
   padding: 3px 0;
-  color: color-mix(in srgb, var(--c-fg) 80%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 20% * var(--fade)), transparent);
 }
 
 .mcard-hist.is-fresh {
@@ -1624,12 +1659,12 @@
 }
 
 .mcard-hist.is-fresh .mcard-when {
-  color: #ffd166;
+  color: var(--m-gold);
 }
 
 .mcard-when {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
   white-space: nowrap;
 }
 
@@ -1637,7 +1672,7 @@
   padding: 2px 0 2px 10px;
   border-left: 2px solid color-mix(in srgb, var(--c-fg) 14%, transparent);
   margin-bottom: 4px;
-  color: color-mix(in srgb, var(--c-fg) 85%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 15% * var(--fade)), transparent);
 }
 
 .mcard-conn {
@@ -1663,12 +1698,12 @@
 .mcard-conn-dir {
   flex: none;
   width: 68px;
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   font-size: 11px;
 }
 
 .mcard-conn-l {
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1701,18 +1736,22 @@
   border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
 }
 
-.mcard-part[data-status='warn'] { border-color: color-mix(in srgb, #ffc857 45%, transparent); }
-.mcard-part[data-status='down'] { border-color: color-mix(in srgb, #ff5d73 60%, transparent); }
+.mcard-part[data-status='warn'] { border-color: color-mix(in srgb, var(--m-warn) 45%, transparent); }
+.mcard-part[data-status='down'] { border-color: color-mix(in srgb, var(--m-down) 60%, transparent); }
 
 .mcard-part-g {
   display: inline-flex;
-  color: color-mix(in srgb, var(--c-accent) 70%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-accent-ink) 70%, var(--c-fg));
 }
 
 .mcard-flow {
   margin: 0 5px 5px 0;
   color: #bff6ff;
-  border-color: color-mix(in srgb, #5ee7ff 35%, transparent);
+  border-color: color-mix(in srgb, var(--m-flow) 35%, transparent);
+}
+
+body.is-light .mcard-flow {
+  color: var(--m-flow);
 }
 
 .mcard-flow svg,
@@ -1743,7 +1782,7 @@
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .mcard-details[open] summary {
@@ -1771,7 +1810,7 @@
 
 .mcard-a {
   margin-bottom: 8px;
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
 }
 
 .mcard-a.is-thinking {
@@ -1790,6 +1829,10 @@
 
 .mcard-a.is-error {
   color: #ff7d8e;
+}
+
+body.is-light .mcard-a.is-error {
+  color: var(--m-down);
 }
 
 .mcard-input {
@@ -1858,7 +1901,7 @@
 .mmd pre {
   padding: 8px 10px;
   border-radius: 8px;
-  background: color-mix(in srgb, #000 30%, transparent);
+  background: color-mix(in srgb, var(--c-shade) 30%, transparent);
   overflow-x: auto;
 }
 
@@ -1868,7 +1911,7 @@
 }
 
 .mmd a {
-  color: color-mix(in srgb, var(--c-accent) 85%, var(--c-fg));
+  color: color-mix(in srgb, var(--c-accent-ink) 85%, var(--c-fg));
 }
 
 /* ---------------------------------------------------------------- menus */
@@ -1879,7 +1922,7 @@
   min-width: 250px;
   max-width: 360px;
   padding: 5px;
-  background: color-mix(in srgb, var(--c-bg) 94%, #000);
+  background: color-mix(in srgb, var(--c-bg) 94%, var(--c-shade));
   animation: m-card 0.14s var(--ease-enter);
 }
 
@@ -1887,7 +1930,7 @@
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 650;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1913,7 +1956,7 @@
 
 .mmenu-hint {
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   white-space: nowrap;
 }
 
@@ -1954,7 +1997,7 @@
   max-width: 460px;
   font-size: 12.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
 }
 
 .mbuilding-log {
@@ -1964,7 +2007,7 @@
   width: min(580px, 100%);
   font: 11.5px/1.75 var(--term-font);
   text-align: left;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .mbuilding-log li {

@@ -160,6 +160,32 @@ const EYE_INK = '#2A1432'
 const ASH_INK = '#3A3236'
 const GLINT = '#FFF3E0'
 
+/**
+ * Whether the badges are drawn on a light card. The sprite's own colours are a character
+ * and stay put; what changes is anything picked to glow against near-black — the shell
+ * badge's lavender and amber, the halo behind a waiting mascot, the tick in the todo box —
+ * all of which wash out on paper. Set by App with the theme.
+ */
+let onLight = false
+
+export function setBadgeSurface(light: boolean): void {
+  onLight = light
+}
+
+/** Shell badge: frame and prompt per state. On light the prompt is the deeper of the two. */
+const SHELL_INK: Record<'dark' | 'light', Record<'attention' | 'working' | 'idle', { body: string; glow: string }>> = {
+  dark: {
+    attention: { body: '#FFC857', glow: '#FFE3A0' },
+    working: { body: '#C74EFF', glow: '#E08BFF' },
+    idle: { body: '#9A7BC0', glow: '#B79BDA' },
+  },
+  light: {
+    attention: { body: '#C08A1E', glow: '#9A5F00' },
+    working: { body: '#A64DDB', glow: '#8227B8' },
+    idle: { body: '#8C73B3', glow: '#664C8F' },
+  },
+}
+
 /** What the mascot is being asked to portray. */
 export interface MascotMood {
   state: ActivityState
@@ -346,8 +372,11 @@ export function drawMascot(
     const gx = size * 0.5
     const gy = cell * 9 + bob
     const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, size * 0.46)
-    glow.addColorStop(0, urgent ? 'rgba(255, 199, 87, 0.85)' : 'rgba(124, 231, 196, 0.62)')
-    glow.addColorStop(1, urgent ? 'rgba(255, 199, 87, 0)' : 'rgba(124, 231, 196, 0)')
+    // On a light card the dark-theme halo is a pale smudge the sprite's orange already
+    // outshines, so it is a deeper hue at less strength there.
+    const [rgb, a] = onLight ? (urgent ? ['230, 150, 20', 0.6] : ['30, 170, 125', 0.42]) : urgent ? ['255, 199, 87', 0.85] : ['124, 231, 196', 0.62]
+    glow.addColorStop(0, `rgba(${rgb}, ${a})`)
+    glow.addColorStop(1, `rgba(${rgb}, 0)`)
     ctx.fillStyle = glow
     ctx.fillRect(0, 0, size, size)
   }
@@ -488,7 +517,8 @@ export function drawTodoBadge(ctx: CanvasRenderingContext2D, s: number, accent: 
     ctx.roundRect(x, y, w, w, 0.04 * s)
     if (ticked) {
       ctx.fill()
-      ctx.strokeStyle = '#1a0e2e'
+      // Light palettes' cyans are deep, so the tick cut into them is light.
+      ctx.strokeStyle = onLight ? '#ffffff' : '#1a0e2e'
       ctx.beginPath()
       ctx.moveTo(x + w * 0.25, y + w * 0.55)
       ctx.lineTo(x + w * 0.45, y + w * 0.75)
@@ -570,8 +600,7 @@ export function drawMapBadge(ctx: CanvasRenderingContext2D, s: number, accent: s
 export function drawShellBadge(ctx: CanvasRenderingContext2D, s: number, state: ActivityState, t: number): void {
   ctx.clearRect(0, 0, s, s)
   const still = state === 'exited'
-  const body = state === 'attention' ? '#FFC857' : state === 'working' ? '#C74EFF' : '#9A7BC0'
-  const glow = state === 'attention' ? '#FFE3A0' : state === 'working' ? '#E08BFF' : '#B79BDA'
+  const { body, glow } = SHELL_INK[onLight ? 'light' : 'dark'][state === 'attention' || state === 'working' ? state : 'idle']
 
   ctx.strokeStyle = body
   ctx.globalAlpha = still ? 0.45 : 0.75
