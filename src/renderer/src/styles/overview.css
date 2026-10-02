@@ -312,19 +312,22 @@ body.sidebar-mini .ember-place-name {
   display: none;
 }
 
-/* ---- a card ---- */
+/* ---- a card ----
+   Quiet by default: a faint plate, no border until the pointer is on it. A card that
+   wants you says so with one thing — a bar down its left edge and a warm tint — rather
+   than a border, a glow and a capsule all at once. */
 
 .ember-ov-card {
   --tone: color-mix(in srgb, var(--c-fg) 22%, transparent);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
-  padding: 13px 15px 12px;
-  border: 1px solid var(--hairline);
+  padding: 14px 16px;
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--c-fg) 2.5%, transparent);
+  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
   cursor: pointer;
   outline: none;
   animation: ember-ov-card-in 240ms var(--ease-snap) both;
@@ -342,13 +345,17 @@ body.sidebar-mini .ember-place-name {
 }
 
 .ember-ov-card:hover {
-  border-color: color-mix(in srgb, var(--c-fg) 16%, transparent);
-  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
+  border-color: var(--hairline);
+  background: color-mix(in srgb, var(--c-fg) 4.5%, transparent);
 }
 
 .ember-ov-card:focus-visible {
-  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+
+/* A plain shell has nothing to report but where it is: one line. */
+.ember-ov-card[data-claude='false'] {
+  padding-block: 10px;
 }
 
 .ember-ov-card[data-state='working'] {
@@ -358,16 +365,12 @@ body.sidebar-mini .ember-place-name {
 .ember-ov-card[data-state='attention'],
 .ember-ov-card.is-unread {
   --tone: var(--c-attention);
-  border-color: color-mix(in srgb, var(--c-attention) 42%, transparent);
-  background: color-mix(in srgb, var(--c-attention) 5%, transparent);
-}
-
-.ember-ov-card[data-state='attention'] {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-attention) 18%, transparent), 0 8px 28px -12px color-mix(in srgb, var(--c-attention) 45%, transparent);
+  background: color-mix(in srgb, var(--c-attention) 6%, transparent);
+  box-shadow: inset 2px 0 0 var(--c-attention);
 }
 
 .ember-ov-card[data-state='exited'] {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 /* A question or a card you opened takes the whole row: it is what you are reading. */
@@ -378,7 +381,7 @@ body.sidebar-mini .ember-place-name {
 }
 
 .ember-ov-card.is-sent {
-  border-color: color-mix(in srgb, var(--c-working) 60%, transparent);
+  border-color: color-mix(in srgb, var(--c-working) 55%, transparent);
 }
 
 .ember-ov-card-top {
@@ -397,12 +400,7 @@ body.sidebar-mini .ember-place-name {
 }
 
 .ember-ov-card[data-state='working'] .ember-ov-dot {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-working) 20%, transparent);
   animation: ember-live-pulse 1.6s ease-in-out infinite;
-}
-
-.ember-ov-card[data-state='attention'] .ember-ov-dot {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-attention) 25%, transparent);
 }
 
 .ember-ov-title {
@@ -422,7 +420,7 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
 }
 
 .ember-ov-pill {
@@ -433,7 +431,9 @@ body.sidebar-mini .ember-place-name {
   color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
-.ember-ov-pill[hidden] {
+.ember-ov-pill[hidden],
+.ember-ov-expand[hidden],
+.ember-ov-foot[hidden] {
   display: none;
 }
 
@@ -443,13 +443,12 @@ body.sidebar-mini .ember-place-name {
 
 .ember-ov-card[data-state='attention'] .ember-ov-pill,
 .ember-ov-card.is-unread .ember-ov-pill {
-  padding: 1px 7px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--c-attention) 18%, transparent);
   color: var(--c-attention);
   font-family: var(--ui-font);
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .ember-ov-expand {
@@ -479,15 +478,15 @@ body.sidebar-mini .ember-place-name {
   background: color-mix(in srgb, var(--c-fg) 8%, transparent);
 }
 
-/* What it said: three lines, then an ellipsis. */
+/* What it said: two lines, then an ellipsis. */
 .ember-ov-said {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   font-size: 12.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 16% * var(--fade)), transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
 }
 
 .ember-ov-said.is-quiet {
@@ -508,14 +507,14 @@ body.sidebar-mini .ember-place-name {
 
 /* The whole reply, readable: a column you can scroll, set like prose. */
 .ember-ov-full {
-  max-height: 320px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 6px;
   font-size: 12.5px;
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 14% * var(--fade)), transparent);
   cursor: text;
   user-select: text;
 }
@@ -551,49 +550,54 @@ body.sidebar-mini .ember-place-name {
   color: var(--c-fg);
 }
 
-/* The picker, as the session draws it. */
+/* The question a picker asks: what it is about in small mono, the question itself in
+   the page's own type. No box — the card is the box. */
 .ember-ov-screen {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  border: 1px solid color-mix(in srgb, var(--c-attention) 22%, transparent);
-  background: color-mix(in srgb, var(--c-bg) 55%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 0;
   font-family: var(--term-font);
   font-size: 11.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 38% * var(--fade)), transparent);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 260px;
-  overflow-y: auto;
   cursor: text;
   user-select: text;
 }
 
+.ember-ov-screen > .is-q {
+  margin-top: 4px;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-fg);
+  white-space: normal;
+}
+
+/* Its options, as a menu: each one a row you click, the highlighted one marked. */
 .ember-ov-keys {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  margin: 0 -8px;
 }
 
 .ember-ov-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  max-width: 100%;
-  padding: 5px 11px 5px 6px;
-  border: 1px solid color-mix(in srgb, var(--c-fg) 14%, transparent);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 0;
   border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
-  color: var(--c-fg);
-  font: 12px var(--ui-font);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
+  font: 12.5px/1.45 var(--ui-font);
+  text-align: left;
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition:
-    background 120ms var(--ease-move),
-    border-color 120ms var(--ease-move);
+  transition: background 110ms var(--ease-move);
 }
 
 .ember-ov-key kbd {
@@ -602,30 +606,40 @@ body.sidebar-mini .ember-place-name {
   height: 18px;
   padding: 0 4px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-  font: 600 10.5px/18px var(--term-font);
+  border: 1px solid color-mix(in srgb, var(--c-fg) 18%, transparent);
+  font: 600 10.5px/16px var(--term-font);
   text-align: center;
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
 }
 
 .ember-ov-key:hover {
-  border-color: color-mix(in srgb, var(--c-attention) 55%, transparent);
   background: color-mix(in srgb, var(--c-attention) 12%, transparent);
+  color: var(--c-fg);
 }
 
 .ember-ov-key.is-selected {
-  border-color: color-mix(in srgb, var(--c-attention) 50%, transparent);
+  color: var(--c-fg);
 }
 
 .ember-ov-key.is-selected kbd {
+  border-color: var(--c-attention);
   background: var(--c-attention);
   color: var(--c-bg);
 }
 
-.ember-ov-key.is-plain {
-  padding: 5px 10px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 35% * var(--fade)), transparent);
-  font-family: var(--term-font);
-  font-size: 11px;
+.ember-ov-key-esc {
+  align-self: flex-start;
+  margin: 2px 0 0 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
+  font: 11px var(--ui-font);
+  cursor: pointer;
+}
+
+.ember-ov-key-esc:hover {
+  color: var(--c-fg);
 }
 
 .ember-ov-doing {
@@ -663,11 +677,11 @@ body.sidebar-mini .ember-place-name {
   display: flex;
   flex-direction: column;
   padding: 8px 0 2px;
-  border-top: 1px dashed var(--hairline);
+  border-top: 1px solid var(--hairline);
   cursor: default;
 }
 
-/* The foot: one quiet line of facts and the context as a short bar. */
+/* The foot: three facts, and the context only when it is getting full. */
 .ember-ov-foot {
   display: flex;
   align-items: center;
@@ -683,28 +697,19 @@ body.sidebar-mini .ember-place-name {
   white-space: nowrap;
   font-family: var(--term-font);
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-ov-ctx {
   flex: none;
-  width: 54px;
-  height: 4px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-  overflow: hidden;
+  font-family: var(--term-font);
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--c-attention) 75%, var(--c-fg));
 }
 
-.ember-ov-ctx > span {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--c-fg) 42%, transparent);
-  transition: width 400ms var(--ease-move);
-}
-
-.ember-ov-ctx[data-hot='true'] > span {
-  background: var(--c-attention);
+.ember-ov-ctx[data-hot='true'] {
+  color: var(--c-attention);
+  font-weight: 600;
 }
 
 /* ---- composers ---- */
@@ -725,10 +730,10 @@ body.sidebar-mini .ember-place-name {
   border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
 }
 
-/* On a resting card the box waits out of the way until the card is pointed at; a card
-   that wants you, or is open, always shows it. */
-.ember-ov-card[data-state='idle']:not(.is-open):not(.is-unread):not(:hover):not(:focus-within) .ember-ov-ask,
-.ember-ov-card[data-state='working']:not(.is-open):not(:hover):not(:focus-within) .ember-ov-ask {
+/* The box stays out of the way until the card is pointed at or focused. It shows on
+   its own only where replying is the natural next step: a reply you have not read, a
+   card you opened. A picker is answered with its options, so its box waits too. */
+.ember-ov-card:not(.is-open):not(.is-unread):not([data-attention='handoff']):not(:hover):not(:focus-within) .ember-ov-ask {
   display: none;
 }
 

@@ -43,7 +43,7 @@ export interface OverviewRow {
   /** A theme colour of its own, so its lines in the log can be told apart at a glance. */
   hue: string
   /**
-   * While it waits on a picker: the bottom of its screen, as text. The question a
+   * While it waits on a picker: the lines above its options, as text. The question a
    * permission prompt asks is drawn by the TUI and never written to the transcript, so
    * the screen is the only place it exists.
    */
@@ -171,7 +171,6 @@ interface CardNode {
   meta: HTMLElement
   metaSig: string
   ctx: HTMLElement
-  ctxFill: HTMLElement
   recent: HTMLElement
   recentSig: string
   ask: HTMLElement
@@ -770,7 +769,7 @@ export class OverviewView {
     const full = document.createElement('div')
     full.className = 'ember-ov-full'
     full.hidden = true
-    const screen = document.createElement('pre')
+    const screen = document.createElement('div')
     screen.className = 'ember-ov-screen'
     screen.hidden = true
     const keys = document.createElement('div')
@@ -790,8 +789,6 @@ export class OverviewView {
     const ctx = document.createElement('span')
     ctx.className = 'ember-ov-ctx'
     ctx.hidden = true
-    const ctxFill = document.createElement('span')
-    ctx.append(ctxFill)
     foot.append(meta, ctx)
 
     const ask = this.composer('Type to this session…', (text) => {
@@ -819,7 +816,6 @@ export class OverviewView {
       meta,
       metaSig: '',
       ctx,
-      ctxFill,
       recent,
       recentSig: '',
       ask: ask.root,
@@ -835,7 +831,7 @@ export class OverviewView {
     }
     const isClaude = a.isClaude || b !== null
     const open = this.expanded.has(row.tabId)
-    const question = a.state === 'attention' && a.attention === 'question' && !!row.screen?.length
+    const question = a.state === 'attention' && a.attention === 'question' && row.choices.length > 0
     const handoff = a.state === 'attention' && a.attention === 'handoff'
     // First sight of a card counts as seen; so does being in its tab.
     if (!this.seenSaid.has(row.tabId) || row.isActive) this.seenSaid.set(row.tabId, b?.saidAt ?? 0)
@@ -853,6 +849,8 @@ export class OverviewView {
     set(node.where, row.cwd ? basename(row.cwd) : '')
     node.where.title = row.cwd
 
+    // One word or a time on the right, never both: what it wants, how long it has been
+    // working, or how old its last reply is.
     const pill =
       a.state === 'attention'
         ? a.attention === 'question'
@@ -867,24 +865,24 @@ export class OverviewView {
             : unread
               ? 'new reply'
               : b?.saidAt
-              ? ago(b.saidAt)
-              : row.unread > 0
-                ? 'unread'
+                ? ago(b.saidAt)
                 : ''
     set(node.pill, pill)
     node.pill.hidden = !pill
     set(node.expand, open ? '⤡' : '⤢')
     node.expand.title = open ? 'Fold it back  (Space)' : 'Open it up here  (Space)'
+    node.expand.hidden = !isClaude
 
     // What it said: one clamped sentence normally, the whole reply when the card is open
     // or the turn has just come back to you — that reply is the thing you need to read.
+    // A plain shell has nothing to say, so it says nothing: its card is one line.
     const showFull = (open || handoff || (unread && a.state !== 'working')) && !!b?.full
-    const said = b?.said || (isClaude ? (b ? 'Nothing said yet.' : 'Waiting for the session to announce itself.') : 'A shell, not a Claude session.')
+    const said = b?.said || (b ? 'Nothing said yet.' : 'Waiting for the session to announce itself.')
     set(node.said, said)
-    node.said.hidden = showFull || question
+    node.said.hidden = !isClaude || showFull || question
     node.said.classList.toggle('is-quiet', !b?.said)
-    node.full.hidden = !showFull
-    if (showFull) {
+    node.full.hidden = !showFull || question
+    if (showFull && !question) {
       const sig = `${b!.saidAt}:${b!.full.length}`
       if (sig !== node.fullSig) {
         node.fullSig = sig
@@ -892,13 +890,23 @@ export class OverviewView {
       }
     }
 
-    // The picker it is waiting on, as its own screen draws it, and its options as keys.
-    node.screen.hidden = !question
+    // The picker: the question as the session asks it, then its options as the buttons
+    // themselves — one list, read once, clicked once.
+    node.screen.hidden = !question || !row.screen?.length
     if (question) {
-      const text = row.screen!.join('\n')
+      const text = (row.screen ?? []).join('\n')
       if (text !== node.screenSig) {
         node.screenSig = text
-        node.screen.textContent = text
+        const lines = row.screen ?? []
+        node.screen.replaceChildren(
+          ...lines.map((l, i) => {
+            const d = document.createElement('div')
+            d.textContent = l
+            // The last line above the options is the question; the rest is what it is about.
+            if (i === lines.length - 1) d.className = 'is-q'
+            return d
+          })
+        )
       }
     }
     const keysSig = question ? row.choices.map((c) => `${c.key}${c.selected ? '*' : ''}${c.label}`).join('|') : ''
@@ -914,23 +922,20 @@ export class OverviewView {
           k.classList.toggle('is-selected', c.selected)
           const n = document.createElement('kbd')
           n.textContent = c.key
-          k.append(n, document.createTextNode(c.label))
+          const label = document.createElement('span')
+          label.textContent = c.label
+          k.append(n, label)
           k.title = `Press ${c.key} in ${row.title}`
           k.addEventListener('click', () => this.hooks.onKeys(row.tabId, c.key))
           node.keys.append(k)
         }
-        for (const [label, data, hint] of [
-          ['Enter', '\r', 'Confirm the highlighted option'],
-          ['Esc', '\x1b', 'Cancel'],
-        ] as const) {
-          const k = document.createElement('button')
-          k.type = 'button'
-          k.className = 'ember-ov-key is-plain'
-          k.textContent = label
-          k.title = hint
-          k.addEventListener('click', () => this.hooks.onKeys(row.tabId, data))
-          node.keys.append(k)
-        }
+        const esc = document.createElement('button')
+        esc.type = 'button'
+        esc.className = 'ember-ov-key-esc'
+        esc.textContent = 'Esc to cancel'
+        esc.title = `Press Esc in ${row.title}`
+        esc.addEventListener('click', () => this.hooks.onKeys(row.tabId, '\x1b'))
+        node.keys.append(esc)
       }
     }
 
@@ -938,30 +943,35 @@ export class OverviewView {
     set(node.doing, doing)
     node.doing.hidden = !doing
 
-    // The foot: one quiet line of facts, and the context as a bar.
+    // The foot: three facts at most. The rest — branch, cost, exact context — is one
+    // hover away, and the page's numbers already carry the totals.
     const c = row.claude
     const bits: string[] = []
-    if (row.git) bits.push(`${row.git.branch}${row.git.dirty ? ` *${row.git.dirty}` : ''}`)
     if (c?.model) bits.push(c.model)
     if (b) {
       const tok = b.tokens.input + b.tokens.output + b.tokens.cacheRead + b.tokens.cacheWrite
       if (tok) bits.push(`${compact(tok)} tok`)
       if (b.edits.count) bits.push(`+${b.edits.added} −${b.edits.removed}`)
     }
-    if (c?.costUsd !== null && c?.costUsd !== undefined) bits.push(money(c.costUsd))
     const metaSig = bits.join(' · ')
     if (metaSig !== node.metaSig) {
       node.metaSig = metaSig
       node.meta.textContent = metaSig
     }
+    node.meta.parentElement!.hidden = !isClaude || !metaSig
+    node.meta.title = [
+      row.git ? `${row.git.branch}${row.git.dirty ? `, ${row.git.dirty} changed` : ''}` : '',
+      c?.costUsd !== null && c?.costUsd !== undefined ? `${money(c.costUsd)} so far` : '',
+      c?.contextPercent !== null && c?.contextPercent !== undefined ? `context ${Math.round(c.contextPercent)}%` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
+    // Context only when it is worth a look: a session nearing the point it compacts.
     const pct = c?.contextPercent ?? null
-    node.ctx.hidden = pct === null
-    if (pct !== null) {
-      const w = `${Math.max(3, Math.min(100, Math.round(pct)))}%`
-      if (node.ctxFill.style.width !== w) node.ctxFill.style.width = w
-      node.ctx.dataset['hot'] = String(pct >= 80)
-      node.ctx.title = `Context ${Math.round(pct)}% used${c?.contextSize ? ` of ${Math.round(c.contextSize / 1000)}k` : ''}`
-    }
+    const ctx = pct !== null && pct >= 70 ? `ctx ${Math.round(pct)}%` : ''
+    set(node.ctx, ctx)
+    node.ctx.hidden = !ctx
+    node.ctx.dataset['hot'] = String(pct !== null && pct >= 85)
 
     // Opened up: the last few things it did, from the log.
     node.recent.hidden = !open
@@ -979,7 +989,7 @@ export class OverviewView {
     }
 
     node.ask.hidden = !isClaude || a.state === 'exited'
-    node.input.placeholder = question ? 'Or type an answer…' : handoff ? 'Reply…' : 'Type to this session…'
+    node.input.placeholder = question ? 'Or type an answer…' : handoff || unread ? 'Reply…' : 'Type to this session…'
   }
 
   // ---------- the log ----------

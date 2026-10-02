@@ -1050,15 +1050,16 @@ export class App {
     // A picker's own footer ("Esc to cancel · Enter to confirm") belongs to it; whatever
     // is under that is the rest of the screen, not the question.
     if (lines[last + 1] && /\b(esc|enter|confirm|cancel|tab)\b/i.test(lines[last + 1]!)) last++
-    const block = lines.slice(Math.max(0, first - 6), last + 1)
-    const indent = Math.min(...block.map((l) => l.match(/^\s*/)![0].length))
-    const screen = block.map((l) => l.slice(indent))
+    // Only the question goes on the card — the lines above the options. The options
+    // themselves become the card's buttons; showing them twice was the clutter.
+    const above = lines.slice(Math.max(0, first - 6), first)
+    const indent = above.length ? Math.min(...above.map((l) => l.match(/^\s*/)![0].length)) : 0
+    const screen = above.map((l) => l.slice(indent))
     const choices: OverviewChoice[] = []
-    for (const l of block) {
+    for (const l of lines.slice(first, last + 1)) {
       const m = l.match(choiceRe)
       if (!m) continue
-      const label = m[3]!.trim()
-      choices.push({ key: m[2]!, label: label.length > 46 ? `${label.slice(0, 45)}…` : label, selected: !!m[1] && m[1] !== '*' })
+      choices.push({ key: m[2]!, label: m[3]!.trim(), selected: !!m[1] && m[1] !== '*' })
     }
     return { screen, choices }
   }
