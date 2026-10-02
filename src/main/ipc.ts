@@ -15,7 +15,7 @@ import { UsageWatcher } from './usage.js'
 import { detectAgents, pingAgent } from './agents.js'
 import { agentSpec } from '../shared/agents.js'
 import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
-import { allBriefs, onBrief } from './overview.js'
+import { allActivity, allBriefs, onActivity, onBrief } from './overview.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, forgetTab, pushFromMain, resolveCmd } from './bridge.js'
 import { renderPanelDocument } from './panelDoc.js'
@@ -95,6 +95,8 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   // The overview: what every Claude session last said and is doing.
   ipcMain.handle('ember:overview:all', () => allBriefs())
   onBrief((b) => broadcast('ember:overview:brief', b))
+  ipcMain.handle('ember:overview:activity', () => allActivity())
+  onActivity((e) => broadcast('ember:overview:act', e))
 
   ipcMain.handle('ember:config', () => loadConfig())
 

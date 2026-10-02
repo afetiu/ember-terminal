@@ -28,6 +28,40 @@ const ORCH_MARK = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" a
   <circle class="ember-orch-hub" cx="8" cy="8" r="2.3" fill="currentColor"/>
 </svg>`
 
+/** The four things that are places rather than sessions. */
+export type Place = 'overview' | 'todo' | 'notes' | 'map'
+
+/**
+ * The places' marks. Drawn, 16px, `currentColor`, the same stroke as the orchestrator's,
+ * so the row reads as one set and follows every state the button has.
+ */
+const PLACES: Array<{ id: Place; label: string; title: string; svg: string }> = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    title: 'Overview — every session, the numbers, the log  (Ctrl+Shift+S · ember overview)',
+    svg: '<rect x="2" y="2" width="5" height="5" rx="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.3"/>',
+  },
+  {
+    id: 'todo',
+    label: 'Todo',
+    title: 'Todo list  (Ctrl+Shift+D · ember todo)',
+    svg: '<rect x="2.5" y="2.5" width="11" height="11" rx="2.2"/><path d="M5.3 8.2 L7.2 10.1 L10.8 5.9"/>',
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    title: 'Notes  (ember notes)',
+    svg: '<path d="M4 1.8 H9.5 L12.5 4.8 V14.2 H4 Z"/><path d="M9.3 2 V5 H12.3"/><path d="M6 8.2 H10.5 M6 10.8 H9.5"/>',
+  },
+  {
+    id: 'map',
+    label: 'Map',
+    title: 'Architecture map  (Ctrl+Shift+G · ember map)',
+    svg: '<circle cx="4" cy="4" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="8" cy="12" r="2"/><path d="M5.9 4.2 H10 M5 5.8 L7 10.2 M11 6.3 L9 10.2"/>',
+  },
+]
+
 export interface CardModel {
   id: string
   title: string
@@ -58,6 +92,8 @@ export interface SidebarHandlers {
   onNew(): void
   onRename(id: string, title: string): void
   onReorder(ids: string[]): void
+  /** Go to one of the places. */
+  onPlace(place: Place): void
 }
 
 interface CardNode {
@@ -101,6 +137,8 @@ export class Sidebar {
   readonly el: HTMLElement
   private readonly list: HTMLElement
   private readonly orchBtn: HTMLButtonElement
+  private readonly navBtns = new Map<Place, { btn: HTMLButtonElement; badge: HTMLElement }>()
+  private navSig = ''
   private readonly nodes = new Map<string, CardNode>()
 
   /**
@@ -153,6 +191,34 @@ export class Sidebar {
     this.orchBtn.addEventListener('click', () => this.handlers.onOrchestrator())
 
     head.append(label, this.orchBtn, add)
+
+    // The places, always there, above the sessions: four buttons in one row, so the
+    // overview, the list, the notes and the map are one click from anywhere and none of
+    // them takes a card's worth of room in the list below.
+    const nav = document.createElement('div')
+    nav.className = 'ember-places'
+    nav.setAttribute('role', 'toolbar')
+    nav.setAttribute('aria-label', 'Places')
+    for (const p of PLACES) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'ember-place'
+      btn.dataset['place'] = p.id
+      btn.title = p.title
+      btn.setAttribute('aria-label', p.label)
+      btn.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>`
+      const name = document.createElement('span')
+      name.className = 'ember-place-name'
+      name.textContent = p.label
+      const badge = document.createElement('span')
+      badge.className = 'ember-place-badge'
+      badge.hidden = true
+      btn.append(name, badge)
+      btn.addEventListener('click', () => this.handlers.onPlace(p.id))
+      nav.append(btn)
+      this.navBtns.set(p.id, { btn, badge })
+    }
+    this.el.append(nav)
 
     this.list = document.createElement('div')
     this.list.className = 'ember-cards'
@@ -274,6 +340,24 @@ export class Sidebar {
    */
   mountBelowCards(el: HTMLElement): void {
     this.list.insertAdjacentElement('afterend', el)
+  }
+
+  /**
+   * Which place is on stage, and the counts worth a badge: how many sessions want you
+   * (on the overview) and how many items are open (on the list).
+   */
+  renderNav(active: Place | null, counts: Partial<Record<Place, number>>): void {
+    const sig = `${active}|${counts.overview ?? 0}|${counts.todo ?? 0}`
+    if (sig === this.navSig) return
+    this.navSig = sig
+    for (const [id, { btn, badge }] of this.navBtns) {
+      btn.classList.toggle('is-active', id === active)
+      btn.setAttribute('aria-pressed', String(id === active))
+      const n = counts[id] ?? 0
+      badge.hidden = n <= 0
+      badge.textContent = n > 99 ? '99+' : String(n)
+      badge.classList.toggle('is-hot', id === 'overview')
+    }
   }
 
   render(cards: CardModel[], activeId: string | null): void {

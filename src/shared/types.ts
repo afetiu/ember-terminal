@@ -245,6 +245,31 @@ export interface SessionBrief {
   doingAt: number
   turnEnded: boolean
   at: number
+  /** The whole of the last reply, markdown as written, for a card opened up to read it. */
+  full: string
+  /** Tokens across the session's whole transcript, each message counted once. */
+  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number }
+  /** What it has changed: files touched and lines in and out, from its edit calls. */
+  edits: { files: number; count: number; added: number; removed: number }
+  /** When the transcript began, if it says. */
+  startedAt: number
+}
+
+/**
+ * One thing a session did, for the overview's log: an edit, a command, a lookup.
+ * Taken from the transcript's tool calls, so it is what happened rather than what the
+ * screen showed.
+ */
+export interface ActivityEntry {
+  tabId: string
+  at: number
+  kind: 'edit' | 'write' | 'read' | 'search' | 'run' | 'agent' | 'web' | 'tool' | 'done'
+  /** The line as the log shows it: "App.ts", "pnpm build", "finished". */
+  text: string
+  /** Full path or command, for the tooltip. */
+  detail: string
+  added: number
+  removed: number
 }
 
 export interface ClaudeConfig {
@@ -753,6 +778,9 @@ export interface EmberBridge {
   overview: {
     all(): Promise<SessionBrief[]>
     onBrief(cb: (b: SessionBrief) => void): () => void
+    /** The log so far, oldest first. */
+    activity(): Promise<ActivityEntry[]>
+    onActivity(cb: (e: ActivityEntry[]) => void): () => void
   }
   window: {
     minimize(): void

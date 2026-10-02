@@ -44,7 +44,23 @@ export interface TranscriptEvent {
    * and handed the floor back. Narration ignores it; the voice loop waits for it, since
    * it is the only reliable "the answer is complete" signal in the transcript.
    */
-  kind: 'assistant' | 'tool' | 'result' | 'turn-end'
+  kind: 'assistant' | 'tool' | 'result' | 'turn-end' | 'usage'
+  /** On 'assistant': the text as written, markdown and all, for a reader rather than a voice. */
+  full?: string
+  /** On 'tool': the call itself, for whoever wants more than the spoken line. */
+  tool?: { name: string; input: Record<string, unknown> }
+  /** On 'usage': the message's token counts. Repeated per content block; `msgId` dedupes. */
+  usage?: TokenUsage
+  msgId?: string
+  /** When the line was written, from the transcript's own timestamp. */
+  at?: number
+}
+
+export interface TokenUsage {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
 }
 
 /** How Claude Code names a working directory's transcript folder. */
@@ -110,32 +126,69 @@ function speakable(text: string): string {
     .trim()
 }
 
-interface Line {
+export interface Line {
   type?: string
-  message?: { role?: string; content?: unknown; stop_reason?: string }
+  timestamp?: string
+  message?: {
+    id?: string
+    role?: string
+    content?: unknown
+    stop_reason?: string
+    usage?: {
+      input_tokens?: number
+      output_tokens?: number
+      cache_read_input_tokens?: number
+      cache_creation_input_tokens?: number
+    }
+  }
 }
 
-function eventsFrom(line: Line): Array<{ text: string; kind: TranscriptEvent['kind'] }> {
+type LineEvent = Omit<TranscriptEvent, 'tabId'>
+
+export function eventsFrom(line: Line): LineEvent[] {
   if (line.type !== 'assistant') return []
   const content = line.message?.content
   if (!Array.isArray(content)) return []
 
-  const out: Array<{ text: string; kind: TranscriptEvent['kind'] }> = []
+  const parsed = line.timestamp ? Date.parse(line.timestamp) : NaN
+  const at = Number.isFinite(parsed) ? parsed : undefined
+  const out: LineEvent[] = []
   for (const block of content as Array<Record<string, unknown>>) {
     if (block['type'] === 'text') {
-      const text = speakable(String(block['text'] ?? ''))
-      if (text) out.push({ text, kind: 'assistant' })
+      const raw = String(block['text'] ?? '')
+      const text = speakable(raw)
+      if (text) out.push({ text, kind: 'assistant', full: raw.trim(), at })
     } else if (block['type'] === 'tool_use') {
-      const said = describeTool(String(block['name'] ?? ''), (block['input'] as Record<string, unknown>) ?? {})
-      if (said) out.push({ text: said, kind: 'tool' })
+      const name = String(block['name'] ?? '')
+      const input = (block['input'] as Record<string, unknown>) ?? {}
+      const said = describeTool(name, input)
+      if (said) out.push({ text: said, kind: 'tool', tool: { name, input }, at })
     }
+  }
+
+  // Every content block of one message is its own line, each carrying the message's
+  // usage so far; the id is what lets a reader count a message once.
+  const u = line.message?.usage
+  if (u && line.message?.id) {
+    out.push({
+      text: '',
+      kind: 'usage',
+      msgId: line.message.id,
+      at,
+      usage: {
+        input: u.input_tokens ?? 0,
+        output: u.output_tokens ?? 0,
+        cacheRead: u.cache_read_input_tokens ?? 0,
+        cacheWrite: u.cache_creation_input_tokens ?? 0,
+      },
+    })
   }
 
   // `end_turn` is the session finishing and waiting for you; `tool_use` is it carrying on
   // to the next call. Reading the distinction off the transcript beats every alternative
   // — the terminal is a TUI redrawing itself, and a silence timer cannot tell a session
   // that has finished from one that is thinking hard.
-  if (line.message?.stop_reason === 'end_turn') out.push({ text: '', kind: 'turn-end' })
+  if (line.message?.stop_reason === 'end_turn') out.push({ text: '', kind: 'turn-end', at })
 
   return out
 }
@@ -350,6 +403,11 @@ export function bindSession(tabId: string, sessionId: string, cwd: string): void
 export function tabForSession(sessionId: string): string | undefined {
   for (const [tabId, b] of bindings) if (b.sessionId === sessionId) return tabId
   return undefined
+}
+
+/** The transcript file a session writes, whether or not it exists yet. */
+export function transcriptFile(sessionId: string, cwd: string): string {
+  return join(PROJECTS, projectSlug(cwd), `${sessionId}.jsonl`)
 }
 
 /** Forget a tab's session binding when the tab goes away. */

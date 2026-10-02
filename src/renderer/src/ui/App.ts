@@ -1,5 +1,5 @@
-import type { ClaudeStatus, EmberConfig, GitStatus, SessionBrief, ThemeConfig, TurnMessage } from '@shared/types'
-import type { OverviewOrch, OverviewRow } from './Overview'
+import type { ClaudeStatus, ClaudeUsage, EmberConfig, GitStatus, SessionBrief, ThemeConfig, TurnMessage } from '@shared/types'
+import type { OverviewChoice, OverviewOrch, OverviewRow } from './Overview'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
 import { Session } from '../core/Session'
@@ -12,7 +12,7 @@ import { Search } from './Search'
 import { Settings, SETTINGS_TABS, type SettingsTab } from './Settings'
 import { FontPicker } from './FontPicker'
 import { Cheatsheet } from './Cheatsheet'
-import { Sidebar, type CardModel } from './Sidebar'
+import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
@@ -129,6 +129,15 @@ export class App {
   private readonly gitByCwd = new Map<string, GitStatus | null>()
   /** What each tab's Claude session last said through its status line, by tab id. */
   private readonly claudeByTab = new Map<string, ClaudeStatus>()
+  /** The plan's usage windows, for the overview's numbers. */
+  private plan: ClaudeUsage | null = null
+  /** Open items on the todo list, for the sidebar's Todo button. */
+  private todoOpen = 0
+  /**
+   * The session tab you were last in before going to a place (overview, todo, notes,
+   * map). The shortcut that took you there takes you back to it.
+   */
+  private lastSessionId: string | null = null
   /** What each tab's Claude session last said and is doing, from its transcript, by tab id. */
   private readonly briefByTab = new Map<string, SessionBrief>()
   private lastGitAt = 0
@@ -151,6 +160,7 @@ export class App {
       onNew: () => void this.newGroup(),
       onRename: (id, title) => this.renameGroup(id, title),
       onReorder: (ids) => this.reorderGroups(ids),
+      onPlace: (place) => void this.goPlace(place),
     })
 
     // The vitals line, pinned at the very bottom of the sidebar.
@@ -803,7 +813,7 @@ export class App {
    * not; with no tab at all, a tab of its own. Its own surface, not a note.
    */
   async openTodoIn(group: Group | null): Promise<void> {
-    let g = group
+    let g = group ?? this.placeGroup('todo')
     if (!g) {
       g = new Group(() => this.syncTabs())
       this.tuneGroup(g)
@@ -827,6 +837,9 @@ export class App {
       onOpen: (url) => window.open(url, '_blank'),
       onTitle: (title) => {
         target.customTitle = title
+        // The list retitles itself whenever its counts change; the sidebar's badge
+        // follows from here rather than waiting on the file watcher.
+        void this.countTodo()
         this.syncTabs()
       },
       ...(hosted
@@ -850,7 +863,7 @@ export class App {
    * not; with no tab at all, a tab of its own. Same shape as the todo list.
    */
   async openOverviewIn(group: Group | null): Promise<void> {
-    let g = group
+    let g = group ?? this.placeGroup('overview')
     if (!g) {
       g = new Group(() => this.syncTabs())
       this.tuneGroup(g)
@@ -874,6 +887,16 @@ export class App {
         const to = this.groups.find((x) => x.id === tabId)
         if (to) this.sendToSession(to, text, true)
       },
+      onKeys: (tabId, data) => {
+        const s = this.groups.find((x) => x.id === tabId)?.focused
+        if (!s) return
+        window.ember.write(s.id, data)
+        sound.play('toggle')
+      },
+      onOpenTodo: () => void this.goPlace('todo'),
+      onOpenNotes: (id) => void (id ? this.openNoteInPlace(id) : this.goPlace('notes')),
+      onNewNote: () => void this.newNoteInPlace(),
+      onTodoChanged: () => void this.countTodo(),
       onTitle: (title) => {
         target.customTitle = title
         this.syncTabs()
@@ -887,9 +910,9 @@ export class App {
               this.syncTabs()
             },
           }
-        : {}),
+        : { onClose: () => this.leavePlace() }),
     })
-    view.render(this.overviewRows(performance.now()), this.orchBrief())
+    view.render(this.overviewRows(performance.now()), this.orchBrief(), this.planFor())
     view.focus()
     this.startPaneMotion()
     this.syncTabs()
@@ -909,7 +932,79 @@ export class App {
     return { said: '', did: [], busy: this.orchBusy }
   }
 
-  /** Ctrl+Shift+S: the overview over the tab you are in, or the shell back if it is up. */
+  /** The plan's windows, when the user asked to see them. */
+  private planFor(): ClaudeUsage | null {
+    return this.config.claude.usageLimits ? this.plan : null
+  }
+
+  /**
+   * The tab that is a place: the overview, the list, the notes or the map as a tab of
+   * its own, with no shell under it. There is at most one of each — the sidebar's
+   * buttons go to it rather than making another.
+   */
+  private placeGroup(place: Place): Group | null {
+    return (
+      this.groups.find(
+        (g) =>
+          g.panes.length === 0 &&
+          (place === 'overview' ? g.isOverview : place === 'todo' ? g.isTodo : place === 'notes' ? g.isNote : g.isMap)
+      ) ?? null
+    )
+  }
+
+  /** Which place is on stage, if the active tab is one. */
+  private activePlace(): Place | null {
+    const g = this.activeGroup
+    if (!g || g.panes.length > 0) return null
+    return g.isOverview ? 'overview' : g.isTodo ? 'todo' : g.isNote ? 'notes' : g.isMap ? 'map' : null
+  }
+
+  /**
+   * Go to a place. With `toggle` — the keyboard shortcut — pressing it again while there
+   * goes back to the session you came from, so the overview is one key away and so is
+   * the work.
+   */
+  async goPlace(place: Place, toggle = false): Promise<void> {
+    if (toggle && this.activePlace() === place) return this.leavePlace()
+    const g = this.placeGroup(place)
+    if (place === 'overview') return this.openOverviewIn(g)
+    if (place === 'todo') return this.openTodoIn(g)
+    if (place === 'map') {
+      await this.openMapIn(g)
+      return
+    }
+    if (g) {
+      await this.activate(g.id)
+      g.note?.focus()
+      return
+    }
+    await this.newNoteGroup()
+  }
+
+  /** Back from a place to the session you were last in. */
+  private leavePlace(): void {
+    const back =
+      this.groups.find((g) => g.id === this.lastSessionId && g.panes.length > 0) ?? this.groups.find((g) => g.panes.length > 0)
+    if (back) void this.activate(back.id)
+  }
+
+  /** Open one note in the notes place. */
+  private async openNoteInPlace(id: string): Promise<void> {
+    const g = this.placeGroup('notes')
+    if (!g) return void (await this.newNoteGroup(id))
+    await this.activate(g.id)
+    await g.note?.open(id)
+    g.note?.focus()
+  }
+
+  private async newNoteInPlace(): Promise<void> {
+    const g = this.placeGroup('notes') ?? (await this.newNoteGroup())
+    if (g.id !== this.activeId) await this.activate(g.id)
+    await g.note?.create('')
+    g.note?.focus()
+  }
+
+  /** Ctrl+Shift+S: the overview, or back to the session if it is up. */
   private toggleOverview(): void {
     const g = this.activeGroup
     if (g?.isOverview && g.panes.length > 0) {
@@ -918,7 +1013,42 @@ export class App {
       this.syncTabs()
       return
     }
-    void this.openOverviewIn(g)
+    void this.goPlace('overview', true)
+  }
+
+  /**
+   * The picker a session is waiting on, read off its screen: the options and a few
+   * lines above them for the question. Box-drawing is stripped — the card has its own
+   * frame — and the block is dedented so it reads as text, not as a screenshot.
+   */
+  private static readScreen(text: string): { screen: string[]; choices: OverviewChoice[] } | null {
+    const lines = text
+      .split('\n')
+      .map((l) => l.replace(/[│┃╭╮╰╯]/g, ' ').replace(/\s+$/, ''))
+      .filter((l) => l.trim() && !/^[\s─━═┄┈╌-]+$/.test(l))
+      .slice(-16)
+    const choiceRe = /^\s*([❯›▸>*])?\s*([1-9])[.)]\s+(.+)$/
+    // The last run of options on screen is the live one; a numbered list higher up is
+    // only output.
+    let last = -1
+    for (let i = lines.length - 1; i >= 0 && last === -1; i--) if (choiceRe.test(lines[i]!)) last = i
+    if (last === -1) return null
+    let first = last
+    while (first > 0 && choiceRe.test(lines[first - 1]!)) first--
+    // A picker's own footer ("Esc to cancel · Enter to confirm") belongs to it; whatever
+    // is under that is the rest of the screen, not the question.
+    if (lines[last + 1] && /\b(esc|enter|confirm|cancel|tab)\b/i.test(lines[last + 1]!)) last++
+    const block = lines.slice(Math.max(0, first - 6), last + 1)
+    const indent = Math.min(...block.map((l) => l.match(/^\s*/)![0].length))
+    const screen = block.map((l) => l.slice(indent))
+    const choices: OverviewChoice[] = []
+    for (const l of block) {
+      const m = l.match(choiceRe)
+      if (!m) continue
+      const label = m[3]!.trim()
+      choices.push({ key: m[2]!, label: label.length > 46 ? `${label.slice(0, 45)}…` : label, selected: !!m[1] && m[1] !== '*' })
+    }
+    return { screen, choices }
   }
 
   /**
@@ -931,30 +1061,45 @@ export class App {
    * the one thing the overview could not see.
    */
   private overviewRows(now: number): OverviewRow[] {
+    const t = this.config.theme
+    const hues = [t.cyan, t.magenta, t.green, t.yellow, t.blue, t.red]
     return this.groups
-      .filter((g) => (g.panes.length > 0 || g.isTodo || g.isNote) && !g.isOverview)
-      .map((g) => {
+      .filter((g) => g.panes.length > 0 && !g.isOverview)
+      .map((g, i) => {
         const focused = g.focused
         const cwd = focused?.cwd || focused?.initialCwd || ''
+        const activity = g.aggregate(now)
+        const picker =
+          activity.state === 'attention' && activity.attention === 'question' && focused ? App.readScreen(focused.visibleText()) : null
         return {
           tabId: g.id,
           // A tab showing a surface over its shell is titled for the surface; the row is
           // about the shell underneath.
-          title: g.isOverview || g.isTodo || g.isNote ? (focused?.title ?? g.displayTitle) : g.displayTitle,
+          title: g.isTodo || g.isNote || g.isMap ? (focused?.title ?? g.displayTitle) : g.displayTitle,
           cwd,
           git: this.gitByCwd.get(cwd) ?? null,
           url: focused?.urls[focused.urls.length - 1] ?? null,
-          activity: g.aggregate(now),
+          activity,
           claude: this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null,
           brief: this.briefByTab.get(g.id) ?? null,
           unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
           isActive: g.id === this.activeId,
           panes: g.panes.length,
-          // Asked of the surface itself on every refresh rather than mirrored here, so
-          // the card cannot fall behind the list it is describing.
-          surface: g.todo?.summary() ?? g.note?.summary() ?? null,
+          hue: hues[i % hues.length]!,
+          screen: picker?.screen ?? null,
+          choices: picker?.choices ?? [],
         }
       })
+  }
+
+  private async countTodo(): Promise<void> {
+    try {
+      const text = await window.ember.todo.read()
+      this.todoOpen = text.split('\n').filter((l) => /^\s*- \[ \] \S/.test(l)).length
+      this.syncTabs()
+    } catch {
+      /* the count is a convenience */
+    }
   }
 
   /** Ctrl+Shift+D: the list over the tab you are in, or the shell back if it is up. */
@@ -966,7 +1111,7 @@ export class App {
       this.syncTabs()
       return
     }
-    void this.openTodoIn(g)
+    void this.goPlace('todo', true)
   }
 
   /**
@@ -1041,7 +1186,7 @@ export class App {
       this.syncTabs()
       return
     }
-    void this.openMapIn(g)
+    void this.goPlace('map', true)
   }
 
   /**
@@ -1148,6 +1293,7 @@ export class App {
 
     const prev = this.activeGroup
     const dir = prev ? (this.indexOf(id) > this.indexOf(prev.id) ? 1 : -1) : 0
+    if (prev && prev.panes.length > 0) this.lastSessionId = prev.id
 
     this.activeId = id
 
@@ -1485,6 +1631,10 @@ export class App {
       this.claudeByTab.set(status.tabId, status)
     })
 
+    void this.countTodo()
+    window.ember.usage.onState((u) => (this.plan = u))
+    void window.ember.usage.state().then((u) => (this.plan = u))
+
     // The transcript's view of each session, for the overview. Main keeps them from the
     // moment a session announces itself; this mirror is what the rows are built from.
     window.ember.overview.onBrief((brief) => this.briefByTab.set(brief.tabId, brief))
@@ -1555,6 +1705,7 @@ export class App {
       else await this.openNotesIn(group, mode ?? 'list', text, id)
     })
     window.ember.notes.onChanged((e) => {
+      if (e.id.toLowerCase() === 'todo.md') void this.countTodo()
       for (const g of this.groups) {
         void g.note?.external(e)
         if (e.id.toLowerCase() === 'todo.md') void g.todo?.external()
@@ -2435,7 +2586,9 @@ export class App {
     // were sitting in front of went on claiming it needed you indefinitely.
     if (document.hasFocus()) this.activeGroup?.acknowledge()
 
-    const models: CardModel[] = this.groups.map((g) => {
+    // A place (the overview, the list, the notes, the map as a tab of its own) has its
+    // button at the top of the column, so it is not also a card in the list.
+    const models: CardModel[] = this.groups.filter((g) => g.panes.length > 0).map((g) => {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
@@ -2470,12 +2623,17 @@ export class App {
       }
     })
     this.sidebar.render(models, this.activeId)
+    this.sidebar.renderNav(this.activePlace(), {
+      overview: models.filter((m) => m.activity.state === 'attention' && m.id !== this.activeId).length,
+      todo: this.todoOpen,
+    })
 
     // The overview reads the same refresh the cards do, so it is never staler than they are.
     if (this.groups.some((g) => g.overview)) {
       const rows = this.overviewRows(now)
       const orch = this.orchBrief()
-      for (const g of this.groups) g.overview?.render(rows, orch)
+      const plan = this.planFor()
+      for (const g of this.groups) g.overview?.render(rows, orch, plan)
     }
     // Narration is only audible for the tab on screen, so the speech layer has to know
     // which that is — checked on the activity tick rather than only on switch, so it
@@ -2686,11 +2844,11 @@ export class App {
           return `Agent: ${spec.name}`
         },
       },
-      { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.openNotesIn(this.activeGroup, 'list') },
+      { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.goPlace('notes') },
       { id: 'note-new', group: 'Notes', title: 'New note', cli: 'note [text]', run: (a) => void this.openNotesIn(this.activeGroup, 'new', a.join(' ') || undefined) },
-      { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.openTodoIn(this.activeGroup) },
-      { id: 'map', group: 'Map', title: 'Architecture map of a project', hint: 'Ctrl+Shift+G', cli: 'map [project]', aliases: ['arch'], run: (a) => this.openMapIn(this.activeGroup, a.join(' ') || undefined) },
-      { id: 'overview', group: 'Sessions', title: 'Overview of every session', hint: 'Ctrl+Shift+S', cli: 'overview', aliases: ['ov', 'all', 'sessions'], run: () => void this.openOverviewIn(this.activeGroup) },
+      { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.goPlace('todo') },
+      { id: 'map', group: 'Map', title: 'Architecture map of a project', hint: 'Ctrl+Shift+G', cli: 'map [project]', aliases: ['arch'], run: (a) => this.openMapIn(this.placeGroup('map'), a.join(' ') || undefined) },
+      { id: 'overview', group: 'Sessions', title: 'Overview of every session', hint: 'Ctrl+Shift+S', cli: 'overview', aliases: ['ov', 'all', 'sessions'], run: () => void this.goPlace('overview') },
       {
         id: 'todo-check',
         group: 'Todo',

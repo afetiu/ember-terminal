@@ -24,6 +24,7 @@ import type {
   ClaudeStatus,
   ClaudeUsage,
   SessionBrief,
+  ActivityEntry,
   MapAskEvent,
   MapBundle,
   MapJob,
@@ -161,6 +162,8 @@ const bridge: EmberBridge = {
   overview: {
     all: () => ipcRenderer.invoke('ember:overview:all') as Promise<SessionBrief[]>,
     onBrief: (cb) => on<SessionBrief>('ember:overview:brief', cb),
+    activity: () => ipcRenderer.invoke('ember:overview:activity') as Promise<ActivityEntry[]>,
+    onActivity: (cb) => on<ActivityEntry[]>('ember:overview:act', cb),
   },
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),

@@ -3,6 +3,7 @@ import './styles/app.css'
 import './styles/map.css'
 import './styles/map-canvas.css'
 import './styles/onboarding.css'
+import './styles/overview.css'
 import { App } from './ui/App'
 import { loadFont } from './core/fonts'
 
