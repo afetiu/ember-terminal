@@ -19,7 +19,7 @@
     "icon": "node scripts/icon/from-png.mjs build/logo-source.png",
     "dist": "npm run build && electron-builder --win",
     "dist:dir": "npm run build && electron-builder --win dir",
-    "site:deploy": "npx --yes wrangler@4 pages deploy site --project-name=ember --branch=main"
+    "site:deploy": "node scripts/deploy-site.mjs"
   },
   "dependencies": {
     "@lydell/node-pty": "1.2.0-beta.14",

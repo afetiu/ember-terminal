@@ -84,7 +84,7 @@ the Cloudflare Pages project `ember`, which is not connected to this repository 
 does not change it. Publish it with:
 
 ```bash
-pnpm site:deploy   # wrangler pages deploy site --project-name=ember --branch=main
+pnpm site:deploy   # stamps the version from package.json, then wrangler pages deploy
 ```
 
 It needs a `wrangler login` on the machine. On Windows, if wrangler says it is not

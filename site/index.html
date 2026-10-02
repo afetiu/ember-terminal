@@ -80,7 +80,7 @@
        data-type (seconds into the beat) and are played by film.js. Without JS the first
        beat shows as a still. ===== -->
   <div class="wrap hero__stage">
-    <div class="film" data-film="hero">
+    <div class="film" data-film="hero" id="see">
       <div class="appmode" role="group" aria-label="App theme for the Ember window below">
         <span class="appmode__k" aria-hidden="true">App theme</span>
         <span class="appmode__seg">
@@ -495,14 +495,18 @@
         </div>
       </div>
 
-      <div class="film__nav" role="group" aria-label="Film chapters">
+      <div class="film__nav" role="group" aria-label="Features, one chapter each">
         <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="orch"><span class="beat__n">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span>Todo<i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="notes"><span class="beat__n">4</span>Notes<i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="map"><span class="beat__n">5</span>Map<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="cli"><span class="beat__n">6</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="splits"><span class="beat__n">7</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="palette"><span class="beat__n">8</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
         <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
+      <p class="film__cap" aria-live="polite"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
     </div>
     <div class="hero__glow" aria-hidden="true"></div>
   </div>
@@ -515,34 +519,6 @@
     <ul class="clis" aria-label="Supported CLIs">
       <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li>
     </ul>
-  </div>
-</section>
-
-<!-- ============================ SEE IT WORK ============================ -->
-<section class="see" id="see" aria-labelledby="see-title">
-  <div class="wrap">
-    <h2 id="see-title">See it work.</h2>
-    <div class="see__tabs" role="tablist" aria-label="Features">
-      <button type="button" role="tab" class="stab" data-demo="panel" aria-selected="true" aria-controls="see-stage">Panel</button>
-      <button type="button" role="tab" class="stab" data-demo="orch" aria-selected="false" aria-controls="see-stage" tabindex="-1">Orchestrator</button>
-      <button type="button" role="tab" class="stab" data-demo="todo" aria-selected="false" aria-controls="see-stage" tabindex="-1">Todo</button>
-      <button type="button" role="tab" class="stab" data-demo="notes" aria-selected="false" aria-controls="see-stage" tabindex="-1">Notes</button>
-      <button type="button" role="tab" class="stab" data-demo="map" aria-selected="false" aria-controls="see-stage" tabindex="-1">Map</button>
-      <button type="button" role="tab" class="stab" data-demo="cli" aria-selected="false" aria-controls="see-stage" tabindex="-1">Any CLI</button>
-      <button type="button" role="tab" class="stab" data-demo="splits" aria-selected="false" aria-controls="see-stage" tabindex="-1">Splits &amp; themes</button>
-      <button type="button" role="tab" class="stab" data-demo="palette" aria-selected="false" aria-controls="see-stage" tabindex="-1">Command line</button>
-    </div>
-    <div class="appmode" role="group" aria-label="App theme for the Ember window below">
-      <span class="appmode__k" aria-hidden="true">App theme</span>
-      <span class="appmode__seg">
-        <button type="button" class="appmode__b" data-app-mode="night" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.6 9.9A5.8 5.8 0 0 1 6.1 2.4a5.8 5.8 0 1 0 7.5 7.5z"/></svg>Night</button>
-        <button type="button" class="appmode__b" data-app-mode="day" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg>Day</button>
-      </span>
-    </div>
-    <div class="see__stage" id="see-stage" role="tabpanel" aria-live="polite">
-      <div class="see__mount" data-film-mount></div>
-      <p class="see__cap"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
-    </div>
   </div>
 </section>
 

@@ -7,10 +7,10 @@
 // those paths actually lead is decided in site/_redirects, the one place to change
 // when the hosting moves.
 //
-// VERSION is the version the site advertises; keep it in step with package.json on
-// each release. [data-version] elements show it, [data-repo] gets REPO_URL and
+// VERSION is the version the site advertises. scripts/deploy-site.mjs stamps it from
+// package.json on every deploy. [data-version] elements show it, [data-repo] gets REPO_URL and
 // [data-releases] gets the release list.
-const VERSION = '1.0.0'
+const VERSION = '1.2.0'
 const REPO_URL = 'https://github.com/afetiu/ember-terminal'
 // ---------------------------------------------------------------------------------
 

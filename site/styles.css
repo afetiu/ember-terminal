@@ -196,7 +196,6 @@ section p { color: var(--muted); }
 }
 /* the frame follows the window into Day; the page around it stays night */
 .film__view[data-mode="day"] { background: #FBF7F2; border-color: rgba(251, 247, 242, 0.22); box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 154, 99, 0.12), 0 0 60px -20px rgba(255, 154, 99, 0.25); }
-.film--demo:not(.is-small) .film__view { aspect-ratio: 960 / 680; }
 .film.is-small .film__view { aspect-ratio: 10 / 8.4; border-radius: 12px; }
 
 .win {
@@ -796,14 +795,18 @@ section p { color: var(--muted); }
 .appmode__b[data-app-mode="night"][aria-pressed="true"] svg { color: #ff9a63; }
 .appmode__b[data-app-mode="day"][aria-pressed="true"] { background: #FBF7F2; color: #2A2140; box-shadow: inset 0 0 0 1px rgba(217, 98, 43, 0.5); }
 .appmode__b[data-app-mode="day"][aria-pressed="true"] svg { color: #C4561F; }
-.see .appmode { max-width: 980px; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.4s; }
 
-/* ---------- chapter buttons under the hero film ---------- */
-.film__nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) 48px; gap: 8px; margin: 16px auto 0; max-width: 860px; }
+/* ---------- chapter buttons under the hero film ----------
+   Eight features, one film: the row is the table of contents, and the line under it
+   says what the chapter on screen is and how to reach it in the app. */
+.film { scroll-margin-top: 84px; }
+.film__nav { display: flex; gap: 8px; margin: 16px 0 0; }
+.film__nav .beat { flex: 1 1 0; }
+.film__nav .film__pause { flex: none; width: 48px; }
 .beat {
-  position: relative; display: flex; align-items: center; justify-content: center; gap: 9px;
-  min-height: 46px; padding: 0 12px; overflow: hidden;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 10px; overflow: hidden; white-space: nowrap;
   font: 600 0.92rem/1.15 var(--font-body); color: var(--muted);
   background: rgba(217, 210, 234, 0.03); border: 1px solid var(--line-2); border-radius: 9px;
   cursor: pointer; transition: color 0.2s, border-color 0.2s, background-color 0.2s;
@@ -819,13 +822,19 @@ section p { color: var(--muted); }
 .film__pause path { fill: currentColor; }
 .film__pause .i-play, .film.is-paused .film__pause .i-pause { display: none; }
 .film.is-paused .film__pause .i-play { display: block; }
-@media (max-width: 559px) {
-  .film__nav { grid-template-columns: repeat(5, minmax(0, 1fr)) 44px; gap: 6px; }
-  .beat { flex-direction: column; gap: 2px; padding: 6px 4px; font-size: 0.8rem; min-height: 50px; text-align: center; }
+/* Narrower than eight full labels: the short ones, then a row that scrolls sideways. */
+@media (max-width: 1099px) {
   .beat__full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
-@media (min-width: 560px) { .beat__short { display: none; } }
-@media (prefers-reduced-motion: reduce) { .film__pause { display: none; } .film__nav { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .beat__short { display: none; } }
+@media (max-width: 719px) {
+  .film__nav { gap: 6px; overflow-x: auto; margin: 14px calc(var(--gutter) * -1) 0; padding: 0 var(--gutter) 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .film__nav::-webkit-scrollbar { display: none; }
+  .film__nav .beat { flex: none; flex-direction: column; gap: 2px; padding: 6px 12px; min-width: 64px; font-size: 0.8rem; min-height: 50px; scroll-snap-align: start; }
+  .film__nav .film__pause { width: 46px; }
+}
+@media (prefers-reduced-motion: reduce) { .film__pause { display: none; } }
+.film__cap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 16px 0 0; min-height: 2.2em; font-size: 1.05rem; color: var(--text); }
 
 /* ---------- no API keys ---------- */
 .nokey { padding: clamp(56px, 7vw, 88px) 0; border-top: 1px solid var(--line); background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
@@ -837,25 +846,7 @@ section p { color: var(--muted); }
 .clis li { display: inline-flex; align-items: center; gap: 9px; padding: 10px 14px; font-size: 0.92rem; border: 1px solid var(--line-2); border-radius: 8px; background: rgba(217, 210, 234, 0.03); }
 .clis li::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--accent-2); }
 
-/* ---------- see it work ---------- */
-.see { padding: var(--s-section) 0; border-top: 1px solid var(--line); }
-.see h2 { margin-bottom: 24px; }
-.see__tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-.stab {
-  min-height: 44px; padding: 0 16px; cursor: pointer;
-  font: 600 0.95rem/1 var(--font-body); color: var(--muted);
-  background: rgba(217, 210, 234, 0.03); border: 1px solid var(--line-2); border-radius: 8px;
-  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
-}
-.stab:hover { color: var(--text); border-color: rgba(255, 154, 99, 0.5); }
-.stab[aria-selected="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
-@media (max-width: 719px) {
-  .see__tabs { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(var(--gutter) * -1) 16px; padding: 0 var(--gutter) 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
-  .see__tabs::-webkit-scrollbar { display: none; }
-  .stab { flex: none; scroll-snap-align: start; }
-}
-.see__mount { max-width: 980px; }
-.see__cap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 18px 0 0; font-size: 1.08rem; color: var(--text) !important; }
+/* ---------- the caption's shortcut, under the film ---------- */
 .see__keys { display: inline-flex; }
 .see__keys kbd:first-child { margin-left: 0; }
 .see__nokey { font-size: 0.8rem; padding: 5px 10px; border-radius: 6px; color: var(--green); border: 1px solid rgba(110, 226, 179, 0.4); background: rgba(110, 226, 179, 0.06); }

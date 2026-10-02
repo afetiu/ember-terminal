@@ -564,21 +564,42 @@ class Film {
   }
 }
 
+// ---- the caption under the film -----------------------------------------------------
+// One line per chapter, and its shortcut: what the feature is, and how you reach it.
+const CAPS = {
+  panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
+  orch: ['Say what you want done. It hands the work to your sessions.', ['Ctrl', 'Shift', 'M']],
+  todo: ['AI fills the list from your sources, and clears what is done.', ['Ctrl', 'Shift', 'D']],
+  notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
+  map: ['Your whole project, kept current. Sessions glow where they work.', ['Ctrl', 'Shift', 'G']],
+  cli: ['Runs the CLI you already use. Never asks for an API key.', 'no API key'],
+  splits: ['Split any pane. 51 themes re-tint the whole window.', ['Alt', 'Shift', '+']],
+  palette: ['Every action is one command away. Agents can run them too.', ['Ctrl', 'K']],
+}
+
 // ---- the hero ------------------------------------------------------------------
 const heroRoot = document.querySelector('[data-film="hero"]')
-const BEATS = ['panel', 'orch', 'todo', 'notes', 'map']
+const BEATS = ['panel', 'orch', 'todo', 'notes', 'map', 'cli', 'splits', 'palette']
 /** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
 const HERO_SPEED = 0.7
 let hero = null
 
-// The demo stage is a copy of the hero window, taken before the hero starts playing.
-const mount = document.querySelector('[data-film-mount]')
-let demoView = null
-if (heroRoot && mount) {
-  demoView = heroRoot.querySelector('.film__view').cloneNode(true)
-  // Keep ids unique: the diagram's arrowhead marker.
-  for (const m of demoView.querySelectorAll('marker[id]')) m.id = m.id + '-demo'
-  for (const p of demoView.querySelectorAll('[marker-end]')) p.setAttribute('marker-end', p.getAttribute('marker-end').replace(')', '-demo)'))
+function caption(name) {
+  const cap = document.querySelector('[data-cap]')
+  const keys = document.querySelector('[data-keys]')
+  if (!cap || !keys || !CAPS[name]) return
+  const [text, k] = CAPS[name]
+  cap.textContent = text
+  keys.replaceChildren()
+  // Keys are a shortcut; a string is a badge: the promise for "Any CLI", the command for
+  // a surface that has none of its own.
+  if (Array.isArray(k)) for (const key of k) { const kbd = document.createElement('kbd'); kbd.textContent = key; keys.appendChild(kbd) }
+  else if (k) {
+    const sp = document.createElement('span')
+    sp.className = k === 'no API key' ? 'see__nokey mono' : 'see__cmd mono'
+    sp.textContent = k
+    keys.appendChild(sp)
+  }
 }
 
 if (heroRoot) {
@@ -587,6 +608,7 @@ if (heroRoot) {
   hero = new Film(heroRoot, {
     order: BEATS,
     onScene(name) {
+      caption(name)
       for (const b of beats) {
         const on = b.dataset.go === name
         b.classList.toggle('is-on', on)
@@ -599,66 +621,6 @@ if (heroRoot) {
   pause?.addEventListener('click', () => {
     const paused = hero.togglePause()
     pause.setAttribute('aria-label', paused ? 'Play the film' : 'Pause the film')
-  })
-}
-
-// ---- "See it work" --------------------------------------------------------------
-const CAPS = {
-  panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
-  orch: ['Say what you want done. It hands the work to your sessions.', ['Ctrl', 'Shift', 'M']],
-  todo: ['AI fills the list from your sources, and clears what is done.', ['Ctrl', 'Shift', 'D']],
-  notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
-  map: ['Your whole project, kept current. Sessions glow where they work.', ['Ctrl', 'Shift', 'G']],
-  cli: ['Runs the CLI you already use. Never asks for an API key.', 'no API key'],
-  splits: ['Split any pane. 49 themes re-tint the whole window.', ['Alt', 'Shift', '+']],
-  palette: ['Every action is one command away. Agents can run them too.', ['Ctrl', 'K']],
-}
-
-if (mount && demoView) {
-  const demoRoot = document.createElement('div')
-  demoRoot.className = 'film film--demo'
-  demoRoot.appendChild(demoView)
-  mount.appendChild(demoRoot)
-  const win = demoView.querySelector('.win')
-  win.setAttribute('aria-label', 'Ember window playing the selected feature.')
-
-  const tabs = [...document.querySelectorAll('.stab')]
-  const cap = document.querySelector('[data-cap]')
-  const keys = document.querySelector('[data-keys]')
-  const demo = new Film(demoRoot, { order: ['panel'], mode: 'demo' })
-
-  function select(tab, focus = false) {
-    const name = tab.dataset.demo
-    for (const t of tabs) {
-      const on = t === tab
-      t.setAttribute('aria-selected', String(on))
-      t.tabIndex = on ? 0 : -1
-    }
-    if (focus) tab.focus()
-    demo.setOrder([name])
-    const [text, k] = CAPS[name]
-    cap.textContent = text
-    keys.replaceChildren()
-    // Keys are a shortcut; a string is a badge: the promise for "Any CLI", the command for
-    // a surface that has none of its own.
-    if (Array.isArray(k)) for (const key of k) { const kbd = document.createElement('kbd'); kbd.textContent = key; keys.appendChild(kbd) }
-    else if (k) {
-      const s = document.createElement('span')
-      s.className = k === 'no API key' ? 'see__nokey mono' : 'see__cmd mono'
-      s.textContent = k
-      keys.appendChild(s)
-    }
-  }
-  tabs.forEach((tab, i) => {
-    tab.addEventListener('click', () => select(tab))
-    tab.addEventListener('keydown', (e) => {
-      let j = -1
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % tabs.length
-      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + tabs.length) % tabs.length
-      else if (e.key === 'Home') j = 0
-      else if (e.key === 'End') j = tabs.length - 1
-      if (j >= 0) { e.preventDefault(); select(tabs[j], true) }
-    })
   })
 }
 
