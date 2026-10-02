@@ -312,6 +312,22 @@ body.sidebar-mini .ember-place-name {
   display: none;
 }
 
+/* Cards are solid. The window is glass and so is everything else on the page — the
+   numbers, the rail, the stage itself — so the one thing with zero transparency is the
+   thing you work in, and it sits on the glass like a sheet of paper. Light themes get a
+   card brighter than the page; dark ones a card a step lifted from it. */
+:root {
+  --ov-card: color-mix(in srgb, var(--c-fg) 5%, var(--c-bg));
+  --ov-card-hover: color-mix(in srgb, var(--c-fg) 7.5%, var(--c-bg));
+  --ov-card-lift: 0 1px 2px color-mix(in srgb, var(--c-shadow) 22%, transparent), 0 8px 22px -12px color-mix(in srgb, var(--c-shadow) 55%, transparent);
+}
+
+body.is-light {
+  --ov-card: color-mix(in srgb, #fff 72%, var(--c-bg));
+  --ov-card-hover: #fff;
+  --ov-card-lift: 0 1px 2px color-mix(in srgb, var(--c-shadow) 18%, transparent), 0 8px 22px -12px color-mix(in srgb, var(--c-shadow) 40%, transparent);
+}
+
 /* ---- a card ----
    Quiet by default: a faint plate, no border until the pointer is on it. A card that
    wants you says so with one thing — a bar down its left edge and a warm tint — rather
@@ -327,7 +343,8 @@ body.sidebar-mini .ember-place-name {
   padding: 14px 16px;
   border: 1px solid transparent;
   border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
+  background: var(--ov-card);
+  box-shadow: var(--ov-card-lift);
   cursor: pointer;
   outline: none;
   animation: ember-ov-card-in 240ms var(--ease-snap) both;
@@ -346,7 +363,7 @@ body.sidebar-mini .ember-place-name {
 
 .ember-ov-card:hover {
   border-color: var(--hairline);
-  background: color-mix(in srgb, var(--c-fg) 4.5%, transparent);
+  background: var(--ov-card-hover);
 }
 
 .ember-ov-card:focus-visible {
@@ -365,8 +382,8 @@ body.sidebar-mini .ember-place-name {
 .ember-ov-card[data-state='attention'],
 .ember-ov-card.is-unread {
   --tone: var(--c-attention);
-  background: color-mix(in srgb, var(--c-attention) 6%, transparent);
-  box-shadow: inset 2px 0 0 var(--c-attention);
+  background: color-mix(in srgb, var(--c-attention) 7%, var(--ov-card));
+  box-shadow: inset 2px 0 0 var(--c-attention), var(--ov-card-lift);
 }
 
 .ember-ov-card[data-state='exited'] {
@@ -713,6 +730,11 @@ body.sidebar-mini .ember-place-name {
 }
 
 /* ---- composers ---- */
+
+/* Inside a solid card the box is solid too: the page colour, set into the card. */
+.ember-ov-card .ember-ov-ask {
+  background: var(--c-bg);
+}
 
 .ember-ov-ask {
   display: flex;
