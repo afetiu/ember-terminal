@@ -11,6 +11,8 @@ export interface VoiceToggles {
   onPanel: () => void
   /** Ask the Claude session in this tab to put what it is on about onto the panel. */
   onVisualize: () => void
+  /** Move between the dark and the light theme of the pair. */
+  onMode: () => void
 }
 
 export class TitleBar {
@@ -18,6 +20,7 @@ export class TitleBar {
   private readonly voice: HTMLElement
   private readonly panelBtn: HTMLButtonElement
   private readonly visualizeBtn: HTMLButtonElement
+  private readonly modeBtn: HTMLButtonElement
 
   constructor(
     private readonly onToggleSidebar: () => void,
@@ -81,7 +84,12 @@ export class TitleBar {
     this.visualizeBtn.innerHTML = '<span class="ember-visualize-mark">&#xE9D2;</span><span>Visualize</span>'
     this.visualizeBtn.addEventListener('click', toggles.onVisualize)
 
-    this.voice.append(this.visualizeBtn, this.panelBtn)
+    // Night and Day: one press between the dark theme and the light one. Up here because
+    // it is about the whole window, and it shows where you are — a moon at night, a sun
+    // by day.
+    this.modeBtn = this.makeToggle('mode', 'Switch to Day  (ember mode)', '&#xE708;', toggles.onMode)
+
+    this.voice.append(this.visualizeBtn, this.modeBtn, this.panelBtn)
 
     this.el.append(brand, drag, this.voice, this.buildWindowControls())
   }
@@ -107,6 +115,15 @@ export class TitleBar {
   /** The Visualize button exists only while a Claude session has the focused pane. */
   setVisualize(available: boolean): void {
     this.visualizeBtn.classList.toggle('is-hidden', !available)
+  }
+
+  setMode(light: boolean): void {
+    // Segoe Fluent Icons: Brightness, QuietHours.
+    const glyph = light ? '\uE706' : '\uE708'
+    if (this.modeBtn.textContent !== glyph) this.modeBtn.textContent = glyph
+    const label = light ? 'Switch to Night  (ember mode)' : 'Switch to Day  (ember mode)'
+    this.modeBtn.title = label
+    this.modeBtn.setAttribute('aria-label', label)
   }
 
   setPanel(state: { available: boolean; open: boolean; unseen: boolean }): void {

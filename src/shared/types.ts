@@ -393,6 +393,12 @@ export interface EmberConfig {
    * promise is that it runs on the CLIs you already have and asks for no keys.
    */
   labs: { enabled: boolean }
+  /**
+   * The theme the sun/moon switch goes to for each side, by name. The house pair by
+   * default; switching away from a theme remembers it as that side's choice, so someone
+   * who lives in Tokyo Night by night and One Light by day gets those back.
+   */
+  appearance: { night: string; day: string }
 }
 
 export interface AgentConfig {

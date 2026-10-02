@@ -153,6 +153,7 @@ export class App {
     this.titleBar = new TitleBar(() => this.toggleSidebar(), {
       onPanel: () => this.togglePanel(),
       onVisualize: () => this.visualizeHere(),
+      onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
       onOrchestrator: () => this.toggleOrchestrator(),
@@ -537,6 +538,7 @@ export class App {
     // surfaces sink toward, how dark a shadow is, how faint secondary text may get.
     const light = isLightBackground(theme.background)
     document.body.classList.toggle('is-light', light)
+    this.titleBar.setMode(light)
     // The accent as text. Most light palettes pick an accent that is a fine caret and
     // too pale to read as a word (Ayu Light's is 2:1), so text gets a deepened copy.
     s.setProperty('--c-accent-ink', light ? legible(theme.cursor, theme.foreground, theme.background) : theme.cursor)
@@ -2732,6 +2734,29 @@ export class App {
   }
 
   /**
+   * Night and Day: from the theme you are in to the one you keep for the other side.
+   * The theme you leave is remembered as its side's choice, so the switch always lands
+   * on your own pair — the house pair until you have picked something else.
+   */
+  private async switchMode(want?: string): Promise<string> {
+    if (want && !/^(day|light|night|dark)$/i.test(want)) throw new Error('mode takes night or day')
+    const nowLight = isLightBackground(this.config.theme.background)
+    const toLight = want ? /^(day|light)$/i.test(want) : !nowLight
+    if (toLight === nowLight) return toLight ? 'Already Day' : 'Already Night'
+    const themes = await this.loadThemes()
+    const slots = { ...this.config.appearance }
+    slots[nowLight ? 'day' : 'night'] = this.config.theme.name
+    const name = toLight ? slots.day : slots.night
+    const pick =
+      themes.find((t) => t.name === name && isLightBackground(t.background) === toLight) ??
+      themes.find((t) => t.name === (toLight ? 'Ember Day' : 'Ember Night'))
+    if (!pick) throw new Error('no theme to switch to')
+    window.ember.saveConfig({ ...this.config, theme: structuredClone(pick), appearance: slots })
+    sound.play('toggle')
+    return `${toLight ? 'Day' : 'Night'}: ${pick.name}`
+  }
+
+  /**
    * Everything the app can do, as one table.
    *
    * The palette shows the rows that are not hidden; `ember <words>` from a shell picks
@@ -2810,6 +2835,14 @@ export class App {
         run: () => this.toggleBroadcast(),
       },
       { id: 'sidebar', group: 'View', title: 'Toggle sidebar', hint: 'Ctrl+B', cli: 'sidebar', aliases: ['sb'], run: () => this.toggleSidebar() },
+      {
+        id: 'mode',
+        group: 'View',
+        title: 'Switch between Night and Day',
+        hint: 'sun / moon in the title bar',
+        cli: 'mode [night|day]',
+        run: (a) => this.switchMode(a[0]),
+      },
       {
         id: 'theme',
         group: 'View',

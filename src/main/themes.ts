@@ -8,11 +8,72 @@ import type { ThemeConfig } from '../shared/types.js'
  * chrome's dim colour (rules, hints, inactive text), so it has to stay legible against
  * the background in every palette here — including the light ones.
  *
- * Order is the order the picker shows them in: Ember's own palettes first, then ports
- * of well-known editor/terminal themes, then the light ones, then the retro
- * single-phosphor sets.
+ * Order is the order the picker shows them in: the house pair first, then Ember's own
+ * palettes, then ports of well-known editor/terminal themes, then the light ones, then
+ * the retro single-phosphor sets.
  */
+
+/**
+ * The house pair. Night is the look the website shows — violet-night ground, ember
+ * orange accent — and Day is the same family on warm paper: violet ink, a deeper ember
+ * so the accent still reads, every ANSI colour darkened to hold AA on the light ground.
+ * They are made for each other so the sun/moon switch (`ember mode`) moves between them
+ * without the app changing character.
+ */
+export const HOUSE_NIGHT = 'Ember Night'
+export const HOUSE_DAY = 'Ember Day'
+
 export const THEMES: ThemeConfig[] = [
+  // ---------- the house pair ----------
+  {
+    name: HOUSE_NIGHT,
+    background: '#1D1530',
+    foreground: '#DED7EE',
+    cursor: '#FF9A63',
+    cursorAccent: '#1D1530',
+    selectionBackground: '#4A3566',
+    black: '#171027',
+    red: '#FF6F86',
+    green: '#6EE2B3',
+    yellow: '#FFD98A',
+    blue: '#8AA4FF',
+    magenta: '#E08BFF',
+    cyan: '#7DE3E6',
+    white: '#D9D2EA',
+    brightBlack: '#8D81A8',
+    brightRed: '#FF8A9A',
+    brightGreen: '#9AF0CB',
+    brightYellow: '#FFE6B0',
+    brightBlue: '#B0C4FF',
+    brightMagenta: '#ECB0FF',
+    brightCyan: '#A8F0F2',
+    brightWhite: '#FFFFFF',
+  },
+  {
+    name: HOUSE_DAY,
+    background: '#FBF7F2',
+    foreground: '#2A2140',
+    cursor: '#D9622B',
+    cursorAccent: '#FBF7F2',
+    selectionBackground: '#F3D9C8',
+    black: '#2A2140',
+    red: '#C2334D',
+    green: '#1E8A5F',
+    yellow: '#A86A00',
+    blue: '#3F5BC4',
+    magenta: '#8E3FB8',
+    cyan: '#1F7F86',
+    white: '#6B6280',
+    brightBlack: '#6E6585',
+    brightRed: '#D64561',
+    brightGreen: '#23A06E',
+    brightYellow: '#B87600',
+    brightBlue: '#5371D6',
+    brightMagenta: '#A453CE',
+    brightCyan: '#23919A',
+    brightWhite: '#4A4060',
+  },
+
   // ---------- Ember originals ----------
   {
     name: 'Nightfall Neon',

@@ -24,7 +24,7 @@ export interface OnboardingOptions {
 const STEPS = ['Welcome', 'Your agent', 'Look', 'Keys'] as const
 
 /** Palettes worth offering first; whichever of these the build has. */
-const FEATURED = ['nightfall', 'tokyo night', 'catppuccin mocha', 'rosé pine', 'gruvbox dark', 'nord', 'dracula', 'kanagawa']
+const FEATURED = ['ember night', 'ember day', 'tokyo night', 'catppuccin mocha', 'rosé pine', 'one light', 'nord', 'gruvbox dark']
 
 export class Onboarding {
   readonly el: HTMLElement
@@ -219,7 +219,7 @@ export class Onboarding {
     h.textContent = 'Make it yours'
     const lead = document.createElement('p')
     lead.className = 'ember-onboard-lead'
-    lead.textContent = 'A few of the 49 palettes. Every one re-tints the whole window. # in the command palette has the rest.'
+    lead.textContent = 'The house pair first, Night and Day — the sun and moon in the title bar switch between them. Then a few of the other 49. # in the command palette has the rest.'
     const grid = document.createElement('div')
     grid.className = 'ember-onboard-themes'
     body.append(h, lead, grid)

@@ -30,7 +30,9 @@ rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 
 // The palette, read out of the source rather than copied, so the probe follows edits.
-const src = readFileSync(new URL('../src/main/themes.ts', import.meta.url), 'utf8')
+// The house pair is named through constants (`name: HOUSE_NIGHT`); inline them first.
+let src = readFileSync(new URL('../src/main/themes.ts', import.meta.url), 'utf8')
+for (const [, k, v] of src.matchAll(/export const (\w+) = ('[^']+')/g)) src = src.replaceAll(`name: ${k},`, `name: ${v},`)
 const at = src.indexOf(`name: '${THEME}'`)
 if (at < 0) throw new Error(`no theme named ${THEME}`)
 const open = src.lastIndexOf('{', at)

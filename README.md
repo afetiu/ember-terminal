@@ -115,7 +115,13 @@ The mascot, Cinder, is original art drawn from canvas primitives
 motion, text, window, effects, sound, scrolling, behaviour. Every control previews
 live.
 
-There are 49 built-in palettes — Ember's own, ports of the well-known editor and
+The house pair comes first: **Ember Night** (the default — violet-night ground, ember
+orange accent, the look on the website) and **Ember Day**, its twin on warm paper. The
+sun/moon button in the title bar, or `ember mode [night|day]`, switches between them;
+pick another theme for either side and the switch remembers it (`appearance` in the
+config).
+
+There are 51 built-in palettes — the pair, Ember's own, ports of the well-known editor and
 terminal themes (Tokyo Night, Catppuccin, Dracula, Nord, Gruvbox, Kanagawa, Rosé Pine,
 Ayu, Monokai, Solarized and friends), a set of light ones, and the single-phosphor
 retro sets. The settings grid filters by name, and `#` in the command palette is a

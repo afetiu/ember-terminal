@@ -12,7 +12,7 @@
  * card opened up, and the sidebar.
  */
 import { spawn } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -23,7 +23,9 @@ const themeName = themeAt >= 0 ? args[themeAt + 1] : null
 const OUT = args.find((a, i) => !a.startsWith('--') && !(themeAt >= 0 && i === themeAt + 1)) ?? join(process.env.TEMP ?? '.', 'ember-overview-shots')
 mkdirSync(OUT, { recursive: true })
 const PORT = 9363
-const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
+// Long-form path: Windows' 8.3 TEMP (AGON-M~1) gets no fs.watch events, so Ember's
+// config watcher never saw a save made from inside the probe.
+const EMBER_HOME = join(realpathSync.native(process.env.TEMP ?? '.'), `ember-probe-${basename(process.argv[1])}`)
 rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 const NOTES = join(EMBER_HOME, 'notes')
@@ -42,7 +44,9 @@ cfg.claude = { ...(cfg.claude ?? {}), statusLine: true }
 cfg.agent = { ...(cfg.agent ?? {}), onboarded: true }
 if (themeName) {
   // Forced from the source palette, before launch — the way shot-themes.mjs does it.
-  const src = readFileSync(new URL('../src/main/themes.ts', import.meta.url), 'utf8')
+  // The house pair is named through constants (`name: HOUSE_NIGHT`); inline them first.
+  let src = readFileSync(new URL('../src/main/themes.ts', import.meta.url), 'utf8')
+  for (const [, k, v] of src.matchAll(/export const (\w+) = ('[^']+')/g)) src = src.replaceAll(`name: ${k},`, `name: ${v},`)
   const at = src.indexOf(`name: '${themeName}'`)
   if (at < 0) throw new Error(`no theme named ${themeName}`)
   cfg.theme = new Function(`return ${src.slice(src.lastIndexOf('{', at), src.indexOf('}', at) + 1)}`)()
@@ -130,6 +134,8 @@ try {
   await new Promise((r) => ws.addEventListener('open', r, { once: true }))
   ws.addEventListener('message', (m) => {
     const msg = JSON.parse(m.data)
+    if (msg.method === 'Runtime.exceptionThrown') console.log('PAGE ERROR', msg.params.exceptionDetails?.exception?.description ?? msg.params.exceptionDetails?.text)
+    if (msg.method === 'Runtime.consoleAPICalled' && msg.params.type === 'error') console.log('PAGE CONSOLE', msg.params.args.map((a) => a.value ?? a.description).join(' '))
     const p = pending.get(msg.id)
     if (!p) return
     pending.delete(msg.id)
@@ -307,6 +313,17 @@ try {
   await sleep(1500)
   await shot('notes')
   check((await ev(`[...document.querySelectorAll('.ember-card')].length`)) === 3, 'places never become sidebar cards')
+
+  // The sun/moon: one press to the other side of the pair, one press back.
+  const lightAtStart = await ev(`document.body.classList.contains('is-light')`)
+  await ev(`document.querySelector('.ember-voicetoggle.is-mode').click()`)
+  await sleep(4000)
+  const flipped = await ev(`({ light: document.body.classList.contains('is-light'), bg: getComputedStyle(document.documentElement).getPropertyValue('--c-bg').trim() })`)
+  check(flipped.light === !lightAtStart, `the mode button flips the theme: ${JSON.stringify(flipped)}`)
+  await shot('mode-flipped')
+  await ev(`document.querySelector('.ember-voicetoggle.is-mode').click()`)
+  await sleep(4000)
+  check((await ev(`document.body.classList.contains('is-light')`)) === lightAtStart, 'and back')
 } catch (err) {
   fail(String(err?.stack ?? err))
 } finally {

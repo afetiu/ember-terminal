@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatch
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { EmberConfig } from '../shared/types.js'
+import { HOUSE_DAY, HOUSE_NIGHT, THEMES } from './themes.js'
 
 /**
  * EMBER_HOME redirects config and state elsewhere.
@@ -16,7 +17,7 @@ export const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
 /**
  * Defaults are deliberately ported from the user's Windows Terminal settings.json
- * (Nightfall Neon, CaskaydiaCove NF light, 70% acrylic, 14/12 padding) so the first
+ * (CaskaydiaCove NF light, 70% acrylic, 14/12 padding) so the first
  * launch feels like the terminal they already tuned — only the motion is new.
  */
 export const DEFAULT_CONFIG: EmberConfig = {
@@ -55,30 +56,9 @@ export const DEFAULT_CONFIG: EmberConfig = {
     letterSpacing: 0,
     features: { calt: 1, liga: 1 },
   },
-  theme: {
-    name: 'Nightfall Neon',
-    background: '#1A0E2E',
-    foreground: '#D9D2EA',
-    cursor: '#C74EFF',
-    cursorAccent: '#1A0E2E',
-    selectionBackground: '#55307A',
-    black: '#1B1030',
-    red: '#FF3B6B',
-    green: '#4CE0B3',
-    yellow: '#FFC857',
-    blue: '#5B8CFF',
-    magenta: '#C74EFF',
-    cyan: '#2DE2E6',
-    white: '#D6CCE8',
-    brightBlack: '#6E5C8A',
-    brightRed: '#FF6B8B',
-    brightGreen: '#6EF7C8',
-    brightYellow: '#FFD98A',
-    brightBlue: '#8AB0FF',
-    brightMagenta: '#E08BFF',
-    brightCyan: '#7DF9FF',
-    brightWhite: '#FFFFFF',
-  },
+  // The house dark theme, the one the website shows. The sun/moon switch in the title
+  // bar moves between it and its light twin.
+  theme: { ...THEMES.find((t) => t.name === HOUSE_NIGHT)! },
   // Cursor, motion, window and effects below are the user's own tuned values, promoted
   // from his installed config so a fresh install starts where he ended up rather
   // than at my first guesses.
@@ -168,6 +148,7 @@ export const DEFAULT_CONFIG: EmberConfig = {
   labs: {
     enabled: false,
   },
+  appearance: { night: HOUSE_NIGHT, day: HOUSE_DAY },
 }
 
 /** Shallow-per-section merge: a user config may override any subset of keys. */
