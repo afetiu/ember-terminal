@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://ember.deepanswerlabs.com/">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
 <meta property="og:title" content="Ember — a terminal that keeps up with your agents">
-<meta property="og:description" content="A free Windows terminal for AI coding CLIs. Sessions that show what they're doing, a panel the agent draws on, a living map of your project. Never asks for an API key.">
+<meta property="og:description" content="A free Windows terminal for AI coding CLIs. Every session on one overview, a panel the agent draws on, a living map of your project. Never asks for an API key.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -76,7 +76,7 @@
     </div>
   </div>
 
-  <!-- ===== The film: one Ember window, five beats. Timings live in data-at / data-until /
+  <!-- ===== The film: one Ember window, nine beats. Timings live in data-at / data-until /
        data-type (seconds into the beat) and are played by film.js. Without JS the first
        beat shows as a still. ===== -->
   <div class="wrap hero__stage">
@@ -89,24 +89,36 @@
         </span>
       </div>
       <div class="film__view">
-        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
+        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; the overview shows every session on one page, with the numbers along the top and a log of edits, and a permission prompt is answered from its card; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
           <div class="win__bar">
             <span class="win__menu"></span>
             <span class="win__title"><i class="glowdot"></i>Ember</span>
-            <span class="win__usage mono">plan 38%</span>
+            <!-- the title bar's toggles: Night/Day (a moon at night, a sun by day), then the panel -->
+            <span class="win__tools" aria-hidden="true">
+              <span class="win__tool win__mode"><svg class="i-moon" viewBox="0 0 16 16"><path d="M13.6 9.9A5.8 5.8 0 0 1 6.1 2.4a5.8 5.8 0 1 0 7.5 7.5z"/></svg><svg class="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg></span>
+              <span class="win__tool"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.6"/><path d="M9.6 3v10"/></svg></span>
+            </span>
             <span class="win__ctl"><b></b><b></b><b></b></span>
           </div>
 
           <div class="win__body">
             <!-- ---------- sidebar: stays put through every beat ---------- -->
             <div class="side">
+              <!-- the places: four buttons, always there, never a card (Sidebar.ts PLACES).
+                   film.js lights the one on stage and keeps the two badges. -->
+              <div class="places">
+                <span class="place" data-place="overview"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.3"/></svg><span>Overview</span><i class="place__badge is-hot">1</i></span>
+                <span class="place" data-place="todo"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.2"/><path d="M5.3 8.2 L7.2 10.1 L10.8 5.9"/></svg><span>Todo</span><i class="place__badge">4</i></span>
+                <span class="place" data-place="notes"><svg viewBox="0 0 16 16"><path d="M4 1.8 H9.5 L12.5 4.8 V14.2 H4 Z"/><path d="M9.3 2 V5 H12.3"/><path d="M6 8.2 H10.5 M6 10.8 H9.5"/></svg><span>Notes</span><i class="place__badge"></i></span>
+                <span class="place" data-place="map"><svg viewBox="0 0 16 16"><circle cx="4" cy="4" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="8" cy="12" r="2"/><path d="M5.9 4.2 H10 M5 5.8 L7 10.2 M11 6.3 L9 10.2"/></svg><span>Map</span><i class="place__badge"></i></span>
+              </div>
               <p class="side__head mono">SESSIONS <span>+</span></p>
               <div class="scard" data-card="api"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>api</b><small class="mono">working</small></span><em class="scard__br mono">main</em></div>
               <div class="scard" data-card="docs"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>docs</b><small class="mono">idle</small></span><em class="scard__br mono">main</em></div>
               <div class="scard" data-card="web"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>web</b><small class="mono">waiting on you</small></span><em class="scard__br mono">ui ✱3</em></div>
               <div class="scard" data-card="scratch"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>scratch</b><small class="mono">idle</small></span><em class="scard__br mono"></em></div>
 
-              <!-- orchestrator pane (beat 2) -->
+              <!-- orchestrator pane (the orchestrator beat) -->
               <div class="orch" data-scene="orch">
                 <div class="orch__in" data-at="0.3">
                   <p class="orch__h"><b>Orchestrator</b><span class="orch__pill mono">text</span><span class="orch__x">✕</span></p>
@@ -121,15 +133,16 @@
                 </div>
               </div>
 
-              <p class="side__foot mono">CPU 12% · MEM 41%</p>
+              <p class="side__foot mono"><span>CLAUDE</span><span>5h 38% · wk 61%</span><span>MACHINE</span><span>CPU 12% · MEM 41%</span></p>
             </div>
 
             <!-- ---------- main area: the content morphs per beat ---------- -->
             <div class="main">
               <div class="crumb">
                 <p class="crumb__i is-active" data-scene="panel"><b>api</b> <span>~/code/api</span> <em>main ↑1</em></p>
+                <p class="crumb__i" data-scene="overview"><b>Overview</b> <span>back to api with the same key</span> <em>Ctrl Shift S</em></p>
                 <p class="crumb__i" data-scene="orch"><b>api</b> <span>│</span> <b>docs</b> <em>split</em></p>
-                <p class="crumb__i" data-scene="todo"><b>Todo</b> <span>over api</span> <em>Ctrl Shift D</em></p>
+                <p class="crumb__i" data-scene="todo"><b>Todo</b> <em>Ctrl Shift D</em></p>
                 <p class="crumb__i" data-scene="notes" data-cls="is-hid:2.0,7.4"><b>api</b> <span>~/code/api</span> <em>main</em></p>
                 <p class="crumb__i" data-scene="notes" data-cls="is-hid:0,2.0;is-hid:7.4,99"><b>Notes</b> <span>over api</span> <em>Documents\Ember Notes</em></p>
                 <p class="crumb__i" data-scene="map"><b>Map</b> <span>shop</span> <em>Ctrl Shift G</em></p>
@@ -180,7 +193,108 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 2: the orchestrator (main shows the two sessions it drives) ===== -->
+                <!-- ===== BEAT 2: the overview =====
+                     Built like the app's Overview (ui/Overview.ts, styles/overview.css): the
+                     numbers along the top with hairlines and no boxes, solid cards in tab
+                     order, a rail with the list, the notes and a quiet log, the orchestrator
+                     on one line at the foot. web is waiting on a permission prompt; the
+                     cursor answers it from here, its card relaxes into a working one, and
+                     the Overview badge in the sidebar drops to nothing. ===== -->
+                <div class="scene scene--ov" data-scene="overview">
+                  <div class="ov">
+                    <p class="ov__head">
+                      <b>Overview</b>
+                      <span class="ov__sum" data-seq="0|4 sessions · 1 working · 1 needs you;3.3|4 sessions · 2 working">4 sessions · 1 working · 1 needs you</span>
+                      <span class="ov__live">live</span>
+                      <span class="ov__back">Back</span>
+                    </p>
+                    <div class="ov__kpis">
+                      <p class="kpi" data-cls="is-hot:0,3.3"><span class="kpi__k">Sessions</span><b class="kpi__v">4</b><span class="kpi__s" data-seq="0|1 working · 1 waiting;3.3|2 working">1 working · 1 waiting</span></p>
+                      <p class="kpi"><span class="kpi__k">Tokens</span><b class="kpi__v" data-seq="0|618k;0.9|624k;4.1|627k">618k</b><span class="kpi__s">5.1k out · 94% cached</span></p>
+                      <p class="kpi"><span class="kpi__k">Spend</span><b class="kpi__v">$3.18</b><span class="kpi__s">3 sessions reporting</span></p>
+                      <p class="kpi"><span class="kpi__k">Changes</span><b class="kpi__v" data-seq="0|+34 −10;0.9|+40 −12">+34 −10</b><span class="kpi__s" data-seq="0|3 files · 3 edits;0.9|4 files · 4 edits">3 files · 3 edits</span></p>
+                      <p class="kpi"><span class="kpi__k">Context</span><b class="kpi__v">64%</b><span class="kpi__s">web</span></p>
+                      <p class="kpi"><span class="kpi__k">Plan</span><b class="kpi__v">38%</b><span class="kpi__s">5h · resets 19:40</span></p>
+                      <p class="kpi kpi--pace"><span class="kpi__k">Pace</span><svg class="kpi__spark" viewBox="0 0 120 21" preserveAspectRatio="none"><path class="is-area" d="M0 21 V18 H22 L30 15 H44 L52 6 L60 6 L66 16 H84 L92 11 H104 L112 4 L120 4 V21 Z"/><path class="is-line" d="M0 18 H22 L30 15 H44 L52 6 L60 6 L66 16 H84 L92 11 H104 L112 4 L120 4"/></svg><span class="kpi__s">11 actions this hour</span></p>
+                    </div>
+                    <div class="ov__body">
+                      <div class="ov__main">
+                        <div class="ovg">
+                          <div class="ovc" data-state="working">
+                            <p class="ovc__top"><i class="ovc__dot"></i><b>api</b><span class="ovc__where">~/code/api</span><span class="ovc__pill" data-clock="64">1m 04s</span></p>
+                            <p class="ovc__said">Refresh tokens now rotate on every use. Checking the session store next.</p>
+                            <p class="ovc__doing" data-seq="0|Edit src/auth/session.ts;1.0|Run the auth tests">Edit src/auth/session.ts</p>
+                            <p class="ovc__foot" data-seq="0|Fable · 318k tok · +14 −5;0.9|Fable · 324k tok · +20 −7">Fable · 318k tok · +14 −5</p>
+                          </div>
+                          <div class="ovc" data-state="idle">
+                            <p class="ovc__top"><i class="ovc__dot"></i><b>docs</b><span class="ovc__where">~/code/docs</span></p>
+                            <p class="ovc__said">auth.md now covers the redirect fix and the ?next= rule.</p>
+                            <p class="ovc__foot">Fable · 96k tok · +12 −3</p>
+                          </div>
+                          <!-- a permission prompt: the question as the terminal draws it, the options as a menu -->
+                          <div class="ovc ovc--ask" data-state="attention" data-until="3.3">
+                            <p class="ovc__top"><i class="ovc__dot"></i><b>web</b><span class="ovc__where">~/code/web</span><span class="ovc__pill">Needs you</span></p>
+                            <div class="ovc__screen">
+                              <p>Bash command</p>
+                              <p>  gh pr create --title "Sticky header on scroll"</p>
+                              <p class="is-q">Do you want to proceed?</p>
+                            </div>
+                            <div class="ovc__keys">
+                              <p class="ovk is-sel" data-cursor="yes" data-cls="is-hover:2.5,2.9;is-press:2.9,3.2"><kbd>1</kbd>Yes</p>
+                              <p class="ovk"><kbd>2</kbd>Yes, and don't ask again for gh pr commands</p>
+                              <p class="ovk"><kbd>3</kbd>No, and tell Claude what to do differently (esc)</p>
+                            </div>
+                            <p class="ovc__esc">Esc to cancel</p>
+                            <p class="ovc__foot"><span>Fable · 142k tok · +8 −2</span><span class="ovc__ctx">ctx 64%</span></p>
+                          </div>
+                          <div class="ovc" data-state="working" data-at="3.3">
+                            <p class="ovc__top"><i class="ovc__dot"></i><b>web</b><span class="ovc__where">~/code/web</span><span class="ovc__pill" data-at="3.3" data-clock="0">0s</span></p>
+                            <p class="ovc__said" data-seq="0|Opening the pull request for the sticky header.;5.4|Opened PR #231. Waiting on the checks.">Opening the pull request for the sticky header.</p>
+                            <p class="ovc__doing" data-seq="0|gh pr create;5.4|Watch the CI run">gh pr create</p>
+                            <p class="ovc__foot">Fable · 145k tok · +8 −2</p>
+                          </div>
+                          <div class="ovc ovc--shell" data-state="idle">
+                            <p class="ovc__top"><i class="ovc__dot"></i><b>scratch</b><span class="ovc__where">~/scratch</span></p>
+                          </div>
+                        </div>
+                        <p class="ov__dock"><span class="ov__who"><i></i>Orchestrator</span><span class="ov__said">api is done. Redirect fixed, 42 tests pass.</span><span class="ov__ask">Ask the orchestrator, or hand out work…</span></p>
+                      </div>
+                      <div class="ov__rail">
+                        <div class="ovs">
+                          <p class="ovs__h"><b>Todo</b><span>4 open</span><i>↗</i></p>
+                          <p class="ovt"><i></i>Rotate the staging secrets</p>
+                          <p class="ovt"><i></i>Draft the release notes</p>
+                          <p class="ovt"><i></i>Reply to the invoice thread</p>
+                          <p class="ovt"><i></i>WEB-88 · checkout button clipped on iOS</p>
+                          <p class="ovs__add">Add to the list…</p>
+                        </div>
+                        <div class="ovs">
+                          <p class="ovs__h"><b>Notes</b><span></span><i>+</i><i>↗</i></p>
+                          <p class="ovn"><b>Auth flow</b><span>2h ago</span><em>Requests pass the gateway, then verifyToken() checks the session.</em></p>
+                          <p class="ovn"><b>Release checklist</b><span>yesterday</span><em>Bump the version, tag it, draft the release notes.</em></p>
+                        </div>
+                        <div class="ovs ovs--log">
+                          <p class="ovs__h"><b>Activity</b><span></span><i class="ovs__f">changes</i></p>
+                          <div class="ovlog">
+                            <p class="ol__who" style="--hue:var(--w-cy)">api</p>
+                            <p class="ol" data-kind="edit"><span>14:31</span><i>✎</i><span>auth/refresh.ts</span><em><b>+14</b> <b class="is-m">−5</b></em></p>
+                            <p class="ol" data-kind="run"><span>14:32</span><i>$</i><span>npm test</span></p>
+                            <p class="ol__who" style="--hue:var(--w-pk)">docs</p>
+                            <p class="ol" data-kind="edit"><span>14:33</span><i>✎</i><span>auth.md</span><em><b>+12</b> <b class="is-m">−3</b></em></p>
+                            <p class="ol" data-kind="done"><span>14:34</span><i>✓</i><span>finished its turn</span></p>
+                            <p class="ol__who" style="--hue:var(--w-gr)">web</p>
+                            <p class="ol" data-kind="edit"><span>14:36</span><i>✎</i><span>Header.tsx</span><em><b>+8</b> <b class="is-m">−2</b></em></p>
+                            <p class="ol" data-kind="run"><span>14:37</span><i>$</i><span>npm run build</span></p>
+                            <div class="ol__new" data-at="0.9"><div><p class="ol__who" style="--hue:var(--w-cy)">api</p><p class="ol" data-kind="edit"><span>14:38</span><i>✎</i><span>auth/session.ts</span><em><b>+6</b> <b class="is-m">−2</b></em></p></div></div>
+                            <div class="ol__new" data-at="4.0"><div><p class="ol__who" style="--hue:var(--w-gr)">web</p><p class="ol" data-kind="run"><span>14:39</span><i>$</i><span>gh pr create --title "Sticky header on scroll"</span></p></div></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== BEAT 3: the orchestrator (main shows the two sessions it drives) ===== -->
                 <div class="scene scene--orch" data-scene="orch">
                   <div class="split2">
                     <div class="pane">
@@ -208,7 +322,7 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 3: the todo list ===== -->
+                <!-- ===== BEAT 4: the todo list ===== -->
                 <div class="scene scene--todo" data-scene="todo">
                   <div class="todo">
                     <div class="todo__head">
@@ -231,7 +345,7 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 4: notes =====
+                <!-- ===== BEAT 5: notes =====
                      Built like the app's Notes (ui/Notes.ts): one surface over the tab with two
                      states, a page editor and the list, never side by side. The api session
                      writes the fix up with the notes command; `notes new --open` lays the page
@@ -286,7 +400,7 @@
                   <p class="keycap keycap--mid mono" data-at="6.95" data-until="7.75"><kbd>Esc</kbd></p>
                 </div>
 
-                <!-- ===== BEAT 5: the map =====
+                <!-- ===== BEAT 6: the map =====
                      Built like the app's Map: areas are soft zones, parts are cards shaped by
                      kind, lines are routed orthogonally through the gaps and drawn above the
                      cards. Coordinates are the map's own; film.js moves a camera over them
@@ -441,7 +555,7 @@
                   </div>
                   <p class="keycap mono" data-at="0.5" data-until="1.5"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd></p>
                   <p class="keycap mono" data-at="1.8" data-until="2.8"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>−</kbd></p>
-                  <p class="themechip mono" data-at="3.3" data-seq="0|;3.4|# Tokyo Night;4.2|# Catppuccin;5.0|# Gruvbox;5.8|# Nord;6.6|# Ember"></p>
+                  <p class="themechip mono" data-at="3.3" data-seq="0|;3.4|# Tokyo Night;4.2|# Catppuccin;5.0|# Gruvbox;5.8|# Nord;6.6|# {house}"></p>
                 </div>
 
                 <div class="scene scene--palette" data-scene="palette">
@@ -497,13 +611,14 @@
 
       <div class="film__nav" role="group" aria-label="Features, one chapter each">
         <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="orch"><span class="beat__n">2</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span>Todo<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="notes"><span class="beat__n">4</span>Notes<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="map"><span class="beat__n">5</span>Map<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="cli"><span class="beat__n">6</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="splits"><span class="beat__n">7</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="palette"><span class="beat__n">8</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="overview"><span class="beat__n">2</span>Overview<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="orch"><span class="beat__n">3</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="todo"><span class="beat__n">4</span>Todo<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="notes"><span class="beat__n">5</span>Notes<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="map"><span class="beat__n">6</span>Map<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="cli"><span class="beat__n">7</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="splits"><span class="beat__n">8</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="palette"><span class="beat__n">9</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
         <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
       <p class="film__cap" aria-live="polite"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
@@ -529,7 +644,7 @@
     <ol class="steps">
       <li><span class="steps__n">1</span><h3>Install</h3><p>No admin prompt.</p></li>
       <li><span class="steps__n">2</span><h3>Pick your CLI</h3><p>Ember finds the ones you have.</p></li>
-      <li><span class="steps__n">3</span><h3>Work</h3><p>Hand out tasks. Watch the cards.</p></li>
+      <li><span class="steps__n">3</span><h3>Work</h3><p>Hand out tasks. Follow them on the overview.</p></li>
     </ol>
   </div>
 </section>
@@ -559,7 +674,7 @@
       </details>
       <details>
         <summary>What leaves my machine?</summary>
-        <p>Your work goes where your CLI already sends it, the same as in any terminal. Ember has no account and no telemetry. The few calls it makes on its own belong to features you can see and turn off, like the plan-usage chip and the Map checking your repos for changes. Your settings, notes, todos and maps are plain files in your user folder.</p>
+        <p>Your work goes where your CLI already sends it, the same as in any terminal. Ember has no account and no telemetry. The few calls it makes on its own belong to features you can see and turn off, like the plan usage in the sidebar and the Map checking your repos for changes. Your settings, notes, todos and maps are plain files in your user folder.</p>
       </details>
       <details>
         <summary>Will it change my PowerShell setup?</summary>

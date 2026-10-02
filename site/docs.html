@@ -186,6 +186,7 @@
 <section aria-labelledby="sessions">
   <h2 id="sessions">Sessions and the sidebar <a class="anchor" href="#sessions" aria-label="Link to this section">#</a></h2>
   <p>Each session is a card in the left sidebar rather than a tab in a strip, because each one carries state. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd> or the <b>+</b> next to "Sessions" opens a new one; <kbd>Ctrl</kbd><kbd>B</kbd> hides the sidebar.</p>
+  <p>Above the sessions are four buttons that are always there: <b>Overview</b>, <b>Todo</b>, <b>Notes</b> and <b>Map</b>. Each is a place of its own, not a session card. The one you are on is tinted with the accent. Overview carries an amber count of the sessions waiting on you, and Todo the number of open items. Their shortcuts (<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd>) go there, and pressed again take you back to the session you came from.</p>
 
   <h3 id="session-status">What a card shows</h3>
   <ul>
@@ -207,11 +208,11 @@
   <h3 id="vitals">The strip at the bottom</h3>
   <p>Under the cards is a small status strip:</p>
   <ul>
-    <li><strong>PLAN</strong> (off by default): your Claude plan's five-hour and weekly limits. Turn it on in Settings › Agent. It reads the login Claude Code already keeps on this machine, once a minute; no model runs. <code>PLAN ?</code> means that login has expired; running <code>claude</code> once refreshes it.</li>
+    <li><strong>CLAUDE</strong> (off by default): your Claude plan's five-hour and weekly limits. Turn it on in Settings › Agent. It reads the login Claude Code already keeps on this machine, once a minute; no model runs. <code>PLAN ?</code> means that login has expired; running <code>claude</code> once refreshes it.</li>
     <li><strong>MACHINE</strong>: processor load, memory, and battery on laptops.</li>
     <li><strong>COMPUTER</strong>: appears only once an agent has used <a href="#computer-use">computer use</a>, with its <b>STOP</b> switch.</li>
   </ul>
-  <p>The title bar also has a <b>Visualize</b> button when the focused tab runs Claude Code (it asks that session to put what it just said on the panel), and a panel button that carries a dot when a background session drew on a panel you have closed.</p>
+  <p>The title bar also has a <b>Visualize</b> button when the focused tab runs Claude Code (it asks that session to put what it just said on the panel), a moon or sun that switches between Ember Night and Ember Day, and a panel button that carries a dot when a background session drew on a panel you have closed.</p>
 
   <h3 id="profiles">Shells</h3>
   <p>New sessions start the default profile, PowerShell 7. Windows PowerShell (<code>winps</code>) and Command Prompt (<code>cmd</code>) are also defined. To change the default, run <code>ember set defaultProfile cmd</code>, or edit the <code>profiles</code> list in <code>config.json</code> to add your own (a <code>command</code>, <code>args</code> and an <code>accent</code> colour).</p>
@@ -320,9 +321,9 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></td><td>Show or hide the panel</td></tr>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd></td><td>Point at something on the panel</td></tr>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd></td><td>Orchestrator</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td>Overview of every session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd></td><td>The map</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd></td><td>Todo list over this tab, and back</td></tr>
+      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td>The overview, and back to your session</td></tr>
+      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd></td><td>The map, and back to your session</td></tr>
+      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd></td><td>The todo list, and back to your session</td></tr>
       <tr><td class="keys"><kbd>Esc</kbd></td><td>Leave a note, the todo list, the overview or the map</td></tr>
     </tbody>
   </table></div>
@@ -417,7 +418,7 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
 <!-- ======================================================================= -->
 <section aria-labelledby="map">
   <h2 id="map">The map <a class="anchor" href="#map" aria-label="Link to this section">#</a></h2>
-  <p>A zoomable architecture picture of a project that your agent keeps up to date. Open it with <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd> or <code>map</code>; it starts with the list of your mapped projects.</p>
+  <p>A zoomable architecture picture of a project that your agent keeps up to date. Open it with the <b>Map</b> button at the top of the sidebar, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd> or <code>map</code>; it starts with the list of your mapped projects.</p>
   <h3 id="map-new">Setting up a project</h3>
   <p><b>New project</b> asks for a name and a sentence or two about what belongs to it: folders, repos, a Heroku app, a domain, or just "everything about the checkout service". Your chosen CLI surveys it once, read-only, which takes a few minutes, and draws the map: areas, then repos, apps, services, datastores and external services, then the parts inside them, with the connections between them.</p>
   <h3 id="map-use">Using it</h3>
@@ -437,7 +438,7 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
 <!-- ======================================================================= -->
 <section aria-labelledby="notes">
   <h2 id="notes">Notes <a class="anchor" href="#notes" aria-label="Link to this section">#</a></h2>
-  <p>Type <code>notes</code> in any Ember shell for the list, or <code>note</code> for a new page (<code>note buy milk</code> starts one with that text). Notes open over the tab you're in; the shell keeps running underneath, and <kbd>Esc</kbd> (or the <code>back</code> command in the command line) brings it back as it was. In a note, Esc first goes to the list, then to the shell.</p>
+  <p>Type <code>notes</code> in any Ember shell for the list, or <code>note</code> for a new page (<code>note buy milk</code> starts one with that text). Typed in a shell, notes open over that tab; the shell keeps running underneath, and <kbd>Esc</kbd> (or the <code>back</code> command in the command line) brings it back as it was. In a note, Esc first goes to the list, then to the shell. The <b>Notes</b> button at the top of the sidebar opens them as a place of their own.</p>
   <ul>
     <li>There is no save key. The editor saves 400 ms after you stop typing.</li>
     <li>The first line is the note's title and its file name. Rename a note by editing its first line.</li>
@@ -462,7 +463,7 @@ notes dir                    <span class="c">print the folder</span></code></pre
 <!-- ======================================================================= -->
 <section aria-labelledby="todo">
   <h2 id="todo">The todo list <a class="anchor" href="#todo" aria-label="Link to this section">#</a></h2>
-  <p>Its own surface, separate from the notes. Open it with <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd> or <code>todo</code> in any Ember shell.</p>
+  <p>Its own surface, separate from the notes. Open it with the <b>Todo</b> button at the top of the sidebar or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>; the shortcut again goes back to your session. <code>todo</code> typed in an Ember shell opens the list over that shell. The overview shows the open items too, and you can tick or add them there.</p>
   <div class="tbl"><table>
     <thead><tr><th>Key</th><th>Does</th></tr></thead>
     <tbody>
@@ -470,7 +471,7 @@ notes dir                    <span class="c">print the folder</span></code></pre
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></td><td>Tick the item</td></tr>
       <tr><td class="keys"><kbd>Backspace</kbd> on an empty item</td><td>Remove it</td></tr>
       <tr><td class="keys"><kbd>Alt</kbd><kbd>↑</kbd> / <kbd>Alt</kbd><kbd>↓</kbd> or drag</td><td>Reorder</td></tr>
-      <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to the shell</td></tr>
+      <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to the shell, when the list is open over one</td></tr>
     </tbody>
   </table></div>
   <p>Ticked items are never deleted, only cleared: <b>Clear done</b> moves them to an archive under a heading for the day. The archive shows below the list as <code>archive · n</code>, and each archived item has a ↩ to bring it back.</p>

@@ -1,4 +1,4 @@
-// The hero film and the "See it work" demos.
+// The hero film: one Ember window, a chapter per feature.
 //
 // One Ember window (the .win markup in index.html) plays a sequence of scenes. Every
 // frame is a pure function of (scene, seconds into it), so jumping to a beat, looping,
@@ -9,9 +9,14 @@
 //   data-type="a,b"    its text types itself in between a and b
 //   data-seq="s|text;s|text"   its text is swapped at those times
 //   data-pulse="a,b;c,d"       a dash of light travels along the path in each window
+//   data-cls="c:a,b;c:a,b"     class c is on inside each window
+//   data-clock="s"     its text is an elapsed time: s seconds, counting from data-at (or 0)
+//   {house} in a data-seq text becomes the house theme of the App theme switch
 //
-// Everything that can't live in markup (session cards, the cursor, the camera, themes)
-// is in SCENES below. Motion is transform/opacity only; the loop stops off-screen and
+// Everything that can't live in markup (session cards, the places row and its badges,
+// the cursor, the camera, themes) is in SCENES below: `place` is the sidebar place on
+// stage, `todo` the Todo badge over time. The Overview badge counts itself, the way the
+// app counts it: sessions waiting on you, other than the one you are in. Motion is transform/opacity only; the loop stops off-screen and
 // in hidden tabs. Cinder, the session mascot, is the app's own sprite code, bundled
 // from src/renderer/src/ui/Mascot.ts into assets/cinder.js.
 
@@ -39,6 +44,20 @@ const SCENES = {
       scratch: idle(),
     },
   },
+  // The overview as a place of its own: no session is selected. web waits on a permission
+  // prompt; a log line lands, the cursor answers "1 Yes" on the card, the card relaxes
+  // into a working one and the Overview badge in the sidebar empties.
+  overview: {
+    dur: 8.6, still: 2.2, sel: null, place: 'overview',
+    cam: [[0, 600, 386, 1.45], [3.5, 600, 386, 1.45], [4.2, 330, 300, 1.45], [5.4, 330, 300, 1.45], [6.2, 1010, 440, 1.5], [7.6, 1010, 440, 1.5], [8.3, 600, 386, 1.45]],
+    cursor: [[1.5, [760, 330]], [2.5, '[data-cursor=yes]'], [2.9, '[data-cursor=yes]', 'click'], [3.4, [700, 470]]],
+    cards: {
+      api: [[0, 'working', null, 'working · {t}', 64]],
+      docs: idle(),
+      web: [[0, 'attention', 'question', 'waiting on you'], [3.3, 'working', null, 'working · {t}', 0]],
+      scratch: idle(),
+    },
+  },
   orch: {
     dur: 8.2, still: 6.6, sel: 'api', demo: 480,
     cam: [[0, 290, 400, 1.7], [2.6, 290, 400, 1.7], [3.4, 560, 330, 1.55], [5.6, 560, 330, 1.55], [6.2, 300, 420, 1.6]],
@@ -51,7 +70,8 @@ const SCENES = {
     },
   },
   todo: {
-    dur: 7.2, still: 6.0, sel: 'api',
+    dur: 7.2, still: 6.0, sel: null, place: 'todo',
+    todo: [[0, 3], [1.6, 4], [2.05, 5], [2.5, 6], [2.95, 7], [4.0, 6], [4.4, 5], [4.8, 4]],
     cam: [[0, 720, 330, 1.7]],
     cursor: [[0.2, [760, 360]], [0.85, '[data-cursor=check]', 'click'], [1.3, [860, 330]]],
     cards: {
@@ -75,7 +95,7 @@ const SCENES = {
     },
   },
   map: {
-    dur: 9.6, still: 5.8, sel: 'api',
+    dur: 9.6, still: 5.8, sel: null, place: 'map',
     // On a phone the window camera just frames the map; the map's own camera does the moving.
     cam: [[0, 720, 360, 1.22]],
     // The map's camera, in map coordinates: [t, x, y, zoom]. Whole system, the flow, into
@@ -247,6 +267,8 @@ class Film {
     // The map's lines, and the little Cinders that ride on its live-session chips.
     buildEdges(root)
     this.minis = [...root.querySelectorAll('canvas[data-cinder]')].map((c) => c.getContext('2d'))
+    // The places row at the top of the sidebar: which one is on stage, and two badges.
+    this.places = [...root.querySelectorAll('.place[data-place]')].map((el) => ({ el, name: el.dataset.place, badge: el.querySelector('.place__badge'), n: null, on: null }))
     this.mworld = root.querySelector('.mworld')
 
     // Timed elements, grouped by the scene that owns them.
@@ -256,7 +278,7 @@ class Film {
       const name = part.dataset.scene
       ;(this.parts[name] ||= []).push(part)
       const list = (this.items[name] ||= [])
-      const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse],[data-cls]')]
+      const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse],[data-cls],[data-clock]')]
       if (part.matches('[data-at],[data-until],[data-cls]')) els.unshift(part)
       for (const el of els) {
         const it = { el }
@@ -284,6 +306,7 @@ class Film {
           it.cur = null
         }
         if (el.dataset.pulse) it.pulse = parseTimes(el.dataset.pulse)
+        if (el.dataset.clock != null) { it.clock = +el.dataset.clock; it.cur = null }
         list.push(it)
       }
     }
@@ -299,6 +322,9 @@ class Film {
     this.view.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { this.hover = true } })
     this.view.addEventListener('pointerleave', () => { this.hover = false })
     reduce.addEventListener?.('change', () => { this.static = reduce.matches; this.go(this.order[this.idx]) })
+    // The App theme switch can flip Night/Day while the film is paused or a still; words
+    // that name the house theme follow at once.
+    new MutationObserver(() => this.frame()).observe(this.win, { attributes: true, attributeFilter: ['data-mode'] })
 
     this.layout()
     this.activate(this.order[0], true)
@@ -408,6 +434,7 @@ class Film {
     const t = this.t
     this.apply(name, t)
     this.updateCards(sc, t)
+    this.updatePlaces(sc, t)
     this.updateCursor(sc, t)
     this.updateCamera(sc, t)
     this.updateTheme(sc, t)
@@ -436,9 +463,14 @@ class Film {
         if (n !== it.n) { el.textContent = it.full.slice(0, n); it.n = n }
         el.classList.toggle('typing', t >= a - 0.2 && t < b + 0.45 && !(it.until != null && t >= it.until))
       }
+      if (it.clock != null) {
+        const txt = fmt(it.clock + Math.max(0, t - (it.at ?? 0)))
+        if (txt !== it.cur) { el.textContent = txt; it.cur = txt }
+      }
       if (it.seq) {
         let txt = ''
         for (const [s, v] of it.seq) if (t >= s) txt = v
+        if (txt.includes('{house}')) txt = txt.replace('{house}', this.win.dataset.mode === 'day' ? 'Ember Day' : 'Ember Night')
         if (txt !== it.cur) {
           el.textContent = txt
           if (it.cur) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump') }
@@ -470,6 +502,24 @@ class Film {
       const tint = state === 'attention' ? (attention === 'handoff' ? 'done' : 'ask') : state
       if (c.el.dataset.mood !== tint) c.el.dataset.mood = tint
       c.el.classList.toggle('is-sel', c.name === sc.sel)
+    }
+  }
+
+  /** The places row: the one on stage lit, Overview counting the sessions that want you. */
+  updatePlaces(sc, t) {
+    let waiting = 0
+    for (const c of this.cards) if (c.mood.state === 'attention' && c.name !== sc.sel) waiting++
+    let open = 4
+    for (const [s, v] of sc.todo || []) if (t >= s) open = v
+    for (const p of this.places) {
+      const on = p.name === sc.place
+      if (on !== p.on) { p.el.classList.toggle('is-on', on); p.on = on }
+      const n = p.name === 'overview' ? waiting : p.name === 'todo' ? open : 0
+      if (n !== p.n) {
+        if (n > 0) p.badge.textContent = String(n)
+        p.badge.classList.toggle('is-off', n <= 0)
+        p.n = n
+      }
     }
   }
 
@@ -568,6 +618,7 @@ class Film {
 // One line per chapter, and its shortcut: what the feature is, and how you reach it.
 const CAPS = {
   panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
+  overview: ['Every session on one page: the numbers, a question you answer in place, a quiet log of every edit.', ['Ctrl', 'Shift', 'S']],
   orch: ['Say what you want done. It hands the work to your sessions.', ['Ctrl', 'Shift', 'M']],
   todo: ['AI fills the list from your sources, and clears what is done.', ['Ctrl', 'Shift', 'D']],
   notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
@@ -579,7 +630,7 @@ const CAPS = {
 
 // ---- the hero ------------------------------------------------------------------
 const heroRoot = document.querySelector('[data-film="hero"]')
-const BEATS = ['panel', 'orch', 'todo', 'notes', 'map', 'cli', 'splits', 'palette']
+const BEATS = ['panel', 'overview', 'orch', 'todo', 'notes', 'map', 'cli', 'splits', 'palette']
 /** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
 const HERO_SPEED = 0.7
 let hero = null

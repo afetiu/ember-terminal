@@ -1,5 +1,5 @@
 // Ember landing page. No build step, no dependencies.
-// The hero film and the "See it work" demos live in film.js (an ES module).
+// The hero film, one chapter per feature, lives in film.js (an ES module).
 
 // ---- Downloads -------------------------------------------------------------------
 // Download links are plain same-site paths in the HTML (/download/windows,
