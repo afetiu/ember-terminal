@@ -77,6 +77,21 @@ pnpm start     # run the built app
 If `electron.exe` is missing after install, run `node node_modules/electron/install.js`
 (pnpm 11 does not run that package's install script by default).
 
+Releasing and the website are two separate steps. A `v*` tag builds the installer and
+attaches it to a GitHub Release; the site's download buttons follow the latest release
+on their own (`site/_redirects`). The site itself (`site/`, ember.deepanswerlabs.com) is
+the Cloudflare Pages project `ember`, which is not connected to this repository — a push
+does not change it. Publish it with:
+
+```bash
+pnpm site:deploy   # wrangler pages deploy site --project-name=ember --branch=main
+```
+
+It needs a `wrangler login` on the machine. On Windows, if wrangler says it is not
+authenticated straight after a successful login, a `~/.wrangler` folder exists and is
+being read instead of the one the login wrote to: copy
+`%APPDATA%\xdg.config\.wrangler\config\default.toml` into `~/.wrangler/config/`.
+
 ## How session status is worked out
 
 Process introspection turned out to be a dead end: node-pty resolves the shell pid
