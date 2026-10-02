@@ -25,7 +25,7 @@
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 52%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 48% * var(--fade)), transparent);
   font-family: var(--ui-font);
   cursor: pointer;
   transition:
@@ -39,7 +39,7 @@
 }
 
 .ember-place.is-active {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
   background: color-mix(in srgb, var(--c-accent) 12%, transparent);
 }
 
@@ -153,14 +153,14 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
 }
 
 .ember-ov-live {
   flex: none;
   font-size: 10.5px;
   letter-spacing: 0.4px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-ov-live::before {
@@ -181,7 +181,7 @@ body.sidebar-mini .ember-place-name {
   border: 1px solid var(--hairline);
   border-radius: var(--r-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 70%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 30% * var(--fade)), transparent);
   font: 11px var(--ui-font);
   cursor: pointer;
 }
@@ -227,7 +227,7 @@ body.sidebar-mini .ember-place-name {
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-ov-kpi-value {
@@ -244,7 +244,7 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-ov-kpi[data-hot='true'] .ember-ov-kpi-value {
@@ -305,7 +305,7 @@ body.sidebar-mini .ember-place-name {
   padding: 48px 0;
   text-align: center;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-ov-empty[hidden] {
@@ -422,7 +422,7 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-ov-pill {
@@ -430,7 +430,7 @@ body.sidebar-mini .ember-place-name {
   font-family: var(--term-font);
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-ov-pill[hidden] {
@@ -460,7 +460,7 @@ body.sidebar-mini .ember-place-name {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -487,11 +487,11 @@ body.sidebar-mini .ember-place-name {
   overflow: hidden;
   font-size: 12.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 84%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 16% * var(--fade)), transparent);
 }
 
 .ember-ov-said.is-quiet {
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
   font-style: italic;
 }
 
@@ -515,7 +515,7 @@ body.sidebar-mini .ember-place-name {
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
   cursor: text;
   user-select: text;
 }
@@ -561,7 +561,7 @@ body.sidebar-mini .ember-place-name {
   font-family: var(--term-font);
   font-size: 11.5px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 88%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-height: 260px;
@@ -623,7 +623,7 @@ body.sidebar-mini .ember-place-name {
 
 .ember-ov-key.is-plain {
   padding: 5px 10px;
-  color: color-mix(in srgb, var(--c-fg) 65%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 35% * var(--fade)), transparent);
   font-family: var(--term-font);
   font-size: 11px;
 }
@@ -683,7 +683,7 @@ body.sidebar-mini .ember-place-name {
   white-space: nowrap;
   font-family: var(--term-font);
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-ov-ctx {
@@ -744,7 +744,7 @@ body.sidebar-mini .ember-place-name {
 }
 
 .ember-ov-input::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 36%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 64% * var(--fade)), transparent);
 }
 
 .ember-ov-send {
@@ -790,7 +790,7 @@ body.sidebar-mini .ember-place-name {
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
 }
 
 .ember-ov-dock-dot {
@@ -818,11 +818,11 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: color-mix(in srgb, var(--c-fg) 78%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
 }
 
 .ember-ov-dock-said.is-quiet {
-  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
 }
 
 .ember-ov-dock-did {
@@ -833,7 +833,7 @@ body.sidebar-mini .ember-place-name {
   white-space: nowrap;
   font-family: var(--term-font);
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-ov-dock-did[hidden] {
@@ -880,13 +880,13 @@ body.sidebar-mini .ember-place-name {
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
 }
 
 .ember-ov-sec-count {
   flex: 1 1 auto;
   font-size: 10.5px;
-  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
 }
 
 .ember-ov-sec-btn {
@@ -897,7 +897,7 @@ body.sidebar-mini .ember-place-name {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--c-fg) 45%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
   font: 12px var(--ui-font);
   cursor: pointer;
 }
@@ -920,7 +920,7 @@ body.sidebar-mini .ember-place-name {
 .ember-ov-rail-empty {
   padding: 2px 0 4px;
   font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
 }
 
 /* The list: tick from here; the words open the list. */
@@ -977,7 +977,7 @@ body.sidebar-mini .ember-place-name {
   overflow: hidden;
   font-size: 12px;
   line-height: 1.4;
-  color: color-mix(in srgb, var(--c-fg) 84%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 16% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -991,13 +991,13 @@ body.sidebar-mini .ember-place-name {
   padding: 0;
   border: 0;
   background: none;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
   font: 11px var(--ui-font);
   cursor: pointer;
 }
 
 .ember-ov-more:hover {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .ember-ov-ask.is-rail {
@@ -1047,7 +1047,7 @@ body.sidebar-mini .ember-place-name {
 
 .ember-ov-note-when {
   font-size: 10px;
-  color: color-mix(in srgb, var(--c-fg) 38%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 62% * var(--fade)), transparent);
 }
 
 .ember-ov-note-preview {
@@ -1056,7 +1056,7 @@ body.sidebar-mini .ember-place-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  color: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
 }
 
 .ember-ov-note-preview:empty {
@@ -1085,7 +1085,7 @@ body.sidebar-mini .ember-place-name {
   font-family: var(--term-font);
   font-size: 10.5px;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
   cursor: pointer;
 }
 
@@ -1113,21 +1113,21 @@ body.sidebar-mini .ember-place-name {
 }
 
 .ember-ov-log-who.is-gone {
-  color: color-mix(in srgb, var(--c-fg) 32%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 68% * var(--fade)), transparent);
   font-weight: 400;
   font-style: italic;
 }
 
 .ember-ov-log-when {
   grid-area: when;
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 70% * var(--fade)), transparent);
   font-variant-numeric: tabular-nums;
 }
 
 .ember-ov-log-glyph {
   grid-area: glyph;
   text-align: center;
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
 .ember-ov-log-what {
@@ -1155,12 +1155,12 @@ body.sidebar-mini .ember-place-name {
 
 .ember-ov-log-line[data-kind='read'],
 .ember-ov-log-line[data-kind='search'] {
-  color: color-mix(in srgb, var(--c-fg) 32%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 68% * var(--fade)), transparent);
 }
 
 .ember-ov-log-line[data-kind='edit'] .ember-ov-log-glyph,
 .ember-ov-log-line[data-kind='write'] .ember-ov-log-glyph {
-  color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .ember-ov-log-line[data-kind='done'] .ember-ov-log-glyph {
@@ -1177,7 +1177,7 @@ body.sidebar-mini .ember-place-name {
   font-family: var(--ui-font);
   font-size: 11px;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--c-fg) 36%, transparent);
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 64% * var(--fade)), transparent);
 }
 
 /* Inside an opened card the session is known; the lines start at the time. */

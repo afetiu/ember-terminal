@@ -402,17 +402,16 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
 <!-- ======================================================================= -->
 <section aria-labelledby="overview">
   <h2 id="overview">The overview <a class="anchor" href="#overview" aria-label="Link to this section">#</a></h2>
-  <p>Every session on one screen. Open it with <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, or <code>ember overview</code> (<code>ov</code>) in any shell. It opens over the tab you are in; <kbd>Esc</kbd> goes back.</p>
-  <p>Each session is a card showing:</p>
+  <p>Every session on one screen, built to work from. <b>Overview</b>, <b>Todo</b>, <b>Notes</b> and <b>Map</b> are four buttons at the top of the sidebar, always there. Open the overview with one of them, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, or <code>ember overview</code> (<code>ov</code>); the shortcut again takes you back to the session you came from.</p>
   <ul>
-    <li>Its state (working and for how long, waiting for you, idle, exited), name and folder.</li>
-    <li>Git and Claude chips, and a thin bar for how much context is used.</li>
-    <li>The last sentence its Claude wrote, quoted, with how long ago. A working card also shows the tool it is using.</li>
-    <li>A composer at the bottom of the card that types into that session without leaving the page. It lights up when a question is waiting.</li>
+    <li><b>The numbers</b> along the top: sessions working and waiting, tokens (and how much came from cache), spend, lines added and removed, the fullest context window, your plan's usage, and a sparkline of the last hour.</li>
+    <li><b>A card per session</b>, in tab order: state, folder, what its Claude last said, the tool it is on, and a line of facts (branch, model, tokens, +/− lines, cost, context).</li>
+    <li>When a session asks permission, its card shows the question as the terminal draws it, with the options as buttons. Click <b>1</b>, <b>2</b>, <b>3</b>, Enter or Esc to answer without leaving the page.</li>
+    <li>A reply you have not seen stays open in full on its card. <b>⤢</b> or <kbd>Space</kbd> opens any card in place with its whole last reply and recent actions. Arrows move between cards, <kbd>Enter</kbd> goes to one, and typing starts an answer.</li>
+    <li><b>The rail</b>: your todo list (tick or add items), your recent notes, and a quiet activity log of every edit, command and finished turn across all sessions.</li>
+    <li>Along the bottom, the orchestrator's last reply and a line to answer it.</li>
   </ul>
-  <p>Cards are sorted by what needs you: questions first, then work in progress. Click a card to go to that session.</p>
-  <p>Along the bottom is the orchestrator's last reply and a line to answer it. It is the same conversation as the sidebar's orchestrator, shown as one exchange.</p>
-  <p>The quoted sentence comes from Claude Code's transcript, so it appears for Claude sessions, starting from their next turn after Ember sees them.</p>
+  <p>Tokens, changes and replies come from Claude Code's own transcripts, read in full when a session announces itself, so the totals cover the whole session.</p>
 </section>
 
 <!-- ======================================================================= -->

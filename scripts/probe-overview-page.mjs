@@ -40,6 +40,13 @@ const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 cfg.restoreSession = false
 cfg.claude = { ...(cfg.claude ?? {}), statusLine: true }
 cfg.agent = { ...(cfg.agent ?? {}), onboarded: true }
+if (themeName) {
+  // Forced from the source palette, before launch — the way shot-themes.mjs does it.
+  const src = readFileSync(new URL('../src/main/themes.ts', import.meta.url), 'utf8')
+  const at = src.indexOf(`name: '${themeName}'`)
+  if (at < 0) throw new Error(`no theme named ${themeName}`)
+  cfg.theme = new Function(`return ${src.slice(src.lastIndexOf('{', at), src.indexOf('}', at) + 1)}`)()
+}
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`, `--user-data-dir=${join(EMBER_HOME, 'ud')}`], {
@@ -132,19 +139,6 @@ try {
   await send('Page.enable')
   await send('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false })
   await sleep(3500)
-  if (themeName) {
-    const ok = await ev(`(async () => {
-      const themes = await window.ember.listThemes()
-      const t = themes.find((x) => x.name.toLowerCase() === ${JSON.stringify(themeName.toLowerCase())})
-      if (!t) return themes.map((x) => x.name).join(', ')
-      const c = await window.ember.getConfig()
-      window.ember.saveConfig({ ...c, theme: t })
-      return 'ok'
-    })()`)
-    if (ok !== 'ok') fail(`no theme "${themeName}"; have ${ok}`)
-    await sleep(1200)
-  }
-
   await ev(`window.__ember.newTab()`)
   await sleep(1500)
   await ev(`window.__ember.newTab()`)

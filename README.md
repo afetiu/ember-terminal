@@ -469,28 +469,36 @@ badge in the sidebar, a page with a folded corner, so it is never mistaken for a
 
 ### The overview
 
-Every session on one screen. `ember overview` (`ov`) in any Ember shell, or
-Ctrl+Shift+S, opens it over the tab you are in — as the tab itself if it has no shell —
-as a grid of cards, one per session: its state as a pill (working and for how long,
-waiting for you, idle, exited), the tab and its folder, git and Claude chips, a thin bar
-of context used, and the last sentence its Claude wrote, quoted, with how long ago. A
-working card also shows the tool it is on. Cards sort by what needs you: questions
-first, then work in progress. Click a card to go there; the composer at its foot types
-into that session without leaving the page, and it is lit when a question is waiting.
+A page to work from, not just to glance at. Overview, Todo, Notes and Map are four
+permanent buttons at the top of the sidebar — places, not cards in the session list.
+`ember overview` (`ov`) or Ctrl+Shift+S goes there; the same key again goes back to the
+session you came from (Ctrl+Shift+D and Ctrl+Shift+G do the same for the list and the
+map). The Overview button carries a badge for sessions waiting on you, Todo one for
+open items.
 
-The sentence comes from the session's own transcript, which main watches from the
-moment a session announces itself over the bridge (`src/main/overview.ts`, on the same
-feed narration reads); a session that was already running shows nothing until its next
-turn. The rest — state, git, chips — is the same data the sidebar cards draw, refreshed
-with them.
+- **The numbers** along the top: sessions (working, waiting), tokens processed and how
+  much came from cache, spend from the status lines, lines added and removed, the
+  fullest context window, the plan's windows (when Settings › Claude shows them), and a
+  sparkline of actions over the last hour.
+- **A card per session**, in tab order so nothing reshuffles under your cursor: state,
+  folder, the last thing its Claude said, the tool it is on, and a foot of quiet facts
+  (branch, model, tokens, +/− lines, cost, a context bar). A card that wants you grows:
+  a permission picker is shown as the session's own screen draws it, with its options
+  as buttons (1, 2, 3, Enter, Esc) that press the key in that session. A finished reply
+  you have not seen stays open in full until you touch the card. ⤢ (or Space) opens
+  any card in place: the whole reply and its recent actions. Arrows walk the cards,
+  Enter goes to one, typing on a focused card starts an answer in its box.
+- **The rail**: the todo list (tick or add from here), the last notes you touched, and
+  a quiet activity log — one line per action across every session (edits with their
+  +/− lines, commands, subagents, finished turns), changes only or everything.
+- **The orchestrator** along the foot, as one exchange: its last reply and a line to
+  answer.
 
-Along the bottom is the orchestrator, as one exchange rather than a log: the last thing
-it said (and the tools it used to say it), and a line to say something back. It is the
-same conversation the sidebar's card holds — one history — but the page is a glance, so
-it never shows more than the latest reply. It is the one thing that sees every session,
-and this is the page that shows them. `scripts/probe-overview.mjs` plays a session
-announcing itself and a transcript growing, and checks the cards, the composer and the
-dock.
+Everything comes from Claude Code's own transcripts: main reads each session's file
+once when it announces itself over the bridge (totals, last reply, recent actions) and
+then tails it (`src/main/overview.ts`). `scripts/probe-overview-page.mjs` stages two
+Claude sessions — one on a permission picker — and checks the whole page;
+`--theme "One Light"` runs it on a light palette.
 
 ### The todo list
 
