@@ -34,9 +34,11 @@ console.log(`site is v${version}`)
 
 if (!process.argv.includes('--dry')) {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
+  // Through the shell, because npx is a .cmd on Windows — so an argument with a space in
+  // it carries its own quotes.
   execFileSync(
     'npx',
-    ['--yes', 'wrangler@4', 'pages', 'deploy', 'site', '--project-name=ember', '--branch=main', `--commit-hash=${commit}`, `--commit-message=Ember ${version}`],
+    ['--yes', 'wrangler@4', 'pages', 'deploy', 'site', '--project-name=ember', '--branch=main', `--commit-hash=${commit}`, `"--commit-message=Ember ${version}"`],
     { cwd: root, stdio: 'inherit', shell: true }
   )
 }
