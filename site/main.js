@@ -118,6 +118,40 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   reduceMotion.addEventListener?.('change', () => { schedule(); index = stops.length - 1; place(true) })
 })()
 
+// ---- App theme switch --------------------------------------------------------------
+// "App theme: Night | Day" re-skins the Ember windows in the films (every .win and the
+// .film__view frame around it) between Ember Night and Ember Day. The page itself stays
+// night. One shared state for every switch on the page, remembered across visits.
+// This runs before film.js (both are deferred, in document order), so the demo window,
+// which film.js clones from the hero, starts out in the right mode.
+;(function appMode() {
+  const KEY = 'ember-site:app-mode'
+  const buttons = [...document.querySelectorAll('[data-app-mode]')]
+  if (!buttons.length) return
+  let mode = 'night'
+  try { if (localStorage.getItem(KEY) === 'day') mode = 'day' } catch {}
+
+  function apply() {
+    for (const el of document.querySelectorAll('.win, .film__view')) {
+      if (mode === 'day') el.dataset.mode = 'day'
+      else delete el.dataset.mode
+    }
+    for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.appMode === mode))
+  }
+  apply()
+
+  for (const b of buttons) {
+    b.addEventListener('click', () => {
+      if (b.dataset.appMode === mode) return
+      mode = b.dataset.appMode
+      try { localStorage.setItem(KEY, mode) } catch {}
+      // A cross-fade where the browser has one; the window's own colour transitions otherwise.
+      if (document.startViewTransition && !reduceMotion.matches) document.startViewTransition(apply)
+      else apply()
+    })
+  }
+})()
+
 // ---- Reveal on scroll --------------------------------------------------------------
 ;(function reveal() {
   const targets = document.querySelectorAll('.steps li, .faq__list details, .clis li')
