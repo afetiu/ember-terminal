@@ -1,6 +1,38 @@
-# Ember
+<p align="center"><img src="build/icon-256.png" width="88" alt="Ember"></p>
 
-A terminal for working alongside coding agents. PowerShell underneath, completely untouched.
+<h1 align="center">Ember</h1>
+
+<p align="center">A Windows terminal for running your coding agents side by side. Bring your CLI, no API keys.</p>
+
+![Four Claude Code sessions in Ember's sidebar. One stops on a permission prompt and its card asks for you; the prompt is answered and the session goes back to work.](docs/media/ember-demo.gif)
+
+**Download:** [ember.deepanswerlabs.com](https://ember.deepanswerlabs.com), or
+`Ember-Setup-win-x64.exe` from the [releases page](https://github.com/afetiu/ember-terminal/releases/latest).
+The clip above is also an [MP4](docs/media/ember-demo.mp4).
+
+- **Sidebar cards that know which agent needs you.** Every session is a card that reads
+  its state off the terminal: working, stopped on a question for you, or done and handing
+  back. Look at a session only when its card asks.
+- **An orchestrator.** One agent that sees every session, hands them work, opens new ones
+  and tells you when each is done.
+- **A panel beside each terminal.** The agent draws diagrams, tables and pages on it, and
+  the panel's buttons type back into the session.
+- **Notes and a todo list** in the same window, kept as plain Markdown files that your
+  agents can read and write from the shell.
+- **A map** of a project's architecture that the agent keeps up to date as the code
+  changes.
+- **Your CLI, your login.** Claude Code, Codex CLI, Gemini CLI, Cursor Agent, OpenCode and
+  Copilot CLI run as they are, on the plan you already pay for.
+
+Free · MIT · no account · no telemetry · Windows 10/11 x64
+
+**Not code signed yet.** Windows SmartScreen will warn the first time you run the
+installer: choose "More info", then "Run anyway". Every release is built from this
+repository by GitHub Actions and ships with `SHA256SUMS.txt` so you can check the file
+(see [CODE_SIGNING.md](CODE_SIGNING.md)). It installs for your user only and never asks
+for admin rights.
+
+## Agents
 
 Ember hosts the agent CLIs you already use — **Claude Code, Codex CLI, Gemini CLI, Cursor
 Agent, OpenCode and Copilot CLI** — and **never asks for an LLM API key**. Every AI feature
@@ -15,17 +47,21 @@ stores no credentials of any kind; Settings › Labs holds only the experimental
 | --- | --- | --- | --- |
 | Claude Code | `--mcp-config` | title + screen | `-p --output-format stream-json` |
 | Codex CLI | `-c mcp_servers.…` + `env_vars` | shim title + screen | `exec --json --sandbox read-only` |
-| Gemini CLI | `GEMINI_CLI_SYSTEM_SETTINGS_PATH` | shim title + screen | stdin, text |
+| Gemini CLI | not yet — Gemini only reads extra settings from admin-owned folders | shim title + screen | stdin, `--skip-trust`, text |
 | Cursor Agent | add it yourself in `~/.cursor/mcp.json` | shim title + screen | `-p --output-format stream-json --mode ask` |
-| OpenCode | `OPENCODE_CONFIG` | shim title + screen | `run`, text |
-| Copilot CLI | `--additional-mcp-config @file` | shim title + screen | `-p`, text |
+| OpenCode | `OPENCODE_CONFIG` | shim title + screen | `run --agent plan`, stdin, text |
+| Copilot CLI | `--additional-mcp-config @file` | shim title + screen | `-s … -p`, text |
 
 The table lives in `src/shared/agents.ts`; `src/main/agents.ts` detects, runs and parses.
-Claude Code and Codex are verified end to end; Gemini, OpenCode and Copilot follow their
-documented flags and have not been run here yet.
+Claude Code, Codex, Copilot CLI (1.0.91) and OpenCode (1.18.34) are verified end to end:
+headless answer, read-only map and orchestrator tool calls. Gemini CLI (0.62) is verified up
+to the model call, and its orchestrator gets the MCP server through a workspace of its own; a
+signed-in run has not been done here yet.
 
-Windows Terminal can't animate its chrome — the only motion setting in its entire
-config schema is `disableAnimations: true|false`, and there is no cursor easing at
+## The shell
+
+PowerShell underneath, completely untouched. Windows Terminal can't animate its
+chrome — the only motion setting in its entire config schema is `disableAnimations: true|false`, and there is no cursor easing at
 all. Ember replaces the *window*, not the shell: `pwsh.exe` is spawned through the
 same bundled ConPTY that Windows Terminal itself ships, so your profile, oh-my-posh,
 modules and PSReadLine behave exactly as before.
@@ -62,7 +98,7 @@ pnpm dist      # -> release/Ember-Setup-win-x64.exe (+ Ember-win-x64.zip, .tar.g
 ```
 
 The installer is a standard NSIS package: per-user (no admin prompt), lets you pick
-the install directory, and creates Start Menu and desktop shortcuts. It is **not code
+the install directory, and creates a Start Menu shortcut. It is **not code
 signed**, so Windows SmartScreen will warn on first run — "More info" → "Run anyway".
 Signing needs a purchased certificate, which is a decision rather than a build flag.
 
@@ -884,6 +920,7 @@ All found empirically, all load-bearing:
 - `scripts/probe-frames.mjs` — frame pacing of every animation (late frames, worst gap, p95)
 - `scripts/probe-notes-cli.mjs` — the `notes` command from inside a real Ember shell, PowerShell and Git Bash
 - `scripts/shot.mjs` — screenshots of the chrome (shell, notes, orchestrator, palette, settings)
+- `scripts/demo/record-demo.mjs` — records `docs/media/ember-demo.gif` and `.mp4` from four stand-in Claude Code sessions (`scripts/demo/fake-agent.mjs`); needs `ffmpeg` on PATH
 - `scripts/icon/` — `cutout.ps1` lifts the logo off its plate and crops it; `from-png.mjs` makes every icon size and the `.ico` (`pnpm icon`)
 
 ## Architecture
