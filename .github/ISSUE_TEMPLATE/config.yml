@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and show-and-tell
+    url: https://github.com/afetiu/ember-terminal/discussions
+    about: How do I…, what's the best setup for…, or something you built with Ember.

@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in Ember is broken or behaves differently from what the README says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. If the problem is that an agent CLI misbehaves inside Ember (wrong status on the card, the panel not reaching it, the map failing with it), the **CLI support** template asks the right questions instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a new tab
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Ember version
+      description: The number in Apps & Features ("Ember 1.2.0"), or the release you downloaded.
+      placeholder: "1.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How you installed it
+      options:
+        - Installer (Ember-Setup-win-x64.exe)
+        - Portable zip / tar.gz
+        - winget
+        - Scoop
+        - Built from source
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: "`winver`, or `[Environment]::OSVersion` in PowerShell."
+      placeholder: Windows 11 24H2 (26100)
+  - type: input
+    id: shell
+    attributes:
+      label: Shell in the tab
+      placeholder: PowerShell 7.5, Windows PowerShell 5.1, Git Bash, cmd
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshot or log
+      description: A screenshot helps most with rendering problems. `~/.ember/diag.log` helps with everything else — check it for anything private before pasting.
+      render: text

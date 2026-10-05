@@ -1,0 +1,33 @@
+{
+    "version": "1.2.0",
+    "description": "A Windows terminal for working alongside coding agents (Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot). No API keys.",
+    "homepage": "https://ember.deepanswerlabs.com",
+    "license": "MIT",
+    "notes": "Settings live in ~/.ember, so nothing is written next to Ember.exe.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/afetiu/ember-terminal/releases/download/v1.2.0/Ember-win-x64.zip",
+            "hash": "5bcf68efab417b451c33bb75596c44950e83cb4b9297fe40f81bfbaa9f04b8cd"
+        }
+    },
+    "shortcuts": [
+        [
+            "Ember.exe",
+            "Ember"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/afetiu/ember-terminal"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/afetiu/ember-terminal/releases/download/v$version/Ember-win-x64.zip",
+                "hash": {
+                    "url": "https://github.com/afetiu/ember-terminal/releases/download/v$version/SHA256SUMS.txt",
+                    "regex": "$sha256\\s+\\*?$basename"
+                }
+            }
+        }
+    }
+}

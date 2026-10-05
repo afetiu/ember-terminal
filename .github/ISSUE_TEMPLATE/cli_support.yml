@@ -1,0 +1,61 @@
+name: CLI support — my agent CLI doesn't work right in Ember
+description: Claude Code, Codex, Gemini, Cursor Agent, OpenCode, Copilot — or a CLI Ember doesn't know yet.
+title: "[CLI] "
+labels: [cli-support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Everything Ember knows about an agent CLI lives in one table, [`src/shared/agents.ts`](https://github.com/afetiu/ember-terminal/blob/HEAD/src/shared/agents.ts): how it is found, how it is asked one question headless, how it is given the panel, and how its title is recognised. CLIs change their flags often, so most of these reports turn out to be one row of that table. If you can fix the row yourself, that is a very welcome first PR — see CONTRIBUTING.md.
+  - type: dropdown
+    id: cli
+    attributes:
+      label: Which CLI
+      options:
+        - Claude Code
+        - Codex CLI
+        - Gemini CLI
+        - Cursor Agent
+        - OpenCode
+        - Copilot CLI
+        - One Ember doesn't support yet
+    validations:
+      required: true
+  - type: input
+    id: cli-version
+    attributes:
+      label: CLI version
+      description: The output of `<cli> --version`.
+    validations:
+      required: true
+  - type: input
+    id: ember-version
+    attributes:
+      label: Ember version
+      placeholder: "1.2.0"
+    validations:
+      required: true
+  - type: checkboxes
+    id: where
+    attributes:
+      label: What goes wrong
+      options:
+        - label: Settings › Agent doesn't find it (or shows the wrong version)
+        - label: Install or Sign in button doesn't work
+        - label: The Test button / map / check-todos fails with it
+        - label: The orchestrator can't drive it
+        - label: The panel doesn't reach it (it can't draw on the side panel)
+        - label: The card shows the wrong status (Idle / Working / Needs you)
+        - label: It starts, but something on screen looks wrong
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the exact error text if there is one. If the same command works in Windows Terminal but not in Ember, say so — that narrows it down a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: new-cli
+    attributes:
+      label: For a CLI Ember doesn't support yet
+      description: Its install command, how it is run headless (flag, prompt on stdin or as an argument, output format), and how it takes an MCP server (a flag, a config file, an environment variable).

@@ -1,0 +1,28 @@
+name: Feature idea
+description: Something Ember could do.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ember is deliberately small. It is a terminal for working alongside agent CLIs: PowerShell underneath, untouched, and every AI feature going through a CLI you already use. Plenty of good ideas will not fit that, and a "no" is about the shape of the app, not the idea.
+
+        Ideas most likely to land make an agent session easier to see, follow or hand work to, without asking anyone for an API key or adding settings.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you were trying to do, and where Ember got in the way or didn't help. Start from the problem rather than the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you'd like
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What you do today instead
+      description: A workaround, another tool, or nothing.

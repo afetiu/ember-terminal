@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: DeepAnswerLabs.Ember
+PackageVersion: 1.2.0
+PackageLocale: en-US
+Publisher: Deep Answer Labs
+PublisherUrl: https://deepanswerlabs.com
+PublisherSupportUrl: https://github.com/afetiu/ember-terminal/issues
+Author: Deep Answer Labs
+PackageName: Ember
+PackageUrl: https://ember.deepanswerlabs.com
+License: MIT
+LicenseUrl: https://github.com/afetiu/ember-terminal/blob/HEAD/LICENSE
+Copyright: Copyright © 2026 Deep Answer Labs
+ShortDescription: A Windows terminal for working alongside coding agents. No API keys.
+Description: |-
+  Ember is a Windows terminal built around the coding-agent CLIs you already use: Claude Code, Codex CLI, Gemini CLI, Cursor Agent, OpenCode and Copilot CLI.
+  PowerShell runs underneath through the same ConPTY Windows Terminal ships, so your profile, prompt and modules behave as before.
+  Ember never asks for an LLM API key: its AI features (the project map, the panel, the orchestrator) run through the CLI you pick, signed in with your own plan.
+Moniker: ember
+Tags:
+- ai
+- claude-code
+- codex
+- coding-agent
+- copilot
+- conpty
+- gemini
+- powershell
+- terminal
+- terminal-emulator
+ReleaseNotesUrl: https://github.com/afetiu/ember-terminal/releases/tag/v1.2.0
+Documentations:
+- DocumentLabel: README
+  DocumentUrl: https://github.com/afetiu/ember-terminal#readme
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

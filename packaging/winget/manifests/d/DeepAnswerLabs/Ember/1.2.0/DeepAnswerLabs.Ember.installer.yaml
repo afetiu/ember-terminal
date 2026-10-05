@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: DeepAnswerLabs.Ember
+PackageVersion: 1.2.0
+InstallerType: nullsoft
+Scope: user
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+InstallerSwitches:
+  Silent: /S /currentuser
+  SilentWithProgress: /S /currentuser
+UpgradeBehavior: install
+ReleaseDate: 2026-10-02
+AppsAndFeaturesEntries:
+- DisplayName: Ember 1.2.0
+  Publisher: Deep Answer Labs
+  DisplayVersion: 1.2.0
+  ProductCode: 858f93a5-89e7-5daa-8de2-faf46dc8583e
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/afetiu/ember-terminal/releases/download/v1.2.0/Ember-Setup-win-x64.exe
+  InstallerSha256: 72AF867A86BEA5FAA8A570847E52A90212F674A365B5C77FB4D9AE6702B60058
+  ProductCode: 858f93a5-89e7-5daa-8de2-faf46dc8583e
+ManifestType: installer
+ManifestVersion: 1.10.0
