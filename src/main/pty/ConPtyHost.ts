@@ -155,12 +155,12 @@ function withShellIntegration(exePath: string, args: string[]): string[] {
  * The same for every other agent CLI Ember knows (src/shared/agents.ts).
  *
  * Each gets two things. The panel, handed over the way that CLI takes an MCP server —
- * `-c` overrides for Codex, a settings file named by an environment variable for Gemini
- * and OpenCode, a flag for Copilot — with the variable set only for the life of the call.
+ * `-c` overrides for Codex, a settings file named by an environment variable for
+ * OpenCode, a flag for Copilot — with the variable set only for the life of the call.
  * And an announcement: the terminal title is set to the command's name while it runs and
  * cleared when it exits, which is how the card knows an agent is in the tab (Claude Code
- * does this itself). Cursor Agent has no per-session way to add a server, so it gets the
- * announcement only.
+ * does this itself). Cursor Agent and Gemini CLI have no per-session way to add a server,
+ * so they get the announcement only.
  *
  * The rule above holds: flags and file paths only, never prose. Every value here is free
  * of double quotes, so cmd.exe's second parse of a .cmd shim has nothing to split.
@@ -188,11 +188,7 @@ export function otherAgentShims(): string[] {
     '  }',
     "  __emberRun codex $pre $args @{ EMBER_SESSION_AGENT = 'codex' }",
     '}',
-    'function global:gemini {',
-    "  $e = @{ EMBER_SESSION_AGENT = 'gemini' }",
-    '  if ($env:EMBER_GEMINI_SETTINGS -and -not $env:GEMINI_CLI_SYSTEM_SETTINGS_PATH) { $e.GEMINI_CLI_SYSTEM_SETTINGS_PATH = $env:EMBER_GEMINI_SETTINGS }',
-    '  __emberRun gemini @() $args $e',
-    '}',
+    "function global:gemini { __emberRun gemini @() $args @{ EMBER_SESSION_AGENT = 'gemini' } }",
     'function global:opencode {',
     "  $e = @{ EMBER_SESSION_AGENT = 'opencode' }",
     '  if ($env:EMBER_OPENCODE_CONFIG -and -not $env:OPENCODE_CONFIG) { $e.OPENCODE_CONFIG = $env:EMBER_OPENCODE_CONFIG }',
@@ -248,7 +244,10 @@ function withPanelShim(exePath: string, args: string[]): string[] {
  * pane. That is fine for PATH and ruinous for the rest: start Ember from inside an
  * agent's shell and `NO_COLOR=1` follows it in, and every CLI in every tab renders
  * monochrome. `CLAUDE_CODE_CHILD_SESSION` is worse than cosmetic — a Claude session
- * that sees it stops writing its transcript.
+ * that sees it stops writing its transcript. `PWD` is the launcher's folder, and
+ * PowerShell never updates it: OpenCode believes it over the real working folder, so
+ * started from Git Bash, every OpenCode run and tab opened the folder Ember was
+ * launched from.
  *
  * The exact prefix match is deliberate: `CLAUDE_CODE_*` covers markers we have not
  * met yet, but `CLAUDE_*` would take the user's own API keys with it.
@@ -263,6 +262,7 @@ const LAUNCHER_ONLY = [
   'TERM_PROGRAM',
   'TERM_PROGRAM_VERSION',
   'VSCODE_',
+  'PWD',
 ]
 
 /** Ember's own environment, minus whatever the launcher was. */

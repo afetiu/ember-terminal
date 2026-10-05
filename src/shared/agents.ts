@@ -30,7 +30,7 @@ export type PanelAttach =
   | 'codex-overrides'
   /** `--additional-mcp-config @<file>` (Copilot CLI). */
   | 'copilot-flag'
-  /** A settings file named by an environment variable (Gemini, OpenCode). */
+  /** A settings file named by an environment variable (OpenCode). */
   | 'env-settings'
   /** No per-session way in yet; the panel works only if the person adds it themselves. */
   | 'none'
@@ -63,6 +63,11 @@ export interface AgentSpec {
   readOnly: string[]
   /** Pass the prompt as the last argument instead of on stdin. */
   promptArg: boolean
+  /**
+   * With `promptArg`, the flag the prompt is the value of. It goes last, right before the
+   * prompt, so no flag that takes a list (Copilot's `--allow-tool`) can swallow it.
+   */
+  promptFlag?: string
   output: AgentOutput
   panel: PanelAttach
   /** The environment variable an `env-settings` agent reads its extra config from. */
@@ -119,16 +124,21 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     name: 'Gemini CLI',
     vendor: 'Google',
     bin: 'gemini',
-    blurb: 'Google’s open-source agent, signed in with a Google account.',
+    blurb: 'Google’s open-source agent, signed in with a Google account. The panel does not reach its tabs yet.',
     homepage: 'https://github.com/google-gemini/gemini-cli',
     install: { command: 'npm install -g @google/gemini-cli', needs: 'Node.js 20+' },
     login: 'gemini',
-    headless: [],
+    // Headless Gemini refuses to start in a folder nobody has trusted (exit 55), and the
+    // map runs in whatever project it is pointed at.
+    headless: ['--skip-trust'],
+    // Non-interactive, `default` runs read-only tools and trusted MCP servers and turns
+    // down everything that would have asked. `plan` would also turn down the orchestrator.
     readOnly: ['--approval-mode', 'default'],
     promptArg: false,
     output: 'text',
-    panel: 'env-settings',
-    settingsEnv: 'GEMINI_CLI_SYSTEM_SETTINGS_PATH',
+    // Since 0.6x Gemini skips a system settings file in any folder the user can write to,
+    // so there is no per-session way in; a run gets a workspace of its own instead.
+    panel: 'none',
     title: /(^|\s)gemini(\s|$)/i,
   },
   cursor: {
@@ -155,13 +165,15 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     name: 'OpenCode',
     vendor: 'SST',
     bin: 'opencode',
-    blurb: 'Open-source, provider-agnostic agent. Sign in with any provider it supports.',
+    blurb: 'Open-source, provider-agnostic agent. Sign in with any provider it supports, or start on its free models.',
     homepage: 'https://opencode.ai',
     install: { command: 'npm install -g opencode-ai', needs: 'Node.js 18+' },
     login: 'opencode auth login',
+    // `run` reads the prompt from stdin. As an argument it would have to point at a file,
+    // and `run` turns down any read outside the working folder without asking.
     headless: ['run'],
-    readOnly: [],
-    promptArg: true,
+    readOnly: ['--agent', 'plan'],
+    promptArg: false,
     output: 'text',
     panel: 'env-settings',
     settingsEnv: 'OPENCODE_CONFIG',
@@ -175,10 +187,13 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     blurb: 'GitHub Copilot’s agent in the terminal, on your Copilot subscription.',
     homepage: 'https://github.com/github/copilot-cli',
     install: { command: 'npm install -g @github/copilot', needs: 'Node.js 22+' },
-    login: 'copilot',
-    headless: ['-p'],
+    login: 'copilot login',
+    // `-s` prints the answer alone, without the usage summary. With no `--allow-*` flag a
+    // `-p` run reads but cannot write or run commands.
+    headless: ['-s'],
     readOnly: [],
     promptArg: true,
+    promptFlag: '-p',
     output: 'text',
     panel: 'copilot-flag',
     title: /(^|\s)(github\s+)?copilot(\s+cli)?(\s|$)/i,

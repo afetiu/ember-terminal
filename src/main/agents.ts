@@ -157,8 +157,19 @@ function attachMcp(spec: AgentSpec, m: NonNullable<RunOptions['mcp']>, dir: stri
         ],
         env: {},
       }
-    case 'gemini':
-      return { args: [], env: { GEMINI_CLI_SYSTEM_SETTINGS_PATH: file('gemini.json', { mcpServers: { [m.name]: { ...server, trust: true } } }) } }
+    case 'gemini': {
+      // Gemini skips a system settings file the user could have written, and it will not
+      // set ELECTRON_RUN_AS_NODE for a server or hand one any variable named like a
+      // secret. So: a workspace of its own, the launcher, and the variables named as
+      // `$VAR`, which Gemini fills in from its own environment. The workspace is trusted
+      // by the variable, not by --skip-trust: the flag is read after settings are loaded,
+      // so with it alone the workspace's servers are dropped as untrusted.
+      const ws = join(dir, 'workspace')
+      mkdirSync(join(ws, '.gemini'), { recursive: true })
+      const env = Object.fromEntries(m.forward.map((v) => [v, `$${v}`]))
+      writeFileSync(join(ws, '.gemini', 'settings.json'), JSON.stringify({ mcpServers: { [m.name]: { command: m.launcher, args: [], env, trust: true } } }, null, 2), 'utf8')
+      return { args: [], env: { GEMINI_CLI_TRUST_WORKSPACE: 'true' }, cwd: ws }
+    }
     case 'opencode':
       return {
         args: [],
@@ -305,6 +316,7 @@ export function runAgent(prompt: string, opts: RunOptions): AgentRun {
     const dir = runDir
     promptFile = join(dir, `${randomUUID()}.md`)
     writeFileSync(promptFile, prompt, 'utf8')
+    if (spec.promptFlag) args.push(spec.promptFlag)
     args.push(`Read the file ${promptFile} and do exactly what it asks. Its contents are your whole task.`)
   } else if (spec.id === 'codex') {
     args.push('-')

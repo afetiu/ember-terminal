@@ -68,10 +68,13 @@ export class ActivityMonitor {
   private static readonly BELL_MS = 30_000
   // Claude Code sets the title to "claude", then "✳ Claude Code"; Ember's shims announce
   // every other agent CLI the same way (otherAgentShims in ConPtyHost).
-  /** A numbered option line. Codex marks the highlighted row with `›`. */
-  private static readonly CHOICE_LINE = /^\s*[❯›▸>*]?\s*[1-9][.)]\s+\S/
+  /**
+   * A numbered option line. Codex marks the highlighted row with `›`, Gemini with `●`;
+   * Copilot and Gemini draw their pickers inside a box, so a border may come first.
+   */
+  private static readonly CHOICE_LINE = /^\s*(?:[│┃]\s*)?[❯›▸>●*]?\s*[1-9][.)]\s+\S/
   /** The same line, but carrying the caret a picker uses to mark the highlighted row. */
-  private static readonly SELECTED_LINE = /^\s*[❯›▸>]\s*[1-9][.)]\s+\S/
+  private static readonly SELECTED_LINE = /^\s*(?:[│┃]\s*)?[❯›▸>●]\s*[1-9][.)]\s+\S/
   /** The footer Claude Code prints under a dialog it is blocked on. */
   private static readonly CONFIRM_FOOTER = /\benter to confirm\b/i
   /**

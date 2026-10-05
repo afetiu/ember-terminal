@@ -134,8 +134,8 @@ function writeAgentMcpConfigs(dir: string): Record<string, string> {
     writeFileSync(file, JSON.stringify(body, null, 2), 'utf8')
     out[envVar] = file
   }
-  // Gemini CLI: a system settings file, merged over the user's own.
-  put('gemini-settings.json', 'EMBER_GEMINI_SETTINGS', { mcpServers: { 'ember-panel': { command: exe, args: [mjs], env, trust: true } } })
+  // Gemini CLI gets none: since 0.6x it skips a system settings file in any folder the
+  // user can write to, which is every folder Ember has, and says so on each start.
   // OpenCode: an extra config file named by OPENCODE_CONFIG, merged with theirs.
   put('opencode.json', 'EMBER_OPENCODE_CONFIG', {
     $schema: 'https://opencode.ai/config.json',
