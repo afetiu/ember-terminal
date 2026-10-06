@@ -22,8 +22,11 @@ MCP server, which Ember attaches to `claude` in every tab, so you have these too
   a long listing. Each push replaces what is on the panel; push again as the work moves on.
   An html panel is a **complete document**: `<!doctype html>`, `<html>`, `<head>` with a
   `<style>`, `<body>` — never a bare `<div>…</div>` fragment and never inside a ``` fence.
-  The panel is dark and transparent behind the page, so name your colours: light text on
-  nothing (`#D9D2EA` is the house colour), or your own background with text to match.
+  The panel follows the user's theme, dark or light, and is transparent behind the page,
+  so never hard-code pale text on nothing: colour it with `var(--ember-ink)`,
+  `--ember-strong`, `--ember-muted`, `--ember-accent`, `--ember-line` and `--ember-surface`,
+  which Ember defines and flips with the theme. A card with its own solid background is
+  fine; pick text that reads on that card.
   Inline all CSS and JS. A fragment still shows — Ember wraps it in a page of its own —
   but it comes out styled like a markdown panel, not like your design.
 - `ask_panel` — a question with the answers as buttons; pressing one types it into the

@@ -44,7 +44,8 @@ A whole page, as raw text, every time:
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <style>
-  body { margin: 0; padding: 18px; color: #D9D2EA; font: 13.5px/1.6 ui-monospace, monospace; }
+  body { margin: 0; padding: 18px; color: var(--ember-ink); font: 13.5px/1.6 ui-monospace, monospace; }
+  h1, h2, h3 { color: var(--ember-strong); }
   …your styles…
 </style></head>
 <body>
@@ -53,15 +54,31 @@ A whole page, as raw text, every time:
 ```
 
 Not a fragment (`<div>…</div>` on its own), and not inside a ``` fence — the panel then
-shows the backticks. The webview is transparent over Ember's dark panel, so a page that
-never names a text colour draws black on black and looks empty: either keep the
-background transparent and use light text, or paint your own background and pick text to
-match. Everything inline; nothing external is fetched. Ember will wrap a fragment in a
+shows the backticks. Everything inline; nothing external is fetched.
+
+The panel follows the user's theme — Night or Day — and the webview is transparent over
+it, so a colour picked for one ground vanishes on the other: pale lavender on paper is as
+empty as black on black. Colour with the variables Ember defines, which flip with the
+theme:
+
+| variable | for |
+|---|---|
+| `--ember-ink` | body text |
+| `--ember-strong` | headings, emphasis |
+| `--ember-muted` | labels, captions, secondary text |
+| `--ember-accent` | links, highlights, the one thing to look at |
+| `--ember-line` | borders, rules, connectors |
+| `--ember-surface` | a faint card or row fill |
+
+`html[data-ember-tone]` is `light` or `dark` when a page has to branch (a chart's
+palette, say). A card with its own solid fill is fine — pick text that reads on that
+fill, and it will read in both themes. On a light theme Ember deepens any text that
+would not read, but a page that uses the variables never needs rescuing. Ember will wrap a fragment in a
 page of its own so it still shows, but it will look like a markdown panel, not yours.
 
 ## Keep it readable
 
-The panel is dark. Leave node colours to Ember's theme; if a diagram needs its own
+Leave node colours to Ember's theme, which follows the user's, dark or light; if a diagram needs its own
 colours (before/after, the changed nodes), set `fill` and `color` together in the same
 `style` or `classDef`, never a fill alone. Ember re-inks labels after render by the
 luminance of the shape under them, so a stray light fill still reads, but a chosen

@@ -68,9 +68,10 @@ export class Group {
    * Give this tab a note surface. Idempotent, like ensurePanel.
    *
    * In a tab with terminals the notes sit *over* them, the way `claude` takes over the
-   * shell it was typed in: the slots are hidden under the note, the shell keeps running,
-   * and leaving the notes brings it back exactly as it was. In a tab with no terminals
-   * the same surface is simply the tab.
+   * shell it was typed in: the shell is hidden under the note, keeps running, and leaving
+   * the notes brings it back exactly as it was. In a split that is the one pane being
+   * worked in, not the whole tab — its neighbour stays where it was. In a tab with no
+   * terminals the same surface is simply the tab.
    */
   ensureNote(hooks: NoteHooks): NoteView {
     if (this.map) this.hideMap()
@@ -78,11 +79,39 @@ export class Group {
     if (this.overview) this.hideOverview()
     if (!this.note) {
       this.note = new NoteView(hooks)
-      this.panesEl.appendChild(this.note.el)
-      this.panesEl.classList.toggle('has-note', this.panes.length > 0)
-      if (this.panes.length > 0) this.titleBefore = this.customTitle
+      this.cover(this.note.el, true)
     }
     return this.note
+  }
+
+  /** Where a surface over the terminals is mounted, while one is. */
+  private coverHost: HTMLElement | null = null
+
+  /**
+   * Lay a surface over the terminals. `inPane` puts it over the focused pane only when
+   * the tab is split — what a note or the todo list wants, since they were asked for in
+   * one shell. The overview and the map are about everything, and take the whole tab.
+   */
+  private cover(el: HTMLElement, inPane: boolean): void {
+    const slot = inPane && this.isSplit ? this.slots[this.panes.findIndex((p) => p.id === this.focused?.id)] : undefined
+    const host = slot ?? this.panesEl
+    host.appendChild(el)
+    if (this.panes.length > 0) {
+      host.classList.add('has-note')
+      this.coverHost = host
+      this.titleBefore = this.customTitle
+    }
+  }
+
+  /** Give the terminals back after `cover`. */
+  private uncover(): void {
+    this.coverHost?.classList.remove('has-note')
+    this.coverHost = null
+    if (this.panes.length > 0) {
+      this.customTitle = this.titleBefore
+      this.titleBefore = null
+      this.refit()
+    }
   }
 
   /** What the tab was called before a note took it over, to put back afterwards. */
@@ -100,9 +129,7 @@ export class Group {
     if (this.todo) this.hideTodo()
     if (!this.overview) {
       this.overview = new OverviewView(hooks)
-      this.panesEl.appendChild(this.overview.el)
-      this.panesEl.classList.toggle('has-note', this.panes.length > 0)
-      if (this.panes.length > 0) this.titleBefore = this.customTitle
+      this.cover(this.overview.el, false)
     }
     return this.overview
   }
@@ -111,12 +138,7 @@ export class Group {
     if (!this.overview) return
     this.overview.dispose()
     this.overview = null
-    this.panesEl.classList.remove('has-note')
-    if (this.panes.length > 0) {
-      this.customTitle = this.titleBefore
-      this.titleBefore = null
-      this.refit()
-    }
+    this.uncover()
   }
 
   get isOverview(): boolean {
@@ -129,9 +151,7 @@ export class Group {
     if (this.overview) this.hideOverview()
     if (!this.todo) {
       this.todo = new TodoView(hooks)
-      this.panesEl.appendChild(this.todo.el)
-      this.panesEl.classList.toggle('has-note', this.panes.length > 0)
-      if (this.panes.length > 0) this.titleBefore = this.customTitle
+      this.cover(this.todo.el, true)
     }
     return this.todo
   }
@@ -140,12 +160,7 @@ export class Group {
     if (!this.todo) return
     this.todo.dispose()
     this.todo = null
-    this.panesEl.classList.remove('has-note')
-    if (this.panes.length > 0) {
-      this.customTitle = this.titleBefore
-      this.titleBefore = null
-      this.refit()
-    }
+    this.uncover()
   }
 
   get isTodo(): boolean {
@@ -161,9 +176,7 @@ export class Group {
     if (this.overview) this.hideOverview()
     if (!this.map) {
       this.map = new MapView(hooks)
-      this.panesEl.appendChild(this.map.el)
-      this.panesEl.classList.toggle('has-note', this.panes.length > 0)
-      if (this.panes.length > 0) this.titleBefore = this.customTitle
+      this.cover(this.map.el, false)
     }
     return this.map
   }
@@ -172,12 +185,7 @@ export class Group {
     if (!this.map) return
     this.map.dispose()
     this.map = null
-    this.panesEl.classList.remove('has-note')
-    if (this.panes.length > 0) {
-      this.customTitle = this.titleBefore
-      this.titleBefore = null
-      this.refit()
-    }
+    this.uncover()
   }
 
   get isMap(): boolean {
@@ -189,12 +197,7 @@ export class Group {
     if (!this.note) return
     this.note.dispose()
     this.note = null
-    this.panesEl.classList.remove('has-note')
-    if (this.panes.length > 0) {
-      this.customTitle = this.titleBefore
-      this.titleBefore = null
-      this.refit()
-    }
+    this.uncover()
   }
 
   /** True when this tab is showing writing right now — its own, or over its terminals. */
@@ -386,6 +389,11 @@ export class Group {
     const [session] = this.panes.splice(idx, 1)
     const [slot] = this.slots.splice(idx, 1)
     this.sizes.splice(idx, 1)
+    // A note or the todo list over this pane goes with it, not into limbo.
+    if (slot && slot === this.coverHost) {
+      this.hideNote()
+      this.hideTodo()
+    }
     slot?.remove()
 
     // Rebuild dividers rather than trying to patch indices around the hole.

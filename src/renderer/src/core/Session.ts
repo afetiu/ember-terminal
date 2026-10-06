@@ -13,6 +13,32 @@ import { Scroller } from '../term/Scroller'
 import { sound } from '../motion/sound'
 import { BlockTracker } from './Blocks'
 import { BlockRail } from '../ui/BlockRail'
+import { isLightBackground } from '../ui/tone'
+
+/**
+ * The grid's background: the theme's own colour at zero alpha, never plain transparent.
+ *
+ * The window paints the ground, so the grid stays see-through either way, but xterm reads
+ * this colour for three things that need the real one: the contrast floor below measures
+ * text against it, an OSC 11 query reports it (Claude Code's `auto` theme picks light or
+ * dark from that answer), and the WebGL renderer fills a rectangle in it behind every dim,
+ * italic or underlined cell. `rgba(0,0,0,0)` made that rectangle black — the black boxes
+ * behind Claude's dimmed text on a light theme. The renderer is also patched to honour
+ * the alpha (electron.vite.config.ts), so the rectangle is not drawn at all.
+ */
+function clearGround(background: string): string {
+  return /^#[0-9a-f]{6}$/i.test(background) ? `${background}00` : 'rgba(0, 0, 0, 0)'
+}
+
+/**
+ * Light palettes get xterm's contrast correction; dark ones keep their exact colours.
+ * Programs pick colours for a dark terminal — Claude Code's default theme writes pure
+ * white and mid-greys in 24-bit — and on paper those are nothing. 4.5 is WCAG AA; dim
+ * text is held to half of it, so it still reads as dim.
+ */
+function contrastFloor(background: string): number {
+  return isLightBackground(background) ? 4.5 : 1
+}
 
 let seq = 0
 
@@ -140,9 +166,9 @@ export class Session implements ActivitySource {
       // Our canvas layer draws the caret; xterm's own must not paint at all.
       cursorInactiveStyle: 'none',
       drawBoldTextInBrightColors: true,
-      minimumContrastRatio: 1,
+      minimumContrastRatio: contrastFloor(theme.background),
       theme: {
-        background: 'rgba(0, 0, 0, 0)',
+        background: clearGround(theme.background),
         foreground: theme.foreground,
         cursor: 'rgba(0, 0, 0, 0)',
         cursorAccent: 'rgba(0, 0, 0, 0)',
@@ -784,8 +810,9 @@ export class Session implements ActivitySource {
     this.term.options.lineHeight = font.lineHeight
     this.term.options.letterSpacing = font.letterSpacing
     this.term.options.scrollback = config.scrollback
+    this.term.options.minimumContrastRatio = contrastFloor(theme.background)
     this.term.options.theme = {
-      background: 'rgba(0, 0, 0, 0)',
+      background: clearGround(theme.background),
       foreground: theme.foreground,
       cursor: 'rgba(0, 0, 0, 0)',
       cursorAccent: 'rgba(0, 0, 0, 0)',

@@ -1987,6 +1987,25 @@ body.is-zen .ember-fx {
   visibility: hidden;
 }
 
+/* The focus ring is drawn by the slot's ::after; over a whole-tab surface it would
+   float on top of it. */
+.ember-group-panes.has-note > .ember-slot::after {
+  display: none;
+}
+
+/* In a split, notes and the todo list cover only the pane they were opened in. */
+.ember-slot.has-note > .ember-notes,
+.ember-slot.has-note > .ember-todo {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
+}
+
+.ember-slot.has-note > .ember-pane {
+  visibility: hidden;
+}
+
 .ember-notes-leave {
   flex: none;
   margin-right: 4px;

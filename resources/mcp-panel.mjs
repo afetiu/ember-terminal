@@ -36,7 +36,7 @@ const INTERACTIVE = [
 /**
  * What an html panel has to be, said once and pasted wherever html is mentioned.
  *
- * The panel is a transparent webview over a dark surface. A fragment — a bare `<div>`
+ * The panel is a transparent webview over the theme's surface, dark or light. A fragment — a bare `<div>`
  * with no document, no colours — is wrapped by Ember and styled like a markdown panel,
  * so it is never blank any more; but a model that knows the shape sends the shape, and
  * a real page with its own colours is what the format is for. The most frequent way the
@@ -46,9 +46,12 @@ const INTERACTIVE = [
 const HTML_CONTRACT = [
   'An html panel is a complete document: start with `<!doctype html>`, then `<html>`, a `<head>` with a ',
   '`<style>`, and a `<body>` — never a bare fragment like `<div>…</div>`, and never wrapped in a ``` fence. ',
-  'The panel is dark and transparent behind your page, so set colours explicitly: either leave the ',
-  'background transparent and use light text (#D9D2EA on nothing is the house style), or paint your own ',
-  'background and choose text to match. Inline all CSS and JS; nothing external is fetched. Keep it ',
+  'The panel follows the user\'s theme — dark or light — and is transparent behind your page, so never ',
+  'hard-code pale text on nothing. Colour the page with the CSS variables Ember defines, which flip with ',
+  'the theme: var(--ember-ink) body text, var(--ember-strong) headings, var(--ember-muted) secondary text, ',
+  'var(--ember-accent) links and highlights, var(--ember-line) borders, var(--ember-surface) card fills ',
+  '(html[data-ember-tone] is "light" or "dark" if you need to branch). A card with its own solid background ',
+  'is fine: choose text that reads on that card. Inline all CSS and JS; nothing external is fetched. Keep it ',
   'self-contained and under a few hundred lines. If you send a fragment anyway, Ember wraps it in a page ',
   'of its own so it still shows, but it will look like a markdown panel rather than your design.',
 ].join('')

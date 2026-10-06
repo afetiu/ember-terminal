@@ -705,6 +705,143 @@ h1, h2, h3, h4, h5, h6 { color: #1B1426; }
 a { color: #7A22AE; }
 img, svg, canvas, video { max-width: 100%; }`
 
+/**
+ * What a model-authored page gets on a light theme, after its own styles.
+ *
+ * Pages are written for the dark panel more often than not — the old house colour was pale
+ * lavender on nothing — and on paper that is nothing at all: legends, headings, the copy
+ * in a bordered box, the label on a button. The page is not rewritten; once it has drawn
+ * (and again whenever it changes), every element that holds text is measured against the
+ * ground it actually sits on — its own background, its parents', and the panel's paper
+ * under all of them — and text under 4.5:1 (3:1 when large) is deepened toward the ink
+ * until it reads, keeping its hue, the way the chrome's accent ink is made. A border
+ * paler than the paper it sits on, which can only have been meant for a dark ground,
+ * becomes a faint ink line. Text on a dark card the page painted itself is left alone,
+ * because against that card it already reads.
+ *
+ * A page that wants to do it properly uses the tokens below instead and needs no rescue.
+ */
+function lightGuard(paper: string): string {
+  return `<script>
+(function () {
+  var PAPER = ${JSON.stringify(paper)}
+  var INK = [27, 20, 38]
+  function parse(c) {
+    var m = /rgba?\\(([\\d.]+)[,\\s]+([\\d.]+)[,\\s]+([\\d.]+)(?:[,\\s/]+([\\d.]+%?))?\\)/.exec(c || '')
+    if (!m) return null
+    var a = m[4] == null ? 1 : m[4].slice(-1) === '%' ? parseFloat(m[4]) / 100 : parseFloat(m[4])
+    return [+m[1], +m[2], +m[3], a]
+  }
+  var paperRgb = (function () {
+    var h = PAPER.replace('#', '')
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+  })()
+  function over(top, under) {
+    var a = top[3]
+    return [top[0] * a + under[0] * (1 - a), top[1] * a + under[1] * (1 - a), top[2] * a + under[2] * (1 - a)]
+  }
+  function lum(c) {
+    function l(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+    return 0.2126 * l(c[0]) + 0.7152 * l(c[1]) + 0.0722 * l(c[2])
+  }
+  function ratio(a, b) {
+    var x = lum(a), y = lum(b)
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+  }
+  // The colour the element's box is painted on: its own background and each parent's,
+  // composited over the panel's paper. Images and gradients count as the paper, which
+  // is what most of them are drawn for.
+  function ground(el) {
+    var layers = []
+    for (var n = el; n && n.nodeType === 1; n = n.parentElement) {
+      var bg = parse(getComputedStyle(n).backgroundColor)
+      if (bg && bg[3] > 0) { layers.push(bg); if (bg[3] >= 0.99) break }
+    }
+    var c = paperRgb
+    for (var i = layers.length - 1; i >= 0; i--) c = over(layers[i], c)
+    return c
+  }
+  function readable(fg, bg, need) {
+    if (ratio(fg, bg) >= need) return null
+    // Toward the ink on a light ground, toward white on a dark one.
+    var to = lum(bg) > 0.4 ? INK : [255, 255, 255]
+    for (var t = 0.1; t <= 1.0001; t += 0.1) {
+      var m = [fg[0] + (to[0] - fg[0]) * t, fg[1] + (to[1] - fg[1]) * t, fg[2] + (to[2] - fg[2]) * t]
+      if (ratio(m, bg) >= need) return m
+    }
+    return to
+  }
+  function css(c) { return 'rgb(' + Math.round(c[0]) + ', ' + Math.round(c[1]) + ', ' + Math.round(c[2]) + ')' }
+  function holdsText(el) {
+    for (var k = el.firstChild; k; k = k.nextSibling) if (k.nodeType === 3 && /\\S/.test(k.nodeValue)) return true
+    return false
+  }
+  function fix() {
+    var all = document.body ? document.body.getElementsByTagName('*') : []
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i]
+      var tag = el.tagName.toLowerCase()
+      var isSvgText = tag === 'text' || tag === 'tspan'
+      if (!isSvgText && el.closest('svg')) continue
+      var st = getComputedStyle(el)
+      if (st.display === 'none' || st.visibility === 'hidden') continue
+      var bg = null
+      if (holdsText(el) || tag === 'input' || tag === 'textarea') {
+        var fg = parse(isSvgText ? st.fill : st.color)
+        if (fg) {
+          bg = ground(el)
+          var size = parseFloat(st.fontSize) || 14
+          var large = size >= 24 || (size >= 18.5 && parseInt(st.fontWeight, 10) >= 700)
+          var better = readable(over(fg, bg), bg, large ? 3 : 4.5)
+          if (better) el.style.setProperty(isSvgText ? 'fill' : 'color', css(better), 'important')
+        }
+      }
+      // A border paler than what it sits on was drawn for a dark ground.
+      if (!isSvgText && (parseFloat(st.borderTopWidth) > 0 || parseFloat(st.borderLeftWidth) > 0)) {
+        var bc = parse(st.borderTopWidth !== '0px' ? st.borderTopColor : st.borderLeftColor)
+        if (bc && bc[3] > 0) {
+          var under = ground(el.parentElement || el)
+          var line = over(bc, under)
+          if (lum(line) > lum(under) + 0.005) el.style.setProperty('border-color', 'rgba(46, 38, 64, 0.2)', 'important')
+        }
+      }
+    }
+  }
+  var queued = false
+  var observer = new MutationObserver(soon)
+  function watch() {
+    observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] })
+  }
+  function soon() {
+    if (queued) return
+    queued = true
+    requestAnimationFrame(function () {
+      queued = false
+      observer.disconnect()
+      try { fix() } finally { watch() }
+    })
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', soon)
+  else soon()
+  window.addEventListener('load', soon)
+  watch()
+})()
+</script>`
+}
+
+/**
+ * Which way the panel faces, told to every authored page: `html[data-ember-tone]` and a
+ * small set of `--ember-*` colours that flip with the theme. The skills and the tool
+ * description point models at these, so one page reads on Night and on Day. Declared
+ * before the page's own styles, so a page that defines the same names wins.
+ */
+function toneTokens(light: boolean, paper: string): string {
+  const t = light
+    ? { paper, ink: '#2E2640', strong: '#1B1426', muted: '#5E5373', accent: '#7A22AE', line: 'rgba(46, 38, 64, 0.16)', surface: 'rgba(46, 38, 64, 0.05)' }
+    : { paper: '#1D1530', ink: '#D9D2EA', strong: '#F0EAFB', muted: '#A99DC4', accent: '#E08BFF', line: 'rgba(217, 210, 234, 0.16)', surface: 'rgba(255, 255, 255, 0.04)' }
+  return `<style>:root { --ember-paper: ${t.paper}; --ember-ink: ${t.ink}; --ember-strong: ${t.strong}; --ember-muted: ${t.muted}; --ember-accent: ${t.accent}; --ember-line: ${t.line}; --ember-surface: ${t.surface}; }</style><script>document.documentElement.setAttribute('data-ember-tone', '${light ? 'light' : 'dark'}')</script>`
+}
+
 /** True when the page is a document of its own rather than a fragment to be given one. */
 function isDocument(page: string): boolean {
   return /^\s*(<!doctype\b|<html\b)/i.test(page)
@@ -731,23 +868,23 @@ function unfence(page: string): string {
  * gets Ember's own document around it instead, styled like a markdown panel, and a full
  * document gets `HTML_BASE` ahead of its own head so an unstyled body still reads.
  */
-function graft(page: string, act: string, viaParent = false, light = false): string {
+function graft(page: string, act: string, viaParent = false, light = false, paper = DEFAULT_PAPER): string {
   const source = unfence(page)
   // The scrollbars go in too. A model-authored page is still a page inside Ember's
   // panel, and a browser-default bar down the side of it is the one part that gives
   // away that it is a webview.
-  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_INTERACT : ''}</style>${runtime(act, viaParent)}`
+  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_INTERACT : ''}</style>${light ? lightGuard(paper) : ''}${runtime(act, viaParent)}`
 
   if (!isDocument(source)) {
     return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}${light ? LIGHT_STYLE : ''}</style>
+<style>${STYLE}${light ? LIGHT_STYLE : ''}</style>${toneTokens(light, paper)}
 </head><body class="ember-fragment">${source}${addition}</body></html>`
   }
 
-  const withBase = withDefaults(source, `<style>${light ? HTML_BASE_LIGHT : HTML_BASE}</style>`)
+  const withBase = withDefaults(source, `<style>${light ? HTML_BASE_LIGHT : HTML_BASE}</style>${toneTokens(light, paper)}`)
   const close = withBase.toLowerCase().lastIndexOf('</body>')
   return close === -1 ? withBase + addition : withBase.slice(0, close) + addition + withBase.slice(close)
 }
@@ -783,22 +920,25 @@ function withDefaults(page: string, head: string): string {
  */
 export type PanelTarget = 'bridge' | 'phone'
 
-export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false): string {
+/** The light ground the guard measures against when the renderer does not say which. */
+const DEFAULT_PAPER = '#FBF7F2'
+
+export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false, paper = DEFAULT_PAPER): string {
   const act = push.act ?? ''
   const viaParent = target === 'phone'
-  const html = renderFor(push, act, viaParent, light)
+  const html = renderFor(push, act, viaParent, light, paper)
   // The phone bundles mermaid rather than fetching it from a bridge it cannot see.
   return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : html
 }
 
-function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean): string {
+function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean, paper: string): string {
   switch (push.format) {
     case 'html':
       // Passed through as its own document. It is untrusted, and it is contained by
       // being on this origin in a webview rather than by being filtered here — a
       // sanitiser that has to be right every time is a worse bet than an isolation
       // boundary that does not.
-      return graft(push.content, act, viaParent, light)
+      return graft(push.content, act, viaParent, light, paper)
 
     case 'code':
       return shell(

@@ -341,7 +341,8 @@ export class Panel {
       return
     }
     // The page is drawn in main, which cannot see the theme, so it is told which way it faces.
-    const tone = document.body.classList.contains('is-light') ? '?tone=light' : ''
+    const paper = getComputedStyle(document.documentElement).getPropertyValue('--c-bg').trim().replace('#', '')
+    const tone = document.body.classList.contains('is-light') ? `?tone=light&paper=${encodeURIComponent(paper)}` : ''
     this.navigate(`${origin}/doc/${push.id}${tone}`)
   }
 
