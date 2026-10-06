@@ -1663,6 +1663,11 @@ export class App {
       const panel = group.panel ?? group.ensurePanel(this.panelHooks(group))
       panel.push(push, this.config.panel.autoOpen)
       this.startPaneMotion()
+      // A screenshot caught by the image hook is not news worth a sound, or the phone.
+      if (push.quiet) {
+        this.syncTabs()
+        return
+      }
       if (group.id !== this.activeId) sound.play('open')
       // And onto the phone, if one is watching this tab. The whole reason the panel is
       // pushed without being asked for is that he should not have to think to look at it;

@@ -101,6 +101,12 @@ const INSTRUCTIONS = [
   'Use open_url instead of telling them to open a browser — a dev server you just started, a PR, docs ',
   'you are quoting. Use clear_panel when what is up is finished with.\n\n',
 
+  'The terminal cannot draw images, so the user does not see the screenshots you take or the pictures ',
+  'you read unless they reach the panel. In Claude Code most of them get there by themselves — an image ',
+  'you Read and a screenshot an MCP tool returns are added to the panel\'s Images — but when an image is ',
+  'the point (a before/after, a render you produced, the screenshot that shows the bug), put it up with ',
+  'show_image, and name the image files in the terminal rather than describing them.\n\n',
+
   `The user also keeps notes in Ember: plain .md files in ${process.env.EMBER_NOTES_DIR || 'their Documents\\\\Ember Notes folder'}, `,
   'shown in a Notes tab. There is a command for them on PATH — `notes list`, `notes read <note>`, ',
   '`notes new <text>`, `notes append <note> <text>`, `notes write <note>` (stdin), `notes open <note>`; ',
@@ -221,6 +227,22 @@ const TOOLS = [
     },
   },
   {
+    name: 'show_image',
+    description:
+      'Show one or more image files on the panel — screenshots, renders, charts saved as images, before/after ' +
+      'pairs. The terminal cannot display images, so this is how the user sees one. Give absolute paths to ' +
+      'png, jpg, gif, webp or bmp files; the first is shown large and the rest as thumbnails, and the panel ' +
+      'keeps every image of the session so they can go back to earlier ones.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paths: { type: 'array', items: { type: 'string' }, description: 'Absolute paths to the image files, the one to show first first.' },
+        caption: { type: 'string', description: 'Short line under the image: what it shows.' },
+      },
+      required: ['paths'],
+    },
+  },
+  {
     name: 'clear_panel',
     description: 'Empty the panel and collapse it. Use when what is on screen is finished with.',
     inputSchema: { type: 'object', properties: {} },
@@ -310,6 +332,12 @@ async function call(name, args) {
         replace: true,
       })
       return `The panel is now browsing ${args.url}.`
+    }
+    case 'show_image': {
+      const paths = (Array.isArray(args.paths) ? args.paths : [args.path ?? args.paths]).filter(Boolean).map(String)
+      if (!paths.length) throw new Error('paths is required: absolute paths to image files')
+      const res = await post('/image', { paths, caption: args.caption, source: 'shown' })
+      return `${res.count === 1 ? 'The image is' : `${res.count} images are`} on the panel. The user can see ${res.count === 1 ? 'it' : 'them'} — do not describe ${res.count === 1 ? 'it' : 'them'}.`
     }
     case 'clear_panel': {
       await post('/panel/clear', {})

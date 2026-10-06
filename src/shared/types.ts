@@ -511,7 +511,7 @@ export interface PanelOption {
 export interface PanelPush {
   tabId: string
   title: string
-  format: 'markdown' | 'code' | 'mermaid' | 'html' | 'url' | 'ask'
+  format: 'markdown' | 'code' | 'mermaid' | 'html' | 'url' | 'ask' | 'images'
   content: string
   /** Language hint for 'code'. */
   language?: string
@@ -521,6 +521,11 @@ export interface PanelPush {
   freeText?: boolean
   /** Replace what is on the panel rather than pushing a new entry onto its stack. */
   replace?: boolean
+  /**
+   * Arrived without being asked for — an image a hook caught, not one Claude chose to show.
+   * Such a push opens a closed panel but never takes the place of something else on an open one.
+   */
+  quiet?: boolean
   id: string
   at: number
   /**

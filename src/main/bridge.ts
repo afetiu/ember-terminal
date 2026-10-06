@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
-import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, extname, isAbsolute, join } from 'node:path'
+import { createHash, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
 import { app, BrowserWindow } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
 import { renderPanelDocument } from './panelDoc.js'
@@ -65,10 +65,30 @@ function writeSettings(): string {
       '\r\n',
     'utf8'
   )
+  // The image hook (resources/image-hook.mjs): screenshots and pictures the session sees,
+  // onto the panel. `async` so Claude never waits on it.
+  const hook = join(dir, 'ember-image-hook.cmd')
+  writeFileSync(
+    hook,
+    ['@echo off', 'set ELECTRON_RUN_AS_NODE=1', `"${process.execPath}" "${resourcePath('image-hook.mjs')}"`].join('\r\n') +
+      '\r\n',
+    'utf8'
+  )
+  const imageHook = { type: 'command', command: hook.replace(/\\/g, '/'), async: true, timeout: 30 }
   const file = join(dir, 'ember-settings.json')
   writeFileSync(
     file,
-    JSON.stringify({ statusLine: { type: 'command', command: cmd.replace(/\\/g, '/'), padding: 0 } }, null, 2),
+    JSON.stringify(
+      {
+        statusLine: { type: 'command', command: cmd.replace(/\\/g, '/'), padding: 0 },
+        hooks: {
+          PostToolUse: [{ matcher: 'Read|mcp__.*', hooks: [imageHook] }],
+          Stop: [{ hooks: [imageHook] }],
+        },
+      },
+      null,
+      2
+    ),
     'utf8'
   )
   return file
@@ -255,13 +275,13 @@ function send(res: ServerResponse, code: number, body: string, type = 'applicati
   res.end(body)
 }
 
-async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
+async function readJson(req: IncomingMessage, limit = 4_000_000): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req) {
     size += (chunk as Buffer).length
     // A panel is a thing you read, not a payload. Cap it well above any real document.
-    if (size > 4_000_000) throw new Error('payload too large')
+    if (size > limit) throw new Error('payload too large')
     chunks.push(chunk as Buffer)
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>
@@ -274,6 +294,108 @@ function broadcast(channel: string, payload: unknown): void {
 }
 
 const FORMATS = new Set(['markdown', 'code', 'mermaid', 'html', 'url', 'ask'])
+
+/**
+ * Images a tab's session has seen or shown, newest first.
+ *
+ * The panel cannot load a file:// path — its page lives on the bridge's origin — so each
+ * image is registered here under a random id and served from /img/<id>, the same way a
+ * document is served from /doc/<id>. Bytes that arrived as base64 are written to a file
+ * in the session's temp folder; a path that was already a file is served where it is.
+ */
+interface ImageEntry {
+  id: string
+  file: string
+  mime: string
+  source: string
+  caption: string
+  at: number
+  hash: string
+}
+const images = new Map<string, ImageEntry[]>()
+const MAX_IMAGES = 60
+const MIME: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+}
+const EXT: Record<string, string> = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp', 'image/bmp': '.bmp' }
+
+/**
+ * Add one image to a tab. A picture already there (same bytes) moves to the front instead
+ * of appearing twice; `null` when it is unusable or, for an automatic one, already shown.
+ */
+function addImage(tabId: string, body: Record<string, unknown>, auto: boolean): ImageEntry | null {
+  let bytes: Buffer
+  let file = ''
+  let mime = ''
+  const path = String(body['path'] ?? '')
+  if (path) {
+    if (!isAbsolute(path) || !existsSync(path)) return null
+    mime = MIME[extname(path).toLowerCase()] ?? ''
+    if (!mime || statSync(path).size > 25_000_000) return null
+    bytes = readFileSync(path)
+    file = path
+  } else {
+    mime = String(body['mime'] ?? '').toLowerCase()
+    const data = String(body['data'] ?? '')
+    if (!EXT[mime] || !data) return null
+    bytes = Buffer.from(data, 'base64')
+  }
+  const hash = createHash('sha1').update(bytes).digest('hex')
+  const list = images.get(tabId) ?? []
+  const seen = list.findIndex((e) => e.hash === hash)
+  if (seen !== -1) {
+    if (auto) return null
+    const [again] = list.splice(seen, 1)
+    list.unshift({ ...again!, at: Date.now() })
+    return list[0]!
+  }
+  const id = randomBytes(8).toString('hex')
+  if (!file) {
+    const dir = join(app.getPath('temp'), `ember-${process.pid}`, 'images')
+    mkdirSync(dir, { recursive: true })
+    file = join(dir, `${id}${EXT[mime]}`)
+    writeFileSync(file, bytes)
+  }
+  const entry: ImageEntry = {
+    id,
+    file,
+    mime,
+    source: String(body['source'] ?? '').slice(0, 80),
+    caption: String(body['caption'] ?? '').slice(0, 200),
+    at: Date.now(),
+    hash,
+  }
+  list.unshift(entry)
+  if (list.length > MAX_IMAGES) list.length = MAX_IMAGES
+  images.set(tabId, list)
+  return entry
+}
+
+/** The tab's images as one panel document, the newest in front. */
+function imagesPush(tabId: string, quiet: boolean): PanelPush {
+  const list = images.get(tabId) ?? []
+  const push: PanelPush = {
+    tabId,
+    title: list.length === 1 ? 'Image' : `Images · ${list.length}`,
+    format: 'images',
+    content: JSON.stringify(list.map(({ id, source, caption, at, file }) => ({ id, source, caption: caption || source || file.split(/[\\/]/).pop(), at }))),
+    replace: false,
+    ...(quiet ? { quiet: true } : {}),
+    id: randomBytes(8).toString('hex'),
+    at: Date.now(),
+    act: randomBytes(16).toString('hex'),
+  }
+  const stack = stacks.get(tabId) ?? []
+  stack.unshift(push)
+  if (stack.length > MAX_PER_TAB) stack.length = MAX_PER_TAB
+  stacks.set(tabId, stack)
+  return push
+}
 
 
 /**
@@ -368,6 +490,20 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return send(res, 404, '<!doctype html><title>gone</title>', 'text/html; charset=utf-8')
   }
 
+  // An image a session saw, by the id it was registered under. Unauthenticated for the
+  // same reason /doc is: it only ever returns what this machine already handed over.
+  if (req.method === 'GET' && url.pathname.startsWith('/img/')) {
+    const id = url.pathname.slice('/img/'.length)
+    for (const list of images.values()) {
+      const found = list.find((e) => e.id === id)
+      if (!found || !existsSync(found.file)) continue
+      res.writeHead(200, { 'content-type': found.mime, 'cache-control': 'private, max-age=3600', 'x-content-type-options': 'nosniff' })
+      createReadStream(found.file).pipe(res)
+      return
+    }
+    return send(res, 404, 'gone', 'text/plain')
+  }
+
   // Mermaid, served to the document rather than bundled into it. One 3MB file that
   // Chromium then caches, instead of 3MB inlined into every diagram we push.
   if (req.method === 'GET' && url.pathname === '/vendor/mermaid.min.js') {
@@ -451,6 +587,32 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           default:
             return send(res, 404, JSON.stringify({ error: 'no such route' }))
         }
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // Images onto the panel: from the image hook (auto) or show_image (chosen). One image
+  // or several (`paths`); base64 bytes for ones that were never a file.
+  if (req.method === 'POST' && url.pathname === '/image') {
+    void readJson(req, 40_000_000)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        if (!tabId) return send(res, 400, JSON.stringify({ error: 'tabId is required' }))
+        const auto = body['auto'] === true
+        const raw = body['paths']
+        const many = Array.isArray(raw) ? raw.slice(0, 12).map(String) : typeof raw === 'string' && raw ? [raw] : null
+        const added = (many ?? [null])
+          .reverse()
+          .map((p) => addImage(tabId, p === null ? body : { ...body, path: p }, auto))
+          .filter((e): e is ImageEntry => e !== null)
+        if (!added.length) {
+          return send(res, auto ? 200 : 400, JSON.stringify(auto ? { ok: true, count: 0 } : { error: 'no readable image (absolute path to a png, jpg, gif, webp or bmp)' }))
+        }
+        const push = imagesPush(tabId, auto)
+        const { act: _act, ...forRenderer } = push
+        broadcast('ember:panel:push', forRenderer)
+        send(res, 200, JSON.stringify({ ok: true, count: added.length }))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return
@@ -691,6 +853,7 @@ export function stopBridge(): void {
 /** Drop a tab's history when its tab closes, so a reused id cannot inherit it. */
 export function forgetTab(tabId: string): void {
   stacks.delete(tabId)
+  images.delete(tabId)
   unbindSession(tabId)
   forgetBrief(tabId)
 }

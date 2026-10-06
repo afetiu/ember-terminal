@@ -31,6 +31,10 @@ MCP server, which Ember attaches to `claude` in every tab, so you have these too
   but it comes out styled like a markdown panel, not like your design.
 - `ask_panel` — a question with the answers as buttons; pressing one types it into the
   terminal as the user's next message. Ask, then stop and wait.
+- `show_image` — image files on the panel (absolute paths). The terminal cannot draw
+  images, so this is how the user sees a screenshot or a render. In Claude Code, images
+  you Read and screenshots MCP tools return reach the panel's Images on their own; use
+  `show_image` when the picture is the point (a before/after, the shot that shows the bug).
 - `open_url` — a real browser on the panel (a dev server, docs, a PR).
 - `clear_panel` — empty and collapse it.
 

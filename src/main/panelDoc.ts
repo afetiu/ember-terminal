@@ -635,7 +635,7 @@ function shell(body: string, act: string, viaParent = false, light = false): str
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}</style>
-</head><body>${body}${head}${runtime(act, viaParent)}</body></html>`
+</head><body${light ? ' class="light"' : ''}>${body}${head}${runtime(act, viaParent)}</body></html>`
 }
 
 /**
@@ -906,6 +906,85 @@ function withDefaults(page: string, head: string): string {
 }
 
 /**
+ * The images a session has seen, as one page: the newest large, the rest as a strip of
+ * thumbnails under it. A thumbnail swaps into the large frame; the large frame toggles
+ * between fitting the panel and its real size, for reading a screenshot's small print.
+ *
+ * Every image comes from /img/<id> on the bridge. The phone cannot reach the bridge, so
+ * there the page lists what was seen and says where to look.
+ */
+interface GalleryItem {
+  id: string
+  source: string
+  caption: string
+  at: number
+}
+
+function gallery(content: string, viaParent: boolean): string {
+  let items: GalleryItem[] = []
+  try {
+    items = JSON.parse(content) as GalleryItem[]
+  } catch {
+    /* an empty gallery */
+  }
+  const when = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const meta = (it: GalleryItem) =>
+    `<span class="g-cap">${escapeHtml(it.caption)}</span><span class="g-src">${escapeHtml(it.source)} · ${when(it.at)}</span>`
+  if (viaParent) {
+    return `<p>Images from this session are on the desk's panel:</p><ul>${items.map((it) => `<li>${meta(it)}</li>`).join('')}</ul>`
+  }
+  const first = items[0]
+  if (!first) return '<p>No images yet.</p>'
+  const thumbs = items
+    .map(
+      (it, i) =>
+        `<button type="button" class="g-thumb${i === 0 ? ' is-on' : ''}" data-id="${escapeHtml(it.id)}" data-meta="${escapeHtml(meta(it))}" title="${escapeHtml(it.caption)}"><img src="/img/${escapeHtml(it.id)}" alt="" loading="lazy"></button>`
+    )
+    .join('')
+  return `<style>
+body { padding: 12px 14px 16px; }
+.g-main { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.g-frame { display: block; border-radius: 10px; overflow: auto; max-height: calc(100vh - ${items.length > 1 ? 150 : 70}px);
+  border: 1px solid var(--g-line); background: var(--g-well); cursor: zoom-in; }
+.g-frame img { display: block; width: 100%; height: auto; max-width: none; }
+.g-frame.is-real { cursor: zoom-out; }
+.g-frame.is-real img { width: auto; }
+.g-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.g-cap { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-src { opacity: 0.7; white-space: nowrap; }
+.g-strip { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 2px; }
+.g-thumb { flex: none; width: 86px; height: 58px; padding: 0; border-radius: 7px; overflow: hidden; cursor: pointer;
+  border: 1px solid var(--g-line); background: var(--g-well); opacity: 0.72; transition: opacity 120ms ease, border-color 120ms ease; }
+.g-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.g-thumb:hover { opacity: 1; }
+.g-thumb.is-on { opacity: 1; border-color: var(--g-accent); box-shadow: 0 0 0 1px var(--g-accent); }
+:root { --g-line: rgba(217, 210, 234, 0.16); --g-well: rgba(255, 255, 255, 0.03); --g-accent: #C74EFF; }
+:root[data-ember-tone="light"], .light { --g-line: rgba(46, 38, 64, 0.16); --g-well: rgba(46, 38, 64, 0.04); --g-accent: #8227B8; }
+</style>
+<figure class="g-main">
+  <a class="g-frame" title="Click for real size"><img id="g-big" src="/img/${escapeHtml(first.id)}" alt=""></a>
+  <figcaption class="g-meta" id="g-meta">${meta(first)}</figcaption>
+</figure>
+${items.length > 1 ? `<div class="g-strip">${thumbs}</div>` : ''}
+<script>
+(function () {
+  var big = document.getElementById('g-big'), metaEl = document.getElementById('g-meta'), frame = big.parentNode
+  frame.addEventListener('click', function () { frame.classList.toggle('is-real') })
+  document.querySelectorAll('.g-thumb').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.g-thumb.is-on').forEach(function (o) { o.classList.remove('is-on') })
+      t.classList.add('is-on')
+      big.src = '/img/' + t.getAttribute('data-id')
+      metaEl.innerHTML = t.getAttribute('data-meta')
+      frame.classList.remove('is-real')
+      frame.scrollTop = 0
+    })
+  })
+})()
+</script>`
+}
+
+/**
  * Where the document will be shown.
  *
  * 'bridge' is the desk: served over HTTP from the bridge origin into a webview, able to
@@ -963,6 +1042,9 @@ function renderFor(push: PanelPush, act: string, viaParent: boolean, light: bool
         viaParent,
         light
       )
+
+    case 'images':
+      return shell(gallery(push.content, viaParent), act, viaParent, light)
 
     case 'markdown':
     default:

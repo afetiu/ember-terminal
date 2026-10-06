@@ -1,6 +1,6 @@
 {
   "name": "ember",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A terminal for working alongside coding agents — Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot. No API keys.",
   "license": "MIT",
   "homepage": "https://ember.deepanswerlabs.com",

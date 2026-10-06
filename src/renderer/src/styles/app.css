@@ -3775,6 +3775,25 @@ body.sidebar-mini .ember-sidebar-orch {
     opacity 130ms var(--ease-move);
 }
 
+/* The chip between the session's images and the rest of the panel: a word, not a glyph. */
+.ember-panel-btn.is-swap {
+  width: auto;
+  max-width: 40%;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--ui-font);
+  font-size: 11.5px;
+  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
+}
+
+.ember-panel-btn.is-swap.is-unseen {
+  color: var(--c-accent-ink);
+  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+
 .ember-panel-btn:hover {
   background: color-mix(in srgb, var(--c-fg) 10%, transparent);
   color: var(--c-fg);

@@ -79,6 +79,15 @@ export class Panel {
 
   /** What is on the panel. One thing: the latest push supersedes whatever was there. */
   private current: PanelPush | null = null
+  /**
+   * The session's images and the last thing that was not them. Images arrive on their
+   * own (a hook catches every screenshot), so they get a place beside the panel's real
+   * content rather than replacing it: the chip in the bar moves between the two.
+   */
+  private images: PanelPush | null = null
+  private other: PanelPush | null = null
+  private unseenImages = false
+  private readonly swapBtn: HTMLElement
   private origin = ''
   /** The in-flight ask for the origin, so a burst of pushes makes one round trip. */
   private originAsked: Promise<string> | null = null
@@ -117,12 +126,20 @@ export class Panel {
       this.togglePicking()
     )
 
+    this.swapBtn = this.button('swap', '', '', () => {
+      const next = this.current?.format === 'images' ? this.other : this.images
+      if (!next) return
+      this.current = next
+      this.show()
+    })
+
     this.chrome.append(
       this.button('back', '‹', 'Back', () => this.attached && this.frame.canGoBack() && this.frame.goBack()),
       this.button('fwd', '›', 'Forward', () => this.attached && this.frame.canGoForward() && this.frame.goForward()),
       this.button('reload', '⟳', 'Reload', () => this.attached && this.frame.reload()),
       this.titleEl,
       this.address,
+      this.swapBtn,
       this.pickBtn,
       this.button('close', '✕', 'Collapse', () => this.collapse())
     )
@@ -166,6 +183,7 @@ export class Panel {
     // The webview is not in the document until the first push or navigation: an
     // attached <webview> is a renderer process (~90 MB) per tab, panel open or not.
     this.el.append(this.chrome, this.empty, this.pop, this.grip())
+    this.syncSwap()
     // Warm, not awaited: the answer is wanted before the first push, but a panel built
     // *by* that push cannot wait for it here — see whereDocsLive.
     void this.whereDocsLive()
@@ -301,14 +319,39 @@ export class Panel {
    * history you page through; the latest push is the panel.
    */
   push(push: PanelPush, autoOpen: boolean): void {
+    if (push.format === 'images') {
+      this.images = push
+      // A screenshot the session happened to take does not knock a diagram off an open
+      // panel; it waits behind the chip. Shown by choice (show_image), it goes up.
+      if (push.quiet && this.open && this.current && this.current.format !== 'images') {
+        this.unseenImages = true
+        this.syncSwap()
+        return
+      }
+    } else {
+      this.other = push
+    }
     this.current = push
     this.show()
     if (autoOpen && !this.open) this.expand()
   }
 
+  /** The chip that moves between the images and whatever else the panel was showing. */
+  private syncSwap(): void {
+    const onImages = this.current?.format === 'images'
+    const target = onImages ? this.other : this.images
+    this.swapBtn.style.display = target ? '' : 'none'
+    this.swapBtn.classList.toggle('is-unseen', !onImages && this.unseenImages)
+    if (!target) return
+    this.swapBtn.textContent = onImages ? `‹ ${target.title}` : target.title
+    this.swapBtn.title = onImages ? `Back to ${target.title}` : 'Images from this session'
+  }
+
   private show(): void {
     const push = this.current
     if (!push) return
+    if (push.format === 'images') this.unseenImages = false
+    this.syncSwap()
     // Whatever was being pointed at belonged to the document being replaced.
     this.closePopover()
     this.empty.style.display = 'none'
@@ -600,6 +643,10 @@ export class Panel {
 
   clear(): void {
     this.current = null
+    this.images = null
+    this.other = null
+    this.unseenImages = false
+    this.syncSwap()
     if (this.picking) this.stopPicking()
     this.closePopover()
     this.empty.textContent = 'Nothing here yet.'
