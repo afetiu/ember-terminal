@@ -6,7 +6,8 @@ import { app, BrowserWindow } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { resourcePath } from './resources.js'
-import { bindSession, unbindSession } from './transcript.js'
+import { bindSession, rebindFromStatus, unbindSession } from './transcript.js'
+import { registerMedia, requestAnnotate, serveMedia } from './canvas.js'
 import { forgetBrief, trackBrief } from './overview.js'
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, saveNote } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
@@ -36,6 +37,18 @@ let token = ''
 /** Latest content per tab. Kept so a panel that opens late still has something to show. */
 const stacks = new Map<string, PanelPush[]>()
 const MAX_PER_TAB = 20
+/**
+ * Loom tabs keep what they were shown: every push is a piece of the conversation that
+ * stays on the canvas, and its frame must still be able to load its document. So their
+ * stacks are far deeper and a `replace` does not empty them.
+ */
+const MAX_PER_CANVAS_TAB = 400
+const canvasTabs = new Set<string>()
+
+export function markCanvasTab(tabId: string, on: boolean): void {
+  if (on) canvasTabs.add(tabId)
+  else canvasTabs.delete(tabId)
+}
 
 let mcpConfig = ''
 /** The `--settings` file the shim passes: a status line and nothing else. */
@@ -456,9 +469,11 @@ function handlePush(body: Record<string, unknown>): { ok: true; push: PanelPush 
     act: randomBytes(16).toString('hex'),
   }
 
-  const stack = push.replace ? [] : (stacks.get(tabId) ?? [])
+  const canvas = canvasTabs.has(tabId)
+  const stack = push.replace && !canvas ? [] : (stacks.get(tabId) ?? [])
   stack.unshift(push)
-  if (stack.length > MAX_PER_TAB) stack.length = MAX_PER_TAB
+  const max = canvas ? MAX_PER_CANVAS_TAB : MAX_PER_TAB
+  if (stack.length > max) stack.length = max
   stacks.set(tabId, stack)
 
   return { ok: true, push }
@@ -511,6 +526,13 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     if (!existsSync(file)) return send(res, 404, '// mermaid was not shipped with this build', 'text/javascript')
     res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' })
     createReadStream(file).pipe(res)
+    return
+  }
+
+  // Images and video for a Loom canvas. No token, like /doc: the id is a capability
+  // minted only for a file the session or the renderer asked for (see canvas.ts).
+  if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname.startsWith('/media/')) {
+    serveMedia(req, res, url.pathname.slice('/media/'.length))
     return
   }
 
@@ -655,7 +677,85 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const raw = body['status']
         if (!tabId || !raw || typeof raw !== 'object') throw new Error('tabId and status are required')
         broadcast('ember:claude:status', statusFrom(tabId, raw as Record<string, unknown>))
+        // `/clear` and `/resume` change the session without a new announcement; the status
+        // line is where the change shows.
+        rebindFromStatus(tabId, raw as Record<string, unknown>)
         send(res, 200, JSON.stringify({ ok: true }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // A Loom canvas being handed pictures, recordings or clips by path or URL.
+  if (req.method === 'POST' && url.pathname === '/canvas/media') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        const raw = Array.isArray(body['items']) ? (body['items'] as unknown[]) : []
+        if (!tabId || !raw.length) throw new Error('tabId and items are required')
+        const items: Array<{ src: string; kind: string; name: string; caption?: string }> = []
+        const errors: string[] = []
+        for (const entry of raw.slice(0, 24)) {
+          const o = (entry && typeof entry === 'object' ? entry : { path: entry }) as Record<string, unknown>
+          const caption = o['caption'] ? String(o['caption']).slice(0, 300) : undefined
+          const link = String(o['url'] ?? '')
+          if (/^https?:\/\//i.test(link)) {
+            const kind = /\.(mp4|webm|mov|m4v|ogv)(\?|$)/i.test(link) ? 'video' : 'image'
+            items.push({ src: link, kind, name: link.split('/').pop() ?? link, ...(caption ? { caption } : {}) })
+            continue
+          }
+          const r = registerMedia(String(o['path'] ?? ''))
+          if ('error' in r) errors.push(r.error)
+          else items.push({ src: `http://127.0.0.1:${port}/media/${r.id}`, kind: r.kind, name: r.name, ...(caption ? { caption } : {}) })
+        }
+        if (items.length) {
+          broadcast('ember:canvas:media', {
+            tabId,
+            title: String(body['title'] ?? '').slice(0, 120),
+            items,
+            id: randomBytes(6).toString('hex'),
+          })
+        }
+        send(res, items.length ? 200 : 400, JSON.stringify({ ok: items.length > 0, shown: items.length, errors }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // A Loom canvas's steps card: the plan, as the session keeps it.
+  if (req.method === 'POST' && url.pathname === '/canvas/steps') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        if (!tabId) throw new Error('tabId is required')
+        const steps = (Array.isArray(body['steps']) ? (body['steps'] as unknown[]) : []).slice(0, 40).map((raw) => {
+          const o = (raw && typeof raw === 'object' ? raw : { text: raw }) as Record<string, unknown>
+          const status = String(o['status'] ?? 'pending')
+          return {
+            text: String(o['text'] ?? o['content'] ?? '').slice(0, 300),
+            status: status === 'done' || status === 'completed' ? 'done' : status === 'active' || status === 'in_progress' ? 'active' : 'pending',
+          }
+        })
+        broadcast('ember:canvas:steps', { tabId, title: String(body['title'] ?? '').slice(0, 120), steps })
+        send(res, 200, JSON.stringify({ ok: true }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // A Loom canvas being asked to mark things on the page it is showing.
+  if (req.method === 'POST' && url.pathname === '/canvas/annotate') {
+    void readJson(req)
+      .then(async (body) => {
+        const tabId = String(body['tabId'] ?? '')
+        if (!tabId) throw new Error('tabId is required')
+        const result = await requestAnnotate(broadcast, {
+          tabId,
+          marks: Array.isArray(body['marks']) ? (body['marks'] as unknown[]).slice(0, 12) : [],
+          clear: body['clear'] === true,
+          ...(body['url'] ? { url: String(body['url']) } : {}),
+        })
+        send(res, result.ok ? 200 : 400, JSON.stringify(result))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return
@@ -841,6 +941,18 @@ export async function startBridge(): Promise<void> {
       resolve()
     })
   })
+}
+
+/**
+ * Host a small document for a Loom canvas — a diagram from a mermaid fence in Claude's
+ * text — the way a pushed panel is hosted, without showing it anywhere. The canvas puts it
+ * in a frame of its own: model-authored markup is rendered on the bridge's origin, never
+ * in the process that holds the IPC handles.
+ */
+export function hostDoc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string): string {
+  if (!port) return ''
+  const result = handlePush({ tabId, title, format, content })
+  return result.ok ? `http://127.0.0.1:${port}/doc/${result.push.id}` : ''
 }
 
 export function stopBridge(): void {

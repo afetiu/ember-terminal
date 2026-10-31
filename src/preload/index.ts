@@ -33,6 +33,11 @@ import type {
   MapHistoryEntry,
   MapLiveSession,
   MapModel,
+  CanvasFeed,
+  CanvasMedia,
+  CanvasAnnotate,
+  CanvasAnnotateResult,
+  CanvasSteps,
 } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
@@ -60,6 +65,21 @@ const bridge: EmberBridge = {
   gitStatus: (cwd) => ipcRenderer.invoke('ember:git', cwd) as Promise<GitStatus | null>,
   listTasks: (cwd) => ipcRenderer.invoke('ember:tasks', cwd) as Promise<TaskEntry[]>,
   killPort: (port) => ipcRenderer.invoke('ember:killPort', port) as Promise<{ killed: number[]; error?: string }>,
+  canvas: {
+    watch: (tabId: string) => ipcRenderer.invoke('ember:canvas:watch', tabId) as Promise<boolean>,
+    unwatch: (tabId: string) => ipcRenderer.send('ember:canvas:unwatch', tabId),
+    drain: (tabId: string) => ipcRenderer.invoke('ember:canvas:drain', tabId) as Promise<boolean>,
+    onFeed: (cb) => on<CanvasFeed>('ember:canvas:feed', cb),
+    media: (path: string) =>
+      ipcRenderer.invoke('ember:canvas:media', path) as Promise<
+        { src: string; kind: 'image' | 'video' | 'audio'; name: string } | { error: string }
+      >,
+    doc: (tabId, title, format, content) => ipcRenderer.invoke('ember:canvas:doc', tabId, title, format, content) as Promise<string>,
+    onMedia: (cb) => on<CanvasMedia>('ember:canvas:media', cb),
+    onAnnotate: (cb) => on<CanvasAnnotate>('ember:canvas:annotate', cb),
+    annotated: (reqId: string, result: CanvasAnnotateResult) => ipcRenderer.send('ember:canvas:annotated', reqId, result),
+    onSteps: (cb) => on<CanvasSteps>('ember:canvas:steps', cb),
+  },
   panel: {
     origin: () => ipcRenderer.invoke('ember:panel:origin') as Promise<string>,
     onPush: (cb) => on<PanelPush>('ember:panel:push', cb),

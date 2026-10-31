@@ -580,6 +580,48 @@ export interface SpawnRequest {
    * two panes in one tab must address the same surface.
    */
   tabId?: string
+  /**
+   * 'canvas' for a Loom tab. Reaches the shell as EMBER_SURFACE, and through it the panel
+   * MCP server, which then describes a canvas instead of a side panel.
+   */
+  surface?: 'canvas'
+}
+
+/** What a Loom tab's transcript tail sends: lines as they are written, or a new session. */
+export type CanvasFeed =
+  | { tabId: string; kind: 'lines'; lines: Array<Record<string, unknown>> }
+  | { tabId: string; kind: 'switch'; file: string; first: boolean }
+
+/** Media handed to a Loom canvas by the session (show_media). */
+export interface CanvasMedia {
+  tabId: string
+  id: string
+  title: string
+  items: Array<{ src: string; kind: 'image' | 'video' | 'audio'; name: string; caption?: string }>
+}
+
+/** A request to draw on the page a Loom canvas is showing. */
+export interface CanvasAnnotate {
+  tabId: string
+  reqId: string
+  marks: Array<{ selector?: string; text?: string; label?: string; note?: string }>
+  clear: boolean
+  url?: string
+}
+
+/** The plan, as a Loom canvas's steps card shows it (show_steps). */
+export interface CanvasSteps {
+  tabId: string
+  title: string
+  steps: Array<{ text: string; status: 'pending' | 'active' | 'done' }>
+}
+
+export interface CanvasAnnotateResult {
+  ok: boolean
+  found?: number
+  missing?: string[]
+  url?: string
+  error?: string
 }
 
 /**
@@ -661,6 +703,23 @@ export interface EmberBridge {
   /** Kill whatever is listening on a port. */
   killPort(port: number): Promise<{ killed: number[]; error?: string }>
   /** The right-hand panel a session draws on. Only live in the v2 experience. */
+  /** A Loom tab: its session's transcript, media and page annotations. */
+  canvas: {
+    /** Start tailing the tab's transcript from its first line. Feeds arrive on onFeed. */
+    watch(tabId: string): Promise<boolean>
+    unwatch(tabId: string): void
+    /** Read whatever has been appended right now, ahead of the next poll. */
+    drain(tabId: string): Promise<boolean>
+    onFeed(cb: (feed: CanvasFeed) => void): () => void
+    /** Make a local image or video loadable by the canvas. */
+    media(path: string): Promise<{ src: string; kind: 'image' | 'video' | 'audio'; name: string } | { error: string }>
+    /** Host a small document (a mermaid diagram) on the bridge; returns its URL. */
+    doc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string): Promise<string>
+    onMedia(cb: (m: CanvasMedia) => void): () => void
+    onAnnotate(cb: (a: CanvasAnnotate) => void): () => void
+    annotated(reqId: string, result: CanvasAnnotateResult): void
+    onSteps(cb: (s: CanvasSteps) => void): () => void
+  }
   panel: {
     /** Base URL of the local bridge, for the panel webview to load documents from. */
     origin(): Promise<string>

@@ -28,6 +28,7 @@ import { isLightBackground, legible } from './tone'
 import { Onboarding } from './Onboarding'
 import { AGENTS } from '@shared/agents'
 import type { ActivityState, AttentionKind } from '../core/Activity'
+import { LoomView } from '../canvas/LoomView'
 
 /**
  * Owns the session groups, the sidebar, and the switch transition.
@@ -323,6 +324,14 @@ export class App {
       // The id, not the Group: a probe that evaluates this by value would otherwise
       // serialise the whole tab — terminal, springs, DOM — and time its own 130ms doing so.
       newTab: () => this.newGroup().then((g) => g.id),
+      /** A Loom tab, and what its canvas believes. */
+      newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
+      loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
+      /** Type into a tab's focused pane as the user would, Enter separately. */
+      send: (id: string, text: string, submit = true) => {
+        const g = this.groups.find((x) => x.id === id)
+        if (g) this.sendToSession(g, text, submit)
+      },
       openNotes: (noteId?: string) => this.newNoteGroup(noteId),
       openTodo: () => this.openTodoIn(this.activeGroup),
       closeTab: (id: string) => this.closeGroup(id),
@@ -761,7 +770,7 @@ export class App {
   /** Wall-clock of each step of the last newGroup, for scripts/probe-entrance.mjs. */
   private lastEntrance: Record<string, number> = {}
 
-  async newGroup(profileId?: string, cwd?: string): Promise<Group> {
+  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean }): Promise<Group> {
     const marks: Record<string, number> = {}
     let last = performance.now()
     const lap = (k: string) => {
@@ -790,6 +799,16 @@ export class App {
     if (cwd) session.initialCwd = cwd
     session.tabId = group.id
     if (!warm) group.add(session)
+    // A Loom tab is the same shell with a canvas over its output space. It is attached
+    // before the shell starts, so even the first prompt sits at the bottom.
+    if (opts?.loom) {
+      session.surface = 'canvas'
+      group.loom = new LoomView(group.id, group.panesEl, session, this.config, {
+        send: (text, submit) => this.sendToSession(group, text, submit),
+        isActive: () => this.activeId === group.id,
+        toast: (text) => this.flashToast(text),
+      })
+    }
     lap('session')
     sound.play('open')
     lap('sound')
@@ -1660,6 +1679,12 @@ export class App {
     window.ember.panel.onPush((push) => {
       const group = this.groups.find((g) => g.id === push.tabId)
       if (!group) return
+      // In a Loom tab what the session shows goes on its canvas, inline, not beside it.
+      if (group.loom) {
+        group.loom.push(push)
+        if (group.id !== this.activeId) sound.play('open')
+        return
+      }
       const panel = group.panel ?? group.ensurePanel(this.panelHooks(group))
       panel.push(push, this.config.panel.autoOpen)
       this.startPaneMotion()
@@ -1676,7 +1701,12 @@ export class App {
     })
 
     window.ember.panel.onClear(({ tabId }) => {
-      this.groups.find((g) => g.id === tabId)?.panel?.clear()
+      const group = this.groups.find((g) => g.id === tabId)
+      if (group?.loom) {
+        group.loom.clear()
+        return
+      }
+      group?.panel?.clear()
       this.startPaneMotion()
       if (tabId === this.activeId) void this.remote.clearPanel()
     })
@@ -2898,6 +2928,15 @@ export class App {
       { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.goPlace('notes') },
       { id: 'note-new', group: 'Notes', title: 'New note', cli: 'note [text]', run: (a) => void this.openNotesIn(this.activeGroup, 'new', a.join(' ') || undefined) },
       { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.goPlace('todo') },
+      {
+        id: 'loom',
+        group: 'Session',
+        title: 'New Loom session — a terminal whose output is a canvas',
+        hint: 'Ctrl+Shift+L',
+        cli: 'loom [dir]',
+        aliases: ['canvas', 'rich'],
+        run: (a) => void this.newGroup(undefined, a.join(' ') || this.activeGroup?.focused?.cwd || undefined, { loom: true }),
+      },
       { id: 'map', group: 'Map', title: 'Architecture map of a project', hint: 'Ctrl+Shift+G', cli: 'map [project]', aliases: ['arch'], run: (a) => this.openMapIn(this.placeGroup('map'), a.join(' ') || undefined) },
       { id: 'overview', group: 'Sessions', title: 'Overview of every session', hint: 'Ctrl+Shift+S', cli: 'overview', aliases: ['ov', 'all', 'sessions'], run: () => void this.goPlace('overview') },
       {
@@ -3388,6 +3427,12 @@ export class App {
         if (ctrl && e.shiftKey && e.code === 'KeyT') {
           e.preventDefault()
           void this.newGroup()
+          return
+        }
+        // A Loom session: the shell, with its output space turned into a canvas.
+        if (ctrl && e.shiftKey && e.code === 'KeyL') {
+          e.preventDefault()
+          void this.newGroup(undefined, active?.cwd || undefined, { loom: true })
           return
         }
         if (ctrl && e.shiftKey && e.code === 'KeyW') {

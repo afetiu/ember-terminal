@@ -6,6 +6,7 @@ import { MapView, type MapHooks } from '../ui/MapView'
 import { OverviewView, type OverviewHooks } from '../ui/Overview'
 import type { Session } from './Session'
 import type { ActivitySnapshot, ActivityState } from './Activity'
+import type { LoomView } from '../canvas/LoomView'
 
 let seq = 0
 
@@ -52,6 +53,13 @@ export class Group {
 
   /** The right-hand visualisation surface, in the v2 experience only. */
   panel: Panel | null = null
+
+  /**
+   * A Loom tab's canvas: the conversation drawn over the shell's output space, with the
+   * real CLI's input docked under it. Null in every other tab, which is every tab that
+   * was not opened as a Loom session.
+   */
+  loom: LoomView | null = null
 
   /**
    * Writing, in a tab that has no shell in it.
@@ -581,6 +589,8 @@ export class Group {
   }
 
   dispose(): void {
+    this.loom?.dispose()
+    this.loom = null
     for (const p of this.panes) p.dispose()
     this.panes.length = 0
     this.removePanel()

@@ -104,6 +104,11 @@ export class Session implements ActivitySource {
    * right panel.
    */
   tabId = ''
+  /**
+   * 'canvas' when this shell is a Loom tab's. Told to main at spawn, which puts it in the
+   * shell's environment for the panel MCP server to read. Null for every other tab.
+   */
+  surface: 'canvas' | null = null
   /** Absolute buffer row where the last submitted command's output begins. */
   private markRow = -1
   /** True between pressing Enter and the command going quiet. */
@@ -377,6 +382,7 @@ export class Session implements ActivitySource {
       rows,
       ...(this.initialCwd ? { cwd: this.initialCwd } : {}),
       ...(this.tabId ? { tabId: this.tabId } : {}),
+      ...(this.surface ? { surface: this.surface } : {}),
     })
     if (this.initialCwd) this.cwd = this.initialCwd
     this.pid = result.pid

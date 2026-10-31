@@ -39,6 +39,8 @@ export class Cheatsheet {
       title: 'Sessions',
       items: [
         { keys: 'Ctrl Shift T', what: 'New session' },
+        { keys: 'Ctrl Shift L', what: 'New Loom session — the output is a canvas' },
+        { keys: 'Ctrl `', what: 'Loom: the real Claude Code screen, and back' },
         { keys: 'Ctrl Shift W', what: 'Close focused pane' },
         { keys: 'F2', what: 'Rename session' },
         { keys: 'Ctrl Tab', what: 'Next session' },

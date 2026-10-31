@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loom model</title>
+<style>
+:root{
+  --bg:#0b0a10; --bg2:#121019; --card:#18151f; --card2:#201b2b; --line:#2a2438; --line2:#3a3150;
+  --ink:#d9d2ea; --strong:#fff; --muted:#8a80a3; --dim:#5b5370;
+  --ember:#ff7a3d; --ember2:#ffb38a; --ok:#5fd7a0; --warn:#ffcc66; --bad:#ff6b8a; --blue:#7aa8ff; --vio:#b18cff; --cyan:#6fe3e3;
+  --mono:"Cascadia Code","JetBrains Mono",Consolas,monospace;
+  --sans:Inter,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+a{color:var(--ember2)}
+.wrap{max-width:1200px;margin:0 auto;padding:44px 24px 140px}
+h1{font-size:48px;line-height:1.04;margin:0 0 14px;color:var(--strong);letter-spacing:-.025em}
+h1 em{font-style:normal;color:var(--ember)}
+h2{font-size:28px;margin:84px 0 6px;color:var(--strong);letter-spacing:-.01em}
+h2 .num{font:13px var(--mono);color:var(--ember);vertical-align:middle;margin-right:10px}
+h3{font-size:16px;margin:0 0 4px;color:var(--strong)}
+.lede{font-size:19px;max-width:880px}
+.sub{color:var(--muted);max-width:880px;margin:0 0 22px}
+.kicker{font:12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ember)}
+code,.mono{font-family:var(--mono);font-size:.9em}
+kbd{font:12px var(--mono);background:var(--card2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--strong);white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.g4,.g3,.g2{grid-template-columns:1fr}h1{font-size:34px}}
+.thesis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:26px}
+@media(max-width:900px){.thesis{grid-template-columns:1fr}}
+.thesis .card{border-color:var(--line2)}
+.thesis .card b{font:12px var(--mono);color:var(--ember);letter-spacing:.1em}
+.thesis .card h3{font-size:19px;margin-top:4px}
+
+/* research */
+.res .card{display:flex;flex-direction:column}
+.res .src{font:11.5px var(--mono);color:var(--dim);margin-top:auto;padding-top:10px}
+.res .src a{color:var(--muted)}
+.res .to{margin-top:8px;font-size:13.5px;color:var(--ink);border-top:1px dashed var(--line2);padding-top:8px}
+.res .to::before{content:"→ ";color:var(--ember)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+td:first-child{color:var(--strong);white-space:nowrap}
+
+/* ======================= PROTOTYPE ======================= */
+.proto{margin-top:18px;background:#09080d;border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 40px 100px -40px #000;position:relative}
+.ptop{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--muted)}
+.sp{background:none;border:1px solid transparent;color:var(--muted);font:12px var(--mono);padding:3px 10px;border-radius:7px;cursor:pointer}
+.sp.on{border-color:var(--ember);color:var(--strong);background:#ff7a3d14}
+.sp kbd{margin-right:5px;padding:0 4px}
+.ptop .grow{flex:1}
+.agent{display:flex;align-items:center;gap:6px}
+.agent i{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 10px var(--warn);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.mode{border:1px solid var(--line2);border-radius:7px;padding:2px 9px;cursor:pointer}
+.mode.follow{border-color:var(--vio);color:var(--vio)}
+.fwrap{overflow-x:auto}
+.field{position:relative;height:560px;min-width:980px;background:radial-gradient(circle,#1d1928 1px,transparent 1.3px) 0 0/24px 24px}
+.field svg.edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.obj{position:absolute;background:var(--card);border:1px solid var(--line2);border-radius:10px;padding:7px 10px;overflow:hidden;cursor:pointer;
+  transition:left .62s cubic-bezier(.2,.8,.2,1),top .62s cubic-bezier(.2,.8,.2,1),width .62s cubic-bezier(.2,.8,.2,1),height .62s cubic-bezier(.2,.8,.2,1),opacity .4s,border-color .2s,box-shadow .2s,filter .4s;
+  font:12.5px/1.45 var(--mono)}
+.obj .oh{display:flex;gap:7px;align-items:baseline;white-space:nowrap;overflow:hidden}
+.obj .ty{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em}
+.obj .ti{color:var(--strong);overflow:hidden;text-overflow:ellipsis}
+.obj .sc{margin-left:auto;color:var(--muted);font-size:11.5px}
+.obj .ob{margin-top:8px}
+.obj.chip .ob,.obj.mini .ob{display:none}
+.obj.mini .oh{flex-direction:column;align-items:flex-start;gap:0;white-space:normal}
+.obj.mini .sc{margin-left:0}
+.obj.mini .ti{white-space:nowrap;max-width:100%}
+.obj.hide{opacity:0;pointer-events:none}
+.obj.future{opacity:.2;filter:grayscale(1)}
+.obj.focus{border-color:var(--ember);box-shadow:0 0 0 2px #ff7a3d44,0 14px 34px -12px #ff7a3d88;z-index:3}
+.obj.sel{background:#2a1c12}
+.obj.sel::after{content:"✓";position:absolute;left:-1px;top:-1px;background:var(--ember);color:#1a0d05;font:700 10px var(--mono);padding:0 4px;border-radius:9px 0 6px 0}
+.obj.pin .ti::before{content:"◉ ";color:var(--ember2)}
+.obj .hint{position:absolute;top:5px;right:5px;background:var(--warn);color:#120b00;font:700 12px var(--mono);padding:0 6px;border-radius:4px;display:none;z-index:4}
+.hints .obj:not(.hide):not(.future) .hint{display:block}
+.t-ask .ty{color:var(--ember)} .t-plan .ty{color:var(--cyan)} .t-file .ty{color:var(--blue)} .t-metric .ty{color:var(--warn)}
+.t-finding .ty{color:var(--bad)} .t-diff .ty{color:var(--ok)} .t-tests .ty{color:var(--ok)} .t-result .ty{color:var(--ember2)}
+.t-decision .ty{color:var(--warn)} .t-fork .ty{color:var(--vio)}
+.t-decision{border-color:#ffcc6688}
+.t-fork{border-style:dashed;border-color:var(--vio)}
+.bar{height:12px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;border-radius:3px}
+.bars{display:grid;grid-template-columns:96px 1fr 34px;gap:5px 8px;align-items:center;font-size:11.5px}
+.diff{font:11.5px/1.5 var(--mono)}
+.diff .m{color:var(--bad);background:#ff6b8a12;display:block}
+.diff .p{color:var(--ok);background:#5fd7a012;display:block}
+.diff .c{color:var(--dim);display:block}
+.phones{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:6px}
+.phone{width:84px;height:150px;border:2px solid var(--line2);border-radius:14px;padding:8px 6px;background:#100d16;display:flex;flex-direction:column;gap:5px}
+.phone .hero{height:46px;border-radius:6px;background:linear-gradient(135deg,#3a2a55,#5b3a2a)}
+.phone .ln{height:6px;border-radius:3px;background:var(--line2)}
+.phone .cta{margin-top:auto;height:18px;border-radius:5px;background:var(--ember)}
+.phone.slow .hero{background:repeating-linear-gradient(45deg,#2a2236 0 6px,#211b2b 6px 12px)}
+.phone.slow .ln:nth-child(n+3){opacity:.25}
+.opt{display:flex;gap:8px;align-items:center;margin:5px 0}
+.opt kbd{min-width:22px;text-align:center}
+.plan div::before{content:"✓ ";color:var(--ok)} .plan div.o::before{content:"◻ ";color:var(--warn)}
+.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ember);opacity:0;transition:left .3s,opacity .3s;pointer-events:none;z-index:2}
+.playhead::after{content:attr(data-t);position:absolute;top:6px;left:6px;font:11px var(--mono);color:var(--ember);white-space:nowrap}
+.watermark{position:absolute;left:14px;bottom:10px;font:11px var(--mono);color:var(--dim);pointer-events:none;max-width:60%}
+
+.hintbar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:7px 12px;border-top:1px solid var(--line);font:12px var(--mono);color:var(--muted);min-height:36px}
+.hintbar b{color:var(--strong);font-weight:500}
+.hintbar .k{display:inline-flex;gap:5px;align-items:center}
+.composer{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--line);background:#0c0a11;font:13px var(--mono)}
+.composer .caret{color:var(--ember)}
+.composer input{flex:1;background:none;border:0;outline:0;color:var(--strong);font:13px var(--mono)}
+.composer input::placeholder{color:var(--dim)}
+.ctx{display:flex;gap:5px}
+.ctx span{font:11px var(--mono);background:#ff7a3d1c;border:1px solid #ff7a3d66;color:var(--ember2);border-radius:99px;padding:1px 8px;white-space:nowrap}
+.echo{position:absolute;right:12px;bottom:92px;display:flex;gap:4px;pointer-events:none;z-index:9}
+.echo kbd{animation:fade 1.6s forwards}
+@keyframes fade{0%,60%{opacity:1}100%{opacity:0}}
+.toast{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);color:var(--strong);font:12.5px var(--mono);padding:8px 14px;border-radius:9px;z-index:20;opacity:0;transition:opacity .25s;pointer-events:none;max-width:80%;text-align:center}
+.toast.on{opacity:1}
+
+/* overlays */
+.ask{position:absolute;z-index:15;width:380px;background:#15111d;border:1px solid var(--ember);border-radius:12px;box-shadow:0 30px 70px -20px #000;padding:10px 12px;font:12.5px/1.5 var(--mono);display:none}
+.ask.on{display:block}
+.ask .about{font-size:11px;color:var(--muted);margin-bottom:6px}
+.ask .about span{color:var(--ember2)}
+.ask input{width:100%;background:#0b0a10;border:1px solid var(--line2);border-radius:7px;padding:7px 9px;color:var(--strong);font:12.5px var(--mono);outline:0}
+.ask input:focus{border-color:var(--ember)}
+.ask .ans{margin-top:8px;color:var(--ink);white-space:pre-wrap;min-height:0}
+.ask .ans::before{content:"● ";color:var(--vio)}
+.ask .ans:empty{display:none}
+.ask .ft{margin-top:8px;font-size:11px;color:var(--dim);display:flex;gap:10px;flex-wrap:wrap}
+.lens{position:absolute;inset:40px 60px;z-index:14;background:#13101a;border:1px solid var(--line2);border-radius:14px;box-shadow:0 40px 90px -20px #000;display:none;flex-direction:column}
+.lens.on{display:flex}
+.lens .lh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font:12px var(--mono)}
+.lens .lh .ti{color:var(--strong);font:14px var(--sans);font-weight:600;margin-right:auto}
+.lens .lt{background:none;border:1px solid transparent;border-radius:6px;color:var(--muted);font:12px var(--mono);padding:2px 9px;cursor:pointer}
+.lens .lt.on{border-color:var(--ember);color:var(--strong)}
+.lens .lb{flex:1;padding:18px 22px;overflow:auto;font:13px/1.6 var(--mono)}
+.lens .lb pre{margin:0;white-space:pre-wrap;color:var(--muted)}
+.wk{position:absolute;inset:auto 12px 92px auto;z-index:16;width:520px;background:#15111d;border:1px solid var(--line2);border-radius:12px;padding:12px 14px;display:none;font:12px var(--mono);box-shadow:0 30px 70px -20px #000}
+.wk.on{display:block}
+.wk h5{margin:0 0 8px;font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ember)}
+.wk .cols{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+.wk .cols div{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.wk .cols kbd{min-width:28px;text-align:center}
+.engage{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:#09080dcc;backdrop-filter:blur(2px);cursor:pointer}
+.engage div{text-align:center;font:14px var(--sans);color:var(--strong)}
+.engage div small{display:block;color:var(--muted);font:12px var(--mono);margin-top:6px}
+
+/* model diagram */
+.anat{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.anat{grid-template-columns:1fr}}
+.anat .o{background:var(--card);border:1px solid var(--ember);border-radius:14px;padding:16px;font:13px var(--mono)}
+.anat .o .row{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line2);padding:6px 0}
+.anat .o .row span:first-child{color:var(--muted)}
+.props{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:900px){.props{grid-template-columns:1fr}}
+.props .card h3::before{content:attr(data-k);font:12px var(--mono);color:#120b00;background:var(--ember);border-radius:4px;padding:0 6px;margin-right:8px}
+.mem td:nth-child(2){color:var(--ember2);white-space:nowrap}
+.phase{border-left:3px solid var(--ember);padding-left:14px}
+.phase.b{border-color:var(--vio)} .phase.c{border-color:var(--cyan)}
+.phase ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.q{display:flex;flex-direction:column;gap:10px}
+.q .card b{color:var(--strong)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker">Ember · Loom · the model, v2</div>
+<h1>Not a layout. A <em>grammar</em>.</h1>
+<p class="lede">The first round asked "which layout?". That's the wrong question, because whichever layout we pick will be wrong half the time. Loom has no fixed layout. It has a small set of rules for how the agent's work becomes things you can see, point at, question and steer. The screen then becomes whatever this moment needs, and nothing jumps when it changes.</p>
+
+<div class="thesis">
+  <div class="card"><b>01</b><h3>Everything is an object</h3><p>Every finding, file, number, diff, decision or mock the agent produces is a live thing. You can focus it, open it, ask about it, act on it, pin it and trace where it came from. Text is just the cheapest view of an object.</p></div>
+  <div class="card"><b>02</b><h3>The screen is composed, not chosen</h3><p>The agent says what it wants you to see ("compare these", "you need to decide this"). Loom composes it under fixed perceptual rules, and you can override it at any time. Objects morph between arrangements, so you never lose track of them.</p></div>
+  <div class="card"><b>03</b><h3>The keyboard is the spine</h3><p>Every object is two keystrokes away. Every verb is shown for whatever is focused, and the prompt is always at the bottom. The mouse speeds you up but is never required, so it still feels like a terminal.</p></div>
+</div>
+
+<!-- ============ PROTOTYPE ============ -->
+<h2><span class="num">01</span>Try it, keyboard first</h2>
+<p class="sub">This is a working prototype of the grammar, not a mockup. It shows the same checkout turn as before, now built from objects. Click it to engage, then use the keys: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> switch space (watch the objects morph), <kbd>f</kbd> shows hint letters, <kbd>?</kbd> asks about the focused thing, <kbd>⏎</kbd> opens its lenses, <kbd>[</kbd><kbd>]</kbd> travel in time, <kbd>v</kbd> selects several, <kbd>space</kbd> lists every key.</p>
+
+<div class="proto" id="proto">
+  <div class="ptop">
+    <button class="sp on" data-space="now"><kbd>1</kbd>Now</button>
+    <button class="sp" data-space="story"><kbd>2</kbd>Story</button>
+    <button class="sp" data-space="atlas"><kbd>3</kbd>Atlas</button>
+    <span class="grow"></span>
+    <span class="agent"><i></i><span id="agentTxt">agent waiting on your decision</span></span>
+    <span class="mode" id="mode" title="Shift+F">Free · you drive</span>
+    <span>ctx 18% · opus · ⇧⇥ default</span>
+  </div>
+  <div class="fwrap"><div class="field" id="field">
+    <svg class="edges" id="edges"></svg>
+    <div class="playhead" id="playhead"></div>
+    <div class="watermark" id="wm"></div>
+  </div></div>
+  <div class="hintbar" id="hintbar"></div>
+  <div class="composer"><span class="caret">❯</span><span class="ctx" id="ctx"></span><input id="cmp" placeholder="type to Claude · / commands · @ files · i to focus here · Esc to leave"></div>
+  <div class="ask" id="ask"><div class="about" id="askAbout"></div><input id="askIn" placeholder="ask about this…"><div class="ans" id="askAns"></div><div class="ft"><span><kbd>⏎</kbd> ask</span><span id="promote" style="display:none"><kbd>⏎</kbd> again: promote to main thread</span><span><kbd>Esc</kbd> dismiss</span><span>runs in a side branch · main context untouched</span></div></div>
+  <div class="lens" id="lens"><div class="lh"><span class="ti" id="lensTi"></span><button class="lt on" data-l="view">view</button><button class="lt" data-l="raw">raw</button><button class="lt" data-l="prov">provenance</button><button class="lt" data-l="rel">related</button><span style="color:var(--dim)"><kbd>l</kbd> next lens · <kbd>Esc</kbd> close</span></div><div class="lb" id="lensBody"></div></div>
+  <div class="wk" id="wk"><h5>every key · press space again to close</h5><div class="cols">
+    <div><kbd>1 2 3</kbd>Now · Story · Atlas</div><div><kbd>f</kbd>hint letters → jump</div>
+    <div><kbd>j k</kbd>next · previous object</div><div><kbd>⏎</kbd>open lenses</div>
+    <div><kbd>?</kbd>ask about focused / selected</div><div><kbd>v</kbd>add to selection</div>
+    <div><kbd>[ ]</kbd>back · forward in time</div><div><kbd>p</kbd>pin (stays put)</div>
+    <div><kbd>i</kbd>prompt, with selection as context</div><div><kbd>⇧F</kbd>Follow agent · Free</div>
+    <div><kbd>Esc</kbd>up one level / clear</div><div><kbd>Ctrl+`</kbd>raw claude TUI</div>
+    <div style="grid-column:1/3;margin-top:6px;color:var(--dim)">plus per-object verbs, shown in the bar for whatever is focused</div>
+  </div></div>
+  <div class="toast" id="toast"></div>
+  <div class="echo" id="echo"></div>
+  <div class="engage" id="engage"><div>Click to drive it<small>keys go to the prototype until you click outside it</small></div></div>
+</div>
+
+<!-- ============ RESEARCH ============ -->
+<h2><span class="num">02</span>What the research says about people</h2>
+<p class="sub">Each rule in Loom comes from a finding about how people perceive, remember, attend and feel in control. None of this is taste. It's the floor that makes "fluid" possible without becoming chaos.</p>
+<div class="g4 res">
+  <div class="card"><h3>Working memory holds ~4 things</h3><p>People hold about four chunks at once, not seven.</p><div class="to">Now shows at most 4 focal objects. Everything else is a one-line chip, one key away.</div><div class="src">Cowan 2001, BBS</div></div>
+  <div class="card"><h3>Overview, zoom, details on demand</h3><p>The visual information-seeking mantra: see the whole, narrow down, then open one thing.</p><div class="to">Atlas and Story are the overview. <kbd>⏎</kbd> opens details. Lenses give the depth.</div><div class="src">Shneiderman 1996</div></div>
+  <div class="card"><h3>Information scent</h3><p>People forage: they follow cues that predict what's behind a link, and leave when the scent fades.</p><div class="to">Every chip carries its scent (4.8s, +9 −23, 42/42), so you know before you open it.</div><div class="src">Pirolli &amp; Card 1999</div></div>
+  <div class="card"><h3>Object constancy</h3><p>Animated transitions between views measurably improve tracking what changed.</p><div class="to">Objects never cut between spaces, they morph. The same card goes from chip to river node to map node.</div><div class="src"><a href="https://idl.uw.edu/papers/animated-transitions">Heer &amp; Robertson 2007</a></div></div>
+  <div class="card"><h3>Spatial memory is fast</h3><p>Stable spatial layouts beat menus once learned. People remember where things are.</p><div class="to">Regions are stable, and pinned objects stay exactly where you put them. Loom never reflows behind your back.</div><div class="src">Scarr et al. 2012, CommandMaps</div></div>
+  <div class="card"><h3>Recognition, with a path to recall</h3><p>Novices need to see options. Experts need to skip them. Marking menus showed one design can train the first into the second.</p><div class="to">The bar shows the verbs for what's focused. You read it at first, and later your fingers just know.</div><div class="src">Kurtenbach &amp; Buxton 1993</div></div>
+  <div class="card"><h3>"Put that there"</h3><p>People naturally point and say "this". Deixis is much faster than describing.</p><div class="to">Whatever you select becomes "this" in your next sentence, attached as an exact object, not a guess.</div><div class="src">Bolt 1980, MIT</div></div>
+  <div class="card"><h3>0.1 s · 1 s · 10 s</h3><p>Under 0.1 s feels instant, 1 s keeps flow, and past 10 s attention leaves.</p><div class="to">Every local action answers in &lt;100 ms. The agent's slowness is shown in the periphery, and text never waits for a visual.</div><div class="src">Card, Robertson &amp; Mackinlay 1991</div></div>
+  <div class="card"><h3>Mixed initiative</h3><p>Good assistants weigh the cost of acting against asking, and let the user take over gracefully.</p><div class="to">The agent proposes the composition. You override. Loom remembers your overrides per object type.</div><div class="src">Horvitz 1999, CHI</div></div>
+  <div class="card"><h3>Interruptions cost most mid-task</h3><p>Interrupting at task breakpoints is far cheaper than in the middle of one.</p><div class="to">In Free mode the agent never moves your view. Decisions queue as a badge until you reach a natural pause.</div><div class="src">Iqbal &amp; Bailey 2008 · Mark et al. 2008</div></div>
+  <div class="card"><h3>Agency comes from initiating</h3><p>User-initiated interactions strengthen the sense of agency, and agency loss is mostly a design problem, not a user one.</p><div class="to">You start, the agent responds. Everything can be undone or forked, and nothing irreversible happens without a visible decision.</div><div class="src"><a href="https://aisel.aisnet.org/amcis2026/conftheme/conftheme/9/">AMCIS 2026</a></div></div>
+  <div class="card"><h3>Calibrated trust</h3><p>People over- or under-trust automation unless they can see how it reached its result.</p><div class="to">Every object has a provenance lens showing which tool calls, files and turns produced it.</div><div class="src">Lee &amp; See 2004</div></div>
+  <div class="card"><h3>Generative UI wins, if not slow</h3><p>Human raters strongly prefer interfaces generated for the question over plain text, when generation time is ignored.</p><div class="to">Generated lenses only when the built-in ones don't fit. They bloom in after the text, and never block it.</div><div class="src"><a href="https://research.google/blog/generative-ui-a-rich-custom-visual-interactive-user-experience-for-any-prompt/">Google Research 2025</a> · <a href="https://arxivlens.com/PaperView/Details/generative-ui-llms-are-effective-ui-generators-4185-81175eaf">Leviathan et al. 2026</a></div></div>
+  <div class="card"><h3>Many views per object</h3><p>Moldable development: every object should show itself in several views fitted to context. One study had 131 custom views averaging about 9 lines each.</p><div class="to">Lenses: view, raw, provenance, related, plus type-specific ones. New lenses are cheap and can be saved.</div><div class="src"><a href="https://scg.unibe.ch/research/moldableinspector">Chiș et al. 2015 · Glamorous Toolkit</a></div></div>
+  <div class="card"><h3>Calm technology</h3><p>The best tech moves between the periphery and the center of attention, and stays out of the center until it's needed.</p><div class="to">The agent's progress lives at the edges (the pulse, the river head). The center is for meaning.</div><div class="src">Weiser &amp; Brown 1995</div></div>
+  <div class="card"><h3>Ladder of abstraction</h3><p>Understanding comes from moving fluidly between the concrete and the abstract.</p><div class="to">Semantic zoom, from chapters to turns to every tool call, without losing your place.</div><div class="src">Bret Victor 2011</div></div>
+</div>
+
+<!-- ============ MODEL ============ -->
+<h2><span class="num">03</span>Anatomy of an object</h2>
+<p class="sub">This is the one primitive everything else is built from. The interpreter's job, described in round 1 (declared → structural → inferred), is to turn the CLI's output into these.</p>
+<div class="anat">
+  <div class="o">
+    <div style="color:var(--strong);font-size:14px;margin-bottom:6px">finding · N+1 in cart totals</div>
+    <div class="row"><span>type</span><span>finding</span></div>
+    <div class="row"><span>scent</span><span>2.1s · 23 queries</span></div>
+    <div class="row"><span>lenses</span><span>view · raw · prov · related · code</span></div>
+    <div class="row"><span>verbs</span><span>fix · explain · ignore · ticket</span></div>
+    <div class="row"><span>provenance</span><span>Read cart.ts, Bash lighthouse</span></div>
+    <div class="row"><span>relations</span><span>cart.ts, metric, diff</span></div>
+    <div class="row" style="border:0"><span>time</span><span>turn 1 · 0:41</span></div>
+  </div>
+  <div class="props">
+    <div class="card"><h3 data-k="f">Addressable</h3><p>It has a stable id and a hint letter. It's two keystrokes from anywhere, and it's the same object in every space.</p></div>
+    <div class="card"><h3 data-k="⏎">Inspectable</h3><p>It has several lenses. The default view is chosen by type, and you can cycle with <kbd>l</kbd>. Raw is always there, so nothing is ever hidden.</p></div>
+    <div class="card"><h3 data-k="?">Askable</h3><p>Ask a scoped question in a popover. It runs in a forked side session with this object's provenance as context. Promote the answer, or drop it.</p></div>
+    <div class="card"><h3 data-k="a">Actionable</h3><p>Verbs depend on type: a diff can be applied, reverted or blamed; a metric re-run; a mock varied; a decision chosen. Each verb is a prompt or keys sent to the real CLI.</p></div>
+    <div class="card"><h3 data-k="p">Pinnable</h3><p>A pinned object stays where you put it while the composition around it changes. That's your spatial anchor.</p></div>
+    <div class="card"><h3 data-k="[">Traceable</h3><p>Every object knows its turn. Scrubbing time shows the world as it was, and forking from there is a real <code>--fork-session</code>.</p></div>
+  </div>
+</div>
+
+<h2><span class="num">04</span>Three spaces, three kinds of memory</h2>
+<p class="sub">These aren't three apps. They're the same objects arranged three ways, matching how memory actually works. You switch with one key and the objects fly to their new positions.</p>
+<div class="card" style="padding:4px 8px"><table class="mem">
+<tr><th>Space</th><th>Memory</th><th>Question it answers</th><th>Arrangement</th></tr>
+<tr><td><kbd>1</kbd> Now</td><td>working</td><td>What matters right this second?</td><td>≤4 focal objects composed from the agent's current intent. The rest are chips along the spine (the terminal-honest event list).</td></tr>
+<tr><td><kbd>2</kbd> Story</td><td>episodic</td><td>What happened, and in what order? What if we'd gone the other way?</td><td>A river along time. Forks are real parallel sessions. <kbd>[</kbd> <kbd>]</kbd> scrub, and rewind is Esc Esc at the playhead.</td></tr>
+<tr><td><kbd>3</kbd> Atlas</td><td>semantic</td><td>What do we know? How do the pieces relate?</td><td>A mind map built automatically. Entities (files, functions, routes, findings, decisions) come from tool calls, and relations from co-occurrence and provenance. It grows across sessions per project, like Ember's Map.</td></tr>
+</table></div>
+
+<h2><span class="num">05</span>How the agent directs the screen</h2>
+<p class="sub">The agent doesn't write layout. It states a <i>presentation intent</i>, either declared through the extended ember-panel tool or inferred by the interpreter. Loom maps that intent to a composition using fixed rules. That's what makes the screen fluid without being random: the same intent always looks the same.</p>
+<div class="card" style="padding:4px 8px"><table>
+<tr><th>Intent</th><th>Composition</th><th>Example</th></tr>
+<tr><td>focus(x)</td><td>x large in center; its relations as chips beside</td><td>"here's the file"</td></tr>
+<tr><td>compare(a, b…)</td><td>side by side, same scale, a diff highlight between</td><td>before/after, two forks, 3 mock variants</td></tr>
+<tr><td>sequence(steps)</td><td>horizontal strip, current step lit</td><td>a migration plan, a request's journey</td></tr>
+<tr><td>explain(flow)</td><td>diagram with each node an object (askable)</td><td>"how auth works here"</td></tr>
+<tr><td>decide(q, options)</td><td>decision card with keyed options and the evidence pinned beside it; badge if you're in Free</td><td>permission prompts, design choices</td></tr>
+<tr><td>demo(url | video)</td><td>live surface: the running app, a recording, a Playwright trace; scrubbable</td><td>"it works, try it"</td></tr>
+<tr><td>report(…)</td><td>living document of goal, findings, decisions, result</td><td>end of a long task</td></tr>
+<tr><td>generate(html)</td><td>a bespoke generated lens, sandboxed, using Ember's tokens; can be saved as a reusable lens</td><td>a calculator, a simulator, an interactive explainer</td></tr>
+</table></div>
+<p class="sub" style="margin-top:14px">Overrides are learned without any model. If you keep opening diffs in split view, or keep moving metrics to the left, Loom counts that and makes it the default for that type. You end up shaping the interface just by using it.</p>
+
+<h2><span class="num">06</span>Control: you always have the wheel</h2>
+<div class="g3">
+  <div class="card"><h3>Follow / Free</h3><p>As with presenters in Figma: in <b>Follow</b> the agent moves the view to what it's showing. In <b>Free</b> you drive, and the agent's news waits at the edges. <kbd>⇧F</kbd> flips it. Loom drops to Free by itself the moment you touch anything.</p></div>
+  <div class="card"><h3>Feedforward, not just feedback</h3><p>The agent's next steps (from its todo list) show as ghost nodes ahead on the river. You can see where it's going and veto a step before it happens.</p></div>
+  <div class="card"><h3>Steer mid-flight</h3><p>Type while it works and your message queues as a steering note it picks up at the next breakpoint. <kbd>Esc</kbd> interrupts, as in the CLI. The autonomy dial is Claude Code's own modes (<kbd>⇧⇥</kbd>), shown as a chip.</p></div>
+  <div class="card"><h3>Everything reversible</h3><p>Rewind to any node, or fork from it into a real parallel session. Exploration is only fun when it's free.</p></div>
+  <div class="card"><h3>Nothing hidden</h3><p>Raw is a lens on every object, and <kbd>Ctrl+`</kbd> is the real TUI of the same live session. If Loom misreads something, the truth is one key away.</p></div>
+  <div class="card"><h3>Side questions stay on the side</h3><p>Asking about an object forks a side branch, so your curiosity doesn't fill the main agent's context. Promote an answer when it matters.</p></div>
+</div>
+
+<h2><span class="num">07</span>Keeping the terminal soul</h2>
+<div class="card" style="padding:4px 8px"><table>
+<tr><th>Terminal trait</th><th>How Loom keeps it</th></tr>
+<tr><td>Prompt at the bottom</td><td>Always there, always focused unless you're navigating. <kbd>i</kbd> or any typing returns to it. <code>/</code>, <code>@</code> and paste behave exactly like the CLI.</td></tr>
+<tr><td>Monospace, dense, dark</td><td>Objects are typeset on the terminal grid and start life as a single line in the spine. Richness is something you open, not something that's always there.</td></tr>
+<tr><td>Streaming</td><td>Text streams token by token as in the CLI. Visuals upgrade lines in place after the fact, and never hold text back.</td></tr>
+<tr><td>Keyboard everything</td><td>Hint letters (as in Vimium), j/k, verbs per type, a which-key overlay, the Ember palette on Ctrl+K. Mouse optional.</td></tr>
+<tr><td>Honesty</td><td>The spine is a 1:1 event log of what the CLI did. Raw lens everywhere. Same process, same hooks, same everything.</td></tr>
+</table></div>
+
+<h2><span class="num">08</span>How it gets built</h2>
+<div class="g3">
+  <div class="card phase"><h3>v1 · Now</h3><ul><li>new session type, own window path, <code>ember loom</code></li><li>hidden PTY + transcript → objects (structural tier)</li><li>spine + Now composition, hint letters, lenses, raw</li><li><kbd>?</kbd> ask via forked side session</li><li>permission prompts as decision cards</li><li><kbd>Ctrl+`</kbd> raw TUI toggle</li></ul></div>
+  <div class="card phase b"><h3>v2 · Story</h3><ul><li>river with time scrub</li><li>rewind at playhead, real forks, compare forks</li><li>ghost next-steps from TodoWrite</li><li>Follow / Free, steering queue</li><li>declared intents: the ember-panel <code>show</code> tool</li></ul></div>
+  <div class="card phase c"><h3>v3 · Atlas</h3><ul><li>entity graph per project, across sessions</li><li>local small-model tier for prose (ONNX/WASM)</li><li>generated lenses, saveable</li><li>learned layout overrides</li><li>voice drives the stage</li></ul></div>
+</div>
+
+<h2><span class="num">09</span>Things that would ruin it (and the guards)</h2>
+<div class="g2">
+  <div class="card"><h3>The agent stealing your focus</h3><p>Guard: Free is the default as soon as you interact. The agent may only move your view in Follow, and decisions queue.</p></div>
+  <div class="card"><h3>Novelty fatigue from generated UI</h3><p>Guard: built-in lenses first. Generated lenses use Ember's tokens and grammar, so they feel native, and they're never the only view: raw is always there.</p></div>
+  <div class="card"><h3>Layout jitter</h3><p>Guard: compositions come from intents with fixed rules. Pinned objects never move, and every move animates.</p></div>
+  <div class="card"><h3>Lag</h3><p>Guard: local actions under 100 ms. The model tier is async and upgrades in place. Side questions show streaming tokens at once.</p></div>
+</div>
+
+</div>
+
+<script>
+/* ============================ prototype ============================ */
+const O = [
+ {id:'o1',type:'ask',t:0,title:'checkout is slow on mobile',sc:'you · 0:00',
+  body:'<div style="color:var(--strong)">❯ checkout is slow on mobile — find out why and fix it</div>',
+  raw:'{"type":"user","message":{"role":"user","content":"checkout is slow on mobile — find out why and fix it"}}',
+  prov:['typed by you in the composer','turn 1 · 0:00'],rel:['o10','o3','o4','o2','o9']},
+ {id:'o10',type:'plan',t:1,title:'plan',sc:'4/5',
+  body:'<div class="plan"><div>find the hot path</div><div>measure on mobile</div><div>fix N+1</div><div>responsive hero</div><div class="o">cache prices?</div></div>',
+  raw:'tool_use TodoWrite {todos:[{content:"find the hot path",status:"completed"},…,{content:"cache prices?",status:"pending"}]}',
+  prov:['TodoWrite · turn 1 · 0:04','updated 4× since'],rel:['o1','o9']},
+ {id:'o5',type:'file',t:2,title:'api/cart.ts',sc:'212 lines · 6 hits',
+  body:'<div class="diff"><span class="c">39  export async function totals(cart) {</span><span class="c">40    let sum = 0</span><span class="m">41    for (const item of cart.items) {</span><span class="m">42      item.price = await db.price(item.sku)</span><span class="c">43      sum += item.price * item.qty</span></div>',
+  raw:'tool_use Read {"file_path":"C:/shop/api/cart.ts"} → 212 lines',
+  prov:['Grep "checkout" → 14 files, cart.ts hottest','Read · turn 1 · 0:12'],rel:['o3','o6']},
+ {id:'o2',type:'metric',t:3,title:'LCP breakdown',sc:'4.8s',
+  body:'<div class="bars"><span>cart totals API</span><div class="bar"><span style="width:62%;background:var(--bad)"></span></div><span>2.1s</span><span>hero image</span><div class="bar"><span style="width:44%;background:var(--warn)"></span></div><span>1.5s</span><span>JS bundle</span><div class="bar"><span style="width:22%;background:var(--line2)"></span></div><span>0.8s</span><span>other</span><div class="bar"><span style="width:12%;background:var(--line2)"></span></div><span>0.4s</span></div>',
+  raw:'tool_use Bash {"command":"npx lighthouse http://localhost:5173/checkout --preset=perf --form-factor=mobile --output=json"} exit 0 · 38.2s',
+  prov:['Bash lighthouse · turn 1 · 0:31','each bar = critical-path share, measured by disabling the cause in isolation'],rel:['o3','o4','o8']},
+ {id:'o3',type:'finding',t:4,title:'N+1 in cart totals',sc:'2.1s · 23 queries',
+  body:'Each cart line awaits <span style="color:var(--strong)">db.price(sku)</span> inside the loop — 23 round-trips at ~90 ms on the mobile profile.',
+  raw:'assistant text: "Two causes: an N+1 in cart totals …" → extracted finding[0] (tier 3, entities: cart.ts:41, db.price)',
+  prov:['from Read cart.ts:41','confirmed by Bash lighthouse trace'],rel:['o5','o6','o2']},
+ {id:'o4',type:'finding',t:5,title:'1.2 MB hero image',sc:'1.5s · no srcset',
+  body:'public/img/hero.jpg is served at 2400px to a 390px screen. No srcset, no modern format.',
+  raw:'assistant text → extracted finding[1] · Bash du -h public/img → 1.2M hero.jpg',
+  prov:['Bash du -h public/img · turn 1 · 0:35'],rel:['o2','o8','o11']},
+ {id:'o11',type:'fork',t:5.5,title:'fork · lazy-load only',sc:'3.4s · running',
+  body:'A parallel real session trying the cheaper idea: keep the query, just lazy-load the hero.',
+  raw:'claude --resume 7f3a… --fork-session (hidden pty #2)',
+  prov:['forked by you at "findings" · turn 1'],rel:['o4']},
+ {id:'o6',type:'diff',t:6,title:'cart.ts change',sc:'+9 −23',
+  body:'<div class="diff"><span class="m">- for (const item of cart.items) {</span><span class="m">-   item.price = await db.price(item.sku)</span><span class="p">+ const prices = await db.prices(cart.items.map(i =&gt; i.sku))</span><span class="p">+ for (const item of cart.items) item.price = prices[item.sku]</span></div>',
+  raw:'tool_use Edit {"file_path":"api/cart.ts","old_string":"for (const item…","new_string":"const prices = await db.prices(…"}',
+  prov:['Edit · turn 1 · 1:02','permission: you allowed after 6s'],rel:['o5','o3','o7']},
+ {id:'o7',type:'tests',t:7,title:'npm test',sc:'42/42 ✓',
+  body:'<span style="color:var(--ok)">✓ 42 passed</span> · 0 failed · 3.1s<div class="bar" style="margin-top:6px"><span style="width:100%;background:var(--ok)"></span></div>',
+  raw:'tool_use Bash {"command":"npm test"} exit 0 → "Tests: 42 passed, 42 total"',
+  prov:['Bash · turn 1 · 1:10'],rel:['o6']},
+ {id:'o8',type:'result',t:8,title:'mobile checkout',sc:'4.8 → 1.9s',
+  body:'<div class="phones"><div style="text-align:center"><div class="phone slow"><div class="hero"></div><div class="ln"></div><div class="ln"></div><div class="ln"></div><div class="cta"></div></div><div style="color:var(--bad);margin-top:4px">4.8s</div></div><div style="color:var(--ember);font-size:20px">→</div><div style="text-align:center"><div class="phone"><div class="hero"></div><div class="ln"></div><div class="ln"></div><div class="ln"></div><div class="cta"></div></div><div style="color:var(--ok);margin-top:4px">1.9s · live</div></div></div>',
+  raw:'declared: show({kind:"compare", before:"shot-before.png", after:"http://localhost:5173/checkout", caption:"LCP 4.8s → 1.9s"})',
+  prov:['ember-panel show (declared, tier 1) · turn 1 · 1:24','second lighthouse run · 1.9s'],rel:['o2','o6','o4']},
+ {id:'o9',type:'decision',t:9,title:'cache prices too?',sc:'needs you',
+  body:'Prices change hourly. A 60 s cache would save another ~0.3 s.<div class="opt"><kbd>y</kbd>yes, 60 s cache</div><div class="opt"><kbd>n</kbd>no, ship as is</div><div class="opt"><kbd>e</kbd>explain the risk</div>',
+  raw:'assistant text ends with a question → decide(q, options) (tier 3: decision-needed)',
+  prov:['turn 1 · 1:31','evidence: o2, o3'],rel:['o10','o2','o3']},
+]
+const BY = Object.fromEntries(O.map(o => [o.id, o]))
+// [left%, top px, width%, height px, size]  size: chip | mini | card | hide
+const L = {
+ now:{
+  o1:[1,14,22,34,'chip'],o10:[1,54,22,34,'chip'],o5:[1,94,22,34,'chip'],o3:[1,134,22,34,'chip'],o4:[1,174,22,34,'chip'],
+  o7:[1,214,22,34,'chip'],o11:[1,254,22,34,'hide'],
+  o8:[25,14,46,250,'card'],o6:[25,276,46,130,'card'],o2:[73,14,26,170,'card'],o9:[73,196,26,190,'card']},
+ story:{}, atlas:{
+  o1:[41,232,18,72,'mini'],o2:[69,40,22,72,'mini'],o3:[66,190,16,64,'mini'],o4:[66,320,16,64,'mini'],
+  o5:[10,150,16,64,'mini'],o6:[10,270,16,64,'mini'],o7:[10,390,16,64,'mini'],o8:[39,430,22,72,'mini'],
+  o9:[39,60,22,72,'mini'],o10:[84,160,15,64,'mini'],o11:[84,330,15,64,'mini']}
+}
+;(()=>{ const order=['o1','o10','o5','o2','o3','o4','o6','o7','o8','o9']
+  order.forEach((id,i)=>{ L.story[id]=[1+i*9.85,i%2?290:150,9.2,72,'mini'] })
+  L.story.o11=[47,440,17,72,'mini'] })()
+const EDGES=[['o1','o3'],['o1','o4'],['o1','o2'],['o1','o9'],['o1','o10'],['o3','o5'],['o5','o6'],['o6','o7'],['o6','o8'],['o4','o8'],['o4','o11'],['o2','o3']]
+const VERBS={
+ ask:[['e','edit & resend'],['b','branch from here']],
+ plan:[['a','add step'],['x','tick off']],
+ file:[['o','open in editor'],['b','blame'],['g','go to line']],
+ metric:[['R','re-run'],['c','compare to main'],['t','track over time']],
+ finding:[['x','fix this'],['e','explain more'],['T','make a ticket']],
+ fork:[['c','compare with main'],['m','merge idea'],['d','discard']],
+ diff:[['a','apply'],['r','revert'],['s','split view']],
+ tests:[['R','re-run'],['w','watch mode']],
+ result:[['o','open live'],['c','compare slider'],['P','draft PR']],
+ decision:[['y','yes, 60 s cache'],['n','no, ship as is'],['e','explain the risk']],
+}
+const ANS={
+ o3:'Each line of the cart calls db.price(sku) inside the loop, so 23 lines means 23 round-trips. On Lighthouse\'s mobile profile one trip is ~90 ms. It\'s in api/cart.ts:41. The fix (the cart.ts diff) batches them into a single db.prices(skus).',
+ o2:'4.8 s is Largest Contentful Paint on the mobile preset (slow 4G, mid-range CPU). Each bar is how much LCP dropped when that cause was disabled on its own, so they overlap slightly and don\'t sum exactly.',
+ o6:'Nine lines in, 23 out. Unknown SKUs still behave the same: prices[sku] is undefined and the existing "unavailable" branch catches it. Tests 14–17 cover that path.',
+ o4:'The 2400 px JPEG is 1.2 MB. A 480 px AVIF for phones is 38 KB. srcset lets the browser pick, so desktop keeps the sharp one.',
+ o9:'Risk: a price could be up to 60 s stale at checkout. The payment step re-prices server-side anyway, so the customer can never be charged a stale price. They could only see one for a minute.',
+ o8:'"Live" means the right phone is the actual dev server at localhost:5173 in a frame. You can click through it. The left one is a screenshot from before the change.',
+ o11:'The fork kept the N+1 and only lazy-loaded the hero: 3.4 s. Cheaper change, but it leaves 2.1 s on the table. Main wins.',
+}
+const S={space:'now',focus:'o8',sel:new Set(),pin:new Set(),scrub:9,hint:false,hintMap:{},follow:false,engaged:false,lensIdx:0,askFor:null,askDone:false}
+const field=document.getElementById('field'),edges=document.getElementById('edges')
+// build
+O.forEach(o=>{const d=document.createElement('div');d.className='obj t-'+o.type;d.id=o.id
+ d.innerHTML=`<div class="oh"><span class="ty">${o.type}</span><span class="ti">${o.title}</span><span class="sc">${o.sc}</span></div><div class="ob">${o.body}</div><span class="hint"></span>`
+ d.onclick=e=>{e.stopPropagation();engage();setFocus(o.id)}
+ d.ondblclick=e=>{e.stopPropagation();openLens()}
+ d.oncontextmenu=e=>{e.preventDefault();engage();setFocus(o.id);openAsk()}
+ field.appendChild(d)})
+function visible(id){const l=L[S.space][id];return l&&l[4]!=='hide'&&BY[id].t<=S.scrub}
+function layout(){
+ O.forEach(o=>{const el=document.getElementById(o.id),l=L[S.space][o.id]||[0,0,0,0,'hide']
+  el.style.left=l[0]+'%';el.style.top=l[1]+'px';el.style.width=l[2]+'%';el.style.height=l[3]+'px'
+  el.classList.toggle('chip',l[4]==='chip');el.classList.toggle('mini',l[4]==='mini');el.classList.toggle('hide',l[4]==='hide')
+  el.classList.toggle('future',o.t>S.scrub)})
+ document.querySelectorAll('.sp').forEach(b=>b.classList.toggle('on',b.dataset.space===S.space))
+ const wm={now:'NOW · working memory · ≤4 focal objects, the spine on the left is the CLI event log',story:'STORY · episodic · time runs right, dashed lane = a real fork · [ ] to travel',atlas:'ATLAS · semantic · what we know and how it connects · grows across sessions'}
+ document.getElementById('wm').textContent=wm[S.space]
+ const t0=performance.now();(function tick(){drawEdges();if(performance.now()-t0<720)requestAnimationFrame(tick)})()
+ updPlayhead();render()}
+function center(id){const el=document.getElementById(id),f=field.getBoundingClientRect(),r=el.getBoundingClientRect();return [r.left-f.left+r.width/2,r.top-f.top+r.height/2,r]}
+function drawEdges(){let h=''
+ if(S.space==='atlas'){EDGES.forEach(([a,b])=>{const [x1,y1]=center(a),[x2,y2]=center(b),fut=BY[a].t>S.scrub||BY[b].t>S.scrub
+  h+=`<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}" stroke="${fut?'#2a2438':'#3a3150'}" stroke-width="1.5" fill="none"/>`})}
+ if(S.space==='story'){const W=field.clientWidth;h+=`<line x1="0" y1="255" x2="${W}" y2="255" stroke="#3a3150" stroke-width="2"/>`
+  ;['o1','o10','o5','o2','o3','o4','o6','o7','o8','o9'].forEach(id=>{const [x,y]=center(id);h+=`<line x1="${x}" y1="${y}" x2="${x}" y2="255" stroke="#2a2438"/><circle cx="${x}" cy="255" r="5" fill="${BY[id].t<=S.scrub?'#ff7a3d':'#2a2438'}"/>`})
+  const [fx]=center('o4'),[ox,oy,r]=center('o11');h+=`<path d="M${fx},255 C${fx},${oy} ${fx},${oy} ${ox-r.width/2},${oy}" stroke="#b18cff" stroke-dasharray="5 5" stroke-width="2" fill="none"/>`
+  for(let i=1;i<=3;i++){const gx=W-i*28;h+=''}
+ }
+ edges.innerHTML=h}
+function updPlayhead(){const ph=document.getElementById('playhead')
+ if(S.scrub>=9){ph.style.opacity=0;return}
+ const cur=O.filter(o=>o.t<=S.scrub).sort((a,b)=>b.t-a.t)[0];const [x]=center(cur.id)
+ ph.style.left=x+'px';ph.style.opacity=1;ph.dataset.t='as of: '+cur.title+' · ⏎⏎ rewind here · b fork'}
+function setFocus(id){if(!id||!visible(id))return;S.focus=id;render()}
+function render(){
+ O.forEach(o=>{const el=document.getElementById(o.id);el.classList.toggle('focus',o.id===S.focus);el.classList.toggle('sel',S.sel.has(o.id));el.classList.toggle('pin',S.pin.has(o.id))})
+ const o=BY[S.focus],vb=(VERBS[o.type]||[]).map(([k,l])=>`<span class="k"><kbd>${k}</kbd>${l}</span>`).join('')
+ document.getElementById('hintbar').innerHTML=`<b>${o.type} · ${o.title}</b><span class="k"><kbd>⏎</kbd>lenses</span><span class="k"><kbd>?</kbd>ask</span>${vb}<span class="k"><kbd>v</kbd>select</span><span class="k"><kbd>p</kbd>pin</span><span style="margin-left:auto" class="k"><kbd>space</kbd>all keys</span>`
+ const ctx=[...(S.sel.size?S.sel:[])].map(id=>`<span>${BY[id].title}</span>`).join('')
+ document.getElementById('ctx').innerHTML=ctx||`<span style="opacity:.6">this: ${o.title}</span>`}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('on'),2300)}
+function echo(k){const e=document.getElementById('echo'),kb=document.createElement('kbd');kb.textContent=k;e.appendChild(kb);setTimeout(()=>kb.remove(),1600);while(e.children.length>6)e.firstChild.remove()}
+function vis(){return O.filter(o=>visible(o.id)).sort((a,b)=>a.t-b.t)}
+function move(d){const v=vis(),i=v.findIndex(o=>o.id===S.focus);setFocus(v[(i+d+v.length)%v.length].id)}
+function setSpace(s){S.space=s;closeAll();layout();if(!visible(S.focus))S.focus=vis().slice(-1)[0].id;render()}
+// hints
+const HL='asdghklqweruiozxcbnm'
+function showHints(){S.hint=true;S.hintMap={};vis().forEach((o,i)=>{const k=HL[i];S.hintMap[k]=o.id;document.querySelector('#'+o.id+' .hint').textContent=k});field.classList.add('hints')}
+function hideHints(){S.hint=false;field.classList.remove('hints')}
+// ask
+const ask=document.getElementById('ask'),askIn=document.getElementById('askIn'),askAns=document.getElementById('askAns')
+function openAsk(){closeLens();const ids=S.sel.size?[...S.sel]:[S.focus];S.askFor=ids;S.askDone=false
+ document.getElementById('askAbout').innerHTML='asking about '+ids.map(i=>`<span>${BY[i].title}</span>`).join(' + ')
+ askAns.textContent='';document.getElementById('promote').style.display='none';askIn.value=''
+ const [x,y,r]=center(ids[0]),fw=field.clientWidth
+ let left=r.right-field.getBoundingClientRect().left+10;if(left+390>fw)left=Math.max(8,r.left-field.getBoundingClientRect().left-390)
+ ask.style.left=left+'px';ask.style.top=Math.min(Math.max(8,y-40),380)+'px';ask.classList.add('on');setTimeout(()=>askIn.focus(),10)}
+function answer(){const ids=S.askFor,q=askIn.value.trim()||'what is this?'
+ let a=ids.length>1?`Comparing ${ids.map(i=>BY[i].title).join(' and ')}: ${ids.map(i=>BY[i].sc).join(' vs ')}. `+(ANS[ids[0]]||'')
+  :(ANS[ids[0]]||`About "${BY[ids[0]].title}": built from ${BY[ids[0]].prov[0]}. In the real Loom this goes to a forked side session with that provenance as context.`)
+ askAns.textContent='';let i=0;clearInterval(answer.h);answer.h=setInterval(()=>{askAns.textContent=a.slice(0,i+=3);if(i>=a.length){clearInterval(answer.h);S.askDone=true;document.getElementById('promote').style.display=''}},16)}
+askIn.addEventListener('keydown',e=>{e.stopPropagation()
+ if(e.key==='Escape'){closeAsk();return}
+ if(e.key==='Enter'){if(S.askDone){closeAsk();toast('promoted: question + answer appended to the main thread as context');return}answer()}})
+function closeAsk(){ask.classList.remove('on');S.askFor=null;askIn.blur()}
+// lens
+const lens=document.getElementById('lens'),LENSES=['view','raw','prov','rel']
+function openLens(){closeAsk();S.lensIdx=0;lens.classList.add('on');drawLens()}
+function drawLens(){const o=BY[S.focus],l=LENSES[S.lensIdx];document.getElementById('lensTi').textContent=o.type+' · '+o.title+'   '+o.sc
+ lens.querySelectorAll('.lt').forEach(b=>b.classList.toggle('on',b.dataset.l===l))
+ const b=document.getElementById('lensBody')
+ if(l==='view')b.innerHTML=`<div style="font-size:14px;max-width:720px">${o.body}</div>`
+ if(l==='raw')b.innerHTML=`<pre>${o.raw.replace(/</g,'&lt;')}</pre><p style="color:var(--dim);margin-top:14px">exactly what the CLI emitted. Ctrl+\` shows it in the real TUI</p>`
+ if(l==='prov')b.innerHTML=o.prov.map(p=>`<div>⏺ <span style="color:var(--ink)">${p}</span></div>`).join('')+'<p style="color:var(--dim);margin-top:14px">how it came to be, so you can judge how much to trust it</p>'
+ if(l==='rel')b.innerHTML=o.rel.map(r=>`<div data-go="${r}" style="cursor:pointer;padding:4px 0">→ <span style="color:var(--strong)">${BY[r].title}</span> <span style="color:var(--muted)">${BY[r].type} · ${BY[r].sc}</span></div>`).join('')+'<p style="color:var(--dim);margin-top:14px">click to jump there (it\'s the Atlas, one hop at a time)</p>'
+ b.querySelectorAll('[data-go]').forEach(d=>d.onclick=()=>{S.focus=d.dataset.go;S.lensIdx=0;drawLens();render()})}
+lens.querySelectorAll('.lt').forEach(b=>b.onclick=()=>{S.lensIdx=LENSES.indexOf(b.dataset.l);drawLens()})
+function closeLens(){lens.classList.remove('on')}
+function closeAll(){closeAsk();closeLens();hideHints();document.getElementById('wk').classList.remove('on')}
+// follow
+function setFollow(f){S.follow=f;const m=document.getElementById('mode');m.classList.toggle('follow',f);m.textContent=f?'Follow · agent drives':'Free · you drive'
+ if(f){setSpace('now');S.focus='o9';render();toast('Follow: the agent took the wheel, it\'s showing you the decision it needs')}else toast('Free: you drive. Agent news waits at the edges')}
+document.getElementById('mode').onclick=e=>{e.stopPropagation();engage();setFollow(!S.follow)}
+document.querySelectorAll('.sp').forEach(b=>b.onclick=e=>{e.stopPropagation();engage();setSpace(b.dataset.space)})
+// engage
+const proto=document.getElementById('proto')
+function engage(){S.engaged=true;document.getElementById('engage').style.display='none'}
+document.getElementById('engage').onclick=e=>{e.stopPropagation();engage()}
+document.addEventListener('click',e=>{if(!proto.contains(e.target)){S.engaged=false;document.getElementById('engage').style.display='flex'}})
+proto.addEventListener('click',()=>engage())
+// composer
+const cmp=document.getElementById('cmp')
+cmp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){cmp.blur();return}
+ if(e.key==='Enter'&&cmp.value.trim()){const n=S.sel.size||1;toast(`→ claude: "${cmp.value.trim()}" with ${n} object${n>1?'s':''} attached as "this"`);cmp.value='';S.sel.clear();render()}})
+// keys
+document.addEventListener('keydown',e=>{
+ if(!S.engaged)return
+ const k=e.key
+ if(S.hint){e.preventDefault();echo(k);if(S.hintMap[k])setFocus(S.hintMap[k]);hideHints();return}
+ if(lens.classList.contains('on')){if(k==='Escape'){closeLens();echo('Esc')}else if(k==='l'||k==='Tab'){e.preventDefault();S.lensIdx=(S.lensIdx+1)%4;drawLens();echo(k)}return}
+ if(e.ctrlKey&&k==='`'){e.preventDefault();toast('Ctrl+` → the real claude TUI of this same session (not in this demo)');return}
+ if(e.ctrlKey||e.metaKey||e.altKey)return
+ const o=BY[S.focus],verb=(VERBS[o.type]||[]).find(v=>v[0]===k)
+ let handled=true
+ if(k==='1')setSpace('now');else if(k==='2')setSpace('story');else if(k==='3')setSpace('atlas')
+ else if(k==='f')showHints()
+ else if(k==='j'||k==='ArrowDown'||k==='ArrowRight'||(k==='Tab'&&!e.shiftKey))move(1)
+ else if(k==='k'||k==='ArrowUp'||k==='ArrowLeft'||(k==='Tab'&&e.shiftKey))move(-1)
+ else if(k==='Enter'){if(S.scrub<9){toast('rewind: Esc Esc sent to claude, session restored to "'+vis().slice(-1)[0].title+'"');S.scrub=9;layout()}else openLens()}
+ else if(k==='?')openAsk()
+ else if(k==='v'){S.sel.has(S.focus)?S.sel.delete(S.focus):S.sel.add(S.focus);render()}
+ else if(k==='p'){S.pin.has(S.focus)?S.pin.delete(S.focus):S.pin.add(S.focus);render();toast(S.pin.has(S.focus)?'pinned: it stays here while the stage changes':'unpinned')}
+ else if(k==='['){const ts=[...new Set(O.map(o=>o.t))].sort((a,b)=>a-b),i=ts.indexOf(S.scrub);S.scrub=ts[Math.max(0,(i<0?ts.length-1:i)-1)];layout();if(!visible(S.focus))S.focus=vis().slice(-1)[0].id;render()}
+ else if(k===']'){const ts=[...new Set(O.map(o=>o.t))].sort((a,b)=>a-b),i=ts.indexOf(S.scrub);S.scrub=ts[Math.min(ts.length-1,i+1)];if(S.scrub>=8.9)S.scrub=9;layout()}
+ else if(k==='F')setFollow(!S.follow)
+ else if(k==='i'||k===':'){e.preventDefault();cmp.focus()}
+ else if(k===' '){document.getElementById('wk').classList.toggle('on')}
+ else if(k==='Escape'){if(S.sel.size){S.sel.clear();render()}else if(S.scrub<9){S.scrub=9;layout()}else closeAll()}
+ else if(k==='b'&&S.scrub<9){toast('fork: a second real session starts from "'+vis().slice(-1)[0].title+'" (claude --resume … --fork-session)')}
+ else if(verb){toast('→ '+verb[1]+(o.type==='decision'?' · typed into claude as your answer':' · sent to claude as a prompt about "'+o.title+'"'))}
+ else handled=false
+ if(handled){e.preventDefault();echo(k===' '?'space':k)}
+ if(handled&&S.follow&&!['F'].includes(k)){S.follow=false;const m=document.getElementById('mode');m.classList.remove('follow');m.textContent='Free · you drive'}
+})
+window.addEventListener('resize',()=>{drawEdges();updPlayhead()})
+layout()
+</script>
+</body>
+</html>

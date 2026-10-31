@@ -54,6 +54,8 @@ same words follow `ember`. Prefer them to describing clicks:
 ```
 ember                        the full list, from the running app
 ember new [dir]              a new session
+ember loom [dir]             a Loom session: a shell whose output space is a canvas;
+                             `claude` in it draws the conversation there (Ctrl+Shift+L)
 ember split right|down       split this tab
 ember rename <name>          name this tab
 ember focus <n|name>         switch tab      ember list   the open tabs

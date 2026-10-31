@@ -17,7 +17,8 @@ import { agentSpec } from '../shared/agents.js'
 import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
 import { allActivity, allBriefs, onActivity, onBrief } from './overview.js'
 import { clearLegacyState } from './state.js'
-import { bridgeEnv, bridgeOrigin, forgetTab, pushFromMain, resolveCmd } from './bridge.js'
+import { bridgeEnv, bridgeOrigin, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd } from './bridge.js'
+import { registerCanvas } from './canvas.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { watchState } from './transcript.js'
 import { cliTurn } from './orchestrator.js'
@@ -41,6 +42,8 @@ import type {
  * config that only main can apply — the window's own material and alpha.
  */
 export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig) => void): void {
+  // Loom tabs: the transcript feed, media and page annotations for the canvas.
+  registerCanvas({ origin: bridgeOrigin, hostDoc, markCanvasTab })
   const broadcast = (channel: string, payload: unknown) => {
     for (const win of BrowserWindow.getAllWindows()) {
       // The cursor overlay is a window too, but not one of ours to talk to this way.
@@ -135,7 +138,9 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
       cwd: resolveHome(req.cwd ?? profile.cwd),
       shellIntegration: config.shellIntegration,
       bin: [notesBin],
-      env: { EMBER_NOTES_DIR: NOTES_DIR },
+      // A Loom tab says so to everything it starts: the panel MCP server reads it and
+      // describes a canvas instead of a side panel.
+      env: { EMBER_NOTES_DIR: NOTES_DIR, ...(req.surface === 'canvas' ? { EMBER_SURFACE: 'canvas' } : {}) },
       ...(panel && Object.keys(panel).length ? { panel } : {}),
     })
     return { sessionId: session.sessionId, pid: session.pid, shell: session.shell }

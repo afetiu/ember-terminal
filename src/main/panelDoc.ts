@@ -592,9 +592,20 @@ const mermaidBoot = (light: boolean) => `
       fontFamily: 'inherit',
       themeVariables: ${JSON.stringify(light ? MERMAID_LIGHT : MERMAID_DARK)}
     })
-    window.mermaid.run({ nodes: blocks }).then(fixContrast).catch(function () {
-      blocks.forEach(function (b) { b.className = 'code' })
-    })
+    // A frame that loads while hidden (a background tab, a canvas not yet shown) has no
+    // layout, and mermaid measuring text there draws an empty diagram for good. Wait
+    // until the frame has a size.
+    var started = false
+    function start() {
+      if (started || !window.innerWidth) return
+      started = true
+      removeEventListener('resize', start)
+      window.mermaid.run({ nodes: blocks }).then(fixContrast).catch(function () {
+        blocks.forEach(function (b) { b.className = 'code' })
+      })
+    }
+    addEventListener('resize', start)
+    start()
 
     // Authored fills ("style A fill:#e0f0ff", classDefs) keep the theme's light text
     // on a light box, which is unreadable. After render, every label is inked black or
@@ -1007,7 +1018,21 @@ export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'brid
   const viaParent = target === 'phone'
   const html = renderFor(push, act, viaParent, light, paper)
   // The phone bundles mermaid rather than fetching it from a bridge it cannot see.
-  return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : html
+  return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : withHeightReport(html)
+}
+
+/**
+ * Tell a framing page how tall the document is.
+ *
+ * A Loom canvas shows documents inline, in frames that should be exactly as tall as what
+ * is in them. The frame is on another origin, so the document has to say. In the panel's
+ * webview the document is the top window and this does nothing.
+ */
+const HEIGHT_REPORT = `<script>(function(){if(window.parent===window)return;var last=-1;function post(){var d=document.documentElement,b=document.body;var h=Math.ceil(Math.max(d.scrollHeight,b?b.scrollHeight:0));if(Math.abs(h-last)<2)return;last=h;try{parent.postMessage({emberDocHeight:h},'*')}catch(e){}}addEventListener('load',post);try{var ro=new ResizeObserver(post);ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}catch(e){}setTimeout(post,30);setTimeout(post,400);setTimeout(post,1500)})()</script>`
+
+function withHeightReport(html: string): string {
+  const at = html.toLowerCase().lastIndexOf('</body>')
+  return at === -1 ? html + HEIGHT_REPORT : html.slice(0, at) + HEIGHT_REPORT + html.slice(at)
 }
 
 function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean, paper: string): string {
