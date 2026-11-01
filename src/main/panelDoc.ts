@@ -296,16 +296,15 @@ th, td { border-bottom-color: rgba(0, 0, 0, 0.07); }
 
 /** The controls and scrollbars on paper. Alone, this is what an authored page gets: its own design is left alone. */
 const LIGHT_INTERACT = `
-::-webkit-scrollbar-thumb { background: rgba(130, 39, 184, 0.16); background-clip: padding-box; }
-:hover::-webkit-scrollbar-thumb { background: rgba(130, 39, 184, 0.34); background-clip: padding-box; }
-.ember-act { border-color: rgba(130, 39, 184, 0.4); background: rgba(130, 39, 184, 0.08); color: #3B2156; }
-.ember-act:hover { background: rgba(130, 39, 184, 0.16); border-color: rgba(130, 39, 184, 0.65); }
+:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ember-ink, #555) 24%, transparent); background-clip: padding-box; }
+.ember-act { border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 45%, transparent); background: color-mix(in srgb, var(--ember-accent, #B07A2A) 9%, transparent); color: var(--ember-ink, #2a2520); }
+.ember-act:hover { background: color-mix(in srgb, var(--ember-accent, #B07A2A) 17%, transparent); border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 70%, transparent); }
 .ember-act.is-sent { background: rgba(11, 122, 92, 0.12); border-color: rgba(11, 122, 92, 0.45); }
-.ember-ask { border-color: rgba(130, 39, 184, 0.22); background: rgba(130, 39, 184, 0.04); }
-.ember-ask-opt { border-color: rgba(130, 39, 184, 0.28); background: rgba(130, 39, 184, 0.05); color: #1B1426; }
-.ember-ask-opt:hover { background: rgba(130, 39, 184, 0.13); border-color: rgba(130, 39, 184, 0.55); }
+.ember-ask { border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 24%, transparent); background: color-mix(in srgb, var(--ember-accent, #B07A2A) 4%, transparent); }
+.ember-ask-opt { border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 30%, transparent); background: color-mix(in srgb, var(--ember-accent, #B07A2A) 5%, transparent); color: var(--ember-ink, #2a2520); }
+.ember-ask-opt:hover { background: color-mix(in srgb, var(--ember-accent, #B07A2A) 14%, transparent); border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 58%, transparent); }
 .ember-ask-opt .hint { color: #5E5373; }
-.ember-ask-free textarea { border-color: rgba(130, 39, 184, 0.28); background: rgba(255, 255, 255, 0.7); color: #1B1426; }
+.ember-ask-free textarea { border-color: color-mix(in srgb, var(--ember-accent, #B07A2A) 30%, transparent); background: rgba(255, 255, 255, 0.7); color: var(--ember-ink, #2a2520); }
 .ember-ask-sent { color: #0B7A5C; }
 `
 
@@ -330,15 +329,15 @@ const SCROLLBARS = `
 ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(199, 78, 255, 0.13);
+  background: transparent;
   border: 3.5px solid transparent;
   border-radius: 99px;
   background-clip: padding-box;
   transition: background 180ms ease;
 }
-:hover::-webkit-scrollbar-thumb { background: rgba(199, 78, 255, 0.34); background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background: rgba(199, 78, 255, 0.55); background-clip: padding-box; }
-::-webkit-scrollbar-thumb:active { background: rgba(199, 78, 255, 0.72); background-clip: padding-box; }
+:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ember-ink, #bbb) 22%, transparent); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ember-ink, #bbb) 38%, transparent); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:active { background: color-mix(in srgb, var(--ember-ink, #bbb) 52%, transparent); background-clip: padding-box; }
 `
 
 /**
@@ -367,7 +366,7 @@ const INTERACT_STYLE = `
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
-.ember-act:hover { background: rgba(199, 78, 255, 0.24); border-color: rgba(199, 78, 255, 0.6); }
+.ember-act:hover { background: color-mix(in srgb, var(--ember-accent, #F2A43A) 24%, transparent); border-color: color-mix(in srgb, var(--ember-accent, #F2A43A) 60%, transparent); }
 .ember-act:active { transform: translateY(1px); }
 .ember-act.is-sent { background: rgba(120, 255, 190, 0.16); border-color: rgba(120, 255, 190, 0.4); }
 
@@ -389,15 +388,15 @@ const INTERACT_STYLE = `
   width: 100%;
   text-align: left;
   padding: 9px 13px;
-  border: 1px solid rgba(199, 78, 255, 0.26);
+  border: 1px solid color-mix(in srgb, var(--ember-accent, #F2A43A) 26%, transparent);
   border-radius: 9px;
-  background: rgba(199, 78, 255, 0.08);
+  background: color-mix(in srgb, var(--ember-accent, #F2A43A) 8%, transparent);
   color: #F0EAFB;
   font: inherit;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
-.ember-ask-opt:hover { background: rgba(199, 78, 255, 0.2); border-color: rgba(199, 78, 255, 0.55); }
+.ember-ask-opt:hover { background: color-mix(in srgb, var(--ember-accent, #F2A43A) 20%, transparent); border-color: color-mix(in srgb, var(--ember-accent, #F2A43A) 55%, transparent); }
 .ember-ask-opt .hint { display: block; margin-top: 3px; font-size: 0.86em; color: #A99DC4; }
 
 .ember-ask-free { display: flex; gap: 8px; margin-top: 12px; align-items: flex-end; }
@@ -407,7 +406,7 @@ const INTERACT_STYLE = `
   max-height: 180px;
   resize: vertical;
   padding: 8px 11px;
-  border: 1px solid rgba(199, 78, 255, 0.24);
+  border: 1px solid color-mix(in srgb, var(--ember-accent, #F2A43A) 24%, transparent);
   border-radius: 9px;
   background: rgba(12, 6, 22, 0.6);
   color: #E9DDFB;
@@ -415,7 +414,7 @@ const INTERACT_STYLE = `
   font-size: 0.95em;
   outline: none;
 }
-.ember-ask-free textarea:focus { border-color: rgba(199, 78, 255, 0.6); }
+.ember-ask-free textarea:focus { border-color: color-mix(in srgb, var(--ember-accent, #F2A43A) 60%, transparent); }
 .ember-ask-sent { margin-top: 12px; color: #8FE9C0; font-size: 0.92em; }
 .ember-ask.is-answered .ember-ask-options,
 .ember-ask.is-answered .ember-ask-free { display: none; }
@@ -425,9 +424,9 @@ const INTERACT_STYLE = `
    the panel happens to be browsing. */
 html.ember-picking, html.ember-picking * { cursor: crosshair !important; }
 .ember-pick-hover {
-  outline: 2px solid #C74EFF !important;
+  outline: 2px solid var(--ember-accent, #F2A43A) !important;
   outline-offset: 1px !important;
-  background: rgba(199, 78, 255, 0.12) !important;
+  background: color-mix(in srgb, var(--ember-accent, #F2A43A) 12%, transparent) !important;
 }
 `
 
@@ -553,33 +552,33 @@ const MERMAID_DARK = {
   background: 'transparent',
   primaryColor: '#2A1A44',
   primaryTextColor: '#E9DDFB',
-  primaryBorderColor: '#C74EFF',
+  primaryBorderColor: '#F2A43A',
   secondaryColor: '#1F1436',
   tertiaryColor: '#160E28',
   lineColor: '#8A6FB5',
-  textColor: '#D9D2EA',
+  textColor: '#E8E0D5',
   mainBkg: '#2A1A44',
-  nodeBorder: '#C74EFF',
-  clusterBkg: 'rgba(199, 78, 255, 0.07)',
-  clusterBorder: 'rgba(199, 78, 255, 0.3)',
+  nodeBorder: '#F2A43A',
+  clusterBkg: 'color-mix(in srgb, var(--ember-accent, #F2A43A) 7%, transparent)',
+  clusterBorder: 'color-mix(in srgb, var(--ember-accent, #F2A43A) 30%, transparent)',
   edgeLabelBackground: '#1A0E2E',
 }
 
 /** The diagram on paper: pale lavender boxes, the purple kept for the borders. */
 const MERMAID_LIGHT = {
   background: 'transparent',
-  primaryColor: '#F1E8FA',
-  primaryTextColor: '#1B1426',
-  primaryBorderColor: '#8227B8',
-  secondaryColor: '#F6F0FB',
-  tertiaryColor: '#FBF8FD',
-  lineColor: '#7A6496',
-  textColor: '#2E2640',
-  mainBkg: '#F1E8FA',
-  nodeBorder: '#8227B8',
-  clusterBkg: 'rgba(130, 39, 184, 0.05)',
-  clusterBorder: 'rgba(130, 39, 184, 0.3)',
-  edgeLabelBackground: '#FBF8FD',
+  primaryColor: '#FBF1E1',
+  primaryTextColor: '#2A2118',
+  primaryBorderColor: '#B07A2A',
+  secondaryColor: '#FAF5EC',
+  tertiaryColor: '#FDFAF4',
+  lineColor: '#8C7356',
+  textColor: '#33291F',
+  mainBkg: '#FBF1E1',
+  nodeBorder: '#B07A2A',
+  clusterBkg: 'rgba(176, 122, 42, 0.05)',
+  clusterBorder: 'rgba(176, 122, 42, 0.3)',
+  edgeLabelBackground: '#FDFAF4',
 }
 
 /** The theme the renderer is showing, so a document is drawn in Ember's colours rather than the default purple. */
@@ -623,7 +622,7 @@ export function setViewLoader(fn: (name: string) => string | null): void {
 
 /** The theme a data view is drawn in: neutral ink, the accent, the category hues. */
 function viewTheme(palette: DocPalette | undefined, light: boolean): { theme: ViewTheme; bg: string } {
-  const p = palette ?? { accent: light ? '#8227B8' : '#C74EFF', fg: light ? '#2E2640' : '#D9D2EA', bg: light ? '#FBF7F2' : '#1a1424' }
+  const p = palette ?? { accent: light ? '#B07A2A' : '#F2A43A', fg: light ? '#2A2118' : '#E8E0D5', bg: light ? '#FBF7F2' : '#16120F' }
   const { ink, strong, dim } = inkOf(p, light)
   return {
     bg: p.bg,
@@ -938,7 +937,7 @@ const HTML_BASE = `
 :root { color-scheme: dark; }
 html, body { margin: 0; background: transparent; }
 body {
-  color: #D9D2EA;
+  color: var(--ember-ink, #E8E0D5);
   font: 400 14px/1.6 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
 }
 h1, h2, h3, h4, h5, h6 { color: #F0EAFB; }
@@ -1089,8 +1088,8 @@ function lightGuard(paper: string): string {
  */
 function toneTokens(light: boolean, paper: string): string {
   const t = light
-    ? { paper, ink: '#2E2640', strong: '#1B1426', muted: '#5E5373', accent: '#7A22AE', line: 'rgba(46, 38, 64, 0.16)', surface: 'rgba(46, 38, 64, 0.05)' }
-    : { paper: '#1D1530', ink: '#D9D2EA', strong: '#F0EAFB', muted: '#A99DC4', accent: '#E08BFF', line: 'rgba(217, 210, 234, 0.16)', surface: 'rgba(255, 255, 255, 0.04)' }
+    ? { paper, ink: '#2A2118', strong: '#17110B', muted: '#6B5E4F', accent: '#B07A2A', line: 'rgba(42, 33, 24, 0.16)', surface: 'rgba(42, 33, 24, 0.05)' }
+    : { paper: '#16120F', ink: '#E8E0D5', strong: '#FBF6EF', muted: '#A99F92', accent: '#F2A43A', line: 'rgba(232, 224, 213, 0.14)', surface: 'rgba(255, 255, 255, 0.04)' }
   return `<style>:root { --ember-paper: ${t.paper}; --ember-ink: ${t.ink}; --ember-strong: ${t.strong}; --ember-muted: ${t.muted}; --ember-accent: ${t.accent}; --ember-line: ${t.line}; --ember-surface: ${t.surface}; }</style><script>document.documentElement.setAttribute('data-ember-tone', '${light ? 'light' : 'dark'}')</script>`
 }
 
@@ -1210,8 +1209,8 @@ body { padding: 12px 14px 16px; }
 .g-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .g-thumb:hover { opacity: 1; }
 .g-thumb.is-on { opacity: 1; border-color: var(--g-accent); box-shadow: 0 0 0 1px var(--g-accent); }
-:root { --g-line: rgba(217, 210, 234, 0.16); --g-well: rgba(255, 255, 255, 0.03); --g-accent: #C74EFF; }
-:root[data-ember-tone="light"], .light { --g-line: rgba(46, 38, 64, 0.16); --g-well: rgba(46, 38, 64, 0.04); --g-accent: #8227B8; }
+:root { --g-line: rgba(217, 210, 234, 0.16); --g-well: rgba(255, 255, 255, 0.03); --g-accent: var(--ember-accent, #F2A43A); }
+:root[data-ember-tone="light"], .light { --g-line: rgba(42, 33, 24, 0.16); --g-well: rgba(42, 33, 24, 0.04); --g-accent: var(--ember-accent, #B07A2A); }
 </style>
 <figure class="g-main">
   <a class="g-frame" title="Click for real size"><img id="g-big" src="/img/${escapeHtml(first.id)}" alt=""></a>
@@ -1269,7 +1268,7 @@ export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'brid
  * is in them. The frame is on another origin, so the document has to say. In the panel's
  * webview the document is the top window and this does nothing.
  */
-const HEIGHT_REPORT = `<script>(function(){if(window.parent===window)return;addEventListener('keydown',function(e){if(e.key==='Escape'){try{parent.postMessage({emberKey:'Escape'},'*')}catch(_){}}});addEventListener('message',function(e){if(e.data&&e.data.emberFit)document.documentElement.classList.add('ember-fit');var f=e.data&&e.data.emberFind;if(f){var want=String(f.text||'').trim().toLowerCase(),best=null,bl=1e9;document.querySelectorAll('g.node,.nodeLabel,text,tspan,th,td,li,button,a,h1,h2,h3,h4,p,span,div,rect,path').forEach(function(el){var t=(el.textContent||'').trim().toLowerCase();if(!t||t.indexOf(want)<0)return;var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var g=el.closest&&el.closest('g.node');if(g){r=g.getBoundingClientRect();t=(g.textContent||'').trim().toLowerCase()}if(t.length<bl){bl=t.length;best=r}});try{parent.postMessage({emberFound:{id:f.id,rect:best?{x:best.left,y:best.top,w:best.width,h:best.height}:null}},'*')}catch(_){}}});addEventListener('contextmenu',function(e){var t=e.target;if(t&&t.closest&&t.closest('a,input,textarea,select,button'))return;e.preventDefault();var label='';var n=t&&t.closest&&t.closest('.node,.cluster,.actor,.edgeLabel,text');if(n)label=(n.textContent||'').trim().slice(0,80);try{parent.postMessage({emberContext:{x:e.clientX,y:e.clientY,text:String(getSelection()||'').slice(0,500),part:label}},'*')}catch(_){}});var last=-1;function post(){var d=document.documentElement,b=document.body;var h=Math.ceil(Math.max(d.scrollHeight,b?b.scrollHeight:0));if(Math.abs(h-last)<2)return;last=h;try{parent.postMessage({emberDocHeight:h},'*')}catch(e){}}addEventListener('load',post);try{var ro=new ResizeObserver(post);ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}catch(e){}setTimeout(post,30);setTimeout(post,400);setTimeout(post,1500)})()</script>`
+const HEIGHT_REPORT = `<script>(function(){if(window.parent===window)return;addEventListener('keydown',function(e){if(e.key==='Escape'){try{parent.postMessage({emberKey:'Escape'},'*')}catch(_){}}});addEventListener('message',function(e){if(e.data&&e.data.emberFit)document.documentElement.classList.add('ember-fit');var f=e.data&&e.data.emberFind;if(f){var want=String(f.text||'').trim().toLowerCase(),best=null,bl=1e9;document.querySelectorAll('g.node,.nodeLabel,text,tspan,th,td,li,button,a,h1,h2,h3,h4,p,span,div,rect,path').forEach(function(el){var t=(el.textContent||'').trim().toLowerCase();if(!t||t.indexOf(want)<0)return;var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var g=el.closest&&el.closest('g.node');if(g){r=g.getBoundingClientRect();t=(g.textContent||'').trim().toLowerCase()}if(t.length<bl){bl=t.length;best=r}});try{parent.postMessage({emberFound:{id:f.id,rect:best?{x:best.left,y:best.top,w:best.width,h:best.height}:null}},'*')}catch(_){}}});addEventListener('contextmenu',function(e){var t=e.target;if(t&&t.closest&&t.closest('a,input,textarea,select,button'))return;e.preventDefault();var label='';var n=t&&t.closest&&t.closest('.node,.cluster,.actor,.edgeLabel,text');if(n)label=(n.textContent||'').trim().slice(0,80);try{parent.postMessage({emberContext:{x:e.clientX,y:e.clientY,text:String(getSelection()||'').slice(0,500),part:label}},'*')}catch(_){}});var last=-1;function post(){var d=document.documentElement,b=document.body;d.style.overflowY=(d.scrollHeight-window.innerHeight>3)?'auto':'hidden';var h=Math.ceil(Math.max(d.scrollHeight,b?b.scrollHeight:0));if(Math.abs(h-last)<2)return;last=h;try{parent.postMessage({emberDocHeight:h},'*')}catch(e){}}addEventListener('load',post);try{var ro=new ResizeObserver(post);ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}catch(e){}setTimeout(post,30);setTimeout(post,400);setTimeout(post,1500)})()</script>`
 
 function withHeightReport(html: string): string {
   const at = html.toLowerCase().lastIndexOf('</body>')

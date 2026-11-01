@@ -176,13 +176,13 @@ export function setBadgeSurface(light: boolean): void {
 const SHELL_INK: Record<'dark' | 'light', Record<'attention' | 'working' | 'idle', { body: string; glow: string }>> = {
   dark: {
     attention: { body: '#FFC857', glow: '#FFE3A0' },
-    working: { body: '#C74EFF', glow: '#E08BFF' },
-    idle: { body: '#9A7BC0', glow: '#B79BDA' },
+    working: { body: '#F2A43A', glow: '#FFD58A' },
+    idle: { body: '#A99F92', glow: '#CFC6BA' },
   },
   light: {
     attention: { body: '#C08A1E', glow: '#9A5F00' },
-    working: { body: '#A64DDB', glow: '#8227B8' },
-    idle: { body: '#8C73B3', glow: '#664C8F' },
+    working: { body: '#D98A1F', glow: '#B07A2A' },
+    idle: { body: '#8C7F70', glow: '#665A4C' },
   },
 }
 

@@ -1602,7 +1602,8 @@ export class LoomView {
       d.dataset['pin'] = '1'
       d.classList.add('loom-liftable')
       const name = this.nameObject(d)
-      const lift = div('loom-lift', `<span class="loom-grip">${ICON.grip}</span><span class="loom-lift-name">${escapeHtml(name)}</span><span class="loom-lift-hint">${ICON.grip}Drag out</span>`)
+      // One grip only, on "Drag out": the name stays a plain label.
+      const lift = div('loom-lift', `<span class="loom-lift-name">${escapeHtml(name)}</span><span class="loom-lift-hint">${ICON.grip}Drag out</span>`)
       lift.title = 'Drag it out of the reply — place it anywhere, or at an edge to snap it. Right-click for more'
       lift.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return

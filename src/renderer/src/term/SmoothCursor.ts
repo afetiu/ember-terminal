@@ -47,7 +47,7 @@ function corners(r: Rect): Pt[] {
 
 function hexToRgb(hex: string): [number, number, number] {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return [199, 78, 255]
+  if (!m) return [242, 164, 58]
   const n = parseInt(m[1]!, 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }

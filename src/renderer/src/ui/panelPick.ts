@@ -167,6 +167,6 @@ export const PICK_STYLE = `(function () {
   var s = document.createElement('style')
   s.id = 'ember-pick-style'
   s.textContent = 'html.ember-picking, html.ember-picking * { cursor: crosshair !important; }' +
-    '.ember-pick-hover { outline: 2px solid #C74EFF !important; outline-offset: 1px !important; background: rgba(199,78,255,0.12) !important; }'
+    '.ember-pick-hover { outline: 2px solid #F2A43A !important; outline-offset: 1px !important; background: rgba(199,78,255,0.12) !important; }'
   ;(document.head || document.documentElement).appendChild(s)
 })()`

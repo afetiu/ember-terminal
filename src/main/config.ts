@@ -28,7 +28,7 @@ export const DEFAULT_CONFIG: EmberConfig = {
       name: 'PowerShell 7',
       command: 'pwsh.exe',
       args: ['-NoLogo'],
-      accent: '#C74EFF',
+      accent: '#F2A43A',
     },
     {
       id: 'winps',
