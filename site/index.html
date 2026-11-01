@@ -27,9 +27,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1.4.0-9a76f6ea">
-<script src="main.js?v=1.4.0-9a76f6ea" defer></script>
-<script src="film.js?v=1.4.0-9a76f6ea" type="module"></script>
+<link rel="stylesheet" href="styles.css?v=1.4.0-658f71c9">
+<script src="main.js?v=1.4.0-658f71c9" defer></script>
+<script src="film.js?v=1.4.0-658f71c9" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -84,125 +84,59 @@
           <div class="win__body">
             <aside class="side">
               <div class="side__top">
-                <span class="chip" data-chip><span class="chip__dot"></span><span data-chip-name>Claude Code</span><span class="chip__car">▾</span></span>
-                <span class="plus" data-plus>+</span>
+                <span class="chip"><span class="chip__dot"></span><span>Claude Code</span><span class="chip__car">▾</span></span>
+                <span class="plus">+</span>
               </div>
               <div class="cards" data-cards>
-                <div class="card is-on" data-card="a"><span class="card__dot"></span><div><b data-card-title>Auth flow</b><small>Opus 5.5 · 12%</small></div></div>
+                <div class="card is-on" data-card="a"><span class="card__dot"></span><div><b>Checkout 503s</b><small>Opus 5.5 · 18%</small></div></div>
                 <div class="card" data-card="b"><span class="card__dot"></span><div><b>Release notes</b><small>Codex · idle</small></div></div>
               </div>
               <div class="side__foot">
                 <span class="foot-ic" data-todo><span class="ic ic--todo"></span><span class="badge" data-todo-n>3</span></span>
                 <span class="foot-ic"><span class="ic ic--note"></span></span>
               </div>
-              <div class="pmenu" data-pmenu>
-                <div class="pmenu__h">Agent for new sessions</div>
-                <div class="pmenu__i is-on" data-p="claude"><span class="pdot" style="--d:#E58A55"></span>Claude Code<span class="tick">✓</span></div>
-                <div class="pmenu__i" data-p="codex"><span class="pdot" style="--d:#9fb7c9"></span>Codex CLI</div>
-                <div class="pmenu__i"><span class="pdot" style="--d:#7aa7ff"></span>Gemini CLI</div>
-                <div class="pmenu__i"><span class="pdot" style="--d:#c9c2b8"></span>Cursor Agent</div>
-                <div class="pmenu__i"><span class="pdot" style="--d:#8fd18f"></span>OpenCode</div>
-                <div class="pmenu__sep"></div>
-                <div class="pmenu__i pmenu__more">Add more agents…</div>
-              </div>
             </aside>
 
             <section class="pane" data-pane>
-              <div class="bar" data-bar><span class="vs"><span class="vs__b is-on" data-v="canvas">Canvas</span><span class="vs__b" data-v="cli">CLI</span></span></div>
+              <div class="bar"><span class="vs"><span class="vs__b is-on">Canvas</span><span class="vs__b">CLI</span></span></div>
 
-              <!-- the canvas -->
+              <!-- the canvas: the conversation, the pieces placed on it, and its menu -->
               <div class="cv" data-cv>
                 <div class="cv__col" data-col>
                   <div class="plan" data-plan></div>
-                  <div class="you" data-you><span class="you__dot"></span><span data-you-t></span></div>
-                  <div class="say" data-say></div>
-                  <figure class="obj" data-obj>
-                    <span class="lift"><span class="lift__n">flowchart 1</span><span class="lift__h"><i class="grip"></i>Drag out</span></span>
-                    <svg class="flow" viewBox="0 0 560 220" data-flow>
-                      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="currentColor"/></marker></defs>
-                      <g class="fe"><path d="M118 62H192"/><path d="M308 62H382"/><path d="M440 86V128"/><path d="M382 152H308"/><path d="M250 128V86"/></g>
-                      <g class="fn"><rect x="18" y="38" width="100" height="48" rx="12"/><text x="68" y="67">Browser</text></g>
-                      <g class="fn"><rect x="192" y="38" width="116" height="48" rx="12"/><text x="250" y="67">API gateway</text></g>
-                      <g class="fn"><rect x="382" y="38" width="116" height="48" rx="12"/><text x="440" y="67">Auth service</text></g>
-                      <g class="fn"><rect x="382" y="128" width="116" height="48" rx="12"/><text x="440" y="157">Token store</text></g>
-                      <g class="fn is-hot"><rect x="192" y="128" width="116" height="48" rx="12"/><text x="250" y="157">Session</text></g>
-                    </svg>
-                    <span class="rz" data-rz></span>
-                  </figure>
-                  <div class="say say--after" data-say2></div>
+                  <div class="turns" data-turns></div>
                 </div>
                 <div class="board" data-board></div>
-                <div class="sticky" data-sticky><b># Note, Nov 1</b><span data-sticky-t></span><small>From the session Auth flow</small></div>
-                <div class="legend" data-legend><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> full screen</span><span><kbd>P</kbd> place</span><span><kbd>M</kbd> minimize</span><span><kbd>Esc</kbd> back</span></div>
-              </div>
-
-              <!-- the agent's own screen -->
-              <div class="cli" data-cli>
-<pre><span class="t-acc">▐▛███▜▌</span>  <b>Claude Code</b> <span class="t-dim">v2.1</span>
-<span class="t-acc">▝▜█████▛▘</span> <span class="t-dim">Opus 5.5 · Claude Max</span>
-<span class="t-acc">  ▘▘ ▝▝</span>   <span class="t-dim">C:\work\api</span>
-
-<span class="t-dim">&gt;</span> how does auth flow through the API?
-
-<span class="t-acc">●</span> The browser sends credentials to the API gateway,
-  which hands them to the auth service. It issues a
-  short-lived token, keeps the refresh token in the
-  token store, and the gateway opens a session.
-
-  <span class="t-dim">```mermaid</span>
-  <span class="t-dim">flowchart LR</span>
-  <span class="t-dim">  Browser --&gt; Gateway --&gt; Auth --&gt; Store</span>
-  <span class="t-dim">```</span>
-
-<span class="t-rule">────────────────────────────────────────────────────</span>
-<span class="t-dim">&gt;</span> <span class="t-cur"> </span>
-<span class="t-rule">────────────────────────────────────────────────────</span>
-  <span class="t-dim">Opus 5.5 · $0.41</span>   <span class="t-ok">⏵⏵ auto mode on</span></pre>
+                <div class="zone" data-zone></div>
+                <div class="menu" data-menu></div>
+                <div class="toast" data-toast></div>
               </div>
 
               <div class="inp" data-inp>
-                <span class="inp__car">›</span><span class="inp__t" data-inp-t></span><span class="inp__ph" data-ph>Ask Claude… / for commands</span>
+                <span class="inp__car">›</span><span class="inp__t" data-inp-t></span><span class="inp__ph">Ask Claude… / for commands</span>
                 <span class="inp__send">↵ send</span>
               </div>
-              <div class="stat"><span class="stat__mode">auto</span><b data-model>Opus 5.5 (1M context)</b><span class="stat__bar"><i></i></span><span>12%</span><span>$0.41</span></div>
-
-              <div class="start" data-start><span class="spin"></span><span data-start-t>Starting Codex CLI…</span></div>
+              <div class="stat"><span class="stat__mode">auto</span><b>Opus 5.5 (1M context)</b><span class="stat__bar"><i></i></span><span>18%</span><span>$0.62</span></div>
             </section>
-          </div>
-
-          <!-- full screen, over the window -->
-          <div class="full" data-full>
-            <div class="full__box">
-              <div class="full__head"><span>flowchart 1</span><span class="full__acts">— ··· ✕</span></div>
-              <div class="full__body"><div class="full__zoom" data-zoom></div></div>
-            </div>
-            <div class="zbar"><span>−</span><b data-zpct>100%</b><span>+</span></div>
           </div>
         </div>
 
-        <!-- another program on the desktop, for computer use -->
-        <div class="sheet" data-sheet></div>
-        <div class="stop" data-stop><span class="stop__dot"></span>Ember is using your computer<b>STOP</b></div>
-
         <div class="keys" data-keys></div>
-        <div class="ptr" data-ptr><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2.5 19.5 13l-6.6 1.3L9.6 21z"/></svg><span class="ptr__tag" data-tag></span></div>
+        <div class="ptr" data-ptr><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2.5 19.5 13l-6.6 1.3L9.6 21z"/></svg></div>
       </div>
     </div>
 
-    <div class="chapters" role="group" aria-label="Demo chapters" data-chapters>
+    <div class="chapters" role="group" aria-label="Moments in the demo" data-chapters>
       <button type="button" data-ch="0"><span>1</span>Ask<i><b></b></i></button>
-      <button type="button" data-ch="1"><span>2</span>Resize &amp; place<i><b></b></i></button>
-      <button type="button" data-ch="2"><span>3</span>Ticket plan<i><b></b></i></button>
-      <button type="button" data-ch="3"><span>4</span>Your files<i><b></b></i></button>
-      <button type="button" data-ch="4"><span>5</span>Mission control<i><b></b></i></button>
-      <button type="button" data-ch="5"><span>6</span>Keyboard<i><b></b></i></button>
-      <button type="button" data-ch="6"><span>7</span>Canvas | CLI<i><b></b></i></button>
-      <button type="button" data-ch="7"><span>8</span>Notes &amp; todos<i><b></b></i></button>
-      <button type="button" data-ch="8"><span>9</span>Computer use<i><b></b></i></button>
-      <button type="button" data-ch="9"><span>10</span>Any agent<i><b></b></i></button>
+      <button type="button" data-ch="1"><span>2</span>Pin right<i><b></b></i></button>
+      <button type="button" data-ch="2"><span>3</span>Plan<i><b></b></i></button>
+      <button type="button" data-ch="3"><span>4</span>Pin bottom<i><b></b></i></button>
+      <button type="button" data-ch="4"><span>5</span>Ask about it<i><b></b></i></button>
+      <button type="button" data-ch="5"><span>6</span>Change it<i><b></b></i></button>
+      <button type="button" data-ch="6"><span>7</span>Ship<i><b></b></i></button>
       <button type="button" class="chapters__pause" data-pause aria-label="Pause the demo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
     </div>
-    <p class="caption" aria-live="polite" data-cap>Ask in plain words. The answer comes as something you can see.</p>
+    <p class="caption" aria-live="polite" data-cap>Checkout is failing. Ask what is going on, in plain words.</p>
   </div>
 </section>
 
