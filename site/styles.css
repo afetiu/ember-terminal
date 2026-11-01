@@ -275,10 +275,15 @@ h1 em {
   position: relative;
   margin-top: 56px;
 }
+/* the demo gets more room than the text: as wide as the screen allows, while the
+   window still fits its height */
+.wrap.demo-wrap {
+  width: min(1440px, 100% - 32px, (100vh - 110px) * 1.636);
+}
 .demo {
   position: relative;
   width: 100%;
-  aspect-ratio: var(--ar, 1200 / 760);
+  aspect-ratio: var(--ar, 1440 / 880);
   border-radius: 18px;
   /* a desktop: the wallpaper behind the window */
   background:
@@ -300,8 +305,8 @@ h1 em {
   position: absolute;
   left: 0;
   top: 0;
-  width: var(--dw, 1200px);
-  height: var(--dh, 760px);
+  width: var(--dw, 1440px);
+  height: var(--dh, 880px);
   transform-origin: 0 0;
   transform: scale(var(--s, 1));
   font: 400 14px/1.5 var(--ui);

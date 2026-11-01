@@ -41,8 +41,8 @@ function start() {
   function fit() {
     const w = root.clientWidth
     narrow = w < 720
-    const dw = narrow ? 600 : 1200
-    const dh = narrow ? 640 : 760
+    const dw = narrow ? 660 : 1440
+    const dh = narrow ? 700 : 880
     root.classList.toggle('is-narrow', narrow)
     root.style.setProperty('--ar', `${dw} / ${dh}`)
     desk.style.setProperty('--dw', `${dw}px`)
