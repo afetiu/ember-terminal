@@ -27,9 +27,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1.4.0-a4417dcd">
-<script src="main.js?v=1.4.0-a4417dcd" defer></script>
-<script src="film.js?v=1.4.0-a4417dcd" type="module"></script>
+<link rel="stylesheet" href="styles.css?v=1.4.0-9a76f6ea">
+<script src="main.js?v=1.4.0-9a76f6ea" defer></script>
+<script src="film.js?v=1.4.0-9a76f6ea" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -113,6 +113,7 @@
               <!-- the canvas -->
               <div class="cv" data-cv>
                 <div class="cv__col" data-col>
+                  <div class="plan" data-plan></div>
                   <div class="you" data-you><span class="you__dot"></span><span data-you-t></span></div>
                   <div class="say" data-say></div>
                   <figure class="obj" data-obj>
@@ -130,6 +131,7 @@
                   </figure>
                   <div class="say say--after" data-say2></div>
                 </div>
+                <div class="board" data-board></div>
                 <div class="sticky" data-sticky><b># Note, Nov 1</b><span data-sticky-t></span><small>From the session Auth flow</small></div>
                 <div class="legend" data-legend><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> full screen</span><span><kbd>P</kbd> place</span><span><kbd>M</kbd> minimize</span><span><kbd>Esc</kbd> back</span></div>
               </div>
@@ -179,13 +181,7 @@
         </div>
 
         <!-- another program on the desktop, for computer use -->
-        <div class="calc" data-calc>
-          <div class="calc__t">Calculator <span>— ▢ ✕</span></div>
-          <div class="calc__d" data-calc-d>0</div>
-          <div class="calc__g">
-            <span>7</span><span data-k="7">7</span><span>8</span><span>9</span>
-          </div>
-        </div>
+        <div class="sheet" data-sheet></div>
         <div class="stop" data-stop><span class="stop__dot"></span>Ember is using your computer<b>STOP</b></div>
 
         <div class="keys" data-keys></div>
@@ -196,11 +192,14 @@
     <div class="chapters" role="group" aria-label="Demo chapters" data-chapters>
       <button type="button" data-ch="0"><span>1</span>Ask<i><b></b></i></button>
       <button type="button" data-ch="1"><span>2</span>Resize &amp; place<i><b></b></i></button>
-      <button type="button" data-ch="2"><span>3</span>Keyboard<i><b></b></i></button>
-      <button type="button" data-ch="3"><span>4</span>Canvas | CLI<i><b></b></i></button>
-      <button type="button" data-ch="4"><span>5</span>Notes &amp; todos<i><b></b></i></button>
-      <button type="button" data-ch="5"><span>6</span>Computer use<i><b></b></i></button>
-      <button type="button" data-ch="6"><span>7</span>Any agent<i><b></b></i></button>
+      <button type="button" data-ch="2"><span>3</span>Ticket plan<i><b></b></i></button>
+      <button type="button" data-ch="3"><span>4</span>Your files<i><b></b></i></button>
+      <button type="button" data-ch="4"><span>5</span>Mission control<i><b></b></i></button>
+      <button type="button" data-ch="5"><span>6</span>Keyboard<i><b></b></i></button>
+      <button type="button" data-ch="6"><span>7</span>Canvas | CLI<i><b></b></i></button>
+      <button type="button" data-ch="7"><span>8</span>Notes &amp; todos<i><b></b></i></button>
+      <button type="button" data-ch="8"><span>9</span>Computer use<i><b></b></i></button>
+      <button type="button" data-ch="9"><span>10</span>Any agent<i><b></b></i></button>
       <button type="button" class="chapters__pause" data-pause aria-label="Pause the demo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
     </div>
     <p class="caption" aria-live="polite" data-cap>Ask in plain words. The answer comes as something you can see.</p>
@@ -215,7 +214,7 @@
       <article class="feat feat--big">
         <div class="feat__ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 15l3-3 3 2 4-5"/></svg></div>
         <h3>Answers you can use</h3>
-        <p>Diagrams, tables, charts and pages show up in the reply. Resize them where they are, drag one out to place it beside the conversation, or open it full screen and zoom in. The words make room.</p>
+        <p>Diagrams, tables, charts, kanban boards, PDFs, Markdown, spreadsheets, video and live web pages show up on the canvas. Resize them, place them side by side, or open one full screen and zoom in. They stay live as the work goes on.</p>
       </article>
       <article class="feat">
         <div class="feat__ic"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h0M7 14h10"/></svg></div>

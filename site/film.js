@@ -28,8 +28,9 @@ function start() {
   const full = q('[data-full]')
   const zoom = q('[data-zoom]')
   const zpct = q('[data-zpct]')
-  const calc = q('[data-calc]')
-  const calcD = q('[data-calc-d]')
+  const sheet = q('[data-sheet]')
+  const board = q('[data-board]')
+  const plan = q('[data-plan]')
   const stop = q('[data-stop]')
   const keysEl = q('[data-keys]')
   const ptr = q('[data-ptr]')
@@ -49,19 +50,159 @@ function start() {
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  // ---------------------------------------------------------------- the calculator's keys
-  const KEYS = [
-    ['%', 'CE', 'C', '⌫'],
-    ['¹⁄ₓ', 'x²', '√x', '÷'],
-    ['7', '8', '9', '×'],
-    ['4', '5', '6', '−'],
-    ['1', '2', '3', '+'],
-    ['±', '0', '.', '='],
+  // ---------------------------------------------------------------- the spreadsheet, for computer use
+  const ROWS = [
+    ['Region', 'Revenue', 'Target', 'vs target'],
+    ['EMEA', '412,300', '400,000', '103%'],
+    ['North America', '655,900', '700,000', '94%'],
+    ['LATAM', '128,400', '120,000', '107%'],
+    ['APAC', '301,750', '280,000', '108%'],
+    [],
+    ['Total'],
   ]
-  const grid = calc.querySelector('.calc__g')
-  grid.innerHTML = KEYS.flat()
-    .map((k, i) => `<span data-k="${k}" class="${i % 4 === 3 || i < 8 ? 'op' : ''}${k === '=' ? ' eq' : ''}">${k}</span>`)
-    .join('')
+  function buildSheet() {
+    let g = '<span class="rh"></span>' + 'ABCD'.split('').map((c) => `<span class="ch">${c}</span>`).join('')
+    for (let r = 0; r < 15; r++) {
+      const row = ROWS[r] || []
+      g += `<span class="rh">${r + 1}</span>`
+      for (let c = 0; c < 4; c++) {
+        const cls = [r === 0 && 'th', c > 0 && r > 0 && 'num', r === 6 && c === 0 && 'tot'].filter(Boolean).join(' ')
+        g += `<span data-c="${'ABCD'[c]}${r + 1}" class="${cls}">${row[c] ?? ''}</span>`
+      }
+    }
+    // the chart it inserts: revenue by region
+    const vals = [412, 656, 128, 302]
+    const bars = vals.map((v, i) => `<rect x="${22 + i * 44}" y="${104 - v / 7}" width="28" height="${v / 7}" rx="3" style="--d:${i * 90}ms"/>`).join('')
+    const names = ['EMEA', 'N. Am.', 'LATAM', 'APAC'].map((n, i) => `<text x="${36 + i * 44}" y="118">${n}</text>`).join('')
+    sheet.innerHTML =
+      `<div class="sheet__t"><b><span data-sheet-name>Q3 revenue.xlsx</span><i data-dirty></i></b><span>— ▢ ✕</span></div>` +
+      `<div class="sheet__tabs"><span class="is-on">Home</span><span>Insert</span><span>Data</span><span>View</span></div>` +
+      `<div class="sheet__tools"><span>Σ AutoSum</span><span data-tool="chart">▥ Chart</span><span><b>B</b></span><span>%</span><span>,00</span></div>` +
+      `<div class="sheet__fx"><span data-ref>A1</span><i>fx</i><span data-fx></span></div>` +
+      `<div class="sheet__g">${g}</div>` +
+      `<div class="sheet__chart" data-chart><b>Revenue by region</b><svg viewBox="0 0 200 124">${bars}${names}</svg></div>`
+  }
+
+  // ---------------------------------------------------------------- pieces on the canvas
+  // What an agent puts on the canvas: files (PDF, Markdown, CSV, video), views drawn
+  // from data (kanban, stats, a chart, a timeline), and the plan of the work on top.
+  function piece(cls, title, kind, body) {
+    const el = document.createElement('div')
+    el.className = `pc ${cls}`
+    el.innerHTML = `<div class="pc__h"><b>${title}</b><span>${kind}</span></div><div class="pc__b">${body}</div>`
+    board.appendChild(el)
+    return el
+  }
+  /** Place a piece at [x, y, w, h] in the canvas, let it land, then snap. */
+  async function arrive(el, [x, y, w, h]) {
+    Object.assign(el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` })
+    void el.offsetWidth
+    el.classList.add('is-on')
+    await wait(240)
+    el.classList.add('is-snap')
+    setTimeout(() => el.classList.remove('is-snap'), 520)
+  }
+  /** Move an element in the DOM and let it travel there, instead of jumping. */
+  function flip(el, mutate) {
+    const a = el.getBoundingClientRect()
+    mutate()
+    if (reduced) return
+    const b = el.getBoundingClientRect()
+    el.animate(
+      [{ transform: `translate(${(a.left - b.left) / scale}px, ${(a.top - b.top) / scale}px)` }, { transform: 'none' }],
+      { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    )
+  }
+
+  function startPlan(title, steps) {
+    plan.innerHTML =
+      `<div class="plan__h"><b>${title}</b><span data-plan-n>0/${steps.length}</span></div>` +
+      `<div class="plan__bar"><i data-plan-bar></i></div>` +
+      `<ol>${steps.map((s) => `<li data-s="pending"><i></i><span>${s}</span></li>`).join('')}</ol>`
+    plan.classList.add('is-on')
+  }
+  function planStep(i, state) {
+    const li = plan.querySelectorAll('li')
+    li[i].dataset.s = state
+    const done = plan.querySelectorAll('li[data-s="done"]').length
+    plan.querySelector('[data-plan-n]').textContent = `${done}/${li.length}`
+    plan.querySelector('[data-plan-bar]').style.width = `${(done / li.length) * 100}%`
+  }
+
+  const TICKETS = [
+    ['API-142', 'Rate-limit the login endpoint'],
+    ['API-145', 'Return 429 with Retry-After'],
+    ['WEB-88', 'Friendly message on 429'],
+    ['QA-31', 'Load test for login'],
+  ]
+  const kanbanBody = () =>
+    `<div class="kb">${['To do', 'Doing', 'Done']
+      .map(
+        (name, i) =>
+          `<div class="kb__c" data-col="${i}"><h6>${name}<i>${i ? 0 : TICKETS.length}</i></h6>${
+            i ? '' : TICKETS.map(([id, t]) => `<div class="kc" data-id="${id}"><b>${id}</b><small>${t}</small></div>`).join('')
+          }</div>`
+      )
+      .join('')}</div>`
+  function moveCard(kb, id, col) {
+    const card = kb.querySelector(`[data-id="${id}"]`)
+    flip(card, () => kb.querySelector(`[data-col="${col}"]`).appendChild(card))
+    kb.querySelectorAll('.kb__c').forEach((c) => (c.querySelector('h6 i').textContent = c.querySelectorAll('.kc').length))
+  }
+
+  const pdfBody = () =>
+    `<div class="pdf"><div class="pdf__bar"><span>‹ 3 / 12 ›</span><span>− 100% +</span></div><div class="pdf__page">` +
+    `<h4>Master Services Agreement</h4><p class="ln" style="width:94%"></p><p class="ln" style="width:88%"></p><p class="ln" style="width:72%"></p>` +
+    `<p class="cl" data-clause><b>7.2 Termination.</b> Either party may end this agreement with thirty (30) days’ written notice.</p>` +
+    `<p class="ln" style="width:90%"></p><p class="ln" style="width:84%"></p><p class="ln" style="width:60%"></p></div></div>`
+  const mdBody = () =>
+    `<div class="md"><h4>payments-api</h4><p>Card and invoice payments for the store.</p><h5>Run locally</h5>` +
+    `<pre>pnpm install\npnpm dev</pre><ul><li>Node 22 or later</li><li>Test keys in <code>.env.local</code></li></ul></div>`
+  const INVOICES = [
+    ['INV-2041', 'Northwind', '4,800', 'Nov 12'],
+    ['INV-2042', 'Contoso', '12,350', 'Nov 15'],
+    ['INV-2043', 'Fabrikam', '2,190', 'Nov 18'],
+    ['INV-2044', 'Tailspin', '7,600', 'Nov 20'],
+  ]
+  const csvBody = () =>
+    `<table class="csv"><thead><tr><th>Invoice</th><th>Client</th><th data-sort>Amount <i>↕</i></th><th>Due</th></tr></thead>` +
+    `<tbody>${INVOICES.map((r) => `<tr data-v="${r[2].replace(',', '')}">${r.map((v, i) => `<td${i === 2 ? ' class="num"' : ''}>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+  const videoBody = () =>
+    `<div class="vid"><div class="vid__frame"><div class="vid__ui"><i></i><i></i><i></i><b></b></div><span class="vid__play">▶</span></div>` +
+    `<div class="vid__ctl"><span>❚❚</span><span class="vid__bar"><i data-vbar></i></span><span data-vt>0:00 / 3:15</span></div></div>`
+
+  const statsBody = () =>
+    `<div class="st">${[
+      ['Uptime', '99.98%', ''],
+      ['p95 latency', '182 ms', '<em class="up">▼ 12%</em>'],
+      ['Error rate', '0.12%', '<em class="dn">▲ 0.05</em>'],
+      ['Deploys', '14', ''],
+    ]
+      .map(([l, v, d]) => `<div><small>${l}</small><b>${v}</b>${d}</div>`)
+      .join('')}</div>`
+  // 5xx per minute over a week, with Wednesday's spike
+  const chartBody = () => {
+    const ys = [12, 10, 13, 11, 12, 9, 11, 10, 12, 96, 14, 11, 10, 12, 9, 10, 11, 9, 10, 8, 9]
+    const pts = ys.map((y, i) => [10 + i * 24, 128 - y])
+    const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ')
+    const [sx, sy] = pts[9]
+    // The svg stretches to the piece; the dot and the day names are html, so they keep their shape.
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((n) => `<span>${n}</span>`).join('')
+    return (
+      `<div class="ch"><div class="ch__plot"><svg viewBox="0 0 500 132" preserveAspectRatio="none"><g class="ch__grid"><path d="M0 34H500M0 68H500M0 102H500"/></g>` +
+      `<path class="ch__area" d="${d} L${pts.at(-1)[0]} 132 L10 132Z"/><path class="ch__l" d="${d}"/></svg>` +
+      `<i data-spike style="left:${(sx / 500) * 100}%;top:${(sy / 132) * 100}%"></i></div><div class="ch__days">${days}</div></div>`
+    )
+  }
+  const timelineBody = () =>
+    `<ol class="tl">${[
+      ['Mon', 'v2.31 deployed'],
+      ['Wed 14:05', '503s on checkout, 4 min'],
+      ['Wed 14:09', '#418 restores the pool size'],
+      ['Fri', 'v2.32 deployed'],
+    ]
+      .map(([w, t]) => `<li><b>${w}</b><span>${t}</span></li>`)
+      .join('')}</ol>`
 
   // ---------------------------------------------------------------- fitting the stage
   let narrow = false
@@ -238,8 +379,11 @@ function start() {
     legend.classList.remove('is-on')
     full.classList.remove('is-on')
     zoom.style.transform = ''
-    calc.classList.remove('is-on')
-    calcD.innerHTML = '<small></small>0'
+    sheet.classList.remove('is-on')
+    buildSheet()
+    board.innerHTML = ''
+    plan.className = 'plan'
+    plan.innerHTML = ''
     stop.classList.remove('is-on')
     keysEl.innerHTML = ''
     ptr.classList.remove('is-on', 'is-ember')
@@ -280,11 +424,25 @@ function start() {
     obj.classList.add('is-on')
     say2.innerHTML = `<p>${AFTER}</p>`
   }
+  const busy = (on) => cards.firstElementChild.classList.toggle('is-busy', on)
+  /** Type a request, send it, and show it as the turn's prompt. */
+  async function ask_(text) {
+    await wait(400)
+    await typeInto(inpT, text)
+    await wait(300)
+    await keys('Enter')
+    inpT.textContent = ''
+    youT.textContent = text
+    you.classList.add('is-on')
+    busy(true)
+  }
+  /** Where the pieces of a chapter go, [x, y, w, h] in the canvas: a wide canvas, or a phone's. */
+  const at = (wide, phone) => (narrow ? phone : wide)
 
   // ---------------------------------------------------------------- the chapters
   const chapters = [
     {
-      ms: 11200,
+      ms: 10800,
       cap: 'Ask in plain words. The answer comes as something you can see.',
       async play() {
         await wait(500)
@@ -307,7 +465,7 @@ function start() {
       },
     },
     {
-      ms: 8000,
+      ms: 7700,
       cap: 'Resize it where it is, or drag it out and place it. The words make room.',
       async play() {
         asked()
@@ -380,6 +538,121 @@ function start() {
       },
     },
     {
+      ms: 13900,
+      cap: 'Hand it the sprint. The plan ticks itself off at the top, and the board moves with it.',
+      async play() {
+        await ask_('work through my sprint tickets, one at a time')
+        say.innerHTML = '<p class="think">Reading the sprint…</p>'
+        await wait(900)
+        say.innerHTML = ''
+        if (!narrow) {
+          cv.style.setProperty('--room', '470px')
+          cv.classList.add('is-room')
+        }
+        startPlan('Sprint 14 · your tickets', TICKETS.map(([id, t]) => `<b>${id}</b> ${t}`))
+        const kb = piece('pc--kanban', 'Sprint 14', 'kanban', kanbanBody())
+        await arrive(kb, at([430, 62, 430, 330], [20, 250, 504, 200]))
+        if (!narrow) await stream(say, 'Four tickets. Starting with API-142; the board follows as each one lands.')
+        for (let i = 0; i < TICKETS.length; i++) {
+          await wait(350)
+          planStep(i, 'active')
+          moveCard(kb, TICKETS[i][0], 1)
+          await wait(1100)
+          planStep(i, 'done')
+          moveCard(kb, TICKETS[i][0], 2)
+        }
+        busy(false)
+        await wait(2000)
+      },
+    },
+    {
+      ms: 12400,
+      cap: 'PDFs, Markdown, spreadsheets and video open right on the canvas, side by side, and stay live.',
+      async play() {
+        await ask_('show the contract, the README, the invoices and the demo video')
+        say.innerHTML = '<p class="think">Opening 4 files…</p>'
+        await wait(800)
+        const wide = [[24, 124, 412, 202], [450, 124, 412, 202], [24, 340, 412, 202], [450, 340, 412, 202]]
+        const phone = [[20, 124, 247, 158], [277, 124, 247, 158], [20, 292, 247, 158], [277, 292, 247, 158]]
+        const spots = narrow ? phone : wide
+        const pdf = piece('pc--pdf', 'Vendor agreement.pdf', 'PDF', pdfBody())
+        const md = piece('pc--md', 'README.md', 'Markdown', mdBody())
+        const csv = piece('pc--csv', 'invoices.csv', 'CSV', csvBody())
+        const vid = piece('pc--vid', 'checkout-demo.mp4', 'video', videoBody())
+        say.innerHTML = ''
+        for (const [i, el] of [pdf, md, csv, vid].entries()) {
+          await arrive(el, spots[i])
+          await wait(120)
+        }
+        // the video plays on its own while the rest happens
+        const vbar = vid.querySelector('[data-vbar]')
+        const vt = vid.querySelector('[data-vt]')
+        vid.querySelector('.vid').classList.add('is-playing')
+        tween(7000, (u) => {
+          vbar.style.width = `${u * 38}%`
+          const s = Math.round(u * 74)
+          vt.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / 3:15`
+        }, (t) => t).catch(() => {})
+        await stream(say, narrow ? 'Clause 7.2 is marked.' : 'Here they are. Clause 7.2 of the contract sets 30 days’ notice; I’ve marked it.')
+        pdf.querySelector('[data-clause]').classList.add('is-hl')
+        await wait(900)
+        // sort the invoices by amount
+        const th = csv.querySelector('[data-sort]')
+        P.x = narrow ? 300 : 700
+        P.y = narrow ? 420 : 520
+        placePtr()
+        await click(th)
+        th.querySelector('i').textContent = '▼'
+        const body = csv.querySelector('tbody')
+        const rows = [...body.children]
+        const sorted = [...rows].sort((a, b) => b.dataset.v - a.dataset.v)
+        const first = rows.map((r) => r.getBoundingClientRect())
+        sorted.forEach((r) => body.appendChild(r))
+        if (!reduced) rows.forEach((r, i) => {
+          const b = r.getBoundingClientRect()
+          r.animate([{ transform: `translateY(${(first[i].top - b.top) / scale}px)` }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' })
+        })
+        await wait(600)
+        ptr.classList.remove('is-on')
+        busy(false)
+        await wait(2400)
+      },
+    },
+    {
+      ms: 11000,
+      cap: 'Numbers come back as stats, charts and timelines, and it points at what matters.',
+      async play() {
+        await ask_('how is production doing this week?')
+        say.innerHTML = '<p class="think">Pulling the numbers…</p>'
+        await wait(900)
+        say.innerHTML = ''
+        const stats = piece('pc--stats', 'This week', 'stats', statsBody())
+        const chart = piece('pc--chart', '5xx per minute', 'chart', chartBody())
+        const tl = piece('pc--tl', 'What happened', 'timeline', timelineBody())
+        await stream(say, 'Healthy. One 4-minute spike of 503s on Wednesday, fixed by #418.')
+        await arrive(stats, at([24, 112, 838, 92], [20, 128, 504, 82]))
+        await wait(150)
+        await arrive(chart, at([24, 216, 520, 326], [20, 220, 504, 132]))
+        await wait(150)
+        await arrive(tl, at([556, 216, 306, 326], [20, 362, 504, 92]))
+        await wait(1000)
+        // point at the spike, the way an agent points at something on the canvas
+        const dot = chart.querySelector('[data-spike]')
+        ptr.classList.add('is-ember')
+        P.x = narrow ? 420 : 760
+        P.y = narrow ? 200 : 260
+        placePtr()
+        await glide(mid(dot))
+        dot.classList.add('is-hot')
+        tag.textContent = '503s for 4 min · fixed by #418'
+        await wait(2600)
+        tag.textContent = ''
+        ptr.classList.remove('is-on')
+        busy(false)
+        await wait(900)
+      },
+    },
+    {
       ms: 11800,
       cap: 'Keyboard first: Ctrl+↑ walks the objects, Enter opens one full screen, + zooms, Esc is always back.',
       async play() {
@@ -416,7 +689,7 @@ function start() {
       },
     },
     {
-      ms: 6900,
+      ms: 6600,
       cap: 'Canvas or the agent’s own screen: one switch, and it doesn’t move. Ember remembers your pick.',
       async play() {
         asked()
@@ -439,7 +712,7 @@ function start() {
       },
     },
     {
-      ms: 12900,
+      ms: 14200,
       cap: 'Sticky notes and a todo list that live outside your sessions. Every agent can read them and add to them.',
       async play() {
         asked()
@@ -449,7 +722,7 @@ function start() {
         await keys('Ctrl', 'Shift', 'N')
         sticky.classList.add('is-on')
         await wait(300)
-        await typeInto(stickyT, 'Ask Arben about refresh-token rotation', 40)
+        await typeInto(stickyT, 'Rotate the staging signing keys before Friday’s release', 40)
         await wait(900)
         await typeInto(inpT, 'add “rotate the signing keys” to my todos')
         await wait(300)
@@ -469,60 +742,78 @@ function start() {
       },
     },
     {
-      ms: 12300,
-      cap: 'Computer use: the agent reads the screen as text and acts with a pointer you can watch, and stop.',
+      ms: 14000,
+      cap: 'Computer use: it reads a window as numbered controls and works it with a pointer you can watch, and stop.',
       async play() {
-        await wait(400)
-        await typeInto(inpT, 'open Calculator and work out 12 × 7')
-        await wait(300)
-        await keys('Enter')
-        inpT.textContent = ''
-        youT.textContent = 'open Calculator and work out 12 × 7'
-        you.classList.add('is-on')
-        say.innerHTML = '<p class="think">Opening Calculator…</p>'
-        cards.firstElementChild.classList.add('is-busy')
-        await wait(700)
-        calc.style.right = narrow ? '28px' : '70px'
-        calc.classList.add('is-on')
+        const ask = 'in Q3 revenue.xlsx, add the total and a chart by region'
+        await ask_(ask)
+        say.innerHTML = '<p class="think">Opening Q3 revenue.xlsx…</p>'
+        await wait(600)
+        // the window opens beside the reply, and the words make room for it
+        if (!narrow) {
+          cv.style.setProperty('--room', '500px')
+          cv.classList.add('is-room')
+        }
+        sheet.classList.add('is-on')
         stop.classList.add('is-on')
-        await wait(400)
-        // look: the controls come back numbered, and one act runs the whole sequence
-        say.innerHTML = '<p class="think">Using Calculator…</p><p class="tool"><b>look</b> Calculator · 31 controls</p><p class="tool"><b>act</b> <span data-acts></span></p>'
-        const acts = say.querySelector('[data-acts]')
         await wait(500)
+        // look: the controls come back numbered, and one act runs the whole sequence
+        say.innerHTML = '<p class="think">Working in Q3 revenue.xlsx…</p><p class="tool"><b>look</b> Q3 revenue.xlsx · 64 controls</p><p class="tool"><b>act</b> <span data-acts></span></p>'
+        const acts = say.querySelector('[data-acts]')
+        const add = (s) => (acts.textContent += `${acts.textContent ? '; ' : ''}${s}`)
+        await wait(400)
         ptr.classList.add('is-ember')
-        P.x = narrow ? 200 : 640
+        P.x = narrow ? 160 : 600
         P.y = 300
         placePtr()
-        const k = (name) => grid.querySelector(`[data-k="${name}"]`)
-        const steps = [
-          ['1', 21, () => (calcD.innerHTML = '<small></small>1')],
-          ['2', 22, () => (calcD.innerHTML = '<small></small>12')],
-          ['×', 20, () => (calcD.innerHTML = '<small>12 ×</small>12')],
-          ['7', 13, () => (calcD.innerHTML = '<small>12 ×</small>7')],
-          ['=', 28, () => (calcD.innerHTML = '<small>12 × 7 =</small>84')],
-        ]
-        for (const [key, n, show] of steps) {
-          tag.textContent = `#${n}`
-          acts.textContent += `${acts.textContent ? '; ' : ''}#${n}`
-          await click(k(key))
-          show()
-          await wait(120)
+        const b7 = sheet.querySelector('[data-c="B7"]')
+        const ref = sheet.querySelector('[data-ref]')
+        const fx = sheet.querySelector('[data-fx]')
+        tag.textContent = '#41'
+        add('click #41')
+        await click(b7)
+        b7.classList.add('is-sel')
+        ref.textContent = 'B7'
+        tag.textContent = 'type'
+        add('type "=SUM(B2:B5)"')
+        for (const ch of '=SUM(B2:B5)') {
+          b7.textContent += ch
+          fx.textContent = b7.textContent
+          await wait(55)
         }
+        await wait(200)
+        tag.textContent = 'Enter'
+        add('key enter')
+        await wait(250)
+        b7.textContent = '1,498,350'
+        b7.classList.add('is-new')
+        sheet.querySelector('[data-dirty]').textContent = ' •'
+        await wait(400)
+        tag.textContent = '#12'
+        add('click #12')
+        await click(sheet.querySelector('[data-tool="chart"]'))
+        sheet.querySelector('[data-chart]').classList.add('is-on')
+        await wait(900)
+        tag.textContent = 'Ctrl+S'
+        add('key ctrl+s')
+        await wait(450)
+        sheet.querySelector('[data-dirty]').textContent = ''
         tag.textContent = ''
         await wait(400)
         stop.classList.remove('is-on')
         ptr.classList.remove('is-on')
+        // a phone's canvas is all window: it steps back so the answer can be read
+        if (narrow) sheet.classList.remove('is-on')
         say.querySelector('.think').remove()
         const done = document.createElement('div')
         say.appendChild(done)
-        await stream(done, '12 × 7 = 84. It’s on the Calculator’s display.')
-        cards.firstElementChild.classList.remove('is-busy')
+        await stream(done, 'The total is 1,498,350. The chart by region sits under the table, and the file is saved.')
+        busy(false)
         await wait(2400)
       },
     },
     {
-      ms: 10200,
+      ms: 9900,
       cap: 'Claude Code, Codex, Gemini and more. Pick one beside the +, and every new session starts with it.',
       async play() {
         asked()
@@ -562,7 +853,7 @@ function start() {
         if (small) small.textContent = 'Codex · 0%'
         ptr.classList.remove('is-on')
         await wait(500)
-        await typeInto(inpT, 'write the release notes for v1.3')
+        await typeInto(inpT, 'write the release notes for v2.4')
         await wait(2000)
       },
     },
