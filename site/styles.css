@@ -364,6 +364,8 @@ h1 em {
   flex: 1;
 }
 .ic {
+  display: block;
+  flex: none;
   width: 14px;
   height: 14px;
   opacity: 0.6;
@@ -672,6 +674,15 @@ h1 em {
 .pane.is-cli .cli {
   opacity: 1;
 }
+/* the agent's own screen has its own prompt and status line */
+.inp,
+.stat {
+  transition: opacity 260ms var(--ease);
+}
+.pane.is-cli .inp,
+.pane.is-cli .stat {
+  opacity: 0;
+}
 .cli pre {
   margin: 0;
   font: 400 14px/1.55 var(--mono);
@@ -703,6 +714,13 @@ h1 em {
 }
 .cv.is-room .cv__col {
   width: calc(100% - var(--room, 0px));
+}
+.cv.is-room .you {
+  padding-right: 0;
+}
+/* where a dragged-out object was: closes as the words come up */
+.gap {
+  transition: height 520ms var(--ease);
 }
 .you {
   display: flex;
@@ -739,6 +757,16 @@ h1 em {
 }
 .say .think::before {
   content: '✳ ';
+}
+.say .tool {
+  margin: 0 0 4px;
+  font: 400 13px/1.5 var(--mono);
+  color: var(--w-dim);
+}
+.say .tool b {
+  margin-right: 8px;
+  font-weight: 600;
+  color: var(--acc);
 }
 .say--after {
   font-size: 15.5px;
@@ -868,7 +896,7 @@ h1 em {
 /* a sticky note */
 .sticky {
   position: absolute;
-  top: 64px;
+  bottom: 18px;
   right: 22px;
   z-index: 3;
   width: 250px;
@@ -1119,7 +1147,10 @@ h1 em {
   transition: transform 700ms var(--ease);
 }
 .full__zoom svg {
-  width: 82%;
+  width: 68%;
+}
+.full__zoom .fe path {
+  stroke-dashoffset: 0;
 }
 .zbar {
   position: absolute;
@@ -1260,7 +1291,7 @@ h1 em {
 .keys {
   position: absolute;
   left: 50%;
-  bottom: 120px;
+  bottom: 190px;
   z-index: 30;
   display: flex;
   gap: 8px;
@@ -1372,6 +1403,30 @@ h1 em {
 }
 .demo.is-narrow .win {
   inset: 16px;
+}
+.demo.is-narrow .cv__col {
+  padding: 18px 20px 0 24px;
+}
+.demo.is-narrow .you {
+  padding-right: 150px;
+}
+.demo.is-narrow .calc {
+  top: 64px;
+}
+.demo.is-narrow .sticky {
+  bottom: 8px;
+  width: 210px;
+  padding: 10px 14px 10px;
+  font-size: 13px;
+}
+.demo.is-narrow .sticky span {
+  min-height: 0;
+}
+.demo.is-narrow .cv.is-room .you {
+  padding-right: 0;
+}
+.demo.is-narrow .obj:not(.is-placed) {
+  width: 420px;
 }
 
 /* the chapters */
@@ -1528,6 +1583,9 @@ section h2 span {
   stroke-width: 1.6;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+.feat--wide {
+  grid-column: 1 / -1;
 }
 @media (max-width: 900px) {
   .grid {

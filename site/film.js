@@ -69,8 +69,8 @@ function start() {
   function fit() {
     const w = root.clientWidth
     narrow = w < 720
-    const dw = narrow ? 760 : 1200
-    const dh = narrow ? 680 : 760
+    const dw = narrow ? 600 : 1200
+    const dh = narrow ? 640 : 760
     root.classList.toggle('is-narrow', narrow)
     root.style.setProperty('--ar', `${dw} / ${dh}`)
     desk.style.setProperty('--dw', `${dw}px`)
@@ -103,12 +103,16 @@ function start() {
       if (id !== run) throw new Stop()
       return
     }
+    // Counted on the clock, not in timer steps: each setTimeout overshoots a little,
+    // and over a chapter's few hundred waits that added seconds.
     let left = ms
+    let last = performance.now()
     while (left > 0) {
-      const step = Math.min(left, 40)
-      await sleep(step)
+      await sleep(Math.min(left, 40))
       if (id !== run) throw new Stop()
-      if (!paused) left -= step
+      const now = performance.now()
+      if (!paused) left -= now - last
+      last = now
     }
   }
   const frame = () => new Promise((r) => requestAnimationFrame(r))
@@ -235,7 +239,7 @@ function start() {
     full.classList.remove('is-on')
     zoom.style.transform = ''
     calc.classList.remove('is-on')
-    calcD.innerHTML = '0'
+    calcD.innerHTML = '<small></small>0'
     stop.classList.remove('is-on')
     keysEl.innerHTML = ''
     ptr.classList.remove('is-on', 'is-ember')
@@ -247,6 +251,7 @@ function start() {
     startEl.classList.remove('is-on')
     setAgent('claude')
     cards.querySelectorAll('.is-new').forEach((c) => c.remove())
+    col.querySelectorAll('.gap').forEach((g) => g.remove())
     cards.querySelectorAll('.card').forEach((c, i) => {
       c.classList.toggle('is-on', i === 0)
       c.classList.remove('is-busy')
@@ -258,7 +263,7 @@ function start() {
     chipName.textContent = codex ? 'Codex CLI' : 'Claude Code'
     chip.style.setProperty('--chip', codex ? '#9fb7c9' : '#e58a55')
     ph.textContent = codex ? 'Ask Codex… / for commands' : 'Ask Claude… / for commands'
-    model.textContent = codex ? 'GPT-6 Codex' : 'Opus 5.5 (1M context)'
+    model.textContent = codex ? 'Codex CLI' : 'Opus 5.5 (1M context)'
     pmenu.querySelectorAll('.pmenu__i[data-p]').forEach((i) => {
       const on = i.dataset.p === a
       i.classList.toggle('is-on', on)
@@ -279,7 +284,7 @@ function start() {
   // ---------------------------------------------------------------- the chapters
   const chapters = [
     {
-      ms: 9500,
+      ms: 11200,
       cap: 'Ask in plain words. The answer comes as something you can see.',
       async play() {
         await wait(500)
@@ -302,7 +307,7 @@ function start() {
       },
     },
     {
-      ms: 9000,
+      ms: 8000,
       cap: 'Resize it where it is, or drag it out and place it. The words make room.',
       async play() {
         asked()
@@ -320,7 +325,7 @@ function start() {
         obj.classList.add('is-rz')
         await wait(200)
         const w0 = obj.offsetWidth
-        const grow = narrow ? 60 : 110
+        const grow = narrow ? 50 : 110
         await tween(650, (u) => {
           obj.style.width = `${w0 + grow * u}px`
           P.x = corner.x + grow * u
@@ -337,14 +342,24 @@ function start() {
         const c = box(cv)
         const o = box(obj)
         const grab = { x: P.x - o.x, y: P.y - o.y }
+        // A gap holds the object's place in the reply, then closes as it leaves, and
+        // the column narrows at the same time: the words make room while it moves.
+        const gap = document.createElement('div')
+        gap.className = 'gap'
+        gap.style.height = `${obj.offsetHeight + 14}px`
+        col.insertBefore(gap, obj)
         obj.classList.add('is-placed')
         cv.appendChild(obj)
         obj.style.left = `${o.x - c.x}px`
         obj.style.top = `${o.y - c.y}px`
         obj.style.width = `${o.w}px`
-        const tw = narrow ? 330 : 430
+        const tw = narrow ? 270 : 430
         const tx = c.w - tw - 20
         const ty = 62
+        void gap.offsetHeight
+        gap.style.height = '0px'
+        cv.style.setProperty('--room', `${tw + 40}px`)
+        cv.classList.add('is-room')
         const sx = o.x - c.x
         const sy = o.y - c.y
         await tween(800, (u) => {
@@ -358,8 +373,6 @@ function start() {
           P.y = c.y + y + grab.y * (w / o.w)
           placePtr()
         })
-        cv.style.setProperty('--room', `${tw + 40}px`)
-        cv.classList.add('is-room')
         obj.classList.remove('is-hover')
         await wait(500)
         await glide({ x: P.x - 160, y: P.y + 260 })
@@ -367,7 +380,7 @@ function start() {
       },
     },
     {
-      ms: 9000,
+      ms: 11800,
       cap: 'Keyboard first: Ctrl+↑ walks the objects, Enter opens one full screen, + zooms, Esc is always back.',
       async play() {
         asked()
@@ -378,11 +391,11 @@ function start() {
         await wait(1500)
         await keys('Enter')
         zoom.innerHTML = obj.querySelector('svg').outerHTML
-        zoom.style.transformOrigin = '72% 42%'
+        zoom.style.transformOrigin = '50% 50%'
         zpct.textContent = '100%'
         full.classList.add('is-on')
         await wait(1100)
-        for (const z of [1.25, 1.56, 1.95]) {
+        for (const z of [1.15, 1.3, 1.45]) {
           await keys('+')
           zoom.style.transform = `scale(${z})`
           zpct.textContent = `${Math.round(z * 100)}%`
@@ -403,7 +416,7 @@ function start() {
       },
     },
     {
-      ms: 7000,
+      ms: 6900,
       cap: 'Canvas or the agent’s own screen: one switch, and it doesn’t move. Ember remembers your pick.',
       async play() {
         asked()
@@ -426,10 +439,12 @@ function start() {
       },
     },
     {
-      ms: 10000,
+      ms: 12900,
       cap: 'Sticky notes and a todo list that live outside your sessions. Every agent can read them and add to them.',
       async play() {
         asked()
+        // a phone's canvas is short: the last line would sit under the note
+        if (narrow) say2.innerHTML = ''
         await wait(600)
         await keys('Ctrl', 'Shift', 'N')
         sticky.classList.add('is-on')
@@ -454,7 +469,7 @@ function start() {
       },
     },
     {
-      ms: 11000,
+      ms: 12300,
       cap: 'Computer use: the agent reads the screen as text and acts with a pointer you can watch, and stop.',
       async play() {
         await wait(400)
@@ -467,39 +482,47 @@ function start() {
         say.innerHTML = '<p class="think">Opening Calculator…</p>'
         cards.firstElementChild.classList.add('is-busy')
         await wait(700)
-        calc.style.right = narrow ? '40px' : '70px'
+        calc.style.right = narrow ? '28px' : '70px'
         calc.classList.add('is-on')
         stop.classList.add('is-on')
+        await wait(400)
+        // look: the controls come back numbered, and one act runs the whole sequence
+        say.innerHTML = '<p class="think">Using Calculator…</p><p class="tool"><b>look</b> Calculator · 31 controls</p><p class="tool"><b>act</b> <span data-acts></span></p>'
+        const acts = say.querySelector('[data-acts]')
         await wait(500)
         ptr.classList.add('is-ember')
-        P.x = narrow ? 300 : 640
+        P.x = narrow ? 200 : 640
         P.y = 300
         placePtr()
         const k = (name) => grid.querySelector(`[data-k="${name}"]`)
         const steps = [
-          ['1', 'One', () => (calcD.innerHTML = '1')],
-          ['2', 'Two', () => (calcD.innerHTML = '12')],
-          ['×', 'Multiply by', () => (calcD.innerHTML = '<small>12 ×</small>12')],
-          ['7', 'Seven', () => (calcD.innerHTML = '<small>12 ×</small>7')],
-          ['=', 'Equals', () => (calcD.innerHTML = '<small>12 × 7 =</small>84')],
+          ['1', 21, () => (calcD.innerHTML = '<small></small>1')],
+          ['2', 22, () => (calcD.innerHTML = '<small></small>12')],
+          ['×', 20, () => (calcD.innerHTML = '<small>12 ×</small>12')],
+          ['7', 13, () => (calcD.innerHTML = '<small>12 ×</small>7')],
+          ['=', 28, () => (calcD.innerHTML = '<small>12 × 7 =</small>84')],
         ]
-        for (const [key, name, show] of steps) {
-          tag.textContent = `Ember · press ${name}`
+        for (const [key, n, show] of steps) {
+          tag.textContent = `#${n}`
+          acts.textContent += `${acts.textContent ? '; ' : ''}#${n}`
           await click(k(key))
           show()
-          await wait(160)
+          await wait(120)
         }
         tag.textContent = ''
         await wait(400)
         stop.classList.remove('is-on')
         ptr.classList.remove('is-on')
-        await stream(say, '12 × 7 = 84. It’s on the Calculator’s display.')
+        say.querySelector('.think').remove()
+        const done = document.createElement('div')
+        say.appendChild(done)
+        await stream(done, '12 × 7 = 84. It’s on the Calculator’s display.')
         cards.firstElementChild.classList.remove('is-busy')
         await wait(2400)
       },
     },
     {
-      ms: 9000,
+      ms: 10200,
       cap: 'Claude Code, Codex, Gemini and more. Pick one beside the +, and every new session starts with it.',
       async play() {
         asked()
@@ -530,11 +553,13 @@ function start() {
         }
         startT.textContent = 'Starting Codex CLI…'
         startEl.classList.add('is-on')
-        await wait(1300)
+        await wait(900)
         reset_canvas()
+        // the old reply fades out behind the overlay before it lifts
+        await wait(450)
         startEl.classList.remove('is-on')
         const small = cards.querySelector('.is-new small')
-        if (small) small.textContent = 'GPT-6 Codex · 0%'
+        if (small) small.textContent = 'Codex · 0%'
         ptr.classList.remove('is-on')
         await wait(500)
         await typeInto(inpT, 'write the release notes for v1.3')
@@ -553,6 +578,7 @@ function start() {
   // ---------------------------------------------------------------- playing them
   let current = 0
   let chapterAt = 0
+  const took = []
   let visible = false
   let playing = false
 
@@ -580,6 +606,8 @@ function start() {
         throw e
       }
       if (id !== run) return
+      // Typing and frame timing vary a little, so the bar learns each chapter's real length.
+      took[i] = performance.now() - chapterAt
       if (reduced) return
       i = (i + 1) % chapters.length
     }
@@ -595,7 +623,7 @@ function start() {
         chapterAt += performance.now() - pausedAt
         pausedAt = 0
       }
-      const t = Math.min(1, ((pausedAt || performance.now()) - chapterAt) / chapters[current].ms)
+      const t = Math.min(0.99, ((pausedAt || performance.now()) - chapterAt) / (took[current] || chapters[current].ms))
       b.style.width = `${(t * 100).toFixed(1)}%`
     }
     requestAnimationFrame(progress)
