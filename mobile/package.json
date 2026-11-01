@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Ember on the phone — a front end onto the orchestrator running on the desk",
+  "description": "Ember on the phone — a front end onto the sessions running on your computer",
   "scripts": {
     "sync": "node sync.mjs && cap sync android",
     "apk": "node sync.mjs && cap sync android && cd android && gradlew.bat assembleRelease"
