@@ -2096,6 +2096,19 @@ export class App {
     return [
       ...this.contextRows(),
       { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'canvas'], run: (a) => void this.newAgentSession(a.join(' ') || undefined) },
+      {
+        id: 'computer-use',
+        group: 'Session',
+        title: 'Computer use: on / off',
+        cli: 'computer-use',
+        aliases: ['hands', 'desktop'],
+        run: () =>
+          void window.ember.getConfig().then((c) => {
+            const off = c.hands !== 'off'
+            void window.ember.saveConfig({ ...c, hands: off ? 'off' : 'act' })
+            this.flashToast(off ? 'Computer use off: agents cannot point, click or type on your desktop' : 'Computer use on: STOP is always on screen while an agent acts')
+          }),
+      },
       { id: 'terminal', group: 'Session', title: 'New terminal', cli: 'terminal [dir]', aliases: ['shell'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
       {
         id: 'project',

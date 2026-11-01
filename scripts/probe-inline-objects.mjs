@@ -97,7 +97,7 @@ const pull = async (d, dx, dy) => {
 }
 console.log('  se rect:', await ev(`(() => { const L = document.querySelector('.loom-turn.is-shown .loom-liftable'); const h = L.querySelector(':scope > .loom-rz[data-rz="se"]'); const r = h.getBoundingClientRect(); const cs = getComputedStyle(h); return JSON.stringify([r.left, r.top, r.width, r.height, cs.pointerEvents, cs.zIndex, cs.display, getComputedStyle(L).overflow, L.className, L.parentElement.className, getComputedStyle(L.parentElement).overflow]) })()`))
 console.log('  handles:', await ev(`document.querySelectorAll('.loom-turn.is-shown .loom-liftable > .loom-rz').length`), ' start:', JSON.stringify(await box()))
-await pull('se', 120, 160)
+await pull('se', 400, 160)
 await pull('w', 100, 0)
 await pull('n', 0, 60)
 await pull('e', -80, 0)

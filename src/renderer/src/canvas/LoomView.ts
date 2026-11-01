@@ -309,19 +309,7 @@ export class LoomView {
         if (this.drawer.classList.contains('is-on') && !this.drawer.contains(document.activeElement)) void this.renderDrawer()
       })
     )
-    void window.ember.getConfig().then((c) => {
-      this.hands = c.hands ?? 'show'
-      this.renderSign()
-    })
-    this.unsubs.push(
-      window.ember.onConfigChange((c) => {
-        const h = c.hands ?? 'show'
-        if (h !== this.hands) {
-          this.hands = h
-          this.renderSign()
-        }
-      })
-    )
+    this.renderSign()
     void window.ember.canvas.watch(tabId)
   }
 
@@ -346,8 +334,7 @@ export class LoomView {
     }
     this.sign.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('button[data-s]')
-      if (b?.dataset['s'] === 'hands') this.cycleHands()
-      else if (b?.dataset['s'] === 'notes') {
+      if (b?.dataset['s'] === 'notes') {
         if (this.hooks.openPlace) this.hooks.openPlace('todo')
         else this.toggleDrawer()
       }
@@ -513,7 +500,6 @@ export class LoomView {
     this.jump.addEventListener('click', () => this.toBottom(true))
     this.rawPill.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-view="canvas"]')) this.setRaw(false)
-      else if ((e.target as HTMLElement).closest('[data-s="hands"]')) this.cycleHands()
     })
 
     this.el.addEventListener('click', (e) => this.click(e))
@@ -1343,14 +1329,6 @@ export class LoomView {
     // The actions, as a grid of tiles under the question box.
     const tiles: Array<[string, string, string, () => void]> = []
     if ((quote ?? '').trim()) tiles.unshift(['copy', ICON.note, 'Copy', () => void navigator.clipboard.writeText(quote ?? '').then(() => this.hooks.toast('Copied'))])
-    if (this.hands !== 'off')
-      tiles.push(['showme', ICON.hand, 'Show me on screen', () => {
-        // On the canvas already: point at it where it is, never draw it again.
-        if (obj.title)
-          this.hooks.send(`Walk me through ${about} with Ember's pointer: it is already on my canvas as "${obj.title}" — use point with object "${obj.title}" and the text of each part, step by step. Do not draw it again.`, true)
-        else
-          this.hooks.send(`Show me on my screen, with Ember Hands (look, then point), ${about}${quote ? ` — “${quote.replace(/\s+/g, ' ').slice(0, 300)}”` : ''}: where is it, or how do I get to it?`, true)
-      }])
     if (obj.piece) tiles.push(['full', ICON.expand, 'Full screen', () => this.fullscreen(obj.piece!, true)])
     if (canPlace)
       tiles.push(['place', ICON.pin, 'Place', () => {
@@ -2047,20 +2025,6 @@ export class LoomView {
     return r.height ? Math.round(r.bottom - host.top + 8) : 48
   }
 
-  /** Ember Hands, as set: off, show me (point, never click), or show & act. */
-  private hands: 'off' | 'show' | 'act' = 'show'
-
-  /** Off → Show me → Show & act → Off. Saved to the config, so the bridge enforces it. */
-  private cycleHands(): void {
-    const next = this.hands === 'off' ? 'show' : this.hands === 'show' ? 'act' : 'off'
-    void window.ember.getConfig().then((c) => {
-      window.ember.saveConfig({ ...c, hands: next })
-      this.hands = next
-      this.renderSign()
-      this.hooks.toast(next === 'off' ? 'Ember Hands off' : next === 'act' ? 'Ember Hands: show & act — STOP is always on screen' : 'Ember Hands: show me — points, never clicks')
-    })
-  }
-
   /** The film strip of turns down the left takes this much; nothing is placed over it. */
   private railWidth(): number {
     return this.rail.classList.contains('is-on') ? 38 : 0
@@ -2202,11 +2166,15 @@ export class LoomView {
 
   /**
    * The placed object's resize, inside the reply: the edge you pull follows the pointer.
-   * The right and bottom edges grow freely; the left and top ones move within the space
+   * The right edge grows out to the canvas's edge, the bottom one freely; the left and top ones move within the space
    * the object already has (it cannot leave its column or climb over the words above).
    */
   private sizeInPlace(box: HTMLElement, tall: HTMLElement, dir: string, e: PointerEvent): void {
-    const col = box.parentElement?.clientWidth || this.scroller.clientWidth || 800
+    // Wider than the words if you want: out to the canvas's right edge.
+    const col = Math.max(
+      box.parentElement?.clientWidth || 0,
+      this.scroller.getBoundingClientRect().right - box.getBoundingClientRect().left - 24
+    )
     const w0 = box.offsetWidth
     const h0 = tall.offsetHeight
     const ml0 = parseFloat(box.style.marginLeft) || 0
@@ -3836,10 +3804,8 @@ export class LoomView {
     const n = this.pinned.size
     this.renderRail()
     void n
-    const hands = `<button type="button" data-s="hands" class="loom-sign-hands is-${this.hands}" title="Ember Hands — ${this.hands === 'off' ? 'off' : this.hands === 'act' ? 'may point, click and type' : 'may point and explain, never click'}. Click to change.">${ICON.hand}<span>${this.hands === 'off' ? 'Off' : this.hands === 'act' ? 'Show & act' : 'Show me'}</span></button>` +
-      ''
-    this.sign.innerHTML = hands + viewSwitch(false)
-    this.rawPill.innerHTML = hands + viewSwitch(true)
+    this.sign.innerHTML = viewSwitch(false)
+    this.rawPill.innerHTML = viewSwitch(true)
   }
 
   /**

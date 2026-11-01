@@ -821,8 +821,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
               })
               return send(res, 200, JSON.stringify(r))
             }
-            const mode = loadConfig().hands ?? 'show'
-            if (mode === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Ember Hands is off. The user can turn it on from the hand control at the top of the canvas.' }))
+            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
             const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
             const r = await deskPoint({
               window: body['window'] ? String(body['window']) : undefined,
@@ -837,14 +836,12 @@ function route(req: IncomingMessage, res: ServerResponse): void {
             return send(res, 200, JSON.stringify(r))
           }
           case 'act': {
-            const mode = loadConfig().hands ?? 'show'
-            if (mode !== 'act')
-              return send(res, 200, JSON.stringify({ ok: false, error: `Ember Hands is set to "${mode === 'off' ? 'Off' : 'Show me'}": it may ${mode === 'off' ? 'not use the desktop' : 'point but not click or type'}. Ask the user to switch it to "Show & act" (the hand control at the top of the canvas), or point instead.` }))
+            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
             const r = await deskAct(String(body['script'] ?? ''))
             return send(res, 200, JSON.stringify(r))
           }
           case 'look': {
-            if ((loadConfig().hands ?? 'show') === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Ember Hands is off.' }))
+            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
             const r = await deskLook(body['window'] ? String(body['window']) : undefined, typeof body['depth'] === 'number' ? body['depth'] : 4)
             return send(res, 200, JSON.stringify(r))
           }

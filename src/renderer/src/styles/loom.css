@@ -5541,3 +5541,8 @@ body.is-light .loom-zoom {
   width: 16px;
   height: 16px;
 }
+/* Sized by hand, an object in a reply may be wider than the words beside it. */
+.loom-liftable.is-sized,
+.loom-piece.is-sized:not(.is-pinned) {
+  max-width: none !important;
+}
