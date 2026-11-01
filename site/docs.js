@@ -1,5 +1,6 @@
 // Ember docs: the table of contents. Collapses behind a button on narrow screens and
 // marks the section being read. No dependencies; without JS the list simply stays open.
+document.documentElement.classList.add('js')
 ;(function toc() {
   const nav = document.querySelector('[data-toc]')
   if (!nav) return

@@ -1,563 +1,626 @@
-// The hero film: one Ember window, a chapter per feature.
-//
-// One Ember window (the .win markup in index.html) plays a sequence of scenes. Every
-// frame is a pure function of (scene, seconds into it), so jumping to a beat, looping,
-// pausing and the reduced-motion stills all fall out of the same code:
-//
-//   data-at="s"        element gets .on from s seconds (hidden before, unless .flip)
-//   data-until="s"     element gets .gone from s seconds
-//   data-type="a,b"    its text types itself in between a and b
-//   data-seq="s|text;s|text"   its text is swapped at those times
-//   data-pulse="a,b;c,d"       a dash of light travels along the path in each window
-//   data-cls="c:a,b;c:a,b"     class c is on inside each window
-//   data-clock="s"     its text is an elapsed time: s seconds, counting from data-at (or 0)
-//   {house} in a data-seq text becomes the house theme of the App theme switch
-//
-// Everything that can't live in markup (session cards, the places row and its badges,
-// the cursor, the camera, themes) is in SCENES below: `place` is the sidebar place on
-// stage, `todo` the Todo badge over time. The Overview badge counts itself, the way the
-// app counts it: sessions waiting on you, other than the one you are in. Motion is transform/opacity only; the loop stops off-screen and
-// in hidden tabs. Cinder, the session mascot, is the app's own sprite code, bundled
-// from src/renderer/src/ui/Mascot.ts into assets/cinder.js.
+// The demo in the hero: Ember's window, rebuilt in HTML, playing one chapter per feature.
+// Everything is drawn here; nothing is a video. Chapters run in order and loop while the
+// demo is on screen; a click on a chapter jumps to it. Reduced motion shows each chapter's
+// end state, still.
 
-import { drawMascot } from './assets/cinder.js'
+const root = document.querySelector('[data-demo]')
+if (root) start()
 
-const W = 1200
-const H = 720
-const reduce = matchMedia('(prefers-reduced-motion: reduce)')
+function start() {
+  const q = (s) => root.querySelector(s)
+  const desk = q('.desk')
+  const win = q('[data-win]')
+  const pane = q('[data-pane]')
+  const cv = q('[data-cv]')
+  const col = q('[data-col]')
+  const you = q('[data-you]')
+  const youT = q('[data-you-t]')
+  const say = q('[data-say]')
+  const say2 = q('[data-say2]')
+  const obj = q('[data-obj]')
+  const rz = q('[data-rz]')
+  const inp = q('[data-inp]')
+  const inpT = q('[data-inp-t]')
+  const ph = q('[data-ph]')
+  const sticky = q('[data-sticky]')
+  const stickyT = q('[data-sticky-t]')
+  const legend = q('[data-legend]')
+  const full = q('[data-full]')
+  const zoom = q('[data-zoom]')
+  const zpct = q('[data-zpct]')
+  const calc = q('[data-calc]')
+  const calcD = q('[data-calc-d]')
+  const stop = q('[data-stop]')
+  const keysEl = q('[data-keys]')
+  const ptr = q('[data-ptr]')
+  const tag = q('[data-tag]')
+  const chip = q('[data-chip]')
+  const chipName = q('[data-chip-name]')
+  const pmenu = q('[data-pmenu]')
+  const plus = q('[data-plus]')
+  const cards = q('[data-cards]')
+  const todoN = q('[data-todo-n]')
+  const model = q('[data-model]')
+  const startEl = q('[data-start]')
+  const startT = q('[data-start-t]')
+  const cap = document.querySelector('[data-cap]')
+  const chapterBtns = [...document.querySelectorAll('[data-ch]')]
+  const pauseBtn = document.querySelector('[data-pause]')
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
-const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
-const lerp = (a, b, p) => a + (b - a) * p
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-// Card moods: [time, state, attention, label, baseSeconds]. A label's {t} counts up.
-const idle = (label = 'idle') => [[0, 'idle', null, label]]
-const SCENES = {
-  panel: {
-    dur: 8.8, still: 7.7, sel: 'api',
-    cam: [[0, 520, 330, 1.75], [2.7, 520, 330, 1.75], [3.5, 940, 380, 1.75], [5.75, 940, 420, 1.75], [6.35, 520, 380, 1.75]],
-    cursor: [[4.95, [700, 600]], [5.6, '[data-cursor=tests]', 'click'], [6.2, '[data-cursor=tests]'], [6.5, [860, 640]]],
-    cards: {
-      api: [[0, 'working', null, 'working · {t}', 64], [7.4, 'attention', 'handoff', 'your turn']],
-      docs: idle(),
-      web: [[0, 'attention', 'question', 'waiting on you']],
-      scratch: idle(),
-    },
-  },
-  // The overview as a place of its own: no session is selected. web waits on a permission
-  // prompt; a log line lands, the cursor answers "1 Yes" on the card, the card relaxes
-  // into a working one and the Overview badge in the sidebar empties.
-  overview: {
-    dur: 8.6, still: 2.2, sel: null, place: 'overview',
-    cam: [[0, 600, 386, 1.45], [3.5, 600, 386, 1.45], [4.2, 330, 300, 1.45], [5.4, 330, 300, 1.45], [6.2, 1010, 440, 1.5], [7.6, 1010, 440, 1.5], [8.3, 600, 386, 1.45]],
-    cursor: [[1.5, [760, 330]], [2.5, '[data-cursor=yes]'], [2.9, '[data-cursor=yes]', 'click'], [3.4, [700, 470]]],
-    cards: {
-      api: [[0, 'working', null, 'working · {t}', 64]],
-      docs: idle(),
-      web: [[0, 'attention', 'question', 'waiting on you'], [3.3, 'working', null, 'working · {t}', 0]],
-      scratch: idle(),
-    },
-  },
-  todo: {
-    dur: 7.2, still: 6.0, sel: null, place: 'todo',
-    todo: [[0, 3], [1.6, 4], [2.05, 5], [2.5, 6], [2.95, 7], [4.0, 6], [4.4, 5], [4.8, 4]],
-    cam: [[0, 720, 330, 1.7]],
-    cursor: [[3.4, [760, 360]], [4.0, '[data-cursor=check]', 'click'], [4.5, [860, 330]]],
-    cards: {
-      api: idle(),
-      docs: [[0, 'working', null, 'working · {t}', 142]],
-      web: idle(),
-      scratch: idle(),
-    },
-  },
-  // The api session writes its fix up as a note. The page opens over its own tab, the
-  // appends land on it live, the list follows, and Esc gives the shell back.
-  notes: {
-    dur: 8.8, still: 5.0, sel: 'api',
-    cam: [[0, 560, 300, 1.6], [1.7, 560, 300, 1.6], [2.3, 720, 350, 1.6], [7.3, 720, 350, 1.6], [7.9, 560, 300, 1.6]],
-    cursor: [[4.95, [620, 300]], [5.65, '[data-cursor=allnotes]', 'click'], [6.2, [640, 330]]],
-    cards: {
-      api: [[0, 'idle', null, 'idle'], [1.35, 'working', null, 'working · {t}', 0], [2.6, 'working', null, 'writing a note'], [5.1, 'attention', 'handoff', 'done']],
-      docs: [[0, 'attention', 'handoff', 'done']],
-      web: idle(),
-      scratch: idle(),
-    },
-  },
-  cli: {
-    dur: 6.4, still: 4.6, sel: 'scratch',
-    cam: [[0, 720, 380, 1.5]],
-    cursor: [[0.4, [900, 600]], [1.15, '[data-cursor=install]', 'click'], [2.6, [880, 470]], [3.2, '[data-cursor=codex]', 'click'], [3.8, [860, 560]]],
-    cards: { api: idle(), docs: idle(), web: idle(), scratch: [[0, 'idle', null, 'new session'], [3.4, 'working', null, 'starting codex']] },
-  },
-  splits: {
-    dur: 7.4, still: 6.0, sel: 'api',
-    cam: [[0, 720, 380, 1.3]],
-    theme: [[0, ''], [3.4, 'tokyo'], [4.2, 'cat'], [5.0, 'gruv'], [5.8, 'nord'], [6.6, '']],
-    cards: { api: [[0, 'working', null, 'npm run dev']], docs: idle(), web: idle(), scratch: idle() },
-  },
-  palette: {
-    dur: 7.2, still: 6.2, sel: 'api',
-    cam: [[0, 720, 330, 1.4]],
-    theme: [[0, ''], [2.1, 'tokyo'], [6.0, 'nord']],
-    cards: { api: [[0, 'working', null, 'npm run dev']], docs: idle(), web: idle(), scratch: idle() },
-  },
-}
+  // ---------------------------------------------------------------- the calculator's keys
+  const KEYS = [
+    ['%', 'CE', 'C', '⌫'],
+    ['¹⁄ₓ', 'x²', '√x', '÷'],
+    ['7', '8', '9', '×'],
+    ['4', '5', '6', '−'],
+    ['1', '2', '3', '+'],
+    ['±', '0', '.', '='],
+  ]
+  const grid = calc.querySelector('.calc__g')
+  grid.innerHTML = KEYS.flat()
+    .map((k, i) => `<span data-k="${k}" class="${i % 4 === 3 || i < 8 ? 'op' : ''}${k === '=' ? ' eq' : ''}">${k}</span>`)
+    .join('')
 
-const SEEDS = { api: 0.3, docs: 1.7, web: 2.9, scratch: 4.1 }
-
-function fmt(s) {
-  s = Math.max(0, Math.floor(s))
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`
-}
-
-/** Position of el inside root, ignoring transforms (so it is right mid-animation). */
-function offsetIn(el, root) {
-  let x = 0, y = 0, n = el
-  while (n && n !== root) {
-    x += n.offsetLeft
-    y += n.offsetTop
-    n = n.offsetParent
+  // ---------------------------------------------------------------- fitting the stage
+  let narrow = false
+  let scale = 1
+  function fit() {
+    const w = root.clientWidth
+    narrow = w < 720
+    const dw = narrow ? 760 : 1200
+    const dh = narrow ? 680 : 760
+    root.classList.toggle('is-narrow', narrow)
+    root.style.setProperty('--ar', `${dw} / ${dh}`)
+    desk.style.setProperty('--dw', `${dw}px`)
+    desk.style.setProperty('--dh', `${dh}px`)
+    scale = w / dw
+    desk.style.setProperty('--s', String(scale))
   }
-  return { x, y, w: el.offsetWidth, h: el.offsetHeight }
-}
+  fit()
+  new ResizeObserver(fit).observe(root)
 
-function parseTimes(s) {
-  return s.split(';').filter(Boolean).map((p) => p.split(',').map(Number))
-}
-
-class Film {
-  constructor(root, { order, mode = 'hero', onScene } = {}) {
-    this.root = root
-    this.view = root.querySelector('.film__view')
-    this.win = root.querySelector('.win')
-    this.cursor = root.querySelector('.cursor')
-    this.order = order
-    this.mode = mode
-    this.onScene = onScene
-    this.static = reduce.matches
-    this.idx = 0
-    this.t = 0
-    this.clock = 0
-    this.visible = false
-    this.hover = false
-    this.userPaused = false
-    this.raf = 0
-    this.last = 0
-    this.cam = { cx: W / 2, cy: H / 2, z: 1 }
-    this.fromCam = null
-    this.theme = ''
-
-    root.classList.add('is-js')
-    this.bars = {}
-    for (const b of root.querySelectorAll('[data-go]')) this.bars[b.dataset.go] = b.querySelector('.beat__bar b')
-    this.cards = [...root.querySelectorAll('.scard')].map((el) => ({
-      el,
-      name: el.dataset.card,
-      ctx: el.querySelector('canvas').getContext('2d'),
-      label: el.querySelector('small'),
-      mood: { state: 'idle', attention: null },
-      text: '',
-    }))
-
-    // The places row at the top of the sidebar: which one is on stage, and two badges.
-    this.places = [...root.querySelectorAll('.place[data-place]')].map((el) => ({ el, name: el.dataset.place, badge: el.querySelector('.place__badge'), n: null, on: null }))
-    // Timed elements, grouped by the scene that owns them.
-    this.parts = {}
-    this.items = {}
-    for (const part of root.querySelectorAll('[data-scene]')) {
-      const name = part.dataset.scene
-      ;(this.parts[name] ||= []).push(part)
-      const list = (this.items[name] ||= [])
-      const els = [...part.querySelectorAll('[data-at],[data-until],[data-type],[data-seq],[data-pulse],[data-cls],[data-clock]')]
-      if (part.matches('[data-at],[data-until],[data-cls]')) els.unshift(part)
-      for (const el of els) {
-        const it = { el }
-        if (el.dataset.at != null) it.at = +el.dataset.at
-        if (el.dataset.until != null) it.until = +el.dataset.until
-        if (el.dataset.cls) {
-          // "class:from,to;class:from,to" — the class is on inside any of its windows
-          it.cls = el.dataset.cls.split(';').filter(Boolean).map((p) => {
-            const [c, r] = p.split(':')
-            const [a, b] = r.split(',').map(Number)
-            return [c, a, b ?? Infinity]
-          })
-          it.names = [...new Set(it.cls.map((c) => c[0]))]
-        }
-        if (el.dataset.type) {
-          it.type = el.dataset.type.split(',').map(Number)
-          it.full = el.textContent
-          it.n = -1
-        }
-        if (el.dataset.seq != null) {
-          it.seq = el.dataset.seq.split(';').map((p) => {
-            const i = p.indexOf('|')
-            return [+p.slice(0, i), p.slice(i + 1)]
-          })
-          it.cur = null
-        }
-        if (el.dataset.pulse) it.pulse = parseTimes(el.dataset.pulse)
-        if (el.dataset.clock != null) { it.clock = +el.dataset.clock; it.cur = null }
-        list.push(it)
-      }
-    }
-
-    const ro = new ResizeObserver(() => { this.layout(); this.frame() })
-    ro.observe(this.view)
-    const io = new IntersectionObserver((es) => {
-      this.visible = es[es.length - 1].isIntersecting
-      this.kick()
-    }, { threshold: 0.05 })
-    io.observe(root)
-    document.addEventListener('visibilitychange', () => this.kick())
-    this.view.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { this.hover = true } })
-    this.view.addEventListener('pointerleave', () => { this.hover = false })
-    reduce.addEventListener?.('change', () => { this.static = reduce.matches; this.go(this.order[this.idx]) })
-    // The App theme switch can flip Night/Day while the film is paused or a still; words
-    // that name the house theme follow at once.
-    new MutationObserver(() => this.frame()).observe(this.win, { attributes: true, attributeFilter: ['data-mode'] })
-
-    this.layout()
-    this.activate(this.order[0], true)
-    ;(document.fonts?.ready || Promise.resolve()).then(() => this.frame())
+  /** Where an element is, in the stage's own pixels. */
+  function box(el) {
+    const d = desk.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    return { x: (r.left - d.left) / scale, y: (r.top - d.top) / scale, w: r.width / scale, h: r.height / scale }
+  }
+  const mid = (el) => {
+    const b = box(el)
+    return { x: b.x + b.w / 2, y: b.y + b.h / 2 }
   }
 
-  // ---- sizing -----------------------------------------------------------------
-  layout() {
-    this.small = this.view.clientWidth < 640
-    this.root.classList.toggle('is-small', this.small)
-    this.vw = this.view.clientWidth
-    this.vh = this.view.clientHeight
-  }
-
-  // ---- playback -----------------------------------------------------------------
-  get scene() { return SCENES[this.order[this.idx]] }
-
-  running() {
-    return !this.static && !this.userPaused && this.visible && !document.hidden
-  }
-
-  kick() {
-    if (this.running() && !this.raf) {
-      this.last = performance.now()
-      this.raf = requestAnimationFrame((n) => this.tick(n))
-    }
-  }
-
-  tick(now) {
-    this.raf = 0
-    if (!this.running()) return
-    const dt = Math.min(0.05, (now - this.last) / 1000)
-    this.last = now
-    this.clock += dt
-    if (!this.hover) {
-      // The hero plays slower than the demos: it is watched, not clicked through.
-      this.t += dt * (this.mode === 'hero' ? HERO_SPEED : 1)
-      if (this.t >= this.scene.dur) {
-        const next = this.mode === 'hero' ? (this.idx + 1) % this.order.length : this.idx
-        this.activate(this.order[next])
-      }
-    }
-    this.frame()
-    this.raf = requestAnimationFrame((n) => this.tick(n))
-  }
-
-  /** Jump to a scene by name (a chapter button or a demo tab). */
-  go(name) {
-    this.activate(name)
-    this.frame()
-    this.kick()
-  }
-
-  setOrder(order) {
-    this.order = order
-    this.go(order[0])
-  }
-
-  togglePause() {
-    this.userPaused = !this.userPaused
-    this.root.classList.toggle('is-paused', this.userPaused)
-    this.kick()
-    return this.userPaused
-  }
-
-  activate(name, first = false) {
-    const idx = this.order.indexOf(name)
-    this.idx = idx < 0 ? 0 : idx
-    this.t = this.static ? this.scene.still : 0
-    this.fromCam = first ? null : { ...this.cam }
-    this.win.classList.remove('is-out')
-
-    // Put the incoming scene back to its first frame without animating the reset.
-    const parts = this.parts[name] || []
-    for (const p of parts) p.classList.add('no-tr')
-    for (const it of this.items[name] || []) { it.n = -1; it.cur = null }
-    this.apply(name, this.t)
-    void this.win.offsetWidth
-    for (const p of parts) p.classList.remove('no-tr')
-
-    for (const [n, list] of Object.entries(this.parts)) {
-      for (const p of list) p.classList.toggle('is-active', n === name)
-    }
-    for (const [n, b] of Object.entries(this.bars)) if (n !== name) b.style.transform = 'scaleX(0)'
-    this.onScene?.(name)
-  }
-
-  // ---- one frame ------------------------------------------------------------------
-  frame() {
-    const name = this.order[this.idx]
-    const sc = this.scene
-    const t = this.t
-    this.apply(name, t)
-    this.updateCards(sc, t)
-    this.updatePlaces(sc, t)
-    this.updateCursor(sc, t)
-    this.updateCamera(sc, t)
-    this.updateTheme(sc, t)
-    if (this.mode === 'demo') this.win.classList.toggle('is-out', !this.static && t > sc.dur - 0.4)
-    this.drawCards()
-    const bar = this.bars[name]
-    if (bar) bar.style.transform = `scaleX(${clamp(t / sc.dur, 0, 1).toFixed(4)})`
-  }
-
-  apply(name, t) {
-    for (const it of this.items[name] || []) {
-      const { el } = it
-      if (it.at != null) el.classList.toggle('on', t >= it.at)
-      if (it.until != null) el.classList.toggle('gone', t >= it.until)
-      if (it.cls) {
-        for (const c of it.names) {
-          let on = false
-          for (const [n, a, b] of it.cls) if (n === c && t >= a && t < b) on = true
-          el.classList.toggle(c, on)
-        }
-      }
-      if (it.type) {
-        const [a, b] = it.type
-        const len = it.full.length
-        const n = t <= a ? 0 : t >= b ? len : Math.round(((t - a) / (b - a)) * len)
-        if (n !== it.n) { el.textContent = it.full.slice(0, n); it.n = n }
-        el.classList.toggle('typing', t >= a - 0.2 && t < b + 0.45 && !(it.until != null && t >= it.until))
-      }
-      if (it.clock != null) {
-        const txt = fmt(it.clock + Math.max(0, t - (it.at ?? 0)))
-        if (txt !== it.cur) { el.textContent = txt; it.cur = txt }
-      }
-      if (it.seq) {
-        let txt = ''
-        for (const [s, v] of it.seq) if (t >= s) txt = v
-        if (txt.includes('{house}')) txt = txt.replace('{house}', this.win.dataset.mode === 'day' ? 'Ember Day' : 'Ember Night')
-        if (txt !== it.cur) {
-          el.textContent = txt
-          if (it.cur) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump') }
-          it.cur = txt
-        }
-      }
-      if (it.pulse) {
-        let p = -1
-        for (const [a, b] of it.pulse) if (t >= a && t <= b) p = (t - a) / (b - a)
-        if (p < 0) el.style.opacity = '0'
-        else {
-          el.style.opacity = '1'
-          el.style.strokeDashoffset = String(0.16 - ease(p) * 1.2)
-        }
-      }
-    }
-  }
-
-  updateCards(sc, t) {
-    for (const c of this.cards) {
-      const evs = sc.cards[c.name] || idle()
-      let ev = evs[0]
-      for (const e of evs) if (t >= e[0]) ev = e
-      const [at, state, attention, label, base = 0] = ev
-      c.mood.state = state
-      c.mood.attention = attention
-      const text = label.includes('{t}') ? label.replace('{t}', fmt(base + t - at)) : label
-      if (text !== c.text) { c.label.textContent = text; c.text = text }
-      const tint = state === 'attention' ? (attention === 'handoff' ? 'done' : 'ask') : state
-      if (c.el.dataset.mood !== tint) c.el.dataset.mood = tint
-      c.el.classList.toggle('is-sel', c.name === sc.sel)
-    }
-  }
-
-  /** The places row: the one on stage lit, Overview counting the sessions that want you. */
-  updatePlaces(sc, t) {
-    let waiting = 0
-    for (const c of this.cards) if (c.mood.state === 'attention' && c.name !== sc.sel) waiting++
-    let open = 4
-    for (const [s, v] of sc.todo || []) if (t >= s) open = v
-    for (const p of this.places) {
-      const on = p.name === sc.place
-      if (on !== p.on) { p.el.classList.toggle('is-on', on); p.on = on }
-      const n = p.name === 'overview' ? waiting : p.name === 'todo' ? open : 0
-      if (n !== p.n) {
-        if (n > 0) p.badge.textContent = String(n)
-        p.badge.classList.toggle('is-off', n <= 0)
-        p.n = n
-      }
-    }
-  }
-
-  drawCards() {
-    const time = this.static ? 1.3 : this.clock
-    for (const c of this.cards) drawMascot(c.ctx, 76, c.mood, time, SEEDS[c.name] || 0)
-  }
-
-  point(target) {
-    if (Array.isArray(target)) return { x: target[0], y: target[1] }
-    const el = this.win.querySelector(target)
-    if (!el) return { x: W / 2, y: H / 2 }
-    const o = offsetIn(el, this.win)
-    return { x: o.x + Math.min(o.w * 0.5, 60), y: o.y + o.h * 0.62 }
-  }
-
-  updateCursor(sc, t) {
-    const kfs = sc.cursor
-    const cur = this.cursor
-    if (!kfs || this.static || t < kfs[0][0] - 0.25 || t > kfs[kfs.length - 1][0] + 0.25) {
-      cur.classList.remove('on', 'click')
+  // ---------------------------------------------------------------- time, that can be stopped
+  class Stop extends Error {}
+  let run = 0
+  let paused = false
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  async function wait(ms) {
+    const id = run
+    if (reduced) {
+      if (id !== run) throw new Stop()
       return
     }
-    let i = 0
-    while (i < kfs.length - 1 && t >= kfs[i + 1][0]) i++
-    const a = kfs[i]
-    const b = kfs[Math.min(i + 1, kfs.length - 1)]
-    const pa = this.point(a[1])
-    const pb = this.point(b[1])
-    const p = b === a ? 1 : ease(clamp((t - a[0]) / (b[0] - a[0]), 0, 1))
-    const x = lerp(pa.x, pb.x, p)
-    const y = lerp(pa.y, pb.y, p)
-    cur.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
-    cur.classList.toggle('on', t >= kfs[0][0] && t <= kfs[kfs.length - 1][0])
-    let click = false
-    for (const k of kfs) if (k[2] === 'click' && t >= k[0] - 0.05 && t < k[0] + 0.22) click = true
-    cur.classList.toggle('click', click)
-  }
-
-  camAt(sc, t, kfs = sc.cam) {
-    let i = 0
-    while (i < kfs.length - 1 && t >= kfs[i + 1][0]) i++
-    const a = kfs[i]
-    const b = kfs[Math.min(i + 1, kfs.length - 1)]
-    const p = b === a ? 1 : ease(clamp((t - a[0]) / (b[0] - a[0]), 0, 1))
-    return { cx: lerp(a[1], b[1], p), cy: lerp(a[2], b[2], p), z: lerp(a[3], b[3], p) }
-  }
-
-  updateCamera(sc, t) {
-    // How close the camera gets: the whole window in the hero on a wide screen, a
-    // fixed 960x680 crop of the main area in the desktop demos, and the scene's full
-    // camera move on a phone.
-    let c = this.camAt(sc, t)
-    if (this.small) c = { cx: c.cx, cy: c.cy, z: c.z * 1.15 }
-    else if (this.mode === 'demo') c = { cx: sc.demo ?? 720, cy: 380, z: 1.25 }
-    else c = { cx: W / 2, cy: H / 2, z: 1 }
-    if (this.fromCam && t < 0.9 && !this.static) {
-      const p = ease(t / 0.9)
-      c = { cx: lerp(this.fromCam.cx, c.cx, p), cy: lerp(this.fromCam.cy, c.cy, p), z: lerp(this.fromCam.z, c.z, p) }
-    }
-    this.cam = c
-    const s = (this.vw / W) * c.z
-    const rw = this.vw / s
-    const rh = this.vh / s
-    const cx = rw >= W ? W / 2 : clamp(c.cx, rw / 2, W - rw / 2)
-    const cy = rh >= H ? H / 2 : clamp(c.cy, rh / 2, H - rh / 2)
-    const tx = this.vw / 2 - cx * s
-    const ty = this.vh / 2 - cy * s
-    this.win.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})`
-  }
-
-  updateTheme(sc, t) {
-    let theme = ''
-    for (const [s, v] of sc.theme || []) if (t >= s) theme = v
-    if (theme !== this.theme) {
-      this.theme = theme
-      if (theme) this.win.dataset.theme = theme
-      else delete this.win.dataset.theme
+    let left = ms
+    while (left > 0) {
+      const step = Math.min(left, 40)
+      await sleep(step)
+      if (id !== run) throw new Stop()
+      if (!paused) left -= step
     }
   }
-}
-
-// ---- the caption under the film -----------------------------------------------------
-// One line per chapter, and its shortcut: what the feature is, and how you reach it.
-const CAPS = {
-  panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
-  overview: ['Every session on one page: the numbers, a question you answer in place, a quiet log of every edit.', ['Ctrl', 'Shift', 'S']],
-  todo: ['Your list, beside your sessions. Agents add to it and tick what gets done.', ['Ctrl', 'Shift', 'D']],
-  notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
-  cli: ['Runs the CLI you already use. Never asks for an API key.', 'no API key'],
-  splits: ['Split any pane. 51 themes re-tint the whole window.', ['Alt', 'Shift', '+']],
-  palette: ['Every action is one command away. Agents can run them too.', ['Ctrl', 'K']],
-}
-
-// ---- the hero ------------------------------------------------------------------
-const heroRoot = document.querySelector('[data-film="hero"]')
-const BEATS = ['panel', 'overview', 'todo', 'notes', 'cli', 'splits', 'palette']
-/** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
-const HERO_SPEED = 0.7
-let hero = null
-
-function caption(name) {
-  const cap = document.querySelector('[data-cap]')
-  const keys = document.querySelector('[data-keys]')
-  if (!cap || !keys || !CAPS[name]) return
-  const [text, k] = CAPS[name]
-  cap.textContent = text
-  keys.replaceChildren()
-  // Keys are a shortcut; a string is a badge: the promise for "Any CLI", the command for
-  // a surface that has none of its own.
-  if (Array.isArray(k)) for (const key of k) { const kbd = document.createElement('kbd'); kbd.textContent = key; keys.appendChild(kbd) }
-  else if (k) {
-    const sp = document.createElement('span')
-    sp.className = k === 'no API key' ? 'see__nokey mono' : 'see__cmd mono'
-    sp.textContent = k
-    keys.appendChild(sp)
-  }
-}
-
-if (heroRoot) {
-  const beats = [...heroRoot.querySelectorAll('[data-go]')]
-  const pause = heroRoot.querySelector('[data-pause]')
-  hero = new Film(heroRoot, {
-    order: BEATS,
-    onScene(name) {
-      caption(name)
-      for (const b of beats) {
-        const on = b.dataset.go === name
-        b.classList.toggle('is-on', on)
-        if (on) b.setAttribute('aria-current', 'step')
-        else b.removeAttribute('aria-current')
+  const frame = () => new Promise((r) => requestAnimationFrame(r))
+  /** Drive f(t) for t 0..1 over ms, eased; stops with the run. */
+  async function tween(ms, f, ease = easeInOut) {
+    const id = run
+    if (reduced) return f(1)
+    let t0 = performance.now()
+    let held = 0
+    for (;;) {
+      await frame()
+      if (id !== run) throw new Stop()
+      const now = performance.now()
+      if (paused) {
+        held = now - t0
+        continue
       }
-    },
-  })
-  for (const b of beats) b.addEventListener('click', () => hero.go(b.dataset.go))
-  pause?.addEventListener('click', () => {
-    const paused = hero.togglePause()
-    pause.setAttribute('aria-label', paused ? 'Play the film' : 'Pause the film')
-  })
-}
-
-// ---- Cinder at the bottom of the page -----------------------------------------------
-;(function bigCinder() {
-  const cv = document.querySelector('[data-cinder-big]')
-  if (!cv) return
-  const ctx = cv.getContext('2d')
-  const mood = { state: 'working', attention: null }
-  const cta = cv.closest('.closer')?.querySelector('.btn')
-  cta?.addEventListener('pointerenter', () => { mood.state = 'attention'; mood.attention = 'handoff' })
-  cta?.addEventListener('pointerleave', () => { mood.state = 'working'; mood.attention = null })
-  cta?.addEventListener('focus', () => { mood.state = 'attention'; mood.attention = 'handoff' })
-  cta?.addEventListener('blur', () => { mood.state = 'working'; mood.attention = null })
-  let visible = false
-  let raf = 0
-  const t0 = performance.now()
-  const draw = (now) => {
-    raf = 0
-    drawMascot(ctx, 240, mood, reduce.matches ? 1.3 : (now - t0) / 1000, 0.8)
-    if (visible && !document.hidden && !reduce.matches) raf = requestAnimationFrame(draw)
+      if (held) {
+        t0 = now - held
+        held = 0
+      }
+      const t = Math.min(1, (now - t0) / ms)
+      f(ease(t))
+      if (t >= 1) return
+    }
   }
-  new IntersectionObserver((es) => {
-    visible = es[es.length - 1].isIntersecting
-    if (visible && !raf) raf = requestAnimationFrame(draw)
-  }).observe(cv)
-  document.addEventListener('visibilitychange', () => { if (visible && !raf) raf = requestAnimationFrame(draw) })
-})()
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3)
+
+  // ---------------------------------------------------------------- the pointer
+  const P = { x: 980, y: 640 }
+  function placePtr() {
+    ptr.style.transform = `translate3d(${P.x.toFixed(1)}px, ${P.y.toFixed(1)}px, 0)`
+  }
+  placePtr()
+  // Ember's glide (the same curve the app draws): a bow to one side, a hair past, settle.
+  const glideMs = (d) => (d < 2 ? 0 : Math.max(140, Math.min(480, 140 + 75 * Math.log2(1 + d / 60))))
+  async function glide(to, slow = 1.25) {
+    ptr.classList.add('is-on')
+    const sx = P.x
+    const sy = P.y
+    const dx = to.x - sx
+    const dy = to.y - sy
+    const len = Math.hypot(dx, dy) || 1
+    const ms = glideMs(len) * slow
+    if (!ms) return
+    const bow = Math.min(50, len * 0.12)
+    const cx = (sx + to.x) / 2 + (-dy / len) * bow
+    const cy = (sy + to.y) / 2 + (dx / len) * bow
+    await tween(ms, (u) => {
+      const v = 1 - u
+      P.x = v * v * sx + 2 * u * v * cx + u * u * to.x
+      P.y = v * v * sy + 2 * u * v * cy + u * u * to.y
+      placePtr()
+    })
+  }
+  function ripple(at) {
+    if (reduced) return
+    const r = document.createElement('div')
+    r.className = 'ripple'
+    r.style.left = `${at.x}px`
+    r.style.top = `${at.y}px`
+    desk.appendChild(r)
+    setTimeout(() => r.remove(), 600)
+    ptr.querySelector('svg').animate([{ scale: '1' }, { scale: '0.82' }, { scale: '1' }], { duration: 220, easing: 'ease-out' })
+  }
+  async function click(el, offset = { x: 0, y: 0 }) {
+    const m = mid(el)
+    const at = { x: m.x + offset.x, y: m.y + offset.y }
+    await glide(at)
+    await wait(90)
+    ripple(at)
+    el.classList.add('is-press')
+    await wait(160)
+    el.classList.remove('is-press')
+  }
+
+  // ---------------------------------------------------------------- keys and text
+  async function keys(...names) {
+    keysEl.innerHTML = names.map((k) => `<kbd>${k}</kbd>`).join('')
+    await wait(380)
+  }
+  async function typeInto(el, text, base = 34) {
+    el.textContent = ''
+    for (const ch of text) {
+      el.textContent += ch
+      await wait(base + Math.random() * 40 + (ch === ' ' ? 30 : 0))
+    }
+  }
+  async function stream(el, text) {
+    el.innerHTML = ''
+    const p = document.createElement('p')
+    el.appendChild(p)
+    for (const w of text.split(' ')) {
+      p.textContent += (p.textContent ? ' ' : '') + w
+      await wait(38 + Math.random() * 30)
+    }
+  }
+  const caption = (t) => {
+    cap.textContent = t
+  }
+
+  // ---------------------------------------------------------------- the states
+  const PROMPT = 'how does auth flow through the API?'
+  const ANSWER = 'The browser signs in through the gateway. The auth service issues a short-lived token, keeps the refresh token in the store, and the gateway opens a session.'
+  const AFTER = 'Tokens expire after 15 minutes; the session renews them quietly.'
+
+  function reset() {
+    pane.classList.remove('is-cli')
+    q('[data-v="canvas"]').classList.add('is-on')
+    q('[data-v="cli"]').classList.remove('is-on')
+    cv.classList.remove('is-room')
+    cv.style.removeProperty('--room')
+    you.classList.remove('is-on')
+    youT.textContent = ''
+    say.innerHTML = ''
+    say2.innerHTML = ''
+    if (obj.parentElement !== col) col.insertBefore(obj, say2)
+    obj.className = 'obj'
+    obj.removeAttribute('style')
+    sticky.classList.remove('is-on')
+    stickyT.textContent = ''
+    legend.classList.remove('is-on')
+    full.classList.remove('is-on')
+    zoom.style.transform = ''
+    calc.classList.remove('is-on')
+    calcD.innerHTML = '0'
+    stop.classList.remove('is-on')
+    keysEl.innerHTML = ''
+    ptr.classList.remove('is-on', 'is-ember')
+    tag.textContent = ''
+    pmenu.classList.remove('is-on')
+    pmenu.querySelectorAll('.is-hover').forEach((e) => e.classList.remove('is-hover'))
+    inpT.textContent = ''
+    inp.classList.remove('is-away')
+    startEl.classList.remove('is-on')
+    setAgent('claude')
+    cards.querySelectorAll('.is-new').forEach((c) => c.remove())
+    cards.querySelectorAll('.card').forEach((c, i) => {
+      c.classList.toggle('is-on', i === 0)
+      c.classList.remove('is-busy')
+    })
+    todoN.textContent = '3'
+  }
+  function setAgent(a) {
+    const codex = a === 'codex'
+    chipName.textContent = codex ? 'Codex CLI' : 'Claude Code'
+    chip.style.setProperty('--chip', codex ? '#9fb7c9' : '#e58a55')
+    ph.textContent = codex ? 'Ask Codex… / for commands' : 'Ask Claude… / for commands'
+    model.textContent = codex ? 'GPT-6 Codex' : 'Opus 5.5 (1M context)'
+    pmenu.querySelectorAll('.pmenu__i[data-p]').forEach((i) => {
+      const on = i.dataset.p === a
+      i.classList.toggle('is-on', on)
+      const t = i.querySelector('.tick')
+      if (on && !t) i.insertAdjacentHTML('beforeend', '<span class="tick">✓</span>')
+      if (!on && t) t.remove()
+    })
+  }
+  /** The end of chapter 1, at once: asked, answered, the diagram in the reply. */
+  function asked() {
+    youT.textContent = PROMPT
+    you.classList.add('is-on')
+    say.innerHTML = `<p>${ANSWER}</p>`
+    obj.classList.add('is-on')
+    say2.innerHTML = `<p>${AFTER}</p>`
+  }
+
+  // ---------------------------------------------------------------- the chapters
+  const chapters = [
+    {
+      ms: 9500,
+      cap: 'Ask in plain words. The answer comes as something you can see.',
+      async play() {
+        await wait(500)
+        await typeInto(inpT, PROMPT)
+        await wait(350)
+        await keys('Enter')
+        inpT.textContent = ''
+        youT.textContent = PROMPT
+        you.classList.add('is-on')
+        cards.firstElementChild.classList.add('is-busy')
+        say.innerHTML = '<p class="think">Thinking…</p>'
+        await wait(1300)
+        await stream(say, ANSWER)
+        await wait(250)
+        obj.classList.add('is-on')
+        await wait(1500)
+        await stream(say2, AFTER)
+        cards.firstElementChild.classList.remove('is-busy')
+        await wait(2200)
+      },
+    },
+    {
+      ms: 9000,
+      cap: 'Resize it where it is, or drag it out and place it. The words make room.',
+      async play() {
+        asked()
+        await wait(400)
+        P.x = 900
+        P.y = narrow ? 560 : 640
+        placePtr()
+        await glide(mid(obj))
+        obj.classList.add('is-hover')
+        await wait(400)
+        // the corner: bigger, in place
+        const b0 = box(obj)
+        const corner = { x: b0.x + b0.w - 7, y: b0.y + b0.h - 7 }
+        await glide(corner)
+        obj.classList.add('is-rz')
+        await wait(200)
+        const w0 = obj.offsetWidth
+        const grow = narrow ? 60 : 110
+        await tween(650, (u) => {
+          obj.style.width = `${w0 + grow * u}px`
+          P.x = corner.x + grow * u
+          P.y = corner.y + 30 * u
+          placePtr()
+        })
+        obj.classList.remove('is-rz')
+        await wait(500)
+        // "Drag out": take it out of the reply and put it on the right
+        const handle = obj.querySelector('.lift__h')
+        await glide(mid(handle))
+        ripple(mid(handle))
+        await wait(150)
+        const c = box(cv)
+        const o = box(obj)
+        const grab = { x: P.x - o.x, y: P.y - o.y }
+        obj.classList.add('is-placed')
+        cv.appendChild(obj)
+        obj.style.left = `${o.x - c.x}px`
+        obj.style.top = `${o.y - c.y}px`
+        obj.style.width = `${o.w}px`
+        const tw = narrow ? 330 : 430
+        const tx = c.w - tw - 20
+        const ty = 62
+        const sx = o.x - c.x
+        const sy = o.y - c.y
+        await tween(800, (u) => {
+          const x = sx + (tx - sx) * u
+          const y = sy + (ty - sy) * u
+          const w = o.w + (tw - o.w) * u
+          obj.style.left = `${x}px`
+          obj.style.top = `${y}px`
+          obj.style.width = `${w}px`
+          P.x = c.x + x + grab.x * (w / o.w)
+          P.y = c.y + y + grab.y * (w / o.w)
+          placePtr()
+        })
+        cv.style.setProperty('--room', `${tw + 40}px`)
+        cv.classList.add('is-room')
+        obj.classList.remove('is-hover')
+        await wait(500)
+        await glide({ x: P.x - 160, y: P.y + 260 })
+        await wait(2200)
+      },
+    },
+    {
+      ms: 9000,
+      cap: 'Keyboard first: Ctrl+↑ walks the objects, Enter opens one full screen, + zooms, Esc is always back.',
+      async play() {
+        asked()
+        await wait(700)
+        await keys('Ctrl', '↑')
+        obj.classList.add('is-ring')
+        legend.classList.add('is-on')
+        await wait(1500)
+        await keys('Enter')
+        zoom.innerHTML = obj.querySelector('svg').outerHTML
+        zoom.style.transformOrigin = '72% 42%'
+        zpct.textContent = '100%'
+        full.classList.add('is-on')
+        await wait(1100)
+        for (const z of [1.25, 1.56, 1.95]) {
+          await keys('+')
+          zoom.style.transform = `scale(${z})`
+          zpct.textContent = `${Math.round(z * 100)}%`
+          await wait(450)
+        }
+        await wait(1200)
+        await keys('0')
+        zoom.style.transform = ''
+        zpct.textContent = '100%'
+        await wait(800)
+        await keys('Esc')
+        full.classList.remove('is-on')
+        await wait(500)
+        await keys('Esc')
+        obj.classList.remove('is-ring')
+        legend.classList.remove('is-on')
+        await wait(1200)
+      },
+    },
+    {
+      ms: 7000,
+      cap: 'Canvas or the agent’s own screen: one switch, and it doesn’t move. Ember remembers your pick.',
+      async play() {
+        asked()
+        P.x = 820
+        P.y = 420
+        placePtr()
+        await wait(500)
+        const cli = q('[data-v="cli"]')
+        const canvas = q('[data-v="canvas"]')
+        await click(cli)
+        pane.classList.add('is-cli')
+        cli.classList.add('is-on')
+        canvas.classList.remove('is-on')
+        await wait(2600)
+        await click(canvas)
+        pane.classList.remove('is-cli')
+        canvas.classList.add('is-on')
+        cli.classList.remove('is-on')
+        await wait(1800)
+      },
+    },
+    {
+      ms: 10000,
+      cap: 'Sticky notes and a todo list that live outside your sessions. Every agent can read them and add to them.',
+      async play() {
+        asked()
+        await wait(600)
+        await keys('Ctrl', 'Shift', 'N')
+        sticky.classList.add('is-on')
+        await wait(300)
+        await typeInto(stickyT, 'Ask Arben about refresh-token rotation', 40)
+        await wait(900)
+        await typeInto(inpT, 'add “rotate the signing keys” to my todos')
+        await wait(300)
+        await keys('Enter')
+        inpT.textContent = ''
+        youT.textContent = 'add “rotate the signing keys” to my todos'
+        obj.classList.remove('is-on')
+        say2.innerHTML = ''
+        say.innerHTML = '<p class="think">Thinking…</p>'
+        await wait(1000)
+        await stream(say, 'Added to your todo list: rotate the signing keys.')
+        todoN.textContent = '4'
+        todoN.classList.remove('is-bump')
+        void todoN.offsetWidth
+        todoN.classList.add('is-bump')
+        await wait(2600)
+      },
+    },
+    {
+      ms: 11000,
+      cap: 'Computer use: the agent reads the screen as text and acts with a pointer you can watch, and stop.',
+      async play() {
+        await wait(400)
+        await typeInto(inpT, 'open Calculator and work out 12 × 7')
+        await wait(300)
+        await keys('Enter')
+        inpT.textContent = ''
+        youT.textContent = 'open Calculator and work out 12 × 7'
+        you.classList.add('is-on')
+        say.innerHTML = '<p class="think">Opening Calculator…</p>'
+        cards.firstElementChild.classList.add('is-busy')
+        await wait(700)
+        calc.style.right = narrow ? '40px' : '70px'
+        calc.classList.add('is-on')
+        stop.classList.add('is-on')
+        await wait(500)
+        ptr.classList.add('is-ember')
+        P.x = narrow ? 300 : 640
+        P.y = 300
+        placePtr()
+        const k = (name) => grid.querySelector(`[data-k="${name}"]`)
+        const steps = [
+          ['1', 'One', () => (calcD.innerHTML = '1')],
+          ['2', 'Two', () => (calcD.innerHTML = '12')],
+          ['×', 'Multiply by', () => (calcD.innerHTML = '<small>12 ×</small>12')],
+          ['7', 'Seven', () => (calcD.innerHTML = '<small>12 ×</small>7')],
+          ['=', 'Equals', () => (calcD.innerHTML = '<small>12 × 7 =</small>84')],
+        ]
+        for (const [key, name, show] of steps) {
+          tag.textContent = `Ember · press ${name}`
+          await click(k(key))
+          show()
+          await wait(160)
+        }
+        tag.textContent = ''
+        await wait(400)
+        stop.classList.remove('is-on')
+        ptr.classList.remove('is-on')
+        await stream(say, '12 × 7 = 84. It’s on the Calculator’s display.')
+        cards.firstElementChild.classList.remove('is-busy')
+        await wait(2400)
+      },
+    },
+    {
+      ms: 9000,
+      cap: 'Claude Code, Codex, Gemini and more. Pick one beside the +, and every new session starts with it.',
+      async play() {
+        asked()
+        if (!narrow) {
+          P.x = 700
+          P.y = 420
+          placePtr()
+          await wait(400)
+          await click(chip)
+          pmenu.classList.add('is-on')
+          await wait(700)
+          const codex = pmenu.querySelector('[data-p="codex"]')
+          await glide(mid(codex))
+          codex.classList.add('is-hover')
+          await wait(300)
+          ripple(mid(codex))
+          await wait(150)
+          pmenu.classList.remove('is-on')
+          setAgent('codex')
+          await wait(600)
+          await click(plus)
+          cards.querySelectorAll('.card').forEach((c) => c.classList.remove('is-on'))
+          cards.insertAdjacentHTML('afterbegin', '<div class="card is-on is-new"><span class="card__dot"></span><div><b>Codex CLI</b><small>starting…</small></div></div>')
+        } else {
+          await wait(400)
+          await keys('Ctrl', 'Shift', 'T')
+          setAgent('codex')
+        }
+        startT.textContent = 'Starting Codex CLI…'
+        startEl.classList.add('is-on')
+        await wait(1300)
+        reset_canvas()
+        startEl.classList.remove('is-on')
+        const small = cards.querySelector('.is-new small')
+        if (small) small.textContent = 'GPT-6 Codex · 0%'
+        ptr.classList.remove('is-on')
+        await wait(500)
+        await typeInto(inpT, 'write the release notes for v1.3')
+        await wait(2000)
+      },
+    },
+  ]
+  function reset_canvas() {
+    you.classList.remove('is-on')
+    say.innerHTML = ''
+    say2.innerHTML = ''
+    obj.classList.remove('is-on')
+    cv.classList.remove('is-room')
+  }
+
+  // ---------------------------------------------------------------- playing them
+  let current = 0
+  let chapterAt = 0
+  let visible = false
+  let playing = false
+
+  function mark(i) {
+    chapterBtns.forEach((b, j) => {
+      b.classList.toggle('is-on', j === i)
+      b.querySelector('b').style.width = j < i && !reduced ? '100%' : '0%'
+      if (j !== i) b.querySelector('b').style.width = '0%'
+    })
+  }
+  async function play(from) {
+    const id = ++run
+    playing = true
+    let i = from
+    for (;;) {
+      current = i
+      mark(i)
+      caption(chapters[i].cap)
+      reset()
+      chapterAt = performance.now()
+      try {
+        await chapters[i].play()
+      } catch (e) {
+        if (e instanceof Stop) return
+        throw e
+      }
+      if (id !== run) return
+      if (reduced) return
+      i = (i + 1) % chapters.length
+    }
+  }
+  // The progress bar under the chapter that is playing.
+  let pausedAt = 0
+  ;(function progress() {
+    const b = chapterBtns[current]?.querySelector('b')
+    if (b && playing && !reduced) {
+      if (paused) {
+        if (!pausedAt) pausedAt = performance.now()
+      } else if (pausedAt) {
+        chapterAt += performance.now() - pausedAt
+        pausedAt = 0
+      }
+      const t = Math.min(1, ((pausedAt || performance.now()) - chapterAt) / chapters[current].ms)
+      b.style.width = `${(t * 100).toFixed(1)}%`
+    }
+    requestAnimationFrame(progress)
+  })()
+
+  chapterBtns.forEach((b) =>
+    b.addEventListener('click', () => {
+      paused = false
+      pauseBtn?.classList.remove('is-paused')
+      void play(Number(b.dataset.ch))
+    })
+  )
+  pauseBtn?.addEventListener('click', () => {
+    paused = !paused
+    pauseBtn.classList.toggle('is-paused', paused)
+    pauseBtn.setAttribute('aria-label', paused ? 'Play the demo' : 'Pause the demo')
+  })
+
+  // Only plays while it can be seen.
+  new IntersectionObserver(
+    ([e]) => {
+      visible = e.isIntersecting
+      if (visible && !playing) void play(0)
+      if (!reduced && pauseBtn && !pauseBtn.classList.contains('is-paused')) paused = !visible
+    },
+    { threshold: 0.25 }
+  ).observe(root)
+}

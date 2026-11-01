@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ember docs — install, sessions, panel, notes, todo, settings</title>
-<meta name="description" content="How to use Ember, the Windows terminal for AI coding CLIs: install, picking a CLI, sessions and splits, the panel, notes, the todo list, the overview, every setting, the skills, and computer use.">
-<meta name="theme-color" content="#120d1c">
+<title>Ember docs</title>
+<meta name="description" content="How to use Ember on Windows: install, pick an agent, sessions, the canvas, keyboard, sticky notes, notes and todos, shared knowledge between agents, computer use, settings and themes.">
+<meta name="theme-color" content="#16120F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAF6EF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="https://ember.deepanswerlabs.com/docs">
 <link rel="icon" type="image/png" href="/assets/icon-256.png">
 <link rel="apple-touch-icon" href="/assets/icon-256.png">
@@ -14,19 +15,18 @@
 <meta property="og:url" content="https://ember.deepanswerlabs.com/docs">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
 <meta property="og:title" content="Ember documentation">
-<meta property="og:description" content="Every feature of Ember, the Windows terminal for AI coding CLIs, explained: sessions, the panel, notes, todos, settings, skills and computer use.">
+<meta property="og:description" content="Every part of Ember explained: sessions, the canvas, the keyboard, notes and todos, shared knowledge, computer use and settings.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=1.2.0-5d5cad2d">
-<link rel="stylesheet" href="/docs.css?v=1.2.0-5d5cad2d">
-<script src="/main.js?v=1.2.0-5d5cad2d" defer></script>
-<script src="/docs.js?v=1.2.0-5d5cad2d" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/docs.css?v=2">
+<script src="/main.js?v=2" defer></script>
+<script src="/docs.js?v=2" defer></script>
 </head>
-<body>
+<body class="docs-page">
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="topbar">
@@ -36,9 +36,8 @@
       <span>Ember</span>
     </a>
     <nav class="topnav" aria-label="Site">
-      <a href="/#see">See it work</a>
-      <a href="/#faq">FAQ</a>
-      <a class="topnav__docs" href="/docs" aria-current="page">Docs</a>
+      <a href="/docs" aria-current="page">Docs</a>
+      <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
     </nav>
     <a class="btn btn--small" data-download href="/download/windows">Download</a>
   </div>
@@ -50,7 +49,7 @@
   <div class="wrap">
     <p class="eyebrow"><span class="dot" aria-hidden="true"></span> <span>Documentation for Ember <span data-version></span> on Windows</span></p>
     <h1>Ember docs</h1>
-    <p>How Ember works, feature by feature: installing it, choosing an agent CLI, sessions and splits, the panel, notes, the todo list, the overview, every setting, the skills Ember installs, and computer use.</p>
+    <p>How Ember works, one part at a time. Ember is a Windows terminal built around the agent CLIs you already use. Each session is a canvas you work on together with the agent.</p>
   </div>
 </div>
 
@@ -59,634 +58,421 @@
 <nav class="toc" aria-label="On this page" data-toc>
   <button class="toc__toggle" type="button" aria-expanded="false" aria-controls="toc-panel"><span>On this page</span><span data-toc-current></span></button>
   <div class="toc__panel" id="toc-panel">
-    <p class="toc__title">On this page</p>
-    <ol class="toc__list">
-      <li><span class="toc__group">Getting started</span>
-        <ol>
-          <li><a href="#install">Install</a></li>
-          <li><a href="#first-launch">First launch</a></li>
-          <li><a href="#clis">Choosing a CLI</a></li>
-          <li><a href="#no-keys">Your agents and sign-in</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Everyday use</span>
-        <ol>
-          <li><a href="#sessions">Sessions and the sidebar</a></li>
-          <li><a href="#splits">Splits and panes</a></li>
-          <li><a href="#command-line">Command line and palette</a></li>
-          <li><a href="#shortcuts">Keyboard shortcuts</a></li>
-          <li><a href="#terminal">Terminal tools</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Working with agents</span>
-        <ol>
-          <li><a href="#panel">The panel</a></li>
-          <li><a href="#overview">The overview</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Notes</span>
-        <ol>
-          <li><a href="#notes">Writing notes</a></li>
-          <li><a href="#notes-cli">The notes command</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Todo</span>
-        <ol>
-          <li><a href="#todo">The todo list</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Setup</span>
-        <ol>
-          <li><a href="#settings">Settings</a></li>
-          <li><a href="#skills">Skills</a></li>
-          <li><a href="#computer-use">Computer use</a></li>
-          <li><a href="#labs">Labs: the phone link</a></li>
-        </ol>
-      </li>
-      <li><span class="toc__group">Reference</span>
-        <ol>
-          <li><a href="#files">Files and privacy</a></li>
-          <li><a href="#troubleshooting">Troubleshooting</a></li>
-        </ol>
-      </li>
+    <ol>
+      <li class="toc__group">Start</li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#first-run">First run</a></li>
+      <li><a href="#agents">Your agents</a></li>
+      <li><a href="#sessions">Sessions and the sidebar</a></li>
+      <li class="toc__group">Working with an agent</li>
+      <li><a href="#canvas">The canvas</a></li>
+      <li><a href="#objects">Objects in a reply</a></li>
+      <li><a href="#placing">Placing and snapping</a></li>
+      <li><a href="#full-screen">Full screen and zoom</a></li>
+      <li><a href="#cli-view">Canvas or CLI view</a></li>
+      <li><a href="#keyboard">The canvas from the keyboard</a></li>
+      <li><a href="#sticky">Sticky notes</a></li>
+      <li class="toc__group">Outside sessions</li>
+      <li><a href="#notes">Notes</a></li>
+      <li><a href="#todo">Todo</a></li>
+      <li><a href="#knowledge">Shared knowledge</a></li>
+      <li><a href="#computer-use">Computer use</a></li>
+      <li class="toc__group">Everything else</li>
+      <li><a href="#palette">Ctrl+K and the ember command</a></li>
+      <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+      <li><a href="#terminal">Terminal tools</a></li>
+      <li><a href="#settings">Settings and themes</a></li>
+      <li><a href="#phone">Phone link (Labs)</a></li>
+      <li><a href="#files">Files and privacy</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
     </ol>
   </div>
 </nav>
 
 <article class="doc">
 
-<!-- ======================================================================= -->
+<!-- ============================ START ============================ -->
+
 <section aria-labelledby="install">
   <h2 id="install">Install <a class="anchor" href="#install" aria-label="Link to this section">#</a></h2>
-  <p>Ember runs on <strong>Windows 10 and 11, x64</strong>. It is free, needs no account, and installs just for you, without an admin prompt.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Download</th><th>What it is</th></tr></thead>
-    <tbody>
-      <tr><td><a data-download href="/download/windows">Installer (.exe)</a></td><td>The usual choice. Lets you pick the folder and adds Start menu and desktop shortcuts. Uninstall from Windows Settings › Apps.</td></tr>
-      <tr><td><a href="/download/windows-zip">Portable .zip</a></td><td>No installer. Unzip anywhere and run <code>Ember.exe</code>.</td></tr>
-      <tr><td><a href="/download/windows-targz">Portable .tar.gz</a></td><td>Same as the .zip, different archive format.</td></tr>
-    </tbody>
-  </table></div>
-  <p>All three always point at the latest release on <a data-releases href="https://github.com/afetiu/ember-terminal/releases">GitHub Releases</a>, where you also find <code>SHA256SUMS.txt</code> to check the files. The portable builds keep their settings in <code>~/.ember</code> like the installed one, so nothing is written next to the exe.</p>
-  <div class="note">
-    <p><strong>SmartScreen.</strong> Releases are not code signed yet, so Windows may warn the first time you run the installer, choose <b>More info</b>, then <b>Run anyway</b>.</p>
+  <p>Ember runs on Windows 10 and 11, x64. It is free and open source. It needs no account and installs just for you, without an admin prompt.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Download</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><a href="/download/windows">Installer (.exe)</a></td><td>The usual choice. Adds Start menu and desktop shortcuts. Uninstall from Windows Settings › Apps.</td></tr>
+        <tr><td><a href="/download/windows-zip">Portable .zip</a></td><td>No installer. Unzip anywhere and run <code>Ember.exe</code>.</td></tr>
+        <tr><td><a href="/download/windows-targz">Portable .tar.gz</a></td><td>The same as the .zip, in another archive format.</td></tr>
+      </tbody>
+    </table>
   </div>
-  <p>Ember replaces the window, not your shell. It starts <strong>PowerShell 7</strong> (<code>pwsh.exe</code>) through the same ConPTY Windows Terminal uses, so your profile, modules, oh-my-posh and PSReadLine behave as before. If PowerShell 7 is not installed, it falls back to Windows PowerShell.</p>
+  <p>The links always point at the latest release on <a data-releases href="https://github.com/afetiu/ember-terminal/releases">GitHub Releases</a>. <code>SHA256SUMS.txt</code> there lets you check the files.</p>
+  <p class="callout"><b>SmartScreen.</b> Releases are not code signed yet, so Windows may warn the first time. Choose <b>More info</b>, then <b>Run anyway</b>. Every build comes from the public source.</p>
+  <p>Ember replaces the window, not your shell. It runs PowerShell 7 through ConPTY, the same way Windows Terminal does. Your profile, modules, oh-my-posh and PSReadLine work as before. Without PowerShell 7 it falls back to Windows PowerShell.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="first-launch">
-  <h2 id="first-launch">First launch <a class="anchor" href="#first-launch" aria-label="Link to this section">#</a></h2>
-  <p>The first time Ember opens it shows a short welcome in four steps. You can skip it and come back any time with <code>welcome</code> in the command line (<kbd>Ctrl</kbd><kbd>K</kbd>).</p>
+<section aria-labelledby="first-run">
+  <h2 id="first-run">First run <a class="anchor" href="#first-run" aria-label="Link to this section">#</a></h2>
+  <p>The first time Ember opens, it sets itself up in a few seconds:</p>
   <ol>
-    <li><strong>Welcome.</strong> What Ember adds on top of your shell.</li>
-    <li><strong>Which agent do you work with?</strong> Ember lists the six supported CLIs and marks the ones it found on your PATH. Missing ones have an <b>Install</b> button that runs the install command in a tab. The one you pick is also the one Ember uses for its own headless questions.</li>
-    <li><strong>Make it yours.</strong> The house pair, Ember Night and Ember Day, then a few of the other 49 colour palettes, and a switch between full motion and a lighter setting for older laptops.</li>
-    <li><strong>Five keys.</strong> <kbd>Ctrl</kbd><kbd>K</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd> and <kbd>F1</kbd>, plus an option to start your agent in the first tab when you finish.</li>
+    <li>It finds the agent CLIs you have installed, such as Claude Code or Codex.</li>
+    <li>It checks that each one answers.</li>
+    <li>It shares what your agents already know between them (see <a href="#knowledge">Shared knowledge</a>).</li>
   </ol>
-  <p>On first launch Ember also writes <code>~/.ember/config.json</code> with the defaults, puts its commands (<code>ember</code>, <code>notes</code>, <code>todo</code>, <code>desk</code>) in <code>~/.ember/bin</code> on the PATH of every shell it opens, and installs its <a href="#skills">skills</a>.</p>
-  <p>Every launch starts with one fresh shell. Ember does not restore tabs or old scrollback from the last run.</p>
+  <p>Then it tells you what it found, and you choose the agent to start with. <b>Start your first session</b> opens a session with that agent, straight on its canvas.</p>
+  <p>To run setup again, open <b>Welcome &amp; setup</b> from <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="clis">
-  <h2 id="clis">Choosing a CLI <a class="anchor" href="#clis" aria-label="Link to this section">#</a></h2>
-  <p>Ember hosts the agent CLI you already use. You can run any of them in any tab. The one chosen in <a href="#settings-agent">Settings › Agent</a> is the one Ember itself calls for its own headless questions.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>CLI</th><th>Install</th><th>Sign in</th><th>Panel</th></tr></thead>
-    <tbody>
-      <tr><td>Claude Code</td><td><code>npm install -g @anthropic-ai/claude-code</code> (Node.js 18+)</td><td><code>claude</code></td><td>Automatic</td></tr>
-      <tr><td>Codex CLI</td><td><code>npm install -g @openai/codex</code> (Node.js 18+)</td><td><code>codex login</code></td><td>Automatic</td></tr>
-      <tr><td>Gemini CLI</td><td><code>npm install -g @google/gemini-cli</code> (Node.js 20+)</td><td><code>gemini</code></td><td>Automatic</td></tr>
-      <tr><td>Cursor Agent</td><td>Cursor's PowerShell installer (the Install button runs it)</td><td><code>cursor-agent login</code></td><td>Manual, see below</td></tr>
-      <tr><td>OpenCode</td><td><code>npm install -g opencode-ai</code> (Node.js 18+)</td><td><code>opencode auth login</code></td><td>Automatic</td></tr>
-      <tr><td>Copilot CLI</td><td><code>npm install -g @github/copilot</code> (Node.js 22+)</td><td><code>copilot</code></td><td>Automatic</td></tr>
-    </tbody>
-  </table></div>
-  <p>"Automatic" means that when you start the CLI by its usual name in an Ember tab, Ember attaches its panel server for that session only. Nothing is added to the CLI's global config. Cursor Agent has no flag for this, so to use the panel with it you would add the server to <code>~/.cursor/mcp.json</code> yourself; Ember writes the launcher for it to <code>~/.ember/bin/ember-mcp.cmd</code>.</p>
-  <p>Claude Code gets the most: live transcripts (used by the overview and the canvas), the status line under each session, and optional plan usage in the sidebar. Claude Code and Codex are tested end to end; the others follow their documented flags.</p>
-</section>
-
-<!-- ======================================================================= -->
-<section aria-labelledby="no-keys">
-  <h2 id="no-keys">Your agents and sign-in <a class="anchor" href="#no-keys" aria-label="Link to this section">#</a></h2>
-  <p>Ember never talks to a model itself. Every AI feature runs through an agent CLI on your machine, signed in the way that CLI signs in — your Claude, ChatGPT, Google or Copilot plan, or, for agents that take one (OpenCode, Aider, Crush), a provider key such as OpenRouter, kept in that agent's own settings:</p>
-  <ul>
-    <li>Ember's own questions (asking about an object on the canvas) run a headless turn of the CLI chosen in Settings › Agent.</li>
-    <li>The <strong>panel</strong> is drawn by whatever agent is running in that tab.</li>
+<section aria-labelledby="agents">
+  <h2 id="agents">Your agents <a class="anchor" href="#agents" aria-label="Link to this section">#</a></h2>
+  <p>Ember works with the agent CLIs you already have. It runs each one with its own login and its own subscription, exactly as in any other terminal.</p>
+  <ul class="chips" aria-label="Supported agent CLIs">
+    <li>Claude Code</li><li>Codex CLI</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li><li>Qwen Code</li><li>Amp</li><li>Aider</li><li>Crush</li>
   </ul>
-  <p>Usage counts against that CLI's plan or key, the same as when you use it anywhere else. Ember itself stores no credentials.</p>
+  <h3>The agent chip and +</h3>
+  <p>At the top of the sidebar sits a chip with the current agent, for example <b>Claude Code</b>. Next to it is <b>+</b>.</p>
+  <ul>
+    <li><b>+</b> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>) opens a new session with the current agent. The agent starts by itself and the session opens on its canvas.</li>
+    <li>Click the chip to switch agents. The next <b>+</b> uses the one you picked. Ember remembers it.</li>
+    <li><b>Add more agents…</b> at the bottom of the chip's menu opens Settings › Agent. It shows which CLIs are installed and how to install the others.</li>
+  </ul>
+  <p>Claude Code and Codex get the most: their replies, tool calls and objects are read from their own session logs, and Ember docks a shared input box under the canvas. The other agents run in their own screen with Ember's tools available to them.</p>
 </section>
 
-<!-- ======================================================================= -->
 <section aria-labelledby="sessions">
   <h2 id="sessions">Sessions and the sidebar <a class="anchor" href="#sessions" aria-label="Link to this section">#</a></h2>
-  <p>Each session is a card in the left sidebar rather than a tab in a strip, because each one carries state. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd> or the <b>+</b> next to "Sessions" opens a new one; <kbd>Ctrl</kbd><kbd>B</kbd> hides the sidebar.</p>
-  <p>Above the sessions are three buttons that are always there: <b>Overview</b>, <b>Todo</b> and <b>Notes</b>. Each is a place of its own, not a session card. The one you are on is tinted with the accent. Overview carries an amber count of the sessions waiting on you, and Todo the number of open items. Their shortcuts (<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>) go there, and pressed again take you back to the session you came from.</p>
-
-  <h3 id="session-status">What a card shows</h3>
+  <p>Each session is a card in the sidebar. It shows the session's name, the model, how full the context is and whether the agent is working or waiting for you.</p>
   <ul>
-    <li><strong>Status.</strong> Working, waiting on you, idle or exited, read from the screen of the program in that tab. When an agent CLI is running, the card shows a small ember sprite: burning while the agent works, dozing while it waits, raising a hand when it needs you, waving when it has just finished.</li>
-    <li><strong>Attention.</strong> When a session needs you (a question, a permission prompt, a finished answer), its card tints amber and a short chime plays. Nothing goes to the Windows notification centre.</li>
-    <li><strong>Project.</strong> Git branch and dirty-file count for the session's folder, and a chip for any <code>localhost</code> URL a dev server printed (click to open).</li>
-    <li><strong>Claude status.</strong> For Claude Code sessions: model, context used and session cost, e.g. <code>Fable · 8% · $0.01</code>.</li>
-    <li><strong>Unread dot</strong> on background sessions that printed output.</li>
+    <li>Click a card, or press <kbd>Ctrl</kbd><kbd>Tab</kbd>, to switch. <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>1</kbd>–<kbd>9</kbd> jumps to a session by its place.</li>
+    <li>Drag cards to reorder them.</li>
+    <li><b>Rename</b> with <kbd>F2</kbd> or a double-click. An empty name gives the title back to the agent.</li>
+    <li><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>W</kbd> closes the focused session. <kbd>Ctrl</kbd><kbd>B</kbd> hides the sidebar.</li>
+    <li>A plain shell, without an agent, is <b>New terminal</b> in <kbd>Ctrl</kbd><kbd>K</kbd>. Start <code>claude</code> or <code>codex</code> there and it turns into a canvas.</li>
   </ul>
-
-  <h3 id="session-actions">Working with cards</h3>
-  <ul>
-    <li><strong>Rename</strong> with <kbd>F2</kbd> or a double-click. An empty name hands the title back to the shell.</li>
-    <li><strong>Close</strong> by pressing and holding the card's <b>×</b> for half a second, so a stray click can't close a terminal. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>W</kbd> closes immediately.</li>
-    <li><strong>Reorder</strong> by dragging cards.</li>
-    <li><strong>Switch</strong> with <kbd>Ctrl</kbd><kbd>Tab</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Tab</kbd>, or <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>1</kbd>…<kbd>9</kbd>.</li>
-  </ul>
-
-  <h3 id="vitals">The strip at the bottom</h3>
-  <p>Under the cards is a small status strip:</p>
-  <ul>
-    <li><strong>CLAUDE</strong> (off by default): your Claude plan's five-hour and weekly limits. Turn it on in Settings › Agent. It reads the login Claude Code already keeps on this machine, once a minute; no model runs. <code>PLAN ?</code> means that login has expired; running <code>claude</code> once refreshes it.</li>
-    <li><strong>MACHINE</strong>: processor load, memory, and battery on laptops.</li>
-    <li><strong>COMPUTER</strong>: appears only once an agent has used <a href="#computer-use">computer use</a>, with its <b>STOP</b> switch.</li>
-  </ul>
-  <p>The title bar also has a <b>Visualize</b> button when the focused tab runs Claude Code (it asks that session to put what it just said on the panel), a moon or sun that switches between Ember Night and Ember Day, and a panel button that carries a dot when a background session drew on a panel you have closed.</p>
-
-  <h3 id="profiles">Shells</h3>
-  <p>New sessions start the default profile, PowerShell 7. Windows PowerShell (<code>winps</code>) and Command Prompt (<code>cmd</code>) are also defined. To change the default, run <code>ember set defaultProfile cmd</code>, or edit the <code>profiles</code> list in <code>config.json</code> to add your own (a <code>command</code>, <code>args</code> and an <code>accent</code> colour).</p>
+  <p>At the bottom left are <b>Todo</b> and <b>Notes</b>. They open as their own pages in the list, outside any session (see <a href="#notes">Notes</a> and <a href="#todo">Todo</a>). Opening one again switches to it rather than opening a second copy.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="splits">
-  <h2 id="splits">Splits and panes <a class="anchor" href="#splits" aria-label="Link to this section">#</a></h2>
+<!-- ============================ WORKING WITH AN AGENT ============================ -->
+
+<section aria-labelledby="canvas">
+  <h2 id="canvas">The canvas <a class="anchor" href="#canvas" aria-label="Link to this section">#</a></h2>
+  <p>An agent session opens on its canvas. You type in the input box at the bottom and press <kbd>Enter</kbd>. The reply appears above it as readable text, not as raw terminal output.</p>
   <ul>
-    <li><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd> puts a new pane to the right, <kbd>Alt</kbd><kbd>Shift</kbd><kbd>-</kbd> puts one below. The new pane opens in the same folder.</li>
-    <li>Drag the seam between panes to resize.</li>
-    <li><kbd>Alt</kbd> + arrow keys move focus between panes.</li>
-    <li><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd> zooms the focused pane to fill the session and back.</li>
-    <li><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd> broadcasts your typing to every pane in the session. The stage gets an amber border while it is on.</li>
+    <li><b>The current turn</b> fills the canvas. Earlier turns are a step away: the arrows at the left edge, or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>↑</kbd> / <kbd>↓</kbd>. Each turn keeps its own content.</li>
+    <li><b>Work in progress</b> (files read, commands run, steps) shows as a short trail while the agent works, then gets out of the way.</li>
+    <li><b>Visuals.</b> When a picture explains something better than words, the agent draws one: a diagram, a table, a chart, a plan with steps it ticks off. It can also put up a file, an image or a live web page.</li>
+    <li><b>Copy:</b> select text and press <kbd>Ctrl</kbd><kbd>C</kbd>. On the canvas that copies; it does not interrupt the agent.</li>
+    <li>The line under the input shows the mode, the model, how full the context is and what the session cost.</li>
   </ul>
-  <p>Splits are one level deep: a row or a column of panes, not nested quadrants.</p>
+  <p>Right-click any object for its menu. The box at the top asks the agent about that object, or about the part you clicked, like one node of a diagram. Below it are <b>Copy</b>, <b>Full screen</b> and <b>Place</b>.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="command-line">
-  <h2 id="command-line">Command line and palette <a class="anchor" href="#command-line" aria-label="Link to this section">#</a></h2>
-  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens one line that runs every action Ember has. Type the words and press Enter: <code>new</code>, <code>split</code>, <code>todo</code>, <code>theme nord</code>, <code>rename api</code>, <code>o run the tests</code>. Matching is fuzzy, so <code>spd</code> finds "Split pane down". Every button in the app runs one of these commands; hover it to see which.</p>
-  <p>A first character switches the line into a picker:</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Prefix</th><th>Does</th></tr></thead>
-    <tbody>
-      <tr><td><code>&gt;</code></td><td>Run a shell command in the focused pane.</td></tr>
-      <tr><td><code>@</code></td><td>Open a project folder (from your home folder) in a new session.</td></tr>
-      <tr><td><code>!</code></td><td>Run a <code>package.json</code> script or Makefile target from the session's folder.</td></tr>
-      <tr><td><code>?</code></td><td>Search the output of every open session and jump to the hit.</td></tr>
-      <tr><td><code>#</code></td><td>Pick a theme. The whole window re-tints as you move through the list.</td></tr>
-    </tbody>
-  </table></div>
-  <p>Inside a note or the todo list, the line also knows that surface's own words (see those sections).</p>
-
-  <h3 id="ember-cli">The <code>ember</code> command</h3>
-  <p>The same actions work from any Ember shell as <code>ember &lt;words&gt;</code>. A command acts on the tab that typed it, which means an agent running in that tab can split a pane or open the panel with the same words you would.</p>
-<pre><code>ember                        <span class="c">the full list, from the running app</span>
-ember new [dir]              <span class="c">new session (short: n)</span>
-ember split right|down       <span class="c">split this tab (s / sd)</span>
-ember close                  <span class="c">close the focused pane (x)</span>
-ember rename &lt;name&gt;          <span class="c">name this tab (r)</span>
-ember focus &lt;n|name&gt;         <span class="c">switch tab (f)</span>
-ember list                   <span class="c">the open tabs</span>
-ember panel show|hide        <span class="c">the panel (p)</span>
-ember visualize              <span class="c">ask the Claude in this tab to draw what it just said (v)</span>
-ember overview               <span class="c">every session on one screen (ov)</span>
-ember todo                   <span class="c">the todo list (t)</span>
-ember theme &lt;name&gt;           <span class="c">apply a theme (th)</span>
-ember settings [tab]         <span class="c">open Settings</span>
-ember zen                    <span class="c">hide all chrome</span>
-ember set &lt;path&gt; &lt;value&gt;     <span class="c">change one setting, e.g. ember set window.opacity 60</span>
-ember get &lt;path&gt;             <span class="c">print one setting</span>
-ember diag [n]               <span class="c">the last lines of Ember's diagnostic log</span></code></pre>
-  <p><code>ember set</code>, <code>ember get</code> and <code>ember diag</code> edit or read files directly, so they work even when the app isn't running.</p>
-</section>
-
-<!-- ======================================================================= -->
-<section aria-labelledby="shortcuts">
-  <h2 id="shortcuts">Keyboard shortcuts <a class="anchor" href="#shortcuts" aria-label="Link to this section">#</a></h2>
-  <p><kbd>F1</kbd> shows these inside the app.</p>
-  <div class="tbl"><table>
-    <caption>General</caption>
-    <thead><tr><th>Keys</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>K</kbd> or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></td><td>Command line</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>,</kbd></td><td>Settings</td></tr>
-      <tr><td class="keys"><kbd>F1</kbd></td><td>Keyboard shortcuts</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>B</kbd></td><td>Show or hide the sidebar</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd></td><td>Zen mode: hide all chrome</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Sessions and panes</caption>
-    <thead><tr><th>Keys</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></td><td>New session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>W</kbd></td><td>Close the focused pane</td></tr>
-      <tr><td class="keys"><kbd>F2</kbd></td><td>Rename the session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Tab</kbd> / <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Tab</kbd></td><td>Next / previous session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>1</kbd>…<kbd>9</kbd></td><td>Jump to a session</td></tr>
-      <tr><td class="keys"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd></td><td>Split right</td></tr>
-      <tr><td class="keys"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>-</kbd></td><td>Split down</td></tr>
-      <tr><td class="keys"><kbd>Alt</kbd> + arrows</td><td>Move between panes</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd></td><td>Zoom the focused pane</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd></td><td>Broadcast input to all panes</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Terminal</caption>
-    <thead><tr><th>Keys</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>↑</kbd> / <kbd>Ctrl</kbd><kbd>↓</kbd></td><td>Previous / next command</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>F</kbd></td><td>Find in scrollback (Enter / Shift+Enter to step)</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>O</kbd></td><td>Copy the last command's output</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></td><td>Copy the selection</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>V</kbd></td><td>Paste</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Agents, notes and views</caption>
-    <thead><tr><th>Keys</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></td><td>Show or hide the panel</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd></td><td>Point at something on the panel</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td>The overview, and back to your session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd></td><td>The todo list, and back to your session</td></tr>
-      <tr><td class="keys"><kbd>Esc</kbd></td><td>Leave a note, the todo list or the overview</td></tr>
-    </tbody>
-  </table></div>
-  <p><kbd>Ctrl</kbd><kbd>K</kbd> is readline's kill-line in some shells; Ember takes it for the command line. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd> does the same thing without taking anything from the shell.</p>
-</section>
-
-<!-- ======================================================================= -->
-<section aria-labelledby="terminal">
-  <h2 id="terminal">Terminal tools <a class="anchor" href="#terminal" aria-label="Link to this section">#</a></h2>
-  <h3 id="command-blocks">Command blocks</h3>
-  <p>Each command and its output is treated as one block. <kbd>Ctrl</kbd><kbd>↑</kbd> / <kbd>Ctrl</kbd><kbd>↓</kbd> move by command instead of by line. A rail on the right edge has one tick per command, red where a command failed; click a tick to jump there. While you scroll through long output, a sticky header names the command that produced it.</p>
-  <h3 id="shell-integration">Shell integration</h3>
-  <p>On by default. Ember wraps your PowerShell prompt (it doesn't replace it, so oh-my-posh keeps working) so it reports the working directory and each command's exit code. That is what powers the git badge, the red failure ticks, the task runner, and splits that open in the same folder. Turn it off in Settings › Behaviour if it conflicts with something in your profile.</p>
-  <h3 id="more-tools">Also in the terminal</h3>
+<section aria-labelledby="objects">
+  <h2 id="objects">Objects in a reply <a class="anchor" href="#objects" aria-label="Link to this section">#</a></h2>
+  <p>A diagram, table or chart that is part of a reply sits in the text. Hover it to see its name and <b>Drag out</b> at the top right.</p>
   <ul>
-    <li><strong>Copy last output</strong> (<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>O</kbd>) copies what the last command printed, without the prompt.</li>
-    <li><strong>Task runner</strong>: <kbd>Ctrl</kbd><kbd>K</kbd> then <code>!</code> lists <code>package.json</code> scripts and Makefile targets.</li>
-    <li><strong>Port rescue</strong>: after an "address already in use" error, the command line offers to stop whatever holds the port.</li>
-    <li><strong>Reset terminal modes</strong> (<code>reset</code> in the command line) fixes stray mouse codes a crashed program left behind.</li>
-    <li><strong>Sound</strong>: short synthesized cues for switching, opening, closing, attention, and success or failure of commands that ran longer than about a second. Settings › Behaviour turns them off.</li>
+    <li><b>Resize it where it is.</b> Pull any edge or corner. The right edge can grow past the text, out to the edge of the canvas. Pulling the edge lights it up.</li>
+    <li><b>Drag out</b> takes it out of the reply. Drop it anywhere on the canvas, or at an edge to snap it there (see <a href="#placing">Placing and snapping</a>).</li>
+    <li>Objects can also go straight onto the canvas when the agent puts them up with a tool. They work the same way.</li>
   </ul>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="panel">
-  <h2 id="panel">The panel <a class="anchor" href="#panel" aria-label="Link to this section">#</a></h2>
-  <p>Every tab has a panel on its right that the agent in that tab can draw on. It stays closed until something is put there, then opens. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd> or the title-bar button shows and hides it; drag its left edge to resize it.</p>
-  <p>The agent reaches it through four tools Ember gives the session:</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Tool</th><th>Shows</th></tr></thead>
-    <tbody>
-      <tr><td><code>show_panel</code></td><td>Markdown (including tables and checklists), a Mermaid diagram, a code listing, or a full HTML page such as a mockup or chart. Each push replaces what was there.</td></tr>
-      <tr><td><code>ask_panel</code></td><td>A question with its answers as buttons, plus a free-text box.</td></tr>
-      <tr><td><code>open_url</code></td><td>A real browser in the panel, with back, forward and an address bar. Useful for a dev server, docs or a pull request.</td></tr>
-      <tr><td><code>clear_panel</code></td><td>Empties and closes it.</td></tr>
-    </tbody>
-  </table></div>
-  <p>You don't have to ask. With the <a href="#skills">visualize skill</a> installed, Claude Code draws on its own whenever an answer has a shape: a diagram for a flow, a table for a comparison, a mockup for UI. To ask for it explicitly, say "show me", type <code>/visualize</code>, or press <b>Visualize</b> in the title bar.</p>
-
-  <h3 id="panel-buttons">Answering from the panel</h3>
+<section aria-labelledby="placing">
+  <h2 id="placing">Placing and snapping <a class="anchor" href="#placing" aria-label="Link to this section">#</a></h2>
+  <p>A placed object stays on screen while the conversation goes on.</p>
   <ul>
-    <li><strong>Buttons.</strong> A button on the panel types its text into the session beside it and presses Enter. Some buttons only fill the prompt and leave Enter to you; agents use those for anything destructive.</li>
-    <li><strong>Questions.</strong> An <code>ask_panel</code> card sends the answer you pick, or whatever you type in its box, as your next message.</li>
-    <li><strong>Pointing.</strong> <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd> (or the target icon in the panel bar) turns on select mode. Hover highlights a block (a table cell selects its whole row); click it to get a small box with quick prompts. What goes to the session quotes what you picked, e.g. <em>On the panel, row 2 — "Golf | 2016 | 7200": is this one worth it</em>. This works on web pages opened in the panel too.</li>
+    <li><b>Move</b> it by its title bar. <b>Resize</b> it from any edge or corner.</li>
+    <li><b>Snap</b> it by dropping it at the left, right, top or bottom edge. A snapped object fills that side, and you resize it from its inner edge.</li>
+    <li>The reply's text moves out of the way, so words never sit under an object.</li>
+    <li><b>Minimize</b> it to its title bar with the <b>–</b> button, or by double-clicking the bar.</li>
+    <li>When objects overlap, the one you touch comes to the front.</li>
+    <li><b>Put back</b> (in its menu, or <kbd>P</kbd>) returns it to its place in the reply. <b>×</b> removes it from the screen.</li>
   </ul>
-  <p>Settings › Agent has the panel's default width and whether it opens by itself the first time something is drawn.</p>
-  <div class="note note--safe">
-    <p><strong>Isolation.</strong> Panel content is written by a model, so Ember treats it as untrusted. It runs in a separate web view with no access to the app, and a panel can only type into the one tab it belongs to.</p>
+</section>
+
+<section aria-labelledby="full-screen">
+  <h2 id="full-screen">Full screen and zoom <a class="anchor" href="#full-screen" aria-label="Link to this section">#</a></h2>
+  <p>Open any object full screen from its menu, from the button in its title bar, or with <kbd>Enter</kbd> when it is selected from the keyboard. <kbd>Esc</kbd> or a click outside closes it.</p>
+  <p>Full screen has a zoom bar at the bottom: <b>−</b>, the zoom level, and <b>+</b>. Click the level to fit again.</p>
+  <ul>
+    <li><kbd>Ctrl</kbd> + mouse wheel, or a touchpad pinch, zooms toward the pointer.</li>
+    <li><kbd>+</kbd> and <kbd>−</kbd> zoom in and out. <kbd>0</kbd> fits again.</li>
+    <li>A double-click zooms to 2× where you clicked. Another double-click fits again.</li>
+    <li>When zoomed in, drag to move around.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="cli-view">
+  <h2 id="cli-view">Canvas or CLI view <a class="anchor" href="#cli-view" aria-label="Link to this section">#</a></h2>
+  <p>The switch at the top right, <b>Canvas | CLI</b>, shows either the canvas or the agent's own terminal screen. <kbd>Ctrl</kbd><kbd>`</kbd> switches too. The switch stays in the same place and size in both views.</p>
+  <p>Ember remembers your choice and opens new sessions in the same view. Whatever you type reaches the same agent either way.</p>
+</section>
+
+<section aria-labelledby="keyboard">
+  <h2 id="keyboard">The canvas from the keyboard <a class="anchor" href="#keyboard" aria-label="Link to this section">#</a></h2>
+  <p>Everything on the canvas can be reached without the mouse. Press <kbd>Ctrl</kbd><kbd>↑</kbd> in the input to go to the newest object. It gets an amber ring, and a strip of keys appears.</p>
+  <div class="tablewrap">
+    <table class="keys-table">
+      <thead><tr><th>Keys</th><th>With an object selected</th></tr></thead>
+      <tbody>
+        <tr><td class="keys"><kbd>↑</kbd> <kbd>↓</kbd></td><td>Choose another object</td></tr>
+        <tr><td class="keys"><kbd>Enter</kbd></td><td>Full screen</td></tr>
+        <tr><td class="keys"><kbd>P</kbd></td><td>Place it on screen, or put it back</td></tr>
+        <tr><td class="keys"><kbd>Shift</kbd> + arrows</td><td>Snap to that edge</td></tr>
+        <tr><td class="keys"><kbd>Alt</kbd> + arrows</td><td>Move</td></tr>
+        <tr><td class="keys"><kbd>Alt</kbd><kbd>Shift</kbd> + arrows</td><td>Resize</td></tr>
+        <tr><td class="keys"><kbd>M</kbd></td><td>Minimize</td></tr>
+        <tr><td class="keys"><kbd>N</kbd></td><td>New sticky note</td></tr>
+        <tr><td class="keys"><kbd>Space</kbd></td><td>Its menu</td></tr>
+        <tr><td class="keys"><kbd>Del</kbd></td><td>Remove</td></tr>
+        <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to typing</td></tr>
+      </tbody>
+    </table>
   </div>
+  <p>Typing any other character also takes you back to the input, with that character typed. <kbd>PgUp</kbd> / <kbd>PgDn</kbd> scroll the reply, and <kbd>Ctrl</kbd><kbd>Home</kbd> / <kbd>End</kbd> go to its start and end.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="overview">
-  <h2 id="overview">The overview <a class="anchor" href="#overview" aria-label="Link to this section">#</a></h2>
-  <p>Every session on one screen, built to work from. <b>Overview</b>, <b>Todo</b> and <b>Notes</b> are buttons at the top of the sidebar, always there. Open the overview with one of them, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, or <code>ember overview</code> (<code>ov</code>); the shortcut again takes you back to the session you came from.</p>
-  <ul>
-    <li><b>The numbers</b> along the top: sessions working and waiting, tokens (and how much came from cache), spend, lines added and removed, the fullest context window, your plan's usage, and a sparkline of the last hour.</li>
-    <li><b>A card per session</b>, in tab order: state, folder, what its Claude last said, the tool it is on, and a line of facts (branch, model, tokens, +/− lines, cost, context).</li>
-    <li>When a session asks permission, its card shows the question as the terminal draws it, with the options as buttons. Click <b>1</b>, <b>2</b>, <b>3</b>, Enter or Esc to answer without leaving the page.</li>
-    <li>A reply you have not seen stays open in full on its card. <b>⤢</b> or <kbd>Space</kbd> opens any card in place with its whole last reply and recent actions. Arrows move between cards, <kbd>Enter</kbd> goes to one, and typing starts an answer.</li>
-    <li><b>The rail</b>: your todo list (tick or add items), your recent notes, and a quiet activity log of every edit, command and finished turn across all sessions.</li>
-  </ul>
-  <p>Tokens, changes and replies come from Claude Code's own transcripts, read in full when a session announces itself, so the totals cover the whole session.</p>
+<section aria-labelledby="sticky">
+  <h2 id="sticky">Sticky notes <a class="anchor" href="#sticky" aria-label="Link to this section">#</a></h2>
+  <p><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd> in a session drops a sticky note on its canvas, ready to type in. It has a warm colour, so it reads as yours rather than the agent's.</p>
+  <p>A sticky is a real note. It is saved in your notes, with the date and the session it came from, and it shows up on the Notes page. Move, resize and snap it like any object.</p>
+  <p>In a plain shell, the same keys open the Notes page.</p>
 </section>
 
-<!-- ======================================================================= -->
+<!-- ============================ OUTSIDE SESSIONS ============================ -->
+
 <section aria-labelledby="notes">
   <h2 id="notes">Notes <a class="anchor" href="#notes" aria-label="Link to this section">#</a></h2>
-  <p>Type <code>notes</code> in any Ember shell for the list, or <code>note</code> for a new page (<code>note buy milk</code> starts one with that text). Typed in a shell, notes open over that tab; the shell keeps running underneath, and <kbd>Esc</kbd> (or the <code>back</code> command in the command line) brings it back as it was. In a note, Esc first goes to the list, then to the shell. The <b>Notes</b> button at the top of the sidebar opens them as a place of their own.</p>
+  <p>Notes live outside sessions. Open them with the notes button at the bottom left of the sidebar, or <b>All notes</b> in <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
   <ul>
-    <li>There is no save key. The editor saves 400 ms after you stop typing.</li>
-    <li>The first line is the note's title and its file name. Rename a note by editing its first line.</li>
-    <li><code>/todo</code> on a line turns what follows into checklist items.</li>
-    <li>In the command line inside a note: <code>new</code>, <code>open &lt;name&gt;</code>, <code>del [name]</code>, <code>list</code>, <code>view text|list</code>, <code>folder</code>, <code>back</code>.</li>
+    <li>Each note is a Markdown file in <code>Documents\Ember Notes</code>. Edit them in Ember or in any editor.</li>
+    <li><b>New note</b> starts one. Write meeting notes or ideas there with no session open.</li>
+    <li><b>Show in the folder</b> opens the folder in Explorer.</li>
   </ul>
-  <p>Notes are ordinary <code>.md</code> files in <code>Documents\Ember Notes</code> (set <code>EMBER_NOTES_DIR</code> to move them). Any editor can open them, Ember holds no lock on them, and deleting sends a note to the Recycle Bin. The folder is watched, so a note changed elsewhere updates in front of you.</p>
-  <h3 id="notes-cli">The <code>notes</code> command</h3>
-  <p>It's a real command on the PATH of every Ember shell (PowerShell, cmd and Git Bash), so an agent can read and write your notes with no extra tool:</p>
-<pre><code>notes                        <span class="c">open the Notes tab</span>
-notes list [--json]          <span class="c">every note, newest first</span>
-notes read &lt;note&gt;            <span class="c">print one</span>
-notes new [--open] [text…]   <span class="c">create one; the text is its first line</span>
-notes write &lt;note&gt; [text…]   <span class="c">replace its content (text, or stdin)</span>
-notes append &lt;note&gt; [text…]  <span class="c">add to the end (text, or stdin)</span>
-notes delete &lt;note&gt;          <span class="c">to the Recycle Bin</span>
-notes open [note]            <span class="c">show it in an Ember tab</span>
-notes dir                    <span class="c">print the folder</span></code></pre>
-  <p><code>&lt;note&gt;</code> is the file name or a unique part of the title.</p>
+  <h3>Agents and your notes</h3>
+  <p>Agents in Ember can search, read, list, write and add to your notes through Ember's tools. Ask in plain words:</p>
+  <ul class="prompts">
+    <li>"What's in my notes about the release?"</li>
+    <li>"Write a note called Meeting with three points from what we just discussed."</li>
+  </ul>
 </section>
 
-<!-- ======================================================================= -->
 <section aria-labelledby="todo">
-  <h2 id="todo">The todo list <a class="anchor" href="#todo" aria-label="Link to this section">#</a></h2>
-  <p>Its own surface, separate from the notes. Open it with the <b>Todo</b> button at the top of the sidebar or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>; the shortcut again goes back to your session. <code>todo</code> typed in an Ember shell opens the list over that shell. The overview shows the open items too, and you can tick or add them there.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Key</th><th>Does</th></tr></thead>
-    <tbody>
-      <tr><td class="keys"><kbd>Enter</kbd></td><td>Next item</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></td><td>Tick the item</td></tr>
-      <tr><td class="keys"><kbd>Backspace</kbd> on an empty item</td><td>Remove it</td></tr>
-      <tr><td class="keys"><kbd>Alt</kbd><kbd>↑</kbd> / <kbd>Alt</kbd><kbd>↓</kbd> or drag</td><td>Reorder</td></tr>
-      <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to the shell, when the list is open over one</td></tr>
-    </tbody>
-  </table></div>
-  <p>Ticked items are never deleted, only cleared: <b>Clear done</b> moves them to an archive under a heading for the day. The archive shows below the list as <code>archive · n</code>, and each archived item has a ↩ to bring it back.</p>
-  <p>In the command line on the list: <code>add &lt;text&gt;</code>, <code>done &lt;words&gt;</code>, <code>dismiss &lt;words&gt;</code> (remove without ticking), <code>open &lt;words&gt;</code> (open where an item came from, such as a Jira ticket or a PR), <code>claude &lt;words&gt;</code> (hand an item to a new Claude session), <code>clear done</code>, <code>archive</code>.</p>
-  <p>From any shell, and from any agent:</p>
-<pre><code>todo add "&lt;text&gt;"            <span class="c">add an item</span>
-todo done &lt;words&gt;            <span class="c">tick the first open item containing the words</span>
-todo list [--all]            <span class="c">open items (--all adds ticked and archived)</span>
-todo clear done              <span class="c">archive the ticked items</span>
-todo archive                 <span class="c">print the archive</span></code></pre>
-  <p>The list is a plain file, <code>Todo.md</code>, next to your notes, one <code>- [ ] item</code> per line; the archive is <code>Todo.archive.md</code>. With the <a href="#skills">ember skill</a> installed, Claude adds to it when you mention something for later, or when a turn leaves a step only you can take, and ticks items it sees get done.</p>
+  <h2 id="todo">Todo <a class="anchor" href="#todo" aria-label="Link to this section">#</a></h2>
+  <p>One todo list, outside sessions. Open it with the todo button at the bottom left (it shows how many items are open) or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>.</p>
+  <ul>
+    <li>Add, tick and reorder items. Ticked items can be cleared into an archive.</li>
+    <li>An item can be handed to a new agent session, which starts with the item as its task.</li>
+    <li>The list is <code>Todo.md</code> in your notes folder, with <code>Todo.archive.md</code> beside it.</li>
+  </ul>
+  <p>Agents can read the list, add items and tick them done:</p>
+  <ul class="prompts">
+    <li>"What's on my todo list?"</li>
+    <li>"Add a todo: rebuild the website."</li>
+    <li>"I finished the release notes, tick that if it's on my list."</li>
+  </ul>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="settings">
-  <h2 id="settings">Settings <a class="anchor" href="#settings" aria-label="Link to this section">#</a></h2>
-  <p><kbd>Ctrl</kbd><kbd>,</kbd> opens Settings (or <code>ember settings [tab]</code>). Every control previews live. The panel edits <code>~/.ember/config.json</code>, and Ember applies any change to that file on save, so editing the file by hand does exactly the same thing. A half-written file is ignored until it is valid again.</p>
-  <p>At the top: a <b>Filter settings</b> box that searches every tab, and <b>Reset to defaults</b>, which asks for a second click because it can't be undone.</p>
-
-  <h3 id="settings-look">Look</h3>
-  <p><strong>Theme.</strong> A grid of 51 palettes, led by the house pair: <b>Ember Night</b> (the default) and <b>Ember Day</b>. The sun/moon button in the title bar, or <code>ember mode night|day</code>, switches between them, and remembers if you pick a different theme for either side. Then Ember's own, ports of well-known themes (Tokyo Night, Catppuccin, Dracula, Nord, Gruvbox, Kanagawa, Rosé Pine, Solarized and more), light themes and single-colour retro sets. A theme re-tints the whole window, not only the terminal.</p>
-  <div class="tbl"><table>
-    <caption>Text</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Font</td><td>One font for the whole window, chrome and terminal. The picker lists fonts installed on this machine, each drawn in itself. Type a full CSS font stack and press Enter to use that instead.</td><td class="nw">CaskaydiaCove NF, Cascadia Code, Consolas</td></tr>
-      <tr><td>Interface font</td><td>A different font for the chrome only.</td><td class="nw">Same as app font</td></tr>
-      <tr><td>Size</td><td>8–28</td><td>13</td></tr>
-      <tr><td>Weight</td><td>100–700</td><td>300</td></tr>
-      <tr><td>Line height</td><td>1–2</td><td>1.16</td></tr>
-      <tr><td>Scrollback lines</td><td>500–100,000</td><td>10,000</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Window</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Opacity</td><td>How much the background tint covers what's behind the window (20–100).</td><td>70</td></tr>
-      <tr><td>Backdrop</td><td><code>acrylic</code> (live blur), <code>mica</code>, <code>tabbed</code>, or <code>none</code> (plain transparency, no blur).</td><td>acrylic</td></tr>
-      <tr><td>Opacity when inactive</td><td>Window opacity while another app has focus. Windows removes the blur from inactive windows; lowering this keeps the window see-through instead of a flat grey (20–100).</td><td>100</td></tr>
-      <tr><td>Sidebar width</td><td>160–420 px</td><td>244</td></tr>
-      <tr><td>Padding top / bottom / left / right</td><td>Space around the terminal, 0–40 px. The bottom has extra room so full-screen programs' status lines aren't clipped.</td><td class="nw">12 / 22 / 16 / 16</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Effects</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Glow</td><td>Glow over the text, 0–1.</td><td>1</td></tr>
-      <tr><td>Scanlines</td><td>CRT-style lines, 0–0.4.</td><td>0</td></tr>
-      <tr><td>Vignette</td><td>Darkened edges, 0–1.</td><td>0.48</td></tr>
-      <tr><td>React to output</td><td>The glow brightens with terminal output.</td><td>On</td></tr>
-      <tr><td>Output rises into place</td><td>New lines slide up instead of jumping. Skipped automatically for fast output.</td><td>On</td></tr>
-      <tr><td>Shed effects when slow</td><td>Drops the effects overlay and card tilt if frames start running late.</td><td>On</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3 id="settings-motion">Motion</h3>
-  <p><strong>Speed</strong> has two presets. <b>Full</b> turns on the breathing caret, its trail and glow, and output motion. <b>Fast</b> turns those four off, which saves CPU on older machines. The text is the same either way.</p>
-  <div class="tbl"><table>
-    <caption>Caret</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Shape</td><td><code>bar</code>, <code>block</code> or <code>underline</code></td><td>block</td></tr>
-      <tr><td>Travel speed</td><td>How fast the caret moves to a new position, 150–2200. Higher is snappier.</td><td>1000</td></tr>
-      <tr><td>Overshoot</td><td>0.4–1. 1.0 means no overshoot.</td><td>0.82</td></tr>
-      <tr><td>Trail length</td><td>80–900. Lower is a longer trail.</td><td>900</td></tr>
-      <tr><td>Trail strength</td><td>0–1. 0 turns the trail off.</td><td>1</td></tr>
-      <tr><td>Glow</td><td>0–40</td><td>40</td></tr>
-      <tr><td>Idle breathing</td><td>Seconds per breath while idle, 0–8. 0 turns it off.</td><td>3.2</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Motion</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Session switch speed</td><td>200–2000. Higher is snappier.</td><td>2000</td></tr>
-      <tr><td>Switch overshoot</td><td>0.5–1. 1.0 means no bounce.</td><td>1.0</td></tr>
-      <tr><td>Switch blur</td><td>Blur on the outgoing session, 0–20.</td><td>0</td></tr>
-      <tr><td>Overall speed</td><td>Multiplier on interface animations, 0–2. 0 makes them instant.</td><td>1</td></tr>
-    </tbody>
-  </table></div>
-  <div class="tbl"><table>
-    <caption>Scrolling</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Momentum</td><td>The wheel adds velocity that slows down, instead of jumping by lines.</td><td>On</td></tr>
-      <tr><td>Rubber-band ends</td><td>Scrolling past either end stretches and springs back.</td><td>On</td></tr>
-      <tr><td>Wheel speed</td><td>1–10</td><td>3</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3 id="settings-agent">Agent</h3>
-  <p><strong>Your agent</strong> lists the six supported CLIs, shows which are installed (Ember checks again every time you open this tab), and has <b>Install</b> and sign-in buttons that run in a new tab. The one you select is used for Ember's own headless questions. Default: Claude Code.</p>
-  <div class="tbl"><table>
-    <caption>Panel</caption>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Panel width</td><td>Share of the tab the panel takes when open, 0.2–0.7.</td><td>0.42</td></tr>
-      <tr><td>Open the panel on first use</td><td>Opens the panel by itself the first time an agent draws on it.</td><td>On</td></tr>
-      <tr><td>Plan usage in the sidebar</td><td>Shows your Claude plan's 5-hour and weekly limits, polled once a minute with the login Claude Code already has.</td><td>Off</td></tr>
-      <tr><td>Status line on Claude sessions</td><td>Model, context and cost under each Claude Code session and on its card. If you already have your own status line in <code>~/.claude/settings.json</code>, yours is kept. Applies to new sessions.</td><td>On</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3 id="settings-behaviour">Behaviour</h3>
-  <div class="tbl"><table>
-    <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td>Sound › Enabled</td><td>The short interface sounds.</td><td>On</td></tr>
-      <tr><td>Sound › Volume</td><td>0–1</td><td>1</td></tr>
-      <tr><td>Shell integration</td><td>Reports the folder and exit status from your PowerShell prompt. Needed for the git badge, failure markers, the task runner and same-folder splits.</td><td>On</td></tr>
-    </tbody>
-  </table></div>
-
-  <h3 id="settings-labs">Labs</h3>
-  <p>One switch, <b>Labs</b>, for experimental features. Today that's only the <a href="#labs">phone link</a>. Default: off.</p>
-
-  <h3 id="settings-file">Only in config.json</h3>
-  <p>A few options have no control in the panel. Set them with <code>ember set &lt;path&gt; &lt;value&gt;</code> or in the file:</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Key</th><th>What it does</th><th>Default</th></tr></thead>
-    <tbody>
-      <tr><td><code>defaultProfile</code></td><td>Shell for new sessions: <code>pwsh</code>, <code>winps</code>, <code>cmd</code>, or the id of a profile you added.</td><td><code>pwsh</code></td></tr>
-      <tr><td><code>profiles</code></td><td>The list of shells: <code>id</code>, <code>name</code>, <code>command</code>, <code>args</code>, <code>accent</code>.</td><td>PowerShell 7, Windows PowerShell, Command Prompt</td></tr>
-      <tr><td><code>font.letterSpacing</code></td><td>Extra space between characters, in px.</td><td>0</td></tr>
-      <tr><td><code>font.features</code></td><td>OpenType features, e.g. ligatures.</td><td><code>{"calt":1,"liga":1}</code></td></tr>
-      <tr><td><code>cursor.barWidth</code></td><td>Width of the bar caret, as a share of a cell.</td><td>0.22</td></tr>
-      <tr><td><code>effects.outputMotionMaxRate</code></td><td>Above this many characters per second, output stops animating.</td><td>24000</td></tr>
-    </tbody>
-  </table></div>
+<section aria-labelledby="knowledge">
+  <h2 id="knowledge">Shared knowledge <a class="anchor" href="#knowledge" aria-label="Link to this section">#</a></h2>
+  <p>Each agent CLI keeps what it knows in its own place. Ember gives them one shared knowledge, so switching from Claude Code to Codex doesn't mean starting from zero.</p>
+  <ul>
+    <li><b>Instructions:</b> how you like to work, in <code>~/.ember/brain/instructions.md</code>. Ember hands them to every agent it finds, in a marked section of that agent's own instructions file. Text outside that section is never touched, and each file is backed up once first.</li>
+    <li><b>Memory:</b> one fact per file, in <code>~/.ember/brain/memory</code>. Agents read it with <code>recall</code> and add to it with <code>remember</code>. On the first sync Ember copies in what Claude Code already remembers.</li>
+    <li><b>Skills:</b> shared skills, offered to every agent through the <code>skills</code> tool.</li>
+  </ul>
+  <p>Settings › Agent › <b>Shared knowledge</b> shows what is shared, which agents get it, <b>Sync now</b>, and the switch to turn it off. Ember syncs at start and every 15 minutes.</p>
+  <ul class="prompts">
+    <li>In Codex: "Recall what you know about my deploy setup."</li>
+    <li>In any agent: "Remember that I prefer short commit messages."</li>
+  </ul>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="skills">
-  <h2 id="skills">Skills <a class="anchor" href="#skills" aria-label="Link to this section">#</a></h2>
-  <p>Ember ships two Claude Code skills. <strong>You don't need to install them by hand:</strong> Ember copies them into <code>~/.claude/skills/</code> every time it starts, and also into <code>~/.codex/skills/</code> if Codex is on the machine. Because they live in your own skills folder, they work in any Claude Code session on the machine, not only inside Ember.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Skill</th><th>What it teaches the agent</th></tr></thead>
-    <tbody>
-      <tr><td><code>ember</code></td><td>How Ember works: the panel and its tools, the <code>ember</code>, <code>notes</code> and <code>todo</code> commands, the shortcuts, computer use with <code>desk</code>, and not to stop Ember's own process. It also tells Claude to keep your todo list up to date.</td></tr>
-      <tr><td><code>visualize</code></td><td>When and how to draw on the panel: which format suits what (diagram, table, checklist, mockup, chart), and how to write a complete HTML panel. Also runs as <code>/visualize</code>.</td></tr>
-    </tbody>
-  </table></div>
-  <h3 id="skills-editing">Editing them</h3>
-  <p>Each installed <code>SKILL.md</code> starts with a comment line saying it was installed by Ember. While that line is there, Ember keeps the file up to date with the version it ships. Delete that line and the file is yours: Ember won't overwrite it again.</p>
-  <h3 id="skills-manual">Installing them by hand</h3>
-  <p>To use the skills on a machine without Ember, copy the folders from <a href="https://github.com/afetiu/ember-terminal/tree/main/resources/skills"><code>resources/skills</code></a> in the repository into <code>~/.claude/skills/</code>, so you end up with <code>~/.claude/skills/ember/SKILL.md</code> and so on. The panel, <code>notes</code>, <code>todo</code> and <code>desk</code> only exist inside Ember, and the skills say so to the agent when they're missing.</p>
-</section>
-
-<!-- ======================================================================= -->
 <section aria-labelledby="computer-use">
   <h2 id="computer-use">Computer use <a class="anchor" href="#computer-use" aria-label="Link to this section">#</a></h2>
-  <p>An agent running in an Ember tab can operate other apps on your desktop: open programs, click buttons, fill in fields, read text from windows and take screenshots. It does this with the <code>desk</code> command, which exists only inside Ember shells.</p>
-
-  <h3 id="desk-enable">Turning it on</h3>
-  <p>There's no setting. It needs <strong>Python 3</strong> on the machine (from python.org, reachable as <code>py</code> or <code>python</code>). The first time an agent runs <code>desk</code>, Ember starts a small background helper and, if its Python libraries are missing (pyautogui, pywinauto, mss, Pillow, pyperclip), installs them for your user with pip. If Python isn't installed, the COMPUTER row in the sidebar says so. The helper stops when Ember closes.</p>
-  <p>The <code>ember</code> skill already teaches Claude the commands, so in practice you ask for the result ("open Calculator and work out 7 × 6", "fill this form in the browser") and Claude uses <code>desk</code>.</p>
-
-  <h3 id="desk-see">What you see</h3>
+  <p>Agents in Ember can use your Windows desktop: read what is on screen, point at things and click and type. A pointer of Ember's own shows where the agent is working. It glides to each target and dips on every click.</p>
   <ul>
-    <li><strong>A second cursor.</strong> While the agent works, Ember draws the agent's own orange pointer where the action is happening. Your mouse stays yours.</li>
-    <li><strong>The COMPUTER row</strong> in the sidebar strip shows what is being done and a <b>STOP</b> switch.</li>
-    <li><strong>A "Stop Claude" pill</strong> on screen next to the drawn cursor.</li>
+    <li><b>look</b> reads the screen as text, with no screenshot. Without a window it lists the open windows. With one, it lists that window's controls with numbers, like <code>#7 [Button] 'Save' (412,88)</code>.</li>
+    <li><b>act</b> runs a whole sequence in one go, one step per line: <code>focus "Notepad"</code>, <code>press #7</code>, <code>click #12</code>, <code>settext #3 "hello"</code>, <code>type "text"</code>, <code>key ctrl+s</code>, <code>scroll -3</code>, <code>run calc</code>, <code>wait "Calculator"</code>. Its reply ends with what is on screen afterwards, numbered again, so the agent can plan its next step from it.</li>
+    <li><b>point</b> shows you where something is, with a short note beside it, and never clicks. It can step through a walkthrough with <b>Next</b> and <b>Done</b>.</li>
   </ul>
+  <p class="callout"><b>STOP</b> is on screen whenever an agent acts. Pressing it halts computer use at once, until you resume it. To turn computer use off altogether, choose <b>Computer use: on / off</b> in <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
+  <p>Computer use needs Python 3. Ember installs the few libraries it uses the first time. A locked screen hides every window's controls, so it works only while you are signed in and unlocked.</p>
+  <ul class="prompts">
+    <li>"Open Calculator and work out 12 × 7."</li>
+    <li>"Show me where the Bluetooth settings are."</li>
+  </ul>
+</section>
 
-  <h3 id="desk-stop">Stopping it</h3>
-  <p><b>STOP</b> in the sidebar, the on-screen pill, or <code>desk halt</code> all do the same: the helper process is killed and every <code>desk</code> command answers <code>HALTED</code> until you press <b>Resume</b> (the same switch) or run <code>desk resume</code>. The halt is saved to disk and survives a restart of Ember.</p>
+<!-- ============================ EVERYTHING ELSE ============================ -->
 
-  <div class="note note--warn">
-    <p><strong>Safety.</strong> Computer use acts with your user's rights, in whatever apps are open. Only use it with an agent you are watching; use STOP the moment it does something you didn't ask for. It can't be reached from outside: the helper listens only on this machine, and only shells Ember started get its port and token. If the Windows session is locked, <code>desk</code> reports <code>LOCKED</code> and can't do anything until you unlock it.</p>
+<section aria-labelledby="palette">
+  <h2 id="palette">Ctrl+K and the ember command <a class="anchor" href="#palette" aria-label="Link to this section">#</a></h2>
+  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens the command line at the bottom of the window. Type to filter, <kbd>Enter</kbd> to run. It holds everything Ember can do: new session, new terminal, notes, todo, themes, settings, computer use, and the tools below.</p>
+  <p>The same commands work from any shell in Ember as <code>ember</code>:</p>
+<pre><code>ember                        every command, from the running app
+ember new [dir]              new session, in a folder
+ember rename &lt;name&gt;          name the session
+ember focus &lt;n|name&gt;         switch to a session
+ember list                   the open sessions
+ember theme [name]           apply a theme
+ember settings [tab]         open Settings
+ember set &lt;path&gt; &lt;value&gt;     write one setting, e.g. ember set window.opacity 60
+ember get &lt;path&gt;             read one setting
+ember diag                   Ember's recent log</code></pre>
+  <p><code>notes</code>, <code>todo</code> and <code>desk</code> are there as commands too, so scripts and agents can use your notes, your list and computer use from a plain shell.</p>
+</section>
+
+<section aria-labelledby="shortcuts">
+  <h2 id="shortcuts">Keyboard shortcuts <a class="anchor" href="#shortcuts" aria-label="Link to this section">#</a></h2>
+  <p><kbd>F1</kbd> shows them in the app.</p>
+  <div class="tablewrap">
+    <table class="keys-table">
+      <thead><tr><th>Keys</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="2">Everywhere</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>K</kbd></td><td>Command line</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>,</kbd></td><td>Settings</td></tr>
+        <tr><td class="keys"><kbd>F1</kbd></td><td>Keyboard shortcuts</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></td><td>New session with the current agent</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>W</kbd></td><td>Close the focused session</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Tab</kbd></td><td>Next session (with <kbd>Shift</kbd>, previous)</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>1</kbd>–<kbd>9</kbd></td><td>Go to a session by its place</td></tr>
+        <tr><td class="keys"><kbd>F2</kbd></td><td>Rename the session</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>B</kbd></td><td>Hide or show the sidebar</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd></td><td>Todo</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd></td><td>Zen mode</td></tr>
+        <tr class="group"><td colspan="2">In a session</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>`</kbd></td><td>Canvas or CLI view</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>↑</kbd></td><td>From the input to the newest object</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>↑</kbd> <kbd>↓</kbd></td><td>Earlier or later turns</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd></td><td>Sticky note (in a plain shell: Notes)</td></tr>
+        <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to typing; closes full screen</td></tr>
+        <tr class="group"><td colspan="2">In the terminal</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>F</kbd></td><td>Find in scrollback</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>↑</kbd> <kbd>↓</kbd></td><td>Previous or next command (in a plain shell)</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>O</kbd></td><td>Copy the last command's output</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd> / <kbd>Ctrl</kbd><kbd>V</kbd></td><td>Copy selection / paste</td></tr>
+        <tr><td class="keys"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd> / <kbd>−</kbd></td><td>Split right / down</td></tr>
+        <tr><td class="keys"><kbd>Alt</kbd> + arrows</td><td>Move between split panes</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd></td><td>Zoom the focused pane</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd></td><td>Type into every pane at once</td></tr>
+      </tbody>
+    </table>
   </div>
-
-  <h3 id="desk-commands">Commands</h3>
-<pre><code>desk do "focus X; press X ^OK$; shot"         <span class="c">several steps in one call, stops at the first failure</span>
-desk shot [--window T|--full] [--scale 0.5]    <span class="c">screenshot to a file</span>
-desk windows                                   <span class="c">visible windows (* = foreground)</span>
-desk focus TITLE | desk wait TITLE             <span class="c">raise a window / wait for one</span>
-desk run CMD [ARGS...]                         <span class="c">launch a program</span>
-desk tree TITLE [--depth N]                    <span class="c">the window's controls (UI Automation)</span>
-desk find TITLE NAME | desk press TITLE NAME   <span class="c">find or click a control by name</span>
-desk settext TITLE NAME TEXT                   <span class="c">fill an input</span>
-desk read TITLE [NAME]                         <span class="c">text of a window or control</span>
-desk click X Y | move | drag | scroll          <span class="c">raw mouse input</span>
-desk type TEXT | desk key ctrl+s               <span class="c">raw keyboard input</span>
-desk clip [TEXT]                               <span class="c">read or set the clipboard</span>
-desk halt | desk resume | desk status          <span class="c">the STOP switch</span></code></pre>
-  <p><code>TITLE</code> matches part of a window title, or an exact title as <code>^Title$</code>. A log of what the helper did is kept in <code>~/.ember/desk.log</code>.</p>
 </section>
 
-<!-- ======================================================================= -->
-<section aria-labelledby="labs">
-  <h2 id="labs">Labs: the phone link <a class="anchor" href="#labs" aria-label="Link to this section">#</a></h2>
-  <p>Off by default, and experimental. With <b>Labs</b> on in Settings, the command line gets <b>Connect your phone</b> (<code>devices</code>). It puts this machine on an Ember account with a QR code, so a phone companion can reach the sessions here. Traffic goes through a relay Deep Answer Labs runs; the relay routes by a hash of the account key and never sees the key. The account key is stored in <code>~/.ember/account.json</code>; treat the QR like a house key.</p>
-  <p>The phone app itself isn't published yet (its source is in <code>mobile/</code> in the repository). Unless you're testing it, leave Labs off.</p>
+<section aria-labelledby="terminal">
+  <h2 id="terminal">Terminal tools <a class="anchor" href="#terminal" aria-label="Link to this section">#</a></h2>
+  <p>Under every session is a real PowerShell, and the plain terminal has tools of its own.</p>
+  <ul>
+    <li><b>Command blocks.</b> Each command and its output is one block. <kbd>Ctrl</kbd><kbd>↑</kbd> / <kbd>↓</kbd> move by command. Failed commands are marked red.</li>
+    <li><b>Splits.</b> A row or a column of panes in one session: <kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd> and <kbd>Alt</kbd><kbd>Shift</kbd><kbd>−</kbd>.</li>
+    <li><b>Task runner.</b> <b>Run a project task…</b> in <kbd>Ctrl</kbd><kbd>K</kbd> lists package.json scripts and Makefile targets.</li>
+    <li><b>Port rescue.</b> After "address already in use", the command line offers to stop whatever holds the port.</li>
+    <li><b>Search all sessions…</b> finds text in every session's scrollback.</li>
+    <li><b>Shell integration</b> (on by default) wraps your prompt without replacing it, so oh-my-posh keeps working. It reports the folder and each command's result. Turn it off in Settings › Behaviour.</li>
+  </ul>
 </section>
 
-<!-- ======================================================================= -->
+<section aria-labelledby="settings">
+  <h2 id="settings">Settings and themes <a class="anchor" href="#settings" aria-label="Link to this section">#</a></h2>
+  <p><kbd>Ctrl</kbd><kbd>,</kbd> opens Settings. Type to search every setting at once.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Tab</th><th>What's there</th></tr></thead>
+      <tbody>
+        <tr><td>Look</td><td>Themes, fonts, size, window opacity and backdrop (acrylic, mica or none), padding, effects.</td></tr>
+        <tr><td>Motion</td><td>One speed preset for all animation, the caret, session switching, scrolling.</td></tr>
+        <tr><td>Agent</td><td>Your agent CLIs, the default agent, shared knowledge, plan usage in the sidebar, the status line on Claude sessions.</td></tr>
+        <tr><td>Behaviour</td><td>Shell integration and sound.</td></tr>
+        <tr><td>Labs</td><td>Experimental features, such as the phone link.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>Day and night</h3>
+  <p>The sun and moon in the title bar switch between <b>Ember Night</b> and <b>Ember Day</b>, a light theme on warm paper. Everything in Ember follows: the canvas, objects, sticky notes, the Todo and Notes pages, menus and setup. More themes are in Settings › Look and in <b>Change theme…</b> in <kbd>Ctrl</kbd><kbd>K</kbd>. Diagrams and documents the agent draws take the theme's colours.</p>
+</section>
+
+<section aria-labelledby="phone">
+  <h2 id="phone">Phone link (Labs) <a class="anchor" href="#phone" aria-label="Link to this section">#</a></h2>
+  <p>Off by default, and experimental. Turn on Labs in Settings, then choose <b>Connect your phone</b> in <kbd>Ctrl</kbd><kbd>K</kbd> and scan the QR code with the Ember phone app.</p>
+  <p>The phone then shows your sessions, lets you read the replies, zoom into diagrams and send messages. One phone can be linked to more than one computer. Traffic goes through a relay that Deep Answer Labs runs, encrypted between your devices. Unless you're trying it out, leave Labs off.</p>
+</section>
+
 <section aria-labelledby="files">
   <h2 id="files">Files and privacy <a class="anchor" href="#files" aria-label="Link to this section">#</a></h2>
-  <div class="tbl"><table>
-    <thead><tr><th>Where</th><th>What</th></tr></thead>
-    <tbody>
-      <tr><td><code>~/.ember/config.json</code></td><td>All settings.</td></tr>
-      <tr><td><code>~/.ember/bin/</code></td><td>The <code>ember</code>, <code>notes</code>, <code>todo</code> and <code>desk</code> launchers, rewritten at every start.</td></tr>
-      <tr><td><code>~/.ember/desk.log</code>, <code>desk.halt</code></td><td>Computer-use log; the halt marker while STOP is on.</td></tr>
-      <tr><td><code>~/.ember/diag.log</code></td><td>Diagnostics; read the end with <code>ember diag</code>.</td></tr>
-      <tr><td><code>Documents\Ember Notes\</code></td><td>Notes, <code>Todo.md</code> and <code>Todo.archive.md</code>.</td></tr>
-      <tr><td><code>~/.claude/skills/</code></td><td>The two skills.</td></tr>
-    </tbody>
-  </table></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Where</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td><code>~/.ember/config.json</code></td><td>All settings.</td></tr>
+        <tr><td><code>~/.ember/brain/</code></td><td>Shared knowledge: instructions, memory, skills.</td></tr>
+        <tr><td><code>~/.ember/bin/</code></td><td>The <code>ember</code>, <code>notes</code>, <code>todo</code> and <code>desk</code> commands, rewritten at every start.</td></tr>
+        <tr><td><code>~/.ember/desk.log</code>, <code>desk.halt</code></td><td>Computer-use log, and the marker that holds STOP.</td></tr>
+        <tr><td><code>~/.ember/diag.log</code></td><td>Diagnostics. Read the end with <code>ember diag</code>.</td></tr>
+        <tr><td><code>Documents\Ember Notes\</code></td><td>Your notes, <code>Todo.md</code> and <code>Todo.archive.md</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
   <p>Set <code>EMBER_HOME</code> to keep Ember's files somewhere other than <code>~/.ember</code>, and <code>EMBER_NOTES_DIR</code> for the notes.</p>
-  <p>Ember has no account and no telemetry. Your work goes wherever your CLI already sends it. The calls Ember makes on its own belong to features you can see: the plan-usage poll (off by default) and the phone relay (Labs, off by default). The uninstaller leaves <code>~/.ember</code> and your notes in place; delete them by hand if you want them gone.</p>
+  <p>Ember has no account and no telemetry. Your work goes wherever your agent CLI already sends it. The calls Ember makes on its own belong to features you can see and turn off: the plan-usage poll and the phone relay (Labs).</p>
 </section>
 
-<!-- ======================================================================= -->
 <section aria-labelledby="troubleshooting">
   <h2 id="troubleshooting">Troubleshooting <a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
-  <dl class="qa">
-    <dt>Text looks garbled or doubled, as if another window shows through.</dt>
-    <dd>That is usually what's behind the window showing through the glass, not broken output. Raise <b>Opacity</b> in Settings › Look, or switch <b>Backdrop</b> to <code>acrylic</code> or <code>mica</code>. With <code>none</code> there is no blur at all, so busy windows behind Ember stay readable through it.</dd>
-
-    <dt>The window turns flat grey when I click away.</dt>
-    <dd>Windows only draws acrylic and mica for the active window. Lower <b>Opacity when inactive</b> so Ember fades to see-through instead, or use Backdrop <code>none</code>, which looks the same focused or not.</dd>
-
-    <dt>Ember feels slow or my laptop runs hot.</dt>
-    <dd>Choose <b>Fast</b> under Settings › Motion › Speed; the breathing caret is the main cost when idle. Keep <b>Shed effects when slow</b> on. Very high resolutions at high refresh rates (a 4K display at 144 Hz or more) cost the most, since the whole window is composited every frame. On laptops with two GPUs, Ember asks Windows for the high-performance GPU from its second launch; you can change that in Windows Settings › Display › Graphics.</dd>
-
-    <dt>Typing lags while an agent is streaming.</dt>
-    <dd>Most of that comes from the CLI and ConPTY rather than the window: a program writing a lot of output reads keys more slowly. Fewer background tabs streaming at once and the Fast preset both help.</dd>
-
-    <dt>The panel stays empty.</dt>
-    <dd>The panel is attached when you start the CLI by its usual name (<code>claude</code>, <code>codex</code>, …) in an Ember tab. A CLI started some other way, for example from a script or another terminal, has no panel; open a new tab and start it again. Also check <b>Open the panel on first use</b> in Settings › Agent, or press <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd>. For Cursor Agent, see <a href="#clis">Choosing a CLI</a>.</dd>
-
-    <dt>The sidebar shows <code>PLAN ?</code>.</dt>
-    <dd>Claude Code's saved login has expired. Run <code>claude</code> once and it refreshes. Or turn plan usage off in Settings › Agent.</dd>
-
-    <dt>Stray characters appear when I move the mouse.</dt>
-    <dd>A program exited without turning off mouse reporting. Run <code>reset</code> from the command line (<kbd>Ctrl</kbd><kbd>K</kbd>).</dd>
-
-    <dt><code>desk</code> says it's unavailable.</dt>
-    <dd>Install Python 3 from python.org and try again. If pip couldn't install the libraries, run the <code>python -m pip install …</code> line the COMPUTER row shows. <code>HALTED</code> means STOP is on: <code>desk resume</code>. <code>desk</code> only works in a shell Ember started.</dd>
-
-    <dt>My git badge, red failure marks or task runner are missing.</dt>
-    <dd>They need shell integration (Settings › Behaviour) and a PowerShell profile. Command Prompt reports no working directory.</dd>
-
-    <dt>Something else is wrong.</dt>
-    <dd>Run <code>ember diag</code> for Ember's recent log, and open an issue on <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a> with it.</dd>
-  </dl>
+  <div class="faq">
+    <details>
+      <summary>Windows warned me about the installer.</summary>
+      <p>Releases aren't code signed yet. Choose <b>More info</b>, then <b>Run anyway</b>. Every build comes from the public source on GitHub.</p>
+    </details>
+    <details>
+      <summary>A new session shows a shell instead of the agent.</summary>
+      <p>The agent CLI isn't installed, or isn't on your PATH. Open Settings › Agent to see what Ember found, or run <b>Welcome &amp; setup</b> from <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
+    </details>
+    <details>
+      <summary>The canvas stays empty while the agent works.</summary>
+      <p>Switch to the CLI view (<kbd>Ctrl</kbd><kbd>`</kbd>) to see the agent's own screen. If it is asking something there, answer it. Agents other than Claude Code and Codex show their own screen by design.</p>
+    </details>
+    <details>
+      <summary>Text looks garbled or doubled, as if another window shows through.</summary>
+      <p>That is the window behind showing through the glass. Raise Opacity in Settings › Look, or set Backdrop to acrylic or mica.</p>
+    </details>
+    <details>
+      <summary>Ember feels slow or the laptop runs hot.</summary>
+      <p>Choose the fast preset in Settings › Motion and keep <b>Shed effects when slow</b> on. A 4K display at a high refresh rate costs the most.</p>
+    </details>
+    <details>
+      <summary>Computer use says it's unavailable.</summary>
+      <p>Install Python 3 from python.org and try again. <b>HALTED</b> means STOP is on: resume it from the STOP button or with <code>desk resume</code>. A locked screen hides every window's controls.</p>
+    </details>
+    <details>
+      <summary>Stray characters appear when I move the mouse.</summary>
+      <p>A program exited without turning off mouse reporting. Run <b>Reset terminal modes</b> from <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
+    </details>
+    <details>
+      <summary>Something else is wrong.</summary>
+      <p>Run <code>ember diag</code> for Ember's recent log, and open an issue on <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a> with it.</p>
+    </details>
+  </div>
 </section>
-
-<p class="doc__foot"><a href="#top">Back to top</a> · <a href="/">Ember home</a> · <a data-download href="/download/windows">Download for Windows</a></p>
 
 </article>
 </div>
+
 </main>
 
 <footer class="foot">
-  <div class="wrap foot__inner">
-    <p>Made by <a href="https://deepanswerlabs.com">Deep Answer Labs</a></p>
-    <p class="foot__links">
-      <a href="/docs">Docs</a>
-      <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
-      <a data-releases href="https://github.com/afetiu/ember-terminal/releases">Releases</a>
-      <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md">Code signing policy</a>
-      <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">Privacy</a>
-    </p>
-    <p class="foot__fine">Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode and GitHub Copilot CLI are trademarks of their respective owners. Ember isn't affiliated with any of them.</p>
-  </div>
+<div class="wrap foot__inner">
+<p>Made by <a href="https://deepanswerlabs.com">Deep Answer Labs</a></p>
+<p class="foot__links">
+<a href="/docs">Docs</a>
+<a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
+<a data-releases href="https://github.com/afetiu/ember-terminal/releases">Releases</a>
+<a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">Privacy</a>
+</p>
+<p class="foot__fine">Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode, GitHub Copilot CLI and the other CLIs named here are trademarks of their respective owners. Ember isn't affiliated with any of them.</p>
+</div>
 </footer>
 </body>
 </html>

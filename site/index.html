@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ember — a Windows terminal for people who live in AI coding CLIs</title>
-<meta name="description" content="Ember is a free Windows terminal built around the AI coding CLIs you already use: Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode and Copilot CLI. PowerShell underneath, untouched.">
-<meta name="theme-color" content="#120d1c">
+<title>Ember — your coding agent, on a canvas</title>
+<meta name="description" content="Ember is a free Windows app for the coding agents you already use — Claude Code, Codex, Gemini CLI and more. Their answers become diagrams, tables and pages you can resize, place and zoom, from the keyboard.">
+<meta name="theme-color" content="#16120F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAF6EF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="https://ember.deepanswerlabs.com/">
 <link rel="icon" type="image/png" href="assets/icon-256.png">
 <link rel="apple-touch-icon" href="assets/icon-256.png">
@@ -13,21 +14,20 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ember.deepanswerlabs.com/">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
-<meta property="og:title" content="Ember — a terminal that keeps up with your agents">
-<meta property="og:description" content="A free Windows terminal for AI coding CLIs. Every session on one overview, a panel the agent draws on, notes and a todo list beside your sessions.">
+<meta property="og:title" content="Ember — your coding agent, on a canvas">
+<meta property="og:description" content="Claude Code, Codex and the other coding agents, with answers you can see, move and use. Free for Windows, open source.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Ember — a terminal that keeps up with your agents">
-<meta name="twitter:description" content="A free Windows terminal for AI coding CLIs. Bring your own CLI, never an API key.">
+<meta name="twitter:title" content="Ember — your coding agent, on a canvas">
+<meta name="twitter:description" content="Claude Code, Codex and the other coding agents, with answers you can see, move and use.">
 <meta name="twitter:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=1.2.0-5d5cad2d">
-<link rel="modulepreload" href="assets/cinder.js">
 <script src="main.js?v=1.2.0-5d5cad2d" defer></script>
 <script src="film.js?v=1.2.0-5d5cad2d" type="module"></script>
 </head>
@@ -35,16 +35,17 @@
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="topbar">
-  <div class="wrap topbar__inner">
+  <div class="wrap topbar__in">
     <a class="brand" href="#top" aria-label="Ember home">
-      <img src="assets/icon-256.png" alt="" width="28" height="28">
+      <img src="assets/icon-256.png" alt="" width="26" height="26">
       <span>Ember</span>
     </a>
     <nav class="topnav" aria-label="Sections">
-      <a href="#see">See it work</a>
-      <a href="#how">How</a>
+      <a href="#demo">Demo</a>
+      <a href="#features">Features</a>
+      <a href="#agents">Agents</a>
       <a href="#faq">FAQ</a>
-      <a class="topnav__docs" href="/docs">Docs</a>
+      <a href="/docs">Docs</a>
     </nav>
     <a class="btn btn--small" data-download href="/download/windows">Download</a>
   </div>
@@ -55,487 +56,275 @@
 <!-- ============================ HERO ============================ -->
 <section class="hero" id="top">
   <div class="wrap hero__text">
-    <div class="hero__lead">
-      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> A terminal for Windows · by Deep Answer Labs</p>
-      <h1 class="hero__title" data-caret-host>
-        <span data-caret-stop>A terminal</span> <span data-caret-stop>that keeps up</span>
-        <br><span class="hl" data-caret-stop>with your agents.</span>
-      </h1>
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>For Windows · free and open source</p>
+    <h1>Your coding agent,<br><em>on a canvas.</em></h1>
+    <p class="lede">Ember runs Claude Code, Codex and the other agent CLIs you already use. Their answers become diagrams, tables and pages you can resize, place and zoom, all from the keyboard.</p>
+    <div class="hero__cta">
+      <a class="btn btn--primary" data-download href="/download/windows">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1 2.3 6.6 1.5v5.4H1zm6.4-.9L15 .3v6.6H7.4zM1 7.7h5.6v5.4L1 12.3zm6.4 0H15v6.6l-7.6-1.1z" fill="currentColor"/></svg>
+        Download for Windows
+      </a>
+      <a class="btn btn--ghost" data-repo href="https://github.com/afetiu/ember-terminal">View on GitHub</a>
     </div>
-    <div class="hero__side">
-      <p class="hero__pitch">Runs the AI coding CLI you already use, on the sign-in you already have.</p>
-      <div class="hero__cta">
-        <a class="btn btn--primary" data-download href="/download/windows">
-          <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M2 3.6 8.4 2.7v6.2H2zM9.2 2.6 18 1.4v7.5H9.2zM2 9.7h6.4v6.2L2 15zM9.2 9.7H18v7.5L9.2 16z" fill="currentColor"/></svg>
-          Download for Windows
-        </a>
-        <a class="btn btn--ghost" data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
-      </div>
-      <p class="hero__meta"><span data-version></span>free <i>·</i> open <i>·</i> Windows 10/11, x64</p>
-      <p class="dl-alt">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable)</span></p>
-    </div>
+    <p class="meta"><span data-version></span>Windows 10 and 11 <i>·</i> no account</p>
   </div>
 
-  <!-- ===== The film: one Ember window, seven beats. Timings live in data-at / data-until /
-       data-type (seconds into the beat) and are played by film.js. Without JS the first
-       beat shows as a still. ===== -->
-  <div class="wrap hero__stage">
-    <div class="film" data-film="hero" id="see">
-      <div class="appmode" role="group" aria-label="App theme for the Ember window below">
-        <span class="appmode__k" aria-hidden="true">App theme</span>
-        <span class="appmode__seg">
-          <button type="button" class="appmode__b" data-app-mode="night" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.6 9.9A5.8 5.8 0 0 1 6.1 2.4a5.8 5.8 0 1 0 7.5 7.5z"/></svg>Night</button>
-          <button type="button" class="appmode__b" data-app-mode="day" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg>Day</button>
-        </span>
-      </div>
-      <div class="film__view">
-        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; the overview shows every session on one page, with the numbers along the top and a log of edits, and a permission prompt is answered from its card; sessions add items to the todo list and tick what gets done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell.">
-          <div class="win__bar">
-            <span class="win__menu"></span>
-            <span class="win__title"><i class="glowdot"></i>Ember</span>
-            <!-- the title bar's toggles: Night/Day (a moon at night, a sun by day), then the panel -->
-            <span class="win__tools" aria-hidden="true">
-              <span class="win__tool win__mode"><svg class="i-moon" viewBox="0 0 16 16"><path d="M13.6 9.9A5.8 5.8 0 0 1 6.1 2.4a5.8 5.8 0 1 0 7.5 7.5z"/></svg><svg class="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.9"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg></span>
-              <span class="win__tool"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.6"/><path d="M9.6 3v10"/></svg></span>
-            </span>
-            <span class="win__ctl"><b></b><b></b><b></b></span>
+  <!-- ============================ THE DEMO ============================ -->
+  <div class="wrap demo-wrap" id="demo">
+    <div class="demo" data-demo aria-label="Ember, playing a short demo" role="img">
+      <div class="desk" aria-hidden="true">
+        <div class="win" data-win>
+          <div class="win__title">
+            <span class="ic ic--menu"></span>
+            <img class="win__logo" src="assets/icon-256.png" alt="">
+            <span class="win__name">Ember</span>
+            <span class="win__sp"></span>
+            <span class="ic ic--moon"></span><span class="ic ic--min"></span><span class="ic ic--max"></span><span class="ic ic--x"></span>
           </div>
-
           <div class="win__body">
-            <!-- ---------- sidebar: stays put through every beat ---------- -->
-            <div class="side">
-              <!-- the places: three buttons, always there, never a card (Sidebar.ts PLACES).
-                   film.js lights the one on stage and keeps the two badges. -->
-              <div class="places">
-                <span class="place" data-place="overview"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.3"/></svg><span>Overview</span><i class="place__badge is-hot">1</i></span>
-                <span class="place" data-place="todo"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.2"/><path d="M5.3 8.2 L7.2 10.1 L10.8 5.9"/></svg><span>Todo</span><i class="place__badge">4</i></span>
-                <span class="place" data-place="notes"><svg viewBox="0 0 16 16"><path d="M4 1.8 H9.5 L12.5 4.8 V14.2 H4 Z"/><path d="M9.3 2 V5 H12.3"/><path d="M6 8.2 H10.5 M6 10.8 H9.5"/></svg><span>Notes</span><i class="place__badge"></i></span>
+            <aside class="side">
+              <div class="side__top">
+                <span class="chip" data-chip><span class="chip__dot"></span><span data-chip-name>Claude Code</span><span class="chip__car">▾</span></span>
+                <span class="plus" data-plus>+</span>
               </div>
-              <p class="side__head mono">SESSIONS <span>+</span></p>
-              <div class="scard" data-card="api"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>api</b><small class="mono">working</small></span><em class="scard__br mono">main</em></div>
-              <div class="scard" data-card="docs"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>docs</b><small class="mono">idle</small></span><em class="scard__br mono">main</em></div>
-              <div class="scard" data-card="web"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>web</b><small class="mono">waiting on you</small></span><em class="scard__br mono">ui ✱3</em></div>
-              <div class="scard" data-card="scratch"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>scratch</b><small class="mono">idle</small></span><em class="scard__br mono"></em></div>
-
-              <p class="side__foot mono"><span>CLAUDE</span><span>5h 38% · wk 61%</span><span>MACHINE</span><span>CPU 12% · MEM 41%</span></p>
-            </div>
-
-            <!-- ---------- main area: the content morphs per beat ---------- -->
-            <div class="main">
-              <div class="crumb">
-                <p class="crumb__i is-active" data-scene="panel"><b>api</b> <span>~/code/api</span> <em>main ↑1</em></p>
-                <p class="crumb__i" data-scene="overview"><b>Overview</b> <span>back to api with the same key</span> <em>Ctrl Shift S</em></p>
-                <p class="crumb__i" data-scene="todo"><b>Todo</b> <em>Ctrl Shift D</em></p>
-                <p class="crumb__i" data-scene="notes" data-cls="is-hid:2.0,7.4"><b>api</b> <span>~/code/api</span> <em>main</em></p>
-                <p class="crumb__i" data-scene="notes" data-cls="is-hid:0,2.0;is-hid:7.4,99"><b>Notes</b> <span>over api</span> <em>Documents\Ember Notes</em></p>
-                <p class="crumb__i" data-scene="cli"><b>New session</b> <span>pick a CLI</span></p>
-                <p class="crumb__i" data-scene="splits"><b>api</b> <span>~/code/api</span> <em>3 panes</em></p>
-                <p class="crumb__i" data-scene="palette"><b>api</b> <span>~/code/api</span> <em>Ctrl K</em></p>
+              <div class="cards" data-cards>
+                <div class="card is-on" data-card="a"><span class="card__dot"></span><div><b data-card-title>Auth flow</b><small>Opus 5.5 · 12%</small></div></div>
+                <div class="card" data-card="b"><span class="card__dot"></span><div><b>Release notes</b><small>Codex · idle</small></div></div>
               </div>
+              <div class="side__foot">
+                <span class="foot-ic" data-todo><span class="ic ic--todo"></span><span class="badge" data-todo-n>3</span></span>
+                <span class="foot-ic"><span class="ic ic--note"></span></span>
+              </div>
+              <div class="pmenu" data-pmenu>
+                <div class="pmenu__h">Agent for new sessions</div>
+                <div class="pmenu__i is-on" data-p="claude"><span class="pdot" style="--d:#E58A55"></span>Claude Code<span class="tick">✓</span></div>
+                <div class="pmenu__i" data-p="codex"><span class="pdot" style="--d:#9fb7c9"></span>Codex CLI</div>
+                <div class="pmenu__i"><span class="pdot" style="--d:#7aa7ff"></span>Gemini CLI</div>
+                <div class="pmenu__i"><span class="pdot" style="--d:#c9c2b8"></span>Cursor Agent</div>
+                <div class="pmenu__i"><span class="pdot" style="--d:#8fd18f"></span>OpenCode</div>
+                <div class="pmenu__sep"></div>
+                <div class="pmenu__i pmenu__more">Add more agents…</div>
+              </div>
+            </aside>
 
-              <div class="scenes">
+            <section class="pane" data-pane>
+              <div class="bar" data-bar><span class="vs"><span class="vs__b is-on" data-v="canvas">Canvas</span><span class="vs__b" data-v="cli">CLI</span></span></div>
 
-                <!-- ===== BEAT 1: the panel ===== -->
-                <div class="scene scene--panel is-active" data-scene="panel">
-                  <div class="term">
-                    <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main ↑1</span></p>
-                    <p><span class="c-acc">❯</span> <span data-type="0.3,1.7">show me how auth flows through the API</span></p>
-                    <p class="t-gap"></p>
-                    <p class="t-tool" data-at="2.0"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/middleware.ts</span></p>
-                    <p class="t-tool" data-at="2.25"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/session.ts</span></p>
-                    <p class="t-tool" data-at="2.5"><span class="c-acc">●</span> Search <span class="c-yl">"verifyToken"</span> <span class="t-dim">7 matches</span></p>
-                    <p class="t-tool" data-at="2.8"><span class="c-acc">●</span> Drew the flow on the panel <span class="c-acc">→</span></p>
-                    <p class="t-say" data-at="3.3">Requests pass the gateway, then verifyToken() checks the session. On refresh it runs twice.</p>
-                    <p class="t-gap"></p>
-                    <p data-at="5.9"><span class="c-acc">❯</span> <span data-type="6.0,6.45">run the tests</span></p>
-                    <p class="t-tool" data-at="6.75"><span class="c-acc">●</span> Bash <span class="c-yl">npm test</span></p>
-                    <p class="t-ok" data-at="7.35"><span class="c-gr">✓</span> 42 passed <span class="t-dim">3.1s</span></p>
-                  </div>
-                  <div class="pnl" data-at="2.95">
-                    <p class="pnl__bar mono">Auth flow <span>◎ ↑ ↓ ✕</span></p>
-                    <svg class="diag" viewBox="0 0 400 300" aria-hidden="true">
-                      <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" class="ahead"/></marker></defs>
-                      <path class="de" data-at="3.45" pathLength="1" d="M200 50 V82" marker-end="url(#ah)"/>
-                      <path class="de" data-at="3.7" pathLength="1" d="M200 118 V148" marker-end="url(#ah)"/>
-                      <path class="de" data-at="3.95" pathLength="1" d="M170 186 C 170 210, 105 204, 105 226" marker-end="url(#ah)"/>
-                      <path class="de" data-at="4.05" pathLength="1" d="M230 186 C 230 210, 295 204, 295 226" marker-end="url(#ah)"/>
-                      <path class="de de--hot" data-at="4.4" pathLength="1" d="M362 244 C 392 244, 392 166, 290 166" marker-end="url(#ah)"/>
-                      <text class="dlabel" data-at="4.5" x="338" y="210">refresh</text>
-                      <g class="dn" data-at="3.3"><rect x="140" y="14" width="120" height="36" rx="7"/><text x="200" y="37">browser</text></g>
-                      <g class="dn" data-at="3.55"><rect x="140" y="82" width="120" height="36" rx="7"/><text x="200" y="105">gateway</text></g>
-                      <g class="dn dn--hot" data-at="3.8"><rect x="120" y="148" width="160" height="38" rx="7"/><text x="200" y="172">verifyToken()</text></g>
-                      <g class="dn" data-at="4.0"><rect x="40" y="226" width="130" height="36" rx="7"/><text x="105" y="249">session store</text></g>
-                      <g class="dn" data-at="4.1"><rect x="230" y="226" width="130" height="36" rx="7"/><text x="295" y="249">api routes</text></g>
+              <!-- the canvas -->
+              <div class="cv" data-cv>
+                <div class="cv__col" data-col>
+                  <div class="you" data-you><span class="you__dot"></span><span data-you-t></span></div>
+                  <div class="say" data-say></div>
+                  <figure class="obj" data-obj>
+                    <span class="lift"><span class="lift__n">flowchart 1</span><span class="lift__h"><i class="grip"></i>Drag out</span></span>
+                    <svg class="flow" viewBox="0 0 560 220" data-flow>
+                      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="currentColor"/></marker></defs>
+                      <g class="fe"><path d="M118 62H192"/><path d="M308 62H382"/><path d="M440 86V128"/><path d="M382 152H308"/><path d="M250 128V86"/></g>
+                      <g class="fn"><rect x="18" y="38" width="100" height="48" rx="12"/><text x="68" y="67">Browser</text></g>
+                      <g class="fn"><rect x="192" y="38" width="116" height="48" rx="12"/><text x="250" y="67">API gateway</text></g>
+                      <g class="fn"><rect x="382" y="38" width="116" height="48" rx="12"/><text x="440" y="67">Auth service</text></g>
+                      <g class="fn"><rect x="382" y="128" width="116" height="48" rx="12"/><text x="440" y="157">Token store</text></g>
+                      <g class="fn is-hot"><rect x="192" y="128" width="116" height="48" rx="12"/><text x="250" y="157">Session</text></g>
                     </svg>
-                    <p class="pnl__note" data-at="4.6"><code>verifyToken()</code> runs twice on refresh.</p>
-                    <div class="pnl__btns" data-at="4.9">
-                      <span class="chip chip--go flip" data-cursor="tests" data-at="5.65" data-until="5.95">Run the tests</span>
-                      <span class="chip">Show the diff</span>
-                    </div>
-                  </div>
+                    <span class="rz" data-rz></span>
+                  </figure>
+                  <div class="say say--after" data-say2></div>
                 </div>
-
-                <!-- ===== BEAT 2: the overview =====
-                     Built like the app's Overview (ui/Overview.ts, styles/overview.css): the
-                     numbers along the top with hairlines and no boxes, solid cards in tab
-                     order, a rail with the list, the notes and a quiet log. web is waiting
-                     on a permission prompt; the
-                     cursor answers it from here, its card relaxes into a working one, and
-                     the Overview badge in the sidebar drops to nothing. ===== -->
-                <div class="scene scene--ov" data-scene="overview">
-                  <div class="ov">
-                    <p class="ov__head">
-                      <b>Overview</b>
-                      <span class="ov__sum" data-seq="0|4 sessions · 1 working · 1 needs you;3.3|4 sessions · 2 working">4 sessions · 1 working · 1 needs you</span>
-                      <span class="ov__live">live</span>
-                      <span class="ov__back">Back</span>
-                    </p>
-                    <div class="ov__kpis">
-                      <p class="kpi" data-cls="is-hot:0,3.3"><span class="kpi__k">Sessions</span><b class="kpi__v">4</b><span class="kpi__s" data-seq="0|1 working · 1 waiting;3.3|2 working">1 working · 1 waiting</span></p>
-                      <p class="kpi"><span class="kpi__k">Tokens</span><b class="kpi__v" data-seq="0|618k;0.9|624k;4.1|627k">618k</b><span class="kpi__s">5.1k out · 94% cached</span></p>
-                      <p class="kpi"><span class="kpi__k">Spend</span><b class="kpi__v">$3.18</b><span class="kpi__s">3 sessions reporting</span></p>
-                      <p class="kpi"><span class="kpi__k">Changes</span><b class="kpi__v" data-seq="0|+34 −10;0.9|+40 −12">+34 −10</b><span class="kpi__s" data-seq="0|3 files · 3 edits;0.9|4 files · 4 edits">3 files · 3 edits</span></p>
-                      <p class="kpi"><span class="kpi__k">Context</span><b class="kpi__v">64%</b><span class="kpi__s">web</span></p>
-                      <p class="kpi"><span class="kpi__k">Plan</span><b class="kpi__v">38%</b><span class="kpi__s">5h · resets 19:40</span></p>
-                      <p class="kpi kpi--pace"><span class="kpi__k">Pace</span><svg class="kpi__spark" viewBox="0 0 120 21" preserveAspectRatio="none"><path class="is-area" d="M0 21 V18 H22 L30 15 H44 L52 6 L60 6 L66 16 H84 L92 11 H104 L112 4 L120 4 V21 Z"/><path class="is-line" d="M0 18 H22 L30 15 H44 L52 6 L60 6 L66 16 H84 L92 11 H104 L112 4 L120 4"/></svg><span class="kpi__s">11 actions this hour</span></p>
-                    </div>
-                    <div class="ov__body">
-                      <div class="ov__main">
-                        <div class="ovg">
-                          <div class="ovc" data-state="working">
-                            <p class="ovc__top"><i class="ovc__dot"></i><b>api</b><span class="ovc__where">~/code/api</span><span class="ovc__pill" data-clock="64">1m 04s</span></p>
-                            <p class="ovc__said">Refresh tokens now rotate on every use. Checking the session store next.</p>
-                            <p class="ovc__doing" data-seq="0|Edit src/auth/session.ts;1.0|Run the auth tests">Edit src/auth/session.ts</p>
-                            <p class="ovc__foot" data-seq="0|Fable · 318k tok · +14 −5;0.9|Fable · 324k tok · +20 −7">Fable · 318k tok · +14 −5</p>
-                          </div>
-                          <div class="ovc" data-state="idle">
-                            <p class="ovc__top"><i class="ovc__dot"></i><b>docs</b><span class="ovc__where">~/code/docs</span></p>
-                            <p class="ovc__said">auth.md now covers the redirect fix and the ?next= rule.</p>
-                            <p class="ovc__foot">Fable · 96k tok · +12 −3</p>
-                          </div>
-                          <!-- a permission prompt: the question as the terminal draws it, the options as a menu -->
-                          <div class="ovc ovc--ask" data-state="attention" data-until="3.3">
-                            <p class="ovc__top"><i class="ovc__dot"></i><b>web</b><span class="ovc__where">~/code/web</span><span class="ovc__pill">Needs you</span></p>
-                            <div class="ovc__screen">
-                              <p>Bash command</p>
-                              <p>  gh pr create --title "Sticky header on scroll"</p>
-                              <p class="is-q">Do you want to proceed?</p>
-                            </div>
-                            <div class="ovc__keys">
-                              <p class="ovk is-sel" data-cursor="yes" data-cls="is-hover:2.5,2.9;is-press:2.9,3.2"><kbd>1</kbd>Yes</p>
-                              <p class="ovk"><kbd>2</kbd>Yes, and don't ask again for gh pr commands</p>
-                              <p class="ovk"><kbd>3</kbd>No, and tell Claude what to do differently (esc)</p>
-                            </div>
-                            <p class="ovc__esc">Esc to cancel</p>
-                            <p class="ovc__foot"><span>Fable · 142k tok · +8 −2</span><span class="ovc__ctx">ctx 64%</span></p>
-                          </div>
-                          <div class="ovc" data-state="working" data-at="3.3">
-                            <p class="ovc__top"><i class="ovc__dot"></i><b>web</b><span class="ovc__where">~/code/web</span><span class="ovc__pill" data-at="3.3" data-clock="0">0s</span></p>
-                            <p class="ovc__said" data-seq="0|Opening the pull request for the sticky header.;5.4|Opened PR #231. Waiting on the checks.">Opening the pull request for the sticky header.</p>
-                            <p class="ovc__doing" data-seq="0|gh pr create;5.4|Watch the CI run">gh pr create</p>
-                            <p class="ovc__foot">Fable · 145k tok · +8 −2</p>
-                          </div>
-                          <div class="ovc ovc--shell" data-state="idle">
-                            <p class="ovc__top"><i class="ovc__dot"></i><b>scratch</b><span class="ovc__where">~/scratch</span></p>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="ov__rail">
-                        <div class="ovs">
-                          <p class="ovs__h"><b>Todo</b><span>4 open</span><i>↗</i></p>
-                          <p class="ovt"><i></i>Rotate the staging secrets</p>
-                          <p class="ovt"><i></i>Draft the release notes</p>
-                          <p class="ovt"><i></i>Reply to the invoice thread</p>
-                          <p class="ovt"><i></i>WEB-88 · checkout button clipped on iOS</p>
-                          <p class="ovs__add">Add to the list…</p>
-                        </div>
-                        <div class="ovs">
-                          <p class="ovs__h"><b>Notes</b><span></span><i>+</i><i>↗</i></p>
-                          <p class="ovn"><b>Auth flow</b><span>2h ago</span><em>Requests pass the gateway, then verifyToken() checks the session.</em></p>
-                          <p class="ovn"><b>Release checklist</b><span>yesterday</span><em>Bump the version, tag it, draft the release notes.</em></p>
-                        </div>
-                        <div class="ovs ovs--log">
-                          <p class="ovs__h"><b>Activity</b><span></span><i class="ovs__f">changes</i></p>
-                          <div class="ovlog">
-                            <p class="ol__who" style="--hue:var(--w-cy)">api</p>
-                            <p class="ol" data-kind="edit"><span>14:31</span><i>✎</i><span>auth/refresh.ts</span><em><b>+14</b> <b class="is-m">−5</b></em></p>
-                            <p class="ol" data-kind="run"><span>14:32</span><i>$</i><span>npm test</span></p>
-                            <p class="ol__who" style="--hue:var(--w-pk)">docs</p>
-                            <p class="ol" data-kind="edit"><span>14:33</span><i>✎</i><span>auth.md</span><em><b>+12</b> <b class="is-m">−3</b></em></p>
-                            <p class="ol" data-kind="done"><span>14:34</span><i>✓</i><span>finished its turn</span></p>
-                            <p class="ol__who" style="--hue:var(--w-gr)">web</p>
-                            <p class="ol" data-kind="edit"><span>14:36</span><i>✎</i><span>Header.tsx</span><em><b>+8</b> <b class="is-m">−2</b></em></p>
-                            <p class="ol" data-kind="run"><span>14:37</span><i>$</i><span>npm run build</span></p>
-                            <div class="ol__new" data-at="0.9"><div><p class="ol__who" style="--hue:var(--w-cy)">api</p><p class="ol" data-kind="edit"><span>14:38</span><i>✎</i><span>auth/session.ts</span><em><b>+6</b> <b class="is-m">−2</b></em></p></div></div>
-                            <div class="ol__new" data-at="4.0"><div><p class="ol__who" style="--hue:var(--w-gr)">web</p><p class="ol" data-kind="run"><span>14:39</span><i>$</i><span>gh pr create --title "Sticky header on scroll"</span></p></div></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- ===== BEAT 3: the todo list =====
-                     Sessions add what is left for you as they work and tick what gets done in
-                     front of them; the cursor ticks one by hand. ===== -->
-                <div class="scene scene--todo" data-scene="todo">
-                  <div class="todo">
-                    <div class="todo__head">
-                      <h4>Todo</h4>
-                      <span class="todo__count mono" data-seq="0|3 open;1.6|4 open;2.05|5 open;2.5|6 open;2.95|7 open;4.0|6 open;4.4|5 open;4.8|4 open"></span>
-                      <span class="todo__status mono" data-seq="0|;1.6|added by your sessions;4.0|ticked as it gets done;5.3|cleared 3 into the archive"></span>
-                    </div>
-                    <ul class="todo__list">
-                      <li class="ti" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-cursor="check" data-at="4.0"></span><span class="ti__txt">Fix the login redirect loop</span><span class="ti__why mono" data-at="4.0">done</span></div></li>
-                      <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Rotate the staging secrets</span></div></li>
-                      <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Draft the release notes</span></div></li>
-                      <li class="ti ti--new" data-at="1.6"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Choose the new staging region</span><span class="src mono">api</span></div></li>
-                      <li class="ti ti--new" data-at="2.05" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.4"></span><span class="ti__txt">Review PR #214 · login redirect</span><span class="ti__why mono" data-at="4.4">done in api</span><span class="src mono">api</span></div></li>
-                      <li class="ti ti--new" data-at="2.5"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Check the checkout button on an iPhone</span><span class="src mono">web</span></div></li>
-                      <li class="ti ti--new" data-at="2.95" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.8"></span><span class="ti__txt">Update auth.md for the redirect fix</span><span class="ti__why mono" data-at="4.8">done in docs</span><span class="src mono">docs</span></div></li>
-                    </ul>
-                    <p class="todo__arch mono flip" data-at="5.3"><span data-seq="0|▸ archive · 12;5.3|▸ archive · 15"></span></p>
-                  </div>
-                </div>
-
-                <!-- ===== BEAT 4: notes =====
-                     Built like the app's Notes (ui/Notes.ts): one surface over the tab with two
-                     states, a page editor and the list, never side by side. The api session
-                     writes the fix up with the notes command; `notes new --open` lays the page
-                     over its own tab, each `notes append` lands on it live (the folder is
-                     watched), and Esc hands back the shell, which kept running underneath. ===== -->
-                <div class="scene scene--notes" data-scene="notes">
-                  <div class="term">
-                    <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
-                    <p class="t-dim"><span class="c-acc">❯</span> fix the login redirect loop</p>
-                    <p class="t-say t-dim">Done. ?next= now survives the login.</p>
-                    <p class="t-gap"></p>
-                    <p data-at="0.15"><span class="c-acc">❯</span> <span data-type="0.35,1.3">write the fix up in a note</span></p>
-                    <p class="t-tool" data-at="1.6"><span class="c-acc">●</span> Bash <span class="c-yl">notes new --open "Login redirect fix"</span></p>
-                    <p class="t-tool" data-at="2.7"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "What broke: …"</span></p>
-                    <p class="t-tool" data-at="3.6"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "Fix: …"</span></p>
-                    <p class="t-tool" data-at="4.5"><span class="c-acc">●</span> Bash <span class="c-yl">notes append "redirect fix" "Tests: …"</span></p>
-                    <p class="t-say" data-at="5.0">Wrote it up in <span class="c-cy">Login redirect fix.md</span>.</p>
-                  </div>
-
-                  <div class="nv" data-at="2.0" data-until="7.4">
-                    <!-- the page -->
-                    <div class="nv__edit" data-cls="is-off:5.75,99">
-                      <p class="nv__bar">
-                        <span class="nv__btn" data-cursor="allnotes" data-cls="is-press:5.62,5.8">← All notes</span>
-                        <span class="nv__status"></span>
-                        <span class="nv__btn">List</span>
-                        <span class="nv__btn">Show file</span>
-                        <span class="nv__btn">Delete</span>
-                      </p>
-                      <div class="nv__page mono">
-                        <p class="nv__l">Login redirect fix</p>
-                        <p class="nv__l nv__add" data-at="2.8">What broke: the login page dropped ?next= on the way back, because the session cookie's path was /app.</p>
-                        <p class="nv__l nv__add" data-at="3.7">Fix: the cookie path is now /, in src/auth/redirect.ts (+4 −2).</p>
-                        <p class="nv__l nv__add" data-at="4.6">Tests: 42 pass. The docs session updated auth.md.</p>
-                      </div>
-                    </div>
-                    <!-- the list -->
-                    <div class="nv__list" data-cls="is-off:0,5.75">
-                      <p class="nv__head">
-                        <b>Notes</b><span class="nv__count">3</span>
-                        <span class="nv__search">Search notes</span>
-                        <span class="nv__btn nv__btn--new">New note</span>
-                        <span class="nv__btn">Open folder</span>
-                      </p>
-                      <div class="nv__rows">
-                        <p class="nv__row is-fresh"><b>Login redirect fix</b><span>just now</span><em>What broke: the login page dropped ?next= on the way back, because the session cookie's path was /app.</em></p>
-                        <p class="nv__row"><b>Auth flow</b><span>2h ago</span><em>Requests pass the gateway, then verifyToken() checks the session.</em></p>
-                        <p class="nv__row"><b>Release checklist</b><span>yesterday</span><em>Bump the version, tag it, draft the release notes.</em></p>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="keycap keycap--mid mono" data-at="6.95" data-until="7.75"><kbd>Esc</kbd></p>
-                </div>
-
-                <!-- ===== extra scenes, used by "See it work" ===== -->
-                <div class="scene scene--cli" data-scene="cli">
-                  <div class="pick">
-                    <p class="pick__h">Which CLI should Ember use?</p>
-                    <ul class="pick__list">
-                      <li class="pr pr--a flip" data-at="0" data-until="3.3"><span class="radio"></span><b>Claude Code</b><span class="tag tag--ok mono">found</span></li>
-                      <li class="pr pr--b flip" data-at="3.3" data-cursor="codex"><span class="radio"></span><b>OpenAI Codex</b><span class="tag tag--ok mono">found</span></li>
-                      <li class="pr"><span class="radio"></span><b>Gemini CLI</b>
-                        <span class="tag mono" data-seq="0|install;1.3|installing…;2.7|found" data-cursor="install"></span><span class="tag__bar flip" data-at="1.3" data-until="2.7"><i></i></span><span class="tag__ok flip" data-at="2.7"></span></li>
-                      <li class="pr"><span class="radio"></span><b>Cursor Agent</b><span class="tag mono">install</span></li>
-                      <li class="pr"><span class="radio"></span><b>OpenCode</b><span class="tag mono">install</span></li>
-                      <li class="pr"><span class="radio"></span><b>GitHub Copilot CLI</b><span class="tag mono">install</span></li>
-                    </ul>
-                    <p class="pick__foot mono" data-at="3.8"><span class="c-gr">✓</span> Uses your Codex login.</p>
-                  </div>
-                </div>
-
-                <div class="scene scene--splits" data-scene="splits">
-                  <div class="sp">
-                    <div class="term sp__a">
-                      <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
-                      <p><span class="c-acc">❯</span> npm run dev</p>
-                      <p class="t-dim">  ready on :3000</p>
-                      <p class="t-dim">  GET /login 200 12ms</p>
-                      <p class="t-dim">  GET /api/me 200 4ms</p>
-                    </div>
-                    <div class="sp__b" data-at="1.0">
-                      <div class="term sp__b1">
-                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
-                        <p><span class="c-acc">❯</span> <span data-type="1.4,1.9">git log --oneline</span></p>
-                        <p class="t-dim" data-at="2.0"><span class="c-yl">a41c9e2</span> fix login redirect</p>
-                      </div>
-                      <div class="term sp__b2" data-at="2.3">
-                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
-                        <p><span class="c-acc">❯</span> <span data-type="2.6,3.0">npm test -- --watch</span></p>
-                        <p class="t-ok" data-at="3.1"><span class="c-gr">✓</span> 42 passed</p>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="keycap mono" data-at="0.5" data-until="1.5"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>+</kbd></p>
-                  <p class="keycap mono" data-at="1.8" data-until="2.8"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>−</kbd></p>
-                  <p class="themechip mono" data-at="3.3" data-seq="0|;3.4|# Tokyo Night;4.2|# Catppuccin;5.0|# Gruvbox;5.8|# Nord;6.6|# {house}"></p>
-                </div>
-
-                <div class="scene scene--palette" data-scene="palette">
-                  <div class="sp">
-                    <div class="term sp__a">
-                      <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
-                      <p><span class="c-acc">❯</span> npm run dev</p>
-                      <p class="t-dim">  ready on :3000</p>
-                    </div>
-                    <div class="sp__b" data-at="4.3">
-                      <div class="term sp__b1 sp__b1--full">
-                        <p class="t-dim">PS <span class="c-cy">~/code/api</span></p>
-                        <p><span class="c-acc">❯</span> <span data-type="5.0,5.7">ember theme nord</span></p>
-                        <p class="t-dim" data-at="5.9">theme → Nord</p>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="keycap mono" data-at="0.2" data-until="0.9"><kbd>Ctrl</kbd><kbd>K</kbd></p>
-                  <div class="pal" data-at="0.45" data-until="2.25">
-                    <p class="pal__in mono"><span class="c-acc">›</span> <span data-type="0.7,1.4">theme tokyo</span></p>
-                    <ul class="pal__list">
-                      <li class="is-sel flip" data-at="1.9" data-until="2.1"># Tokyo Night <span>theme</span></li>
-                      <li data-at="1.2"># Tokyo Night Storm <span>theme</span></li>
-                      <li data-at="1.3"># Tokyo Night Light <span>theme</span></li>
-                    </ul>
-                  </div>
-                  <p class="keycap mono" data-at="2.7" data-until="3.3"><kbd>Ctrl</kbd><kbd>K</kbd></p>
-                  <div class="pal" data-at="2.9" data-until="4.35">
-                    <p class="pal__in mono"><span class="c-acc">›</span> <span data-type="3.1,3.7">split right</span></p>
-                    <ul class="pal__list">
-                      <li class="is-sel flip" data-at="4.0" data-until="4.2">Split right <span>Alt Shift +</span></li>
-                      <li data-at="3.5">Split down <span>Alt Shift −</span></li>
-                    </ul>
-                  </div>
-                </div>
-
+                <div class="sticky" data-sticky><b># Note, Nov 1</b><span data-sticky-t></span><small>From the session Auth flow</small></div>
+                <div class="legend" data-legend><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> full screen</span><span><kbd>P</kbd> place</span><span><kbd>M</kbd> minimize</span><span><kbd>Esc</kbd> back</span></div>
               </div>
-            </div>
+
+              <!-- the agent's own screen -->
+              <div class="cli" data-cli>
+<pre><span class="t-acc">▐▛███▜▌</span>  <b>Claude Code</b> <span class="t-dim">v2.1</span>
+<span class="t-acc">▝▜█████▛▘</span> <span class="t-dim">Opus 5.5 · Claude Max</span>
+<span class="t-acc">  ▘▘ ▝▝</span>   <span class="t-dim">C:\work\api</span>
+
+<span class="t-dim">&gt;</span> how does auth flow through the API?
+
+<span class="t-acc">●</span> The browser sends credentials to the API gateway,
+  which hands them to the auth service. It issues a
+  short-lived token, keeps the refresh token in the
+  token store, and the gateway opens a session.
+
+  <span class="t-dim">```mermaid</span>
+  <span class="t-dim">flowchart LR</span>
+  <span class="t-dim">  Browser --&gt; Gateway --&gt; Auth --&gt; Store</span>
+  <span class="t-dim">```</span>
+
+<span class="t-rule">────────────────────────────────────────────────────</span>
+<span class="t-dim">&gt;</span> <span class="t-cur"> </span>
+<span class="t-rule">────────────────────────────────────────────────────</span>
+  <span class="t-dim">Opus 5.5 · $0.41</span>   <span class="t-ok">⏵⏵ auto mode on</span></pre>
+              </div>
+
+              <div class="inp" data-inp>
+                <span class="inp__car">›</span><span class="inp__t" data-inp-t></span><span class="inp__ph" data-ph>Ask Claude… / for commands</span>
+                <span class="inp__send">↵ send</span>
+              </div>
+              <div class="stat"><span class="stat__mode">auto</span><b data-model>Opus 5.5 (1M context)</b><span class="stat__bar"><i></i></span><span>12%</span><span>$0.41</span></div>
+
+              <div class="start" data-start><span class="spin"></span><span data-start-t>Starting Codex CLI…</span></div>
+            </section>
           </div>
 
-          <span class="cursor" aria-hidden="true"><svg viewBox="0 0 20 24" width="20" height="24"><path d="M2 2 L2 19 L6.5 15 L9.5 22 L12.5 20.7 L9.6 14 L16 14 Z"/></svg><i></i></span>
+          <!-- full screen, over the window -->
+          <div class="full" data-full>
+            <div class="full__box">
+              <div class="full__head"><span>flowchart 1</span><span class="full__acts">— ··· ✕</span></div>
+              <div class="full__body"><div class="full__zoom" data-zoom></div></div>
+            </div>
+            <div class="zbar"><span>−</span><b data-zpct>100%</b><span>+</span></div>
+          </div>
         </div>
-      </div>
 
-      <div class="film__nav" role="group" aria-label="Features, one chapter each">
-        <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="overview"><span class="beat__n">2</span>Overview<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span>Todo<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="notes"><span class="beat__n">4</span>Notes<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="cli"><span class="beat__n">5</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="splits"><span class="beat__n">6</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="palette"><span class="beat__n">7</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
+        <!-- another program on the desktop, for computer use -->
+        <div class="calc" data-calc>
+          <div class="calc__t">Calculator <span>— ▢ ✕</span></div>
+          <div class="calc__d" data-calc-d>0</div>
+          <div class="calc__g">
+            <span>7</span><span data-k="7">7</span><span>8</span><span>9</span>
+          </div>
+        </div>
+        <div class="stop" data-stop><span class="stop__dot"></span>Ember is using your computer<b>STOP</b></div>
+
+        <div class="keys" data-keys></div>
+        <div class="ptr" data-ptr><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2.5 19.5 13l-6.6 1.3L9.6 21z"/></svg><span class="ptr__tag" data-tag></span></div>
       </div>
-      <p class="film__cap" aria-live="polite"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
     </div>
-    <div class="hero__glow" aria-hidden="true"></div>
+
+    <div class="chapters" role="group" aria-label="Demo chapters" data-chapters>
+      <button type="button" data-ch="0"><span>1</span>Ask<i><b></b></i></button>
+      <button type="button" data-ch="1"><span>2</span>Resize &amp; place<i><b></b></i></button>
+      <button type="button" data-ch="2"><span>3</span>Keyboard<i><b></b></i></button>
+      <button type="button" data-ch="3"><span>4</span>Canvas | CLI<i><b></b></i></button>
+      <button type="button" data-ch="4"><span>5</span>Notes &amp; todos<i><b></b></i></button>
+      <button type="button" data-ch="5"><span>6</span>Computer use<i><b></b></i></button>
+      <button type="button" data-ch="6"><span>7</span>Any agent<i><b></b></i></button>
+      <button type="button" class="chapters__pause" data-pause aria-label="Pause the demo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
+    </div>
+    <p class="caption" aria-live="polite" data-cap>Ask in plain words. The answer comes as something you can see.</p>
   </div>
 </section>
 
-<!-- ============================ YOUR AGENTS ============================ -->
-<section class="nokey" aria-labelledby="nokey-title">
-  <div class="wrap nokey__in">
-    <h2 id="nokey-title">Your agents. <span>Your CLI, your login, your subscription.</span></h2>
-    <ul class="clis" aria-label="Supported CLIs">
+<!-- ============================ FEATURES ============================ -->
+<section class="feats" id="features" aria-labelledby="feats-t">
+  <div class="wrap">
+    <h2 id="feats-t">Built for working <span>with</span> an agent, not just next to one.</h2>
+    <div class="grid">
+      <article class="feat feat--big">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 15l3-3 3 2 4-5"/></svg></div>
+        <h3>Answers you can use</h3>
+        <p>Diagrams, tables, charts and pages show up in the reply. Resize them where they are, drag one out to place it beside the conversation, or open it full screen and zoom in. The words make room.</p>
+      </article>
+      <article class="feat">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h0M7 14h10"/></svg></div>
+        <h3>Keyboard first</h3>
+        <p><kbd>Ctrl</kbd><kbd>↑</kbd> walks the objects, <kbd>Enter</kbd> opens one, <kbd>Esc</kbd> is always the way back. <kbd>Ctrl</kbd><kbd>K</kbd> does the rest.</p>
+      </article>
+      <article class="feat">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><path d="M4 6h7v12H4zM13 6h7v12h-7z"/></svg></div>
+        <h3>Canvas or CLI</h3>
+        <p>One switch between the canvas and the agent's own screen. It stays where it is, and Ember remembers your pick.</p>
+      </article>
+      <article class="feat">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 11h6M9 15h4"/></svg></div>
+        <h3>Notes and todos, outside sessions</h3>
+        <p>A sticky note with <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd>, a todo list in the sidebar. Every agent can read them, add to them and tick things off.</p>
+      </article>
+      <article class="feat">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><path d="M5 3.5 18 12l-5.5 1.1L9.8 19z"/></svg></div>
+        <h3>Computer use you can watch</h3>
+        <p>The agent reads your screen as text and acts with a pointer you can see, one smooth move at a time. STOP is always on screen.</p>
+      </article>
+      <article class="feat">
+        <div class="feat__ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.3 2.3 4.7-5"/></svg></div>
+        <h3>One memory for all your agents</h3>
+        <p>What one agent learns about you and your projects, the others know too. Shared skills, shared instructions.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ AGENTS ============================ -->
+<section class="agents" id="agents" aria-labelledby="agents-t">
+  <div class="wrap agents__in">
+    <h2 id="agents-t">Use the agents you already have.</h2>
+    <p>Ember finds them on first run. Pick one beside the <b>+</b>, and every new session starts with it.</p>
+    <ul class="clis" aria-label="Supported agent CLIs">
       <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li><li>Qwen Code</li><li>Amp</li><li>Aider</li><li>Crush</li>
     </ul>
   </div>
 </section>
 
-<!-- ============================ HOW IT WORKS ============================ -->
-<section class="how" id="how" aria-labelledby="how-title">
+<!-- ============================ STEPS ============================ -->
+<section class="steps" aria-labelledby="steps-t">
   <div class="wrap">
-    <h2 id="how-title">Three steps. No sign-up.</h2>
-    <ol class="steps">
-      <li><span class="steps__n">1</span><h3>Install</h3><p>No admin prompt.</p></li>
-      <li><span class="steps__n">2</span><h3>Pick your CLI</h3><p>Ember finds the ones you have.</p></li>
-      <li><span class="steps__n">3</span><h3>Work</h3><p>Hand out tasks. Follow them on the overview.</p></li>
+    <h2 id="steps-t">Up in a minute.</h2>
+    <ol>
+      <li><span>1</span><h3>Install</h3><p>No admin prompt, no account.</p></li>
+      <li><span>2</span><h3>Pick your agent</h3><p>Ember finds the CLIs you have and checks they answer.</p></li>
+      <li><span>3</span><h3>Press +</h3><p>A session opens straight on the canvas. Ask.</p></li>
     </ol>
   </div>
 </section>
 
 <!-- ============================ FAQ ============================ -->
-<section class="faq" id="faq" aria-labelledby="faq-title">
+<section class="faq" id="faq" aria-labelledby="faq-t">
   <div class="wrap faq__grid">
-    <div>
-      <h2 id="faq-title">Questions.</h2>
-    </div>
+    <h2 id="faq-t">Questions.</h2>
     <div class="faq__list">
       <details>
-        <summary>Do I need an API key?</summary>
-        <p>No. Ember never asks for an LLM API key. It runs the coding CLI you already have installed (Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode or Copilot CLI) using that CLI's own login and your own subscription. Ember doesn't bill you for anything. It has no field for a key anywhere and stores no credentials.</p>
+        <summary>What does it cost?</summary>
+        <p>Nothing. Ember is free and open source, with no account and no paid tier. It runs your agent CLI with that CLI's own sign-in, so whatever you already pay for it stays the same.</p>
       </details>
       <details>
-        <summary>What does it cost?</summary>
-        <p>Nothing. Ember is free, with no account, no trial and no paid tier. Whatever your CLI costs is between you and its provider, the same as it is today.</p>
+        <summary>Which agents does it work with?</summary>
+        <p>Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode, Copilot CLI, Qwen Code, Amp, Aider and Crush. Claude Code and Codex get the full canvas; the others run in the same sessions and keep improving.</p>
+      </details>
+      <details>
+        <summary>Can an agent click around my computer?</summary>
+        <p>Only when you ask it to, with a pointer you can see and a STOP button that is always on screen. You can switch computer use off from <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
       </details>
       <details>
         <summary>Does it run on Mac or Linux?</summary>
-        <p>Not yet. Ember is Windows only for now (Windows 10 and 11, x64). It's built around ConPTY and the Windows glass effects, so Windows came first.</p>
+        <p>Not yet. Ember is for Windows 10 and 11 (x64) for now.</p>
       </details>
       <details>
         <summary>Windows warned me about the installer. Is it signed?</summary>
-        <p>Not yet. Ember's releases aren't code signed, so SmartScreen may warn the first time: click <b>More info</b>, then <b>Run anyway</b>. Every build comes straight from the public source on GitHub Actions, and each release lists SHA256 checksums so you can check the file; see the <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md">code signing policy</a>. It installs just for you and never asks for admin rights.</p>
+        <p>Not yet. SmartScreen may warn the first time: click <b>More info</b>, then <b>Run anyway</b>. Every build comes from the public source on GitHub.</p>
       </details>
       <details>
         <summary>What leaves my machine?</summary>
-        <p>Your work goes where your CLI already sends it, the same as in any terminal. Ember has no account and no telemetry. The few calls it makes on its own belong to features you can see and turn off, like the plan usage in the sidebar. Your settings, notes and todos are plain files in your user folder.</p>
-      </details>
-      <details>
-        <summary>Will it change my PowerShell setup?</summary>
-        <p>No. Ember replaces the window, not the shell. Your profile, modules, oh-my-posh and PSReadLine run as they always have. Shell integration wraps your prompt without replacing it, and you can turn it off.</p>
+        <p>Your work goes where your agent CLI already sends it. Ember has no account and no telemetry. Notes, todos and the shared memory are plain files in your user folder.</p>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ============================ CLOSING CTA ============================ -->
-<section class="closer" aria-labelledby="closer-title">
-  <div class="wrap closer__inner">
-    <canvas class="closer__cinder" data-cinder-big width="240" height="240" aria-hidden="true"></canvas>
-    <h2 id="closer-title">Bring your CLI. Ember does the rest.</h2>
+<!-- ============================ CLOSER ============================ -->
+<section class="closer" aria-labelledby="closer-t">
+  <div class="wrap closer__in">
+    <img src="assets/icon-256.png" alt="" width="72" height="72">
+    <h2 id="closer-t">Bring your agent. See what it means.</h2>
     <a class="btn btn--primary" data-download href="/download/windows">Download for Windows</a>
-    <p class="hero__meta"><span data-version></span>free <i>·</i> open source</p>
-    <p class="dl-alt">Other formats: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a> <span>(portable, no installer)</span></p>
+    <p class="meta"><span data-version></span>free <i>·</i> open source</p>
+    <p class="alt">Portable: <a href="/download/windows-zip">.zip</a> <i>·</i> <a href="/download/windows-targz">.tar.gz</a></p>
   </div>
 </section>
 
 </main>
 
 <footer class="foot">
-  <div class="wrap foot__inner">
+  <div class="wrap foot__in">
     <p>Made by <a href="https://deepanswerlabs.com">Deep Answer Labs</a></p>
     <p class="foot__links">
       <a href="/docs">Docs</a>
       <a data-repo href="https://github.com/afetiu/ember-terminal">GitHub</a>
       <a data-releases href="https://github.com/afetiu/ember-terminal/releases">Releases</a>
-      <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md">Code signing policy</a>
       <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">Privacy</a>
     </p>
-    <p class="foot__fine">Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode and GitHub Copilot CLI are trademarks of their respective owners. Ember isn't affiliated with any of them.</p>
+    <p class="foot__fine">Claude Code, Codex, Gemini CLI, Cursor Agent, OpenCode and GitHub Copilot CLI are trademarks of their owners. Ember isn't affiliated with any of them.</p>
   </div>
 </footer>
 </body>
