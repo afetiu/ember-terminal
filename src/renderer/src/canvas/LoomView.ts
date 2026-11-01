@@ -432,6 +432,11 @@ export class LoomView {
         else this.session.focus()
         return
       }
+      const zoomed = (e.data as { emberZoomed?: number } | null)?.emberZoomed
+      if (typeof zoomed === 'number') {
+        if (this.full?.piece.frame?.contentWindow === e.source) this.showZoom(zoomed)
+        return
+      }
       const found = (e.data as { emberFound?: { id: string; rect: { x: number; y: number; w: number; h: number } | null } } | null)?.emberFound
       if (found) {
         this.findWaiters.get(found.id)?.(found.rect)
@@ -1616,16 +1621,18 @@ export class LoomView {
         this.drag(() => this.liftObject(d), lift, e)
       })
       d.appendChild(lift)
-      // Sized where it sits, without taking it out: the corner grip.
-      const grip = div('loom-inline-rz')
-      grip.title = 'Drag to resize'
-      grip.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return
-        e.preventDefault()
-        e.stopPropagation()
-        this.resizeInlineHost(d, e)
-      })
-      d.appendChild(grip)
+      // Sized where it sits, without taking it out: every edge and corner, as when placed.
+      for (const dir of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
+        const h = div('loom-rz')
+        h.dataset['rz'] = dir
+        h.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return
+          e.preventDefault()
+          e.stopPropagation()
+          this.resizeInlineHost(d, dir, e)
+        })
+        d.appendChild(h)
+      }
     })
     const says = live.querySelectorAll<HTMLElement>(':scope > .loom-say')
     says.forEach((el, i) => el.classList.toggle('is-current', i === says.length - 1))
@@ -1701,8 +1708,7 @@ export class LoomView {
       if (!h || e.button !== 0) return
       const dir = h.dataset['rz'] ?? 'se'
       if (!this.pinned.has(piece)) {
-        // In the reply: the right edge, the bottom edge and their corner size it in place.
-        if (dir !== 's' && dir !== 'e' && dir !== 'se') return
+        // In the reply: any edge or corner sizes it in place.
         e.preventDefault()
         e.stopPropagation()
         this.resizeInline(piece, dir, e)
@@ -2181,54 +2187,56 @@ export class LoomView {
    * The words are laid out again when you let go.
    */
   /** Size an inline object (a diagram, a table, code) where it sits in the reply. */
-  private resizeInlineHost(host: HTMLElement, e: PointerEvent): void {
-    const col = host.parentElement?.clientWidth || this.scroller.clientWidth || 800
-    const frame = host.querySelector<HTMLIFrameElement>('iframe')
-    const w0 = host.offsetWidth
-    const h0 = frame ? frame.offsetHeight : host.offsetHeight
-    const sx = e.clientX
-    const sy = e.clientY
-    host.classList.add('is-sized', 'is-resizing')
-    this.track(
-      e,
-      'nwse-resize',
-      (ev) => {
-        host.style.width = `${Math.round(Math.max(240, Math.min(col, w0 + ev.clientX - sx)))}px`
-        const h = `${Math.round(Math.max(80, Math.min(2400, h0 + ev.clientY - sy)))}px`
-        if (frame) frame.style.height = h
-        else {
-          host.style.height = h
-          host.style.overflow = 'auto'
-        }
-      },
-      () => {
-        host.classList.remove('is-resizing')
-        this.grew()
-      }
-    )
+  private resizeInlineHost(host: HTMLElement, dir: string, e: PointerEvent): void {
+    const frame = host.querySelector<HTMLIFrameElement>(':scope > iframe')
+    if (!frame) host.style.overflow = 'auto'
+    this.sizeInPlace(host, frame ?? host, dir, e)
   }
 
   /** Size an object where it sits in the reply: its width in the column, its height. */
   private resizeInline(piece: Piece, dir: string, e: PointerEvent): void {
-    const el = piece.el
-    const body = piece.body
-    const col = (el.parentElement?.clientWidth ?? this.scroller.clientWidth) || 800
-    const w0 = el.offsetWidth
-    const h0 = body.offsetHeight
+    const frame = piece.body.querySelector<HTMLIFrameElement>('iframe')
+    if (frame) frame.style.height = '100%'
+    this.sizeInPlace(piece.el, piece.body, dir, e)
+  }
+
+  /**
+   * The placed object's resize, inside the reply: the edge you pull follows the pointer.
+   * The right and bottom edges grow freely; the left and top ones move within the space
+   * the object already has (it cannot leave its column or climb over the words above).
+   */
+  private sizeInPlace(box: HTMLElement, tall: HTMLElement, dir: string, e: PointerEvent): void {
+    const col = box.parentElement?.clientWidth || this.scroller.clientWidth || 800
+    const w0 = box.offsetWidth
+    const h0 = tall.offsetHeight
+    const ml0 = parseFloat(box.style.marginLeft) || 0
+    const mt0 = parseFloat(box.style.marginTop) || 0
     const sx = e.clientX
     const sy = e.clientY
-    el.classList.add('is-resizing', 'is-sized')
-    const frame = body.querySelector<HTMLIFrameElement>('iframe')
-    if (frame) frame.style.height = '100%'
+    const clamp = (lo: number, hi: number, v: number) => Math.round(Math.max(lo, Math.min(hi, v)))
+    box.classList.add('is-sized', 'is-resizing')
+    const cursor = dir === 'n' || dir === 's' ? 'ns-resize' : dir === 'e' || dir === 'w' ? 'ew-resize' : dir === 'ne' || dir === 'sw' ? 'nesw-resize' : 'nwse-resize'
     this.track(
       e,
-      dir === 'e' ? 'ew-resize' : dir === 's' ? 'ns-resize' : 'nwse-resize',
+      cursor,
       (ev) => {
-        if (dir.includes('e')) el.style.width = `${Math.round(Math.max(240, Math.min(col, w0 + ev.clientX - sx)))}px`
-        if (dir.includes('s')) body.style.height = `${Math.round(Math.max(80, Math.min(2400, h0 + ev.clientY - sy)))}px`
+        const dx = ev.clientX - sx
+        const dy = ev.clientY - sy
+        if (dir.includes('e')) box.style.width = `${clamp(240, col - ml0, w0 + dx)}px`
+        if (dir.includes('w')) {
+          const w = clamp(240, ml0 + w0, w0 - dx)
+          box.style.width = `${w}px`
+          box.style.marginLeft = `${ml0 + w0 - w}px`
+        }
+        if (dir.includes('s')) tall.style.height = `${clamp(80, 2400, h0 + dy)}px`
+        if (dir.includes('n')) {
+          const h = clamp(80, h0 + mt0, h0 - dy)
+          tall.style.height = `${h}px`
+          box.style.marginTop = `${mt0 + h0 - h}px`
+        }
       },
       () => {
-        el.classList.remove('is-resizing')
+        box.classList.remove('is-resizing')
         this.grew()
       }
     )
@@ -2290,6 +2298,79 @@ export class LoomView {
 
   private readonly modal = div('loom-modal')
   private full: { piece: Piece; home: Node; next: Node | null } | null = null
+  /** Zoom while full screen: − 100% +, and the same from the wheel (Ctrl or a pinch), + − 0 and a double-click. */
+  private readonly zoomBar = div(
+    'loom-zoom',
+    `<button type="button" data-z="out" title="Zoom out (−)">−</button><button type="button" data-z="reset" class="loom-zoom-pct" title="Back to fit (0)">100%</button><button type="button" data-z="in" title="Zoom in (+)">+</button>`
+  )
+  private localZoom = 1
+
+  private showZoom(z: number): void {
+    const pct = this.zoomBar.querySelector('.loom-zoom-pct')
+    if (pct) pct.textContent = `${Math.round(z * 100)}%`
+  }
+
+  /** Zoom what is full screen: a document zooms itself; anything else is scaled here. */
+  private zoomFull(op: 'in' | 'out' | 'reset', at?: { x: number; y: number }, factor?: number): void {
+    const piece = this.full?.piece
+    if (!piece) return
+    if (piece.frame?.contentWindow) {
+      piece.frame.contentWindow.postMessage({ emberZoom: op }, '*')
+      return
+    }
+    const body = piece.body
+    const inner = body.firstElementChild as HTMLElement | null
+    if (!inner) return
+    const z0 = this.localZoom
+    const z = Math.max(0.5, Math.min(8, op === 'reset' ? 1 : op === 'in' ? z0 * (factor ?? 1.25) : z0 / (factor ?? 1.25)))
+    const r = body.getBoundingClientRect()
+    const cx = at ? at.x - r.left : r.width / 2
+    const cy = at ? at.y - r.top : r.height / 2
+    const px = (body.scrollLeft + cx) / z0
+    const py = (body.scrollTop + cy) / z0
+    this.localZoom = z
+    inner.style.transformOrigin = '0 0'
+    inner.style.transform = z === 1 ? '' : `scale(${z})`
+    body.scrollLeft = px * z - cx
+    body.scrollTop = py * z - cy
+    this.showZoom(z)
+  }
+
+  private zoomWired = false
+
+  private wireZoom(): void {
+    if (this.zoomWired) return
+    this.zoomWired = true
+    this.zoomBar.addEventListener('click', (e) => {
+      const op = (e.target as HTMLElement).closest<HTMLElement>('[data-z]')?.dataset['z'] as 'in' | 'out' | 'reset' | undefined
+      if (op) this.zoomFull(op)
+    })
+    this.modal.addEventListener(
+      'wheel',
+      (e) => {
+        if (!this.full || this.full.piece.frame || !(e.ctrlKey || e.metaKey)) return
+        e.preventDefault()
+        const f = Math.exp(-e.deltaY * 0.0025)
+        this.zoomFull(f >= 1 ? 'in' : 'out', { x: e.clientX, y: e.clientY }, f >= 1 ? f : 1 / f)
+      },
+      { passive: false }
+    )
+    this.modal.addEventListener('dblclick', (e) => {
+      if (!this.full || this.full.piece.frame || !this.full.piece.body.contains(e.target as Node)) return
+      this.zoomFull(this.localZoom > 1.01 ? 'reset' : 'in', { x: e.clientX, y: e.clientY }, 2)
+    })
+    const keys = (e: KeyboardEvent) => {
+      if (!this.full || e.ctrlKey || e.altKey || e.metaKey) return
+      if ((e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]')) return
+      const op = e.key === '+' || e.key === '=' ? 'in' : e.key === '-' || e.key === '_' ? 'out' : e.key === '0' ? 'reset' : null
+      if (!op) return
+      e.preventDefault()
+      e.stopPropagation()
+      this.zoomFull(op)
+    }
+    window.addEventListener('keydown', keys, true)
+    this.unsubs.push(() => window.removeEventListener('keydown', keys, true))
+  }
 
   /** One object over everything, as large as the window allows. Esc or a click outside closes it. */
   private fullscreen(piece: Piece, on = !this.full): void {
@@ -2305,6 +2386,10 @@ export class LoomView {
         })
       }
       this.modal.appendChild(piece.el)
+      this.wireZoom()
+      this.localZoom = 1
+      this.showZoom(1)
+      this.modal.appendChild(this.zoomBar)
       piece.el.classList.add('is-full')
       this.modal.classList.add('is-on')
       const b = piece.el.querySelector('[data-p="expand"]')
@@ -2312,13 +2397,23 @@ export class LoomView {
         b.innerHTML = ICON.restore
         b.setAttribute('title', 'Exit full screen (Esc)')
       }
-      piece.frame?.addEventListener('load', () => piece.frame?.contentWindow?.postMessage({ emberFit: true }, '*'), { once: true })
+      piece.frame?.addEventListener(
+        'load',
+        () => {
+          piece.frame?.contentWindow?.postMessage({ emberFit: true }, '*')
+          piece.frame?.contentWindow?.postMessage({ emberZoom: 'on' }, '*')
+        },
+        { once: true }
+      )
     } else if (this.full && this.full.piece === piece) {
       const { home, next } = this.full
       this.full = null
       const close = this.modal.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms(160), easing: EASE })
       close.onfinish = () => {
         this.modal.classList.remove('is-on')
+        this.zoomBar.remove()
+        const inner = piece.body.firstElementChild as HTMLElement | null
+        if (inner && !piece.frame) inner.style.transform = ''
         piece.el.classList.remove('is-full')
         home.insertBefore(piece.el, next && next.parentNode === home ? next : null)
         const b = piece.el.querySelector('[data-p="expand"]')

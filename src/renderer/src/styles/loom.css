@@ -5141,27 +5141,17 @@ body.is-light .loom-ask .loom-caret::before {
 
 /* ---------------------------------------------------------------- objects in the reply */
 
-/* Sizable where they sit: the right edge, the bottom edge, and a corner grip on hover. */
-.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='s'],
-.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='e'],
-.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='se'] {
+/* Sizable where they sit, exactly as when placed: every edge and corner, lit under the pointer. */
+.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz,
+.loom-liftable > .loom-rz {
   display: block;
 }
-.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='se']::after {
-  content: '';
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 9px;
-  height: 9px;
-  border-right: 2px solid var(--l-dim);
-  border-bottom: 2px solid var(--l-dim);
-  border-bottom-right-radius: 3px;
-  opacity: 0;
-  transition: opacity var(--t1) var(--ease);
-}
-.loom-piece:not(.is-pinned):hover > .loom-rz[data-rz='se']::after {
+.loom-liftable.is-resizing > .loom-rz:active::before {
   opacity: 0.6;
+}
+.loom-liftable.is-resizing,
+.loom-piece.is-resizing {
+  user-select: none;
 }
 .loom-piece.is-sized > .loom-piece-body {
   overflow: auto;
@@ -5363,33 +5353,6 @@ body.is-light .loom-ask .loom-caret::before {
   opacity: 1;
   transform: none;
 }
-/* Sized where it sits: a corner grip, shown on hover. */
-.loom-inline-rz {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 4;
-  width: 16px;
-  height: 16px;
-  cursor: nwse-resize;
-}
-.loom-inline-rz::after {
-  content: '';
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 9px;
-  height: 9px;
-  border-right: 2px solid var(--l-dim);
-  border-bottom: 2px solid var(--l-dim);
-  border-bottom-right-radius: 3px;
-  opacity: 0;
-  transition: opacity var(--t1) var(--ease);
-}
-.loom-liftable:hover > .loom-inline-rz::after,
-.loom-liftable.is-resizing > .loom-inline-rz::after {
-  opacity: 0.7;
-}
 .loom-liftable.is-sized > iframe {
   max-height: none;
 }
@@ -5506,4 +5469,75 @@ body.is-light .loom-rawpill.loom-sign {
 .loom-rawpill.loom-sign button {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- zoom, full screen */
+
+.loom-zoom {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  z-index: 2001;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c-bg) 88%, #000);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 10%, transparent),
+    0 10px 30px -12px rgba(0, 0, 0, 0.7);
+  font: 600 13px/1 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+}
+body.is-light .loom-zoom {
+  background: color-mix(in srgb, var(--c-bg) 94%, #fff);
+}
+.loom-zoom button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 99px;
+  background: none;
+  color: var(--l-dim, color-mix(in srgb, var(--c-fg) 70%, transparent));
+  font: inherit;
+  cursor: pointer;
+}
+.loom-zoom button:hover {
+  color: var(--l-ink, var(--c-fg));
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.loom-zoom .loom-zoom-pct {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+/* In a reply the object's rounded, clipped corners would cut off handles that hang outside it:
+   there they sit just inside the edge. */
+.loom-liftable > .loom-rz[data-rz='n'],
+.loom-liftable > .loom-rz[data-rz='ne'],
+.loom-liftable > .loom-rz[data-rz='nw'] {
+  top: 0;
+}
+.loom-liftable > .loom-rz[data-rz='s'],
+.loom-liftable > .loom-rz[data-rz='se'],
+.loom-liftable > .loom-rz[data-rz='sw'] {
+  bottom: 0;
+}
+.loom-liftable > .loom-rz[data-rz='e'],
+.loom-liftable > .loom-rz[data-rz='ne'],
+.loom-liftable > .loom-rz[data-rz='se'] {
+  right: 0;
+}
+.loom-liftable > .loom-rz[data-rz='w'],
+.loom-liftable > .loom-rz[data-rz='nw'],
+.loom-liftable > .loom-rz[data-rz='sw'] {
+  left: 0;
+}
+.loom-liftable > .loom-rz[data-rz='ne'],
+.loom-liftable > .loom-rz[data-rz='nw'],
+.loom-liftable > .loom-rz[data-rz='se'],
+.loom-liftable > .loom-rz[data-rz='sw'] {
+  width: 16px;
+  height: 16px;
 }
