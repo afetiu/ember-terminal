@@ -1,5 +1,4 @@
 import type { NoteMeta } from '@shared/types'
-import type { SurfaceBrief } from './Overview'
 import { TaskList, applyTodoCommand, hasTasks } from './Tasks'
 
 /** "just now", "14m", "yesterday", "12 Aug" — a list is scanned, not read. */
@@ -228,31 +227,6 @@ export class NoteView {
     if (this.el.dataset['mode'] !== 'edit') this.search.focus()
     else if (this.view === 'tasks') this.tasks.focus()
     else this.area.focus()
-  }
-
-  /**
-   * The notes as the overview's card shows them.
-   *
-   * Whichever note is open leads, because that is what the tab is doing; with none open
-   * the card is the list, and names the most recently touched note so the card says
-   * something rather than only counting.
-   */
-  summary(): SurfaceBrief {
-    const n = this.notes.length
-    const open = this.openId ? this.notes.find((x) => x.id === this.openId) : null
-    const latest = this.notes[0]
-    const writing = open ? titleOfBody(this.area.value) || open.title || 'Untitled note' : ''
-    return {
-      kind: 'notes',
-      what: 'Notes',
-      count: n ? `${n} note${n === 1 ? '' : 's'}` : 'no notes yet',
-      where: open ? 'writing' : 'the list',
-      line: writing
-        ? `Writing: ${writing}`
-        : latest
-          ? `Last touched: ${latest.title || '(empty note)'}`
-          : 'Nothing written yet.',
-    }
   }
 
   setView(view: 'text' | 'tasks'): void {

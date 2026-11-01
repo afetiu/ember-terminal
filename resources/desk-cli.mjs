@@ -108,6 +108,11 @@ async function main() {
     reply = await call(argv)
   }
   if (reply.out) process.stdout.write(`${String(reply.out).trimEnd()}\n`)
+  // DESK_TIMING=1: how long the daemon took, per step, on stderr (stdout stays the answer).
+  if (process.env.DESK_TIMING && typeof reply.ms === 'number') {
+    const steps = Array.isArray(reply.steps) ? reply.steps.map((s) => `${s.cmd} ${s.ms}ms`).join(' · ') : ''
+    process.stderr.write(`desk: ${reply.ms}ms${steps ? ` (${steps})` : ''}\n`)
+  }
   process.exit(reply.ok ? 0 : 1)
 }
 

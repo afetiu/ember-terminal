@@ -1,10 +1,10 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { appendFileSync, existsSync, rmSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:net'
+import { connect, createServer } from 'node:net'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { BrowserWindow, screen, type Display } from 'electron'
+import { BrowserWindow, ipcMain, screen, type Display } from 'electron'
 import { CONFIG_DIR } from './config.js'
 import { resourcePath } from './resources.js'
 import type { DeskActivity, DeskOverlayState, DeskState } from '../shared/types.js'
@@ -19,8 +19,8 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
  * use and kills with the app. A `desk` command in every Ember shell is the client;
  * outside Ember there is no port and no token, so there is no tool.
  *
- * Two things are Ember's alone. The cursor: the daemon reports each action here and a
- * transparent, click-through window draws Claude's own pointer where it is working,
+ * Two things are Ember's alone. The pointer: the daemon reports each action here and a
+ * transparent, click-through window draws Ember's own pointer where it is working,
  * so the person keeps their mouse and can watch. And the Stop switch: a halt file the
  * daemon checks before every command, a killed process, a state the sidebar shows —
  * pressed in the vitals strip, on the overlay's pill, or as `desk halt`.
@@ -359,6 +359,8 @@ export function onActivity(a: DeskActivity): void {
     ensureOverlay(screen.getPrimaryDisplay())
   }
   pushOverlay(st)
+  if (a.action === 'point' && st.point && a.label) pushCallout({ text: a.label, x: st.point.x, y: st.point.y })
+  else if (a.action !== 'point') pushCallout(null)
   if (hideTimer) clearTimeout(hideTimer)
   hideTimer = setTimeout(() => {
     visible = false
@@ -396,7 +398,7 @@ function ensureOverlay(display: Display): BrowserWindow {
     maximizable: false,
     hasShadow: false,
     show: false,
-    title: 'Claude',
+    title: 'Ember',
     backgroundColor: '#00000000',
     webPreferences: {
       preload: join(__dirname, '../preload/overlay.mjs'),
@@ -450,4 +452,185 @@ export function overlayState(): DeskOverlayState {
 /** Windows that are Ember's chrome — everything but the overlay. */
 export function isOverlayWindow(win: BrowserWindow): boolean {
   return win === overlay
+}
+
+// ---------- Ember Hands: pointing and acting, for the session's tools ----------
+
+interface Rect {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+type Callout = { text: string; x: number; y: number; rect?: Rect; step?: number; steps?: number }
+
+function pushCallout(c: Callout | null): void {
+  if (!overlay || overlay.isDestroyed()) return
+  overlay.webContents.send('ember:desk:callout', c)
+}
+
+/** Hide what Ember is saying next to the pointer. */
+export function deskHideCallout(): void {
+  pushCallout(null)
+  setOverlayInteractive(false)
+}
+
+/** The callout's Next / Done: the bubble closes; whoever is waiting hears which. */
+const calloutWaiters = new Set<(a: string) => void>()
+ipcMain.on('ember:desk:callout:action', (_e, a: string) => {
+  setOverlayInteractive(false)
+  for (const w of calloutWaiters) w(String(a))
+  calloutWaiters.clear()
+})
+
+/** One request to the daemon over its socket, from inside Ember (the shell's `desk` does the same). */
+function callDaemon(argv: string[], timeoutMs = 120_000): Promise<{ ok: boolean; out: string; ms?: number }> {
+  return new Promise((resolve, reject) => {
+    if (!port || !token) return reject(new Error('computer use is not set up yet'))
+    const sock = connect({ host: '127.0.0.1', port })
+    let data = ''
+    const timer = setTimeout(() => {
+      sock.destroy()
+      reject(new Error('desk: timed out'))
+    }, timeoutMs)
+    sock.setEncoding('utf8')
+    sock.on('connect', () => sock.write(`${JSON.stringify({ argv, token, tab: '' })}\n`))
+    sock.on('data', (chunk: string) => {
+      data += chunk
+      if (data.endsWith('\n')) sock.end()
+    })
+    sock.on('close', () => {
+      clearTimeout(timer)
+      try {
+        resolve(JSON.parse(data))
+      } catch {
+        reject(new Error(data ? `desk: bad reply: ${data.slice(0, 200)}` : 'desk: connection closed'))
+      }
+    })
+    sock.on('error', (err) => {
+      clearTimeout(timer)
+      reject(err)
+    })
+  })
+}
+
+async function ensureRunning(): Promise<string | null> {
+  if (state.halted) return 'HALTED: Stop was pressed. Resume it from the pill or `desk resume`.'
+  if (!state.running) await startDesk()
+  if (!state.running) return `computer use is unavailable (${state.ready}${state.message ? `: ${state.message}` : ''})`
+  return null
+}
+
+/**
+ * The screen as text, for the session to find what to point at: the open windows, or one
+ * window's controls (names, types, positions). Read-only and fast — no screenshot.
+ */
+export async function deskLook(window?: string, depth = 4): Promise<{ ok: boolean; out: string; ms?: number; error?: string }> {
+  const err = await ensureRunning()
+  if (err) return { ok: false, out: '', error: err }
+  const argv = window ? ['tree', window, '--depth', String(Math.max(1, Math.min(8, depth)))] : ['windows']
+  try {
+    const r = await callDaemon(argv, 20_000)
+    return { ok: r.ok, out: String(r.out ?? '').slice(0, 14_000), ms: r.ms }
+  } catch (e) {
+    return { ok: false, out: '', error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/** Physical screen pixels (what the daemon speaks) to this overlay window's CSS pixels. */
+function toOverlay(x: number, y: number): { x: number; y: number } {
+  const dip = screen.screenToDipPoint({ x, y })
+  const win = ensureOverlay(screen.getDisplayNearestPoint(dip))
+  const b = win.getBounds()
+  return { x: dip.x - b.x, y: dip.y - b.y }
+}
+
+/**
+ * Show where something is: Ember's pointer glides to it and the callout says what it is,
+ * beside it. A control is found by window title and name (UI Automation); otherwise x,y in
+ * screen pixels. Never clicks, never types.
+ */
+export async function deskPoint(opts: {
+  window?: string
+  name?: string
+  ctype?: string
+  x?: number
+  y?: number
+  say?: string
+  step?: number
+  steps?: number
+}): Promise<{ ok: boolean; x?: number; y?: number; found?: string; error?: string; ms?: number }> {
+  const t0 = Date.now()
+  if (state.halted) return { ok: false, error: 'HALTED: Stop was pressed.' }
+  let x = opts.x
+  let y = opts.y
+  let rect: Rect | undefined
+  let found = ''
+  if (opts.window && opts.name) {
+    const why = await ensureRunning()
+    if (why) return { ok: false, error: why }
+    try {
+      const r = await callDaemon(['find', opts.window, opts.name, ...(opts.ctype ? ['--type', opts.ctype] : [])], 20_000)
+      if (!r.ok) return { ok: false, error: r.out.trim() || 'not found', ms: Date.now() - t0 }
+      const j = JSON.parse(r.out) as { name: string; center: [number, number]; rect: [number, number, number, number] }
+      ;[x, y] = j.center
+      found = j.name
+      const a = toOverlay(j.rect[0], j.rect[1])
+      const b = toOverlay(j.rect[2], j.rect[3])
+      rect = { left: a.x, top: a.y, right: b.x, bottom: b.y }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err), ms: Date.now() - t0 }
+    }
+  }
+  if (typeof x !== 'number' || typeof y !== 'number') return { ok: false, error: 'point: give window + name, or x + y' }
+  const at = toOverlay(x, y)
+  const label = (opts.say ?? found ?? '').slice(0, 120)
+  state.last = { action: 'point', x, y, label, tab: '', at: Date.now() }
+  emit()
+  visible = true
+  pushOverlay({ visible: true, halted: false, showStop: true, point: at, action: 'point', label: found || '' })
+  if (opts.say) pushCallout({ text: opts.say, x: at.x, y: at.y, ...(rect ? { rect } : {}), ...(opts.steps ? { step: opts.step ?? 1, steps: opts.steps } : {}) })
+  else pushCallout(null)
+  if (hideTimer) clearTimeout(hideTimer)
+  hideTimer = setTimeout(() => {
+    visible = false
+    pushOverlay({ visible: false, halted: state.halted, showStop: false })
+    setTimeout(() => {
+      if (!visible) hideOverlay()
+    }, 400)
+  }, HIDE_MS)
+  return { ok: true, x, y, found, ms: Date.now() - t0 }
+}
+
+/**
+ * Do something on the desktop: a desk batch script ("focus Notepad; press Notepad ^File$;
+ * type hello"). The pointer glides to each target and the real action lands on arrival.
+ * Honours Stop.
+ */
+export async function deskAct(script: string): Promise<{ ok: boolean; output: string; error?: string; ms: number }> {
+  const t0 = Date.now()
+  const why = await ensureRunning()
+  if (why) return { ok: false, output: '', error: why, ms: Date.now() - t0 }
+  pushCallout(null)
+  try {
+    const r = await callDaemon(['do', script], 10 * 60_000)
+    return { ok: r.ok, output: r.out.trim(), ...(r.ok ? {} : { error: r.out.trim().split('\n').pop() ?? 'failed' }), ms: Date.now() - t0 }
+  } catch (err) {
+    return { ok: false, output: '', error: err instanceof Error ? err.message : String(err), ms: Date.now() - t0 }
+  }
+}
+
+/** Wait for the person to press Next or Done on a stepped callout (or for the timeout). */
+export function deskAwaitCallout(timeoutMs = 120_000): Promise<string> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => {
+      calloutWaiters.delete(done)
+      resolve('timeout')
+    }, timeoutMs)
+    const done = (a: string) => {
+      clearTimeout(t)
+      resolve(a)
+    }
+    calloutWaiters.add(done)
+  })
 }

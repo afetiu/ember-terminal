@@ -1,11 +1,12 @@
 import { ipcMain, type WebContents } from 'electron'
-import { existsSync, statSync, createReadStream } from 'node:fs'
+import { existsSync, readdirSync, statSync, createReadStream } from 'node:fs'
 import { open } from 'node:fs/promises'
-import { extname, basename, isAbsolute } from 'node:path'
+import { extname, basename, isAbsolute, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { CanvasAnnotateResult, CanvasFeed } from '../shared/types.js'
+import type { CanvasAnnotateResult, CanvasFeed, ScreenItem } from '../shared/types.js'
 import { transcriptPath } from './transcript.js'
+import { CostMeter } from './emberCost.js'
 
 /**
  * The main-process half of a Loom tab: the session's transcript as a feed, local media
@@ -29,6 +30,7 @@ const MEDIA_TYPES: Record<string, string> = {
   '.bmp': 'image/bmp',
   '.svg': 'image/svg+xml',
   '.mp4': 'video/mp4',
+  '.pdf': 'application/pdf',
   '.m4v': 'video/mp4',
   '.webm': 'video/webm',
   '.mov': 'video/quicktime',
@@ -237,6 +239,9 @@ class Tail {
   private carry = ''
   private timer: NodeJS.Timeout | null = null
   private reading: Promise<void> | null = null
+  private meter = new CostMeter()
+  /** The session's subagents' own logs, and how far each has been read. */
+  private agentOffsets = new Map<string, number>()
 
   constructor(
     private readonly tabId: string,
@@ -255,6 +260,55 @@ class Tail {
 
   private emit(feed: CanvasFeed): void {
     if (!this.to.isDestroyed()) this.to.send('ember:canvas:feed', feed)
+  }
+
+  /** New steps in the session's subagents' logs (`<session>/subagents/agent-<id>.jsonl`). */
+  private async readAgents(file: string): Promise<void> {
+    const dir = join(file.replace(/\.jsonl$/, ''), 'subagents')
+    let names: string[] = []
+    try {
+      names = readdirSync(dir).filter((n) => /^agent-.+\.jsonl$/.test(n))
+    } catch {
+      return
+    }
+    for (const n of names) {
+      const path = join(dir, n)
+      let size = 0
+      try {
+        size = statSync(path).size
+      } catch {
+        continue
+      }
+      const from = this.agentOffsets.get(path) ?? Math.max(0, size - 64_000)
+      if (size <= from) continue
+      this.agentOffsets.set(path, size)
+      let text = ''
+      try {
+        const h = await open(path, 'r')
+        const buf = Buffer.alloc(size - from)
+        await h.read(buf, 0, buf.length, from)
+        await h.close()
+        text = buf.toString('utf8')
+      } catch {
+        continue
+      }
+      let last = ''
+      let at = 0
+      for (const raw of text.split('\n')) {
+        if (!raw.trim()) continue
+        try {
+          const j = JSON.parse(raw) as Json
+          const step = agentStep(j)
+          if (step) {
+            last = step
+            at = Date.parse(String(j['timestamp'] ?? '')) || Date.now()
+          }
+        } catch {
+          /* a line still being written */
+        }
+      }
+      if (last && !this.to.isDestroyed()) this.to.send('ember:canvas:agent', { tabId: this.tabId, agentId: n.replace(/^agent-|\.jsonl$/g, ''), action: last, at })
+    }
   }
 
   /** Read whatever has been appended since last time. Concurrent callers share one read. */
@@ -279,6 +333,7 @@ class Tail {
       this.file = file
       this.offset = 0
       this.carry = ''
+      this.meter = new CostMeter()
       this.emit({ tabId: this.tabId, kind: 'switch', file, first })
     }
     let size = 0
@@ -300,13 +355,16 @@ class Tail {
       await handle.close()
     }
     const lines: Json[] = []
+    let costed = false
     let cut = this.carry.indexOf('\n')
     while (cut !== -1) {
       const raw = this.carry.slice(0, cut).trim()
       this.carry = this.carry.slice(cut + 1)
       if (raw) {
         try {
-          const slim = slimLine(JSON.parse(raw) as Json)
+          const parsed = JSON.parse(raw) as Json
+          if (this.meter.add(parsed)) costed = true
+          const slim = slimLine(parsed)
           if (slim) lines.push(slim)
         } catch {
           /* half a line; the rest arrives with the next append */
@@ -315,7 +373,28 @@ class Tail {
       cut = this.carry.indexOf('\n')
     }
     if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
+    if (costed && !this.to.isDestroyed()) this.to.send('ember:canvas:cost', this.meter.summary(this.tabId))
+    await this.readAgents(file)
   }
+}
+
+/** A step of a subagent, said short: the tool and what it was given, or the first words it said. */
+function agentStep(line: Json): string {
+  if (line['type'] !== 'assistant') return ''
+  const content = ((line['message'] ?? {}) as Json)['content']
+  if (!Array.isArray(content)) return ''
+  let out = ''
+  for (const b of content as Json[]) {
+    if (b['type'] === 'tool_use') {
+      const input = (b['input'] ?? {}) as Json
+      const arg = String(input['description'] ?? input['file_path'] ?? input['pattern'] ?? input['command'] ?? input['query'] ?? input['url'] ?? '')
+      const name = String(b['name'] ?? '').replace(/^mcp__[^_]+__/, '')
+      out = `${name}${arg ? ` ${arg.split(/[\\/]/).pop()!.replace(/\s+/g, ' ').slice(0, 80)}` : ''}`
+    } else if (b['type'] === 'text' && String(b['text'] ?? '').trim()) {
+      out = String(b['text']).replace(/\s+/g, ' ').trim().slice(0, 100)
+    }
+  }
+  return out
 }
 
 const tails = new Map<string, Tail>()
@@ -349,18 +428,50 @@ export function requestAnnotate(
   })
 }
 
+const pointWaiters = new Map<string, (r: { ok: boolean; error?: string; found?: string }) => void>()
+
+/** Point at something on a Loom canvas (a node in a diagram, a row in a table) with Ember's pointer, drawn in the canvas. */
+export function requestCanvasPoint(
+  broadcast: (channel: string, payload: unknown) => void,
+  payload: Json
+): Promise<{ ok: boolean; error?: string; found?: string }> {
+  const reqId = randomBytes(8).toString('hex')
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pointWaiters.delete(reqId)
+      resolve({ ok: false, error: 'the canvas did not answer — is this a Loom tab with that object on it?' })
+    }, 6000)
+    pointWaiters.set(reqId, (r) => {
+      clearTimeout(timer)
+      pointWaiters.delete(reqId)
+      resolve(r)
+    })
+    broadcast('ember:canvas:point', { ...payload, reqId })
+  })
+}
+
 // ---------------------------------------------------------------- wiring
 
 export interface CanvasDeps {
   /** The bridge's origin, for URLs the canvas can load. Empty until it is listening. */
   origin: () => string
   /** Host a small document on the bridge (a diagram from a mermaid fence) and give back its URL. */
-  hostDoc: (tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string) => string
+  hostDoc: (tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string) => string
   /** This tab is a Loom tab: its pushes accumulate instead of replacing one another. */
   markCanvasTab: (tabId: string, on: boolean) => void
 }
 
+/** What the user has placed on each Loom tab's canvas, as its renderer last reported. */
+const screens = new Map<string, ScreenItem[]>()
+
+export function screenOf(tabId: string): ScreenItem[] {
+  return screens.get(tabId) ?? []
+}
+
 export function registerCanvas(deps: CanvasDeps): void {
+  ipcMain.on('ember:canvas:screen', (_e, tabId: string, items: ScreenItem[]) => {
+    if (typeof tabId === 'string' && Array.isArray(items)) screens.set(tabId, items.slice(0, 40))
+  })
   ipcMain.handle('ember:canvas:watch', (e, tabId: string) => {
     tails.get(tabId)?.stop()
     const tail = new Tail(tabId, e.sender)
@@ -384,9 +495,12 @@ export function registerCanvas(deps: CanvasDeps): void {
     const origin = deps.origin()
     return origin ? { src: `${origin}/media/${r.id}`, kind: r.kind, name: r.name } : { error: 'bridge not listening' }
   })
-  ipcMain.handle('ember:canvas:doc', (_e, tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string) =>
+  ipcMain.handle('ember:canvas:doc', (_e, tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string) =>
     deps.hostDoc(tabId, title, format, content)
   )
+  ipcMain.on('ember:canvas:pointed', (_e, reqId: string, result: { ok: boolean; error?: string; found?: string }) => {
+    pointWaiters.get(reqId)?.(result)
+  })
   ipcMain.on('ember:canvas:annotated', (_e, reqId: string, result: CanvasAnnotateResult) => {
     annotateWaiters.get(reqId)?.(result)
   })

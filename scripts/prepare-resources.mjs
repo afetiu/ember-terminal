@@ -12,12 +12,18 @@ import { fileURLToPath } from 'node:url'
  */
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, 'resources', 'vendor')
+// The phone app's object frames load the same libraries from the site (docs/specs/phone.md).
+const site = join(root, 'site', 'vendor')
 
 const files = [
   ['node_modules/mermaid/dist/mermaid.min.js', 'mermaid.min.js'],
+  // PDFs on the canvas are drawn with pdf.js: no plugin, which a sandboxed frame would not load.
+  ['node_modules/pdfjs-dist/build/pdf.min.mjs', 'pdf.min.mjs'],
+  ['node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'pdf.worker.min.mjs'],
 ]
 
 mkdirSync(out, { recursive: true })
+mkdirSync(site, { recursive: true })
 for (const [from, to] of files) {
   const src = join(root, from)
   if (!existsSync(src)) {
@@ -27,5 +33,6 @@ for (const [from, to] of files) {
     continue
   }
   copyFileSync(src, join(out, to))
+  copyFileSync(src, join(site, to))
   console.log(`[ember] resources: ${to}`)
 }

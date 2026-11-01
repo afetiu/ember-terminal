@@ -10,3 +10,10 @@ resources/vendor/
 # them is not — two got committed before this line existed.
 /*.png
 *.tsbuildinfo
+
+# Copies made by scripts/prepare-resources.mjs (site) and mobile/sync.mjs (the APK's bundle).
+site/vendor/
+mobile/www/
+# Wrangler's local state for the relay.
+relay/.wrangler/
+__pycache__/

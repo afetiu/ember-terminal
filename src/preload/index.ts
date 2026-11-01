@@ -23,8 +23,6 @@ import type {
   DeskState,
   ClaudeStatus,
   ClaudeUsage,
-  SessionBrief,
-  ActivityEntry,
   MapAskEvent,
   MapBundle,
   MapJob,
@@ -37,8 +35,7 @@ import type {
   CanvasMedia,
   CanvasAnnotate,
   CanvasAnnotateResult,
-  CanvasSteps,
-} from '../shared/types.js'
+  CanvasSteps, EmberCost } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -75,10 +72,19 @@ const bridge: EmberBridge = {
         { src: string; kind: 'image' | 'video' | 'audio'; name: string } | { error: string }
       >,
     doc: (tabId, title, format, content) => ipcRenderer.invoke('ember:canvas:doc', tabId, title, format, content) as Promise<string>,
+    docStatus: (id, status) => ipcRenderer.send('ember:canvas:docStatus', id, status),
+    sideAsk: (question, about, source, cwd) =>
+      ipcRenderer.invoke('ember:canvas:sideAsk', question, about, source, cwd) as Promise<{ ok: boolean; text: string; error?: string }>,
+    showFile: (tabId, path, title) => ipcRenderer.invoke('ember:canvas:showFile', tabId, path, title) as Promise<{ ok?: boolean; title?: string; error?: string }>,
     onMedia: (cb) => on<CanvasMedia>('ember:canvas:media', cb),
     onAnnotate: (cb) => on<CanvasAnnotate>('ember:canvas:annotate', cb),
+    onPoint: (cb) => on<{ tabId: string; reqId: string; object: string; text: string; say: string; step?: number; steps?: number }>('ember:canvas:point', cb),
+    pointed: (reqId, result) => ipcRenderer.send('ember:canvas:pointed', reqId, result),
     annotated: (reqId: string, result: CanvasAnnotateResult) => ipcRenderer.send('ember:canvas:annotated', reqId, result),
     onSteps: (cb) => on<CanvasSteps>('ember:canvas:steps', cb),
+    onCost: (cb) => on<EmberCost>('ember:canvas:cost', cb),
+    onAgent: (cb) => on<{ tabId: string; agentId: string; action: string; at: number }>('ember:canvas:agent', cb),
+    screen: (tabId, items) => ipcRenderer.send('ember:canvas:screen', tabId, items),
   },
   panel: {
     origin: () => ipcRenderer.invoke('ember:panel:origin') as Promise<string>,
@@ -126,12 +132,12 @@ const bridge: EmberBridge = {
     onJob: (cb) => on<{ id: string; job: MapJob | null }>('ember:map:job', cb),
     onAsk: (cb) => on<MapAskEvent>('ember:map:ask', cb),
   },
-  voice: {
+  converse: {
     ask: (tabId: string, sessionId: string, question: string) =>
-      ipcRenderer.invoke('ember:voice:ask', tabId, sessionId, question) as Promise<AskResult>,
-    cancel: (tabId: string) => ipcRenderer.send('ember:voice:cancel', tabId),
-    ready: (tabId: string) => ipcRenderer.invoke('ember:voice:ready', tabId) as Promise<boolean>,
-    watch: (tabId: string) => ipcRenderer.invoke('ember:voice:watch', tabId) as Promise<unknown>,
+      ipcRenderer.invoke('ember:converse:ask', tabId, sessionId, question) as Promise<AskResult>,
+    cancel: (tabId: string) => ipcRenderer.send('ember:converse:cancel', tabId),
+    ready: (tabId: string) => ipcRenderer.invoke('ember:converse:ready', tabId) as Promise<boolean>,
+    watch: (tabId: string) => ipcRenderer.invoke('ember:converse:watch', tabId) as Promise<unknown>,
   },
   orch: {
     cli: (text: string, recap: string) => ipcRenderer.invoke('ember:orch:cli', text, recap),
@@ -178,12 +184,6 @@ const bridge: EmberBridge = {
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
-  },
-  overview: {
-    all: () => ipcRenderer.invoke('ember:overview:all') as Promise<SessionBrief[]>,
-    onBrief: (cb) => on<SessionBrief>('ember:overview:brief', cb),
-    activity: () => ipcRenderer.invoke('ember:overview:activity') as Promise<ActivityEntry[]>,
-    onActivity: (cb) => on<ActivityEntry[]>('ember:overview:act', cb),
   },
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),

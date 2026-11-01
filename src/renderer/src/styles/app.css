@@ -1233,19 +1233,13 @@ body.is-resizing * {
   pointer-events: none;
   --fx-ambient: 0;
   background:
-    radial-gradient(
-      120% 90% at 50% 45%,
-      rgba(255, 168, 107, calc(var(--fx-glow, 0) * var(--fx-ambient) * 0.16)) 0%,
-      transparent 65%
-    ),
     repeating-linear-gradient(
       to bottom,
       rgba(0, 0, 0, calc(var(--fx-scanlines, 0) * 0.55)) 0px,
       rgba(0, 0, 0, calc(var(--fx-scanlines, 0) * 0.55)) 1px,
       transparent 1px,
       transparent 3px
-    ),
-    radial-gradient(130% 110% at 50% 50%, transparent 55%, rgba(5, 2, 12, calc(var(--fx-vignette, 0) * 0.75)) 100%);
+    );
   transition: background 600ms linear;
 }
 
@@ -1850,8 +1844,6 @@ body.is-zen .ember-fx {
   overflow: hidden;
 }
 
-/* The overview lives in overview.css. */
-
 /* The todo list: its own surface. */
 .ember-todo {
   display: flex;
@@ -1974,8 +1966,7 @@ body.is-zen .ember-fx {
    rather than beside them. The slots stay in layout (a terminal must not lose its size)
    but out of sight. */
 .ember-group-panes.has-note > .ember-notes,
-.ember-group-panes.has-note > .ember-todo,
-.ember-group-panes.has-note > .ember-overview {
+.ember-group-panes.has-note > .ember-todo {
   position: absolute;
   inset: 0;
   z-index: 4;
@@ -3284,15 +3275,6 @@ body.is-zen .ember-fx {
   min-width: 320px;
 }
 
-/* A live call is the panel's loudest state, because the one thing you must never
-   wonder is whether the microphone is open. */
-.ember-orch.is-oncall {
-  border-right-color: var(--c-working);
-  box-shadow:
-    18px 0 44px color-mix(in srgb, var(--c-shadow) 40%, transparent),
-    inset -2px 0 0 var(--c-working);
-}
-
 /* The orchestrator's switch, in the sidebar head between the label and "+". Same
    element class as the title-bar toggles so every call state it already had still
    applies; only the size is the sidebar's. */
@@ -3334,28 +3316,6 @@ body.sidebar-mini .ember-sidebar-orch {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--c-dim);
-}
-
-.ember-orch-pill.is-live,
-.ember-orch-pill.is-connecting {
-  color: var(--c-working);
-}
-
-.ember-orch-pill.is-live::before,
-.ember-orch-pill.is-connecting::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 8px currentColor;
-  animation: ember-breathe 1.5s var(--ease-move) infinite;
-}
-
-.ember-orch-pill.is-failed {
-  color: var(--c-danger);
 }
 
 .ember-orch-call {
@@ -3445,18 +3405,6 @@ body.sidebar-mini .ember-sidebar-orch {
   padding-left: 10px;
 }
 
-/* Which channel a turn came in on. Not decoration — after a call it is the only way to
-   tell what you said out loud from what you typed. */
-.ember-orch-turn.is-spoken::after {
-  content: 'spoken';
-  display: block;
-  margin-top: 4px;
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-working) 70%, transparent);
-}
-
 /* What it did to answer. The tools are most of the value, so hiding them would make a
    dispatch look identical to a guess. */
 .ember-orch-did {
@@ -3544,26 +3492,6 @@ body.sidebar-mini .ember-sidebar-orch {
   display: block;
 }
 
-.ember-voicetoggle.is-orch.is-connecting {
-  color: var(--c-attention);
-}
-
-/* On a call. The hub pulses and the spokes do not — the centre is the thing that is
-   live, and animating the whole mark would read as loading rather than as listening. */
-.ember-voicetoggle.is-orch.is-oncall {
-  color: var(--c-working);
-  background: color-mix(in srgb, var(--c-working) 16%, transparent);
-}
-
-.ember-voicetoggle.is-orch.is-oncall .ember-orch-hub {
-  animation: ember-hub 2.2s var(--ease-move) infinite;
-}
-
-.ember-voicetoggle.is-orch.is-hearing .ember-orch-hub,
-.ember-voicetoggle.is-orch.is-speaking .ember-orch-hub {
-  animation-duration: 0.9s;
-}
-
 /* A question is out with Claude — the gap the holding line covers, and the one state
    that most needs to look like something rather than nothing. */
 .ember-voicetoggle.is-orch.is-thinking {
@@ -3571,70 +3499,7 @@ body.sidebar-mini .ember-sidebar-orch {
   background: color-mix(in srgb, var(--c-attention) 16%, transparent);
 }
 
-.ember-voicetoggle.is-orch.is-failed {
-  color: var(--c-danger);
-}
-
-@keyframes ember-hub {
-  0%,
-  100% {
-    r: 2.3;
-    opacity: 1;
-  }
-  50% {
-    r: 3;
-    opacity: 0.7;
-  }
-}
-
-/* What was said, under the terminal. Only while the call is up and only when asked for —
-   the point of talking is not having to read. */
-.ember-voicestrip {
-  position: absolute;
-  left: 50%;
-  bottom: 14px;
-  transform: translate(-50%, 8px);
-  width: min(760px, calc(100% - 48px));
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px;
-  border: 1px solid color-mix(in srgb, var(--c-accent) 26%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--c-shadow) 45%, transparent);
-  font-family: var(--ui-font);
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 180ms var(--ease-move),
-    transform 180ms var(--ease-move);
-  z-index: 8;
-}
-
-.ember-voicestrip.is-on {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.ember-voiceline {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ember-voiceline.is-user {
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 45% * var(--fade)), transparent);
-}
-
-.ember-voiceline.is-voice {
-  color: var(--c-accent-ink);
-}
-
-/* The panel switch. It is its own element in the strip rather than a third voice
-   toggle, so it survives a machine with no Azure key — which hides the other two. */
+/* The panel switch. */
 .ember-paneltoggle {
   position: relative;
   margin-right: 4px;
@@ -4044,42 +3909,6 @@ body.sidebar-mini .ember-sidebar-orch {
   background: color-mix(in srgb, var(--c-accent) 30%, transparent);
 }
 
-.ember-voicepane {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  overflow: hidden;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
-}
-
-.ember-voicepane-frame {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-  border-radius: inherit;
-}
-
-.ember-voicepane-status {
-  place-self: center;
-  padding: 24px;
-  text-align: center;
-  font-family: var(--mono-font, monospace);
-  font-size: 12px;
-  opacity: 0.6;
-}
-
-.ember-voicepane-status.is-error {
-  opacity: 1;
-  color: color-mix(in srgb, var(--c-danger) 80%, var(--c-fg));
-}
-
-/* The mic sits beside +, so it must read as the same class of control. */
-.ember-voicetab svg {
-  display: block;
-}
-
 /* ---------------------------------------------------------------- pairing sheet
    Shown once, to point a phone camera at. Deliberately the brightest thing on screen:
    a QR on a dark translucent terminal is hard for a camera to lock onto, so the code
@@ -4202,3 +4031,520 @@ body.sidebar-mini .ember-sidebar-orch {
 }
 .ember-pair-minor:hover { opacity: 1; }
 .ember-pair-minor.is-danger:hover { border-color: color-mix(in srgb, var(--c-danger) 50%, transparent); color: var(--c-danger); }
+
+/* ---------- the places ----------
+   Overview, Todo, Notes and Map as four buttons in one row at the top of the column:
+   always there, never a card. A mark and a word each; the one on stage takes the accent,
+   and a badge carries the one count worth carrying (sessions waiting, items open). */
+
+.ember-places {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  padding: 10px 8px 4px;
+  container-type: inline-size;
+}
+
+.ember-place {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 46px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: color-mix(in srgb, var(--c-fg) calc(100% - 48% * var(--fade)), transparent);
+  font-family: var(--ui-font);
+  cursor: pointer;
+  transition:
+    color 140ms var(--ease-move),
+    background 140ms var(--ease-move);
+}
+
+.ember-place:hover {
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+}
+
+.ember-place.is-active {
+  color: var(--c-accent-ink);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+
+.ember-place:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
+  outline-offset: 1px;
+}
+
+.ember-place svg {
+  flex: none;
+}
+
+.ember-place-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+
+.ember-place-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 5px);
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-fg) 14%, var(--c-bg));
+  color: var(--c-fg);
+  font: 600 9.5px/15px var(--ui-font);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ember-place-badge[hidden] {
+  display: none;
+}
+
+.ember-place-badge.is-hot {
+  background: var(--c-attention);
+  color: var(--c-bg);
+}
+
+/* A narrow column keeps the marks and drops the words. */
+@container (max-width: 190px) {
+  .ember-place {
+    height: 34px;
+  }
+
+  .ember-place-name {
+    display: none;
+  }
+}
+
+/* The folded column is one icon wide: the places stack. */
+body.sidebar-mini .ember-places {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 10px 0 4px;
+}
+
+body.sidebar-mini .ember-place {
+  width: 40px;
+  height: 34px;
+}
+
+body.sidebar-mini .ember-place-name {
+  display: none;
+}
+
+/* ==========================================================================
+   Chrome, to the shared spec (2026-10-31): neutral ink, two type families, a 4px grid,
+   three radii, the accent only for live state, selection and the primary action, one
+   focus ring, one easing. Title bar, session list, places, vitals.
+   ========================================================================== */
+
+:root {
+  --ui-font: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  --ui-ink: color-mix(in srgb, var(--c-fg) 14%, #e7e4df);
+  --ui-strong: color-mix(in srgb, var(--c-fg) 8%, #f7f5f2);
+  --ui-dim: color-mix(in srgb, var(--ui-ink) 66%, transparent);
+  --ui-faint: color-mix(in srgb, var(--ui-ink) 44%, transparent);
+  --ui-rim: rgba(255, 255, 255, 0.05);
+  --ui-hover: rgba(255, 255, 255, 0.05);
+  --ui-press: rgba(255, 255, 255, 0.08);
+  --ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ui-ok: #5fbf8f;
+  --ui-warn: #e0b45a;
+  --ui-err: #e2676f;
+}
+body.is-light {
+  --ui-ink: color-mix(in srgb, var(--c-fg) 14%, #23211f);
+  --ui-strong: color-mix(in srgb, var(--c-fg) 8%, #121110);
+  --ui-rim: rgba(0, 0, 0, 0.07);
+  --ui-hover: rgba(0, 0, 0, 0.045);
+  --ui-press: rgba(0, 0, 0, 0.07);
+  --ui-ok: #2f8f5f;
+  --ui-warn: #a8740f;
+  --ui-err: #c03a45;
+}
+
+/* One focus ring for every control in the chrome. */
+.ember-titlebar button:focus-visible,
+.ember-sidebar button:focus-visible,
+.ember-card:focus-visible,
+.ember-vitals button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c-accent) 50%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- title bar */
+
+.ember-brand {
+  gap: 8px;
+  padding-left: 4px;
+}
+.ember-brand-name {
+  font: 500 13px/1 var(--ui-font);
+  letter-spacing: 0;
+  color: var(--ui-dim);
+}
+.ember-brand-mark {
+  width: 18px;
+  height: 18px;
+  filter: none;
+}
+.ember-sidebar-toggle,
+.ember-voicetoggles .ember-voicetoggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: auto 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ui-faint);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color 150ms var(--ui-ease),
+    color 150ms var(--ui-ease);
+}
+.ember-sidebar-toggle:hover,
+.ember-voicetoggles .ember-voicetoggle:hover {
+  background: var(--ui-hover);
+  color: var(--ui-ink);
+}
+.ember-sidebar-toggle svg,
+.ember-voicetoggles .ember-voicetoggle svg {
+  display: block;
+}
+.ember-voicetoggles {
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+}
+.ember-winbtn {
+  color: var(--ui-faint);
+  transition:
+    background-color 150ms var(--ui-ease),
+    color 150ms var(--ui-ease);
+}
+.ember-winbtn:hover {
+  background: var(--ui-hover);
+  color: var(--ui-ink);
+}
+.ember-winbtn.close:hover {
+  background: var(--ui-err);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------- the session list */
+
+.ember-sidebar-head {
+  gap: 4px;
+  padding: 16px 8px 8px 16px;
+  font: 600 12px/1 var(--ui-font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-faint);
+}
+.ember-newtab,
+.ember-sidebar-orch {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ui-faint);
+  font: inherit;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ui-ease),
+    color 150ms var(--ui-ease);
+}
+.ember-newtab:hover,
+.ember-sidebar-orch:hover {
+  background: var(--ui-hover);
+  color: var(--ui-ink);
+}
+.ember-sidebar-orch.is-on {
+  color: var(--c-accent);
+}
+
+.ember-card {
+  min-height: 0;
+  gap: 12px;
+  margin: 0 0 4px 0;
+  padding: 10px 8px 10px 12px;
+  border-radius: 10px 0 0 10px;
+  font-family: var(--ui-font);
+}
+.ember-card-plate {
+  border-radius: 10px 0 0 10px;
+}
+.ember-card:not(.is-active):hover {
+  background: var(--ui-hover);
+}
+
+/* The state, as a dot where the mascot was. */
+.ember-card-state {
+  flex: none;
+  align-self: flex-start;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--ui-faint);
+  opacity: 0.6;
+  transition:
+    background-color 250ms var(--ui-ease),
+    opacity 250ms var(--ui-ease);
+}
+.ember-card[data-state='working'] .ember-card-state {
+  background: var(--c-accent);
+  opacity: 1;
+  animation: ember-state-breathe 2s ease-in-out infinite;
+}
+.ember-card[data-state='attention'] .ember-card-state {
+  background: var(--ui-warn);
+  opacity: 1;
+}
+.ember-card[data-state='exited'] .ember-card-state {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ui-faint);
+}
+@keyframes ember-state-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-accent) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-accent) 0%, transparent);
+  }
+}
+
+.ember-card-title {
+  font: 500 14px/1.35 var(--ui-font);
+  color: var(--ui-dim);
+}
+.ember-card.is-active .ember-card-title,
+.ember-card:hover .ember-card-title {
+  color: var(--ui-strong);
+}
+.ember-card-status {
+  margin-top: 2px;
+  font: 400 12px/1.4 var(--ui-font);
+  letter-spacing: 0;
+  color: var(--ui-faint);
+}
+.ember-card[data-state='working'] .ember-card-status,
+.ember-card[data-state='attention'] .ember-card-status {
+  color: var(--ui-dim);
+}
+/* The dot at the start of the row is the state dot now; the status line needs none. */
+.ember-card-status .ember-card-dot {
+  display: none;
+}
+.ember-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 2px;
+}
+.ember-card-meta:empty {
+  display: none;
+}
+.ember-card-metatext {
+  font: 400 12px/1.4 var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ember-card-metatext[data-hot='true'] {
+  color: var(--ui-warn);
+}
+.ember-card-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 12px/1.4 var(--ui-font);
+  color: var(--ui-faint);
+  text-decoration: underline;
+  text-decoration-color: var(--ui-rim);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ember-card-link:hover {
+  color: var(--ui-ink);
+}
+.ember-card-close {
+  color: var(--ui-faint);
+}
+
+/* ---------------------------------------------------------------- places: a quiet row at the foot */
+
+.ember-places {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 0;
+  box-shadow: inset 0 1px 0 var(--ui-rim);
+}
+.ember-place {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ui-faint);
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ui-ease),
+    color 150ms var(--ui-ease);
+}
+.ember-place:hover {
+  background: var(--ui-hover);
+  color: var(--ui-ink);
+}
+.ember-place.is-active {
+  background: var(--ui-press);
+  color: var(--c-accent);
+}
+.ember-place svg {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.ember-place-name {
+  display: none !important;
+}
+.ember-place-badge {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: var(--ui-press);
+  color: var(--ui-ink);
+  font: 600 12px/15px var(--ui-font);
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+.ember-place-badge.is-hot {
+  background: var(--c-accent);
+  color: var(--c-bg);
+}
+body.sidebar-mini .ember-places {
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------- vitals: there when you look */
+
+.ember-vitals {
+  gap: 2px;
+  padding: 4px 12px 8px;
+  border-top: 0;
+  background: none;
+}
+.ember-vitals-plan,
+.ember-vitals > .ember-vitals-row:not(.ember-vitals-desk) {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 250ms var(--ui-ease),
+    opacity 250ms var(--ui-ease);
+}
+.ember-vitals:hover .ember-vitals-plan:not(.is-empty),
+.ember-vitals:hover > .ember-vitals-row:not(.ember-vitals-desk):not(.is-empty) {
+  max-height: 24px;
+  opacity: 1;
+}
+/* A strip to hover on, even while the rows are folded away. */
+.ember-vitals::before {
+  content: '';
+  display: block;
+  height: 6px;
+}
+.ember-vitals-chip,
+.ember-vitals-cap {
+  font: 500 12px/1.4 var(--ui-font);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-faint);
+}
+.ember-vitals-cap {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ember-vitals-chip.is-low {
+  color: var(--ui-err);
+}
+
+/* Session names in the UI face, whatever older rules said. */
+.ember-card .ember-card-title,
+.ember-card .ember-card-title * {
+  font-family: var(--ui-font) !important;
+}
+
+/* The vitals at the 12px scale: labels keep their full width; the numbers size to what
+   they say instead of a fixed slot, so nothing is pushed out of view. */
+.ember-vitals-row {
+  gap: 12px;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+.ember-vitals-cap {
+  flex: none;
+  min-width: auto;
+  overflow: visible;
+  margin-right: auto;
+  font-size: 11px;
+}
+.ember-vitals-row .ember-vitals-chip {
+  width: auto;
+  min-width: 0;
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.ember-vitals-desk .ember-vitals-chip:not(.is-desk-switch) {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

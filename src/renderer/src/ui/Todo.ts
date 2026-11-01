@@ -1,4 +1,3 @@
-import type { SurfaceBrief } from './Overview'
 import { TaskList } from './Tasks'
 
 /** "just now", "14m ago", "yesterday" — the same clock the notes list uses. */
@@ -161,28 +160,6 @@ export class TodoView {
 
   focus(): void {
     this.list.focus()
-  }
-
-  /**
-   * The list as the overview's card shows it.
-   *
-   * Read off the same text the list is drawn from, so the card cannot disagree with the
-   * page: the overview refreshes five times a second and simply asks again.
-   */
-  summary(): SurfaceBrief {
-    // An item can carry a link back to where it came from. On a card it is one line of
-    // prose, so the link reads as its words rather than as its markup.
-    const plain = (s: string) => s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*`]/g, '')
-    const lines = this.text.split('\n')
-    const open = lines.filter((l) => /^\s*- \[ \] \S/.test(l)).map((l) => plain(l.replace(/^\s*- \[ \] /, '').trim()))
-    const done = lines.filter((l) => /^\s*- \[[xX]\] \S/.test(l)).length
-    return {
-      kind: 'todo',
-      what: 'Todo',
-      count: open.length ? `${open.length} open${done ? ` · ${done} done` : ''}` : done ? `all ${done} done` : 'empty',
-      where: 'todo.md',
-      line: open[0] ? `Next: ${open[0]}` : done ? 'Everything on the list is ticked.' : 'Nothing on the list yet.',
-    }
   }
 
   private countItems(): void {

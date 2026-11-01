@@ -539,31 +539,6 @@ export function drawTodoBadge(ctx: CanvasRenderingContext2D, s: number, accent: 
   ctx.globalAlpha = 1
 }
 
-/** Badge for the overview: three rows, each a dot and a line — sessions at a glance. */
-export function drawOverviewBadge(ctx: CanvasRenderingContext2D, s: number, accent: string): void {
-  ctx.clearRect(0, 0, s, s)
-  ctx.strokeStyle = accent
-  ctx.fillStyle = accent
-  ctx.lineWidth = 0.06 * s
-  ctx.lineCap = 'round'
-  const rows = [
-    { y: 0.26, alpha: 1, len: 0.42 },
-    { y: 0.5, alpha: 0.7, len: 0.34 },
-    { y: 0.74, alpha: 0.45, len: 0.38 },
-  ]
-  for (const r of rows) {
-    ctx.globalAlpha = r.alpha
-    ctx.beginPath()
-    ctx.arc(0.26 * s, r.y * s, 0.06 * s, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.beginPath()
-    ctx.moveTo(0.4 * s, r.y * s)
-    ctx.lineTo((0.4 + r.len) * s, r.y * s)
-    ctx.stroke()
-  }
-  ctx.globalAlpha = 1
-}
-
 /** Badge for the architecture map: three boxes joined by lines, one of them larger. */
 export function drawMapBadge(ctx: CanvasRenderingContext2D, s: number, accent: string): void {
   ctx.clearRect(0, 0, s, s)

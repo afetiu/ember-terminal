@@ -5,14 +5,10 @@ import { loadConfig } from './config.js'
 import { registerIpc } from './ipc.js'
 import { ConPtyHost } from './pty/ConPtyHost.js'
 import { applyGlass, createWindow } from './window.js'
-import { registerVoice } from './voice.js'
+import { registerPermissions } from './permissions.js'
 import { startBridge, stopBridge } from './bridge.js'
 import { preferFastGpu, relaunchForGpu } from './gpu.js'
 
-// The voice view runs Whisper in wasm, which needs SharedArrayBuffer for threads —
-// 2s per utterance instead of 7s. In a browser that comes from COOP/COEP headers; a
-// framed page cannot earn it that way, so Electron grants it directly.
-app.commandLine.appendSwitch('enable-features', 'SharedArrayBuffer')
 // Chromium keeps a spare renderer process warm for the next navigation; Ember never
 // navigates, so that is ~90 MB idle for nothing (measured with scripts/probe-jank.mjs).
 app.commandLine.appendSwitch('disable-features', 'SpareRendererForSitePerProcess')
@@ -80,7 +76,7 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
     registerIpc(host, (next) => {
       applyGlass(win, next)
     })
-    registerVoice()
+    registerPermissions()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow(loadConfig())

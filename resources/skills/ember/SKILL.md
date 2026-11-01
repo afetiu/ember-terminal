@@ -60,9 +60,6 @@ ember split right|down       split this tab
 ember rename <name>          name this tab
 ember focus <n|name>         switch tab      ember list   the open tabs
 ember panel show|hide        the visualisation panel
-ember overview               every session as a card, with what its Claude last said, and
-                             the orchestrator's last reply + a line to it along the bottom
-                             (Ctrl+Shift+S)
 ember map [project]          the architecture map: projects Claude keeps a living model of
                              (Ctrl+Shift+G); ~/.ember/maps/<id>/model.json is the model
 ember visualize              ask the Claude in this tab to draw what it just said
@@ -174,7 +171,14 @@ desk read T [NAME] | desk clip [TEXT]          text out of a window; the clipboa
 
 `desk do` runs a `;`-separated batch and stops at the first failure — use it whenever
 the next step does not depend on looking. Take a `shot` only when a `tree` or `read`
-cannot tell you. Never drive Ember's own window with it. If the daemon is missing its
+cannot tell you.
+
+**Showing the user something on their screen: point, never screenshot.** In a Loom tab
+use the `look` tool (the screen as text) and then `point` (Ember's pointer glides to the
+control on their real screen with a short note beside it; `step`/`steps` for a
+walkthrough). From a shell: `desk tree T` then `desk point T NAME --say "..."`. A
+screenshot is for when *you* need to see pixels — never to explain something to the
+user, and never redraw their screen on the canvas: they are looking at the real thing. Never drive Ember's own window with it. If the daemon is missing its
 Python libraries Ember installs them on first use; if Python itself is missing the strip
 says so. `LOCKED:` means the Windows session is locked (every window tree is empty then;
 nothing to do but wait for the person). When several controls share a name, as on web

@@ -112,6 +112,8 @@ export function createWindow(config: EmberConfig): BrowserWindow {
       // It is also the isolation boundary: model-authored HTML runs in there, with no
       // preload and no node, and cannot see `window.ember`.
       webviewTag: true,
+      // The PDF viewer: a PDF shown on the canvas opens in a webview that needs it.
+      plugins: true,
     },
   })
 

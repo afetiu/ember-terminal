@@ -268,6 +268,9 @@ async function todo(sub, words) {
     case undefined:
     case 'open': {
       todoBody()
+      // Run by a program (an agent reading the list, output piped): print it. Only a
+      // person at a terminal gets the Todo screen.
+      if (sub === undefined && !process.stdout.isTTY) return todo('list', [])
       if (await bridge('/notes/open', { mode: 'todo' })) return
       // No Ember to show it in: print it instead.
       return todo('list', [])
@@ -410,8 +413,9 @@ if (flags.has('--help') || flags.has('-h') || verb === 'help') {
 
 switch (verb) {
   case undefined: {
-    // Bare `notes`: the tab, if there is an Ember to show it in; otherwise the list.
-    if (await bridge('/notes/open', { mode: 'list' })) break
+    // Bare `notes`: the tab, if there is an Ember to show it in and a person asked;
+    // a program reading it (output piped) gets the list.
+    if (process.stdout.isTTY && (await bridge('/notes/open', { mode: 'list' }))) break
     // falls through to list
   }
   // eslint-disable-next-line no-fallthrough

@@ -33,11 +33,13 @@ function clearGround(background: string): string {
 /**
  * Light palettes get xterm's contrast correction; dark ones keep their exact colours.
  * Programs pick colours for a dark terminal — Claude Code's default theme writes pure
- * white and mid-greys in 24-bit — and on paper those are nothing. 4.5 is WCAG AA; dim
+ * white and mid-greys in 24-bit — and on paper those are nothing. 7 is WCAG AAA; dim
  * text is held to half of it, so it still reads as dim.
  */
 function contrastFloor(background: string): number {
-  return isLightBackground(background) ? 4.5 : 1
+  // 7 (WCAG AAA) on paper: xterm holds dim text to half the floor and then fades it, so
+  // 4.5 left Claude Code's dim prompt text near invisible on a light ground.
+  return isLightBackground(background) ? 7 : 1
 }
 
 let seq = 0
@@ -108,7 +110,7 @@ export class Session implements ActivitySource {
    * 'canvas' when this shell is a Loom tab's. Told to main at spawn, which puts it in the
    * shell's environment for the panel MCP server to read. Null for every other tab.
    */
-  surface: 'canvas' | null = null
+  surface: 'canvas' | null = 'canvas'
   /** Absolute buffer row where the last submitted command's output begins. */
   private markRow = -1
   /** True between pressing Enter and the command going quiet. */

@@ -32,3 +32,19 @@
 
 # (Nothing for /download/*: those are answered by _redirects with a 302, which
 # browsers don't cache without explicit headers.)
+
+# The phone app (docs/specs/phone.md). Its own policy instead of the site's: it talks to
+# the relay over a WebSocket, shows media as blob: URLs, and renders Claude's documents in
+# sandboxed srcdoc frames, which inherit this policy and carry inline scripts and styles.
+# Those frames have no origin, so they cannot reach this page or the account key.
+/app/*
+  ! Content-Security-Policy
+  ! Permissions-Policy
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src blob:; connect-src 'self' https://*.workers.dev wss://*.workers.dev; frame-src 'self'; worker-src 'self' blob:; base-uri 'self'; object-src 'none'; frame-ancestors 'none'
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Libraries the phone's object frames load; those frames have no origin, so this is CORS.
+/vendor/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=86400

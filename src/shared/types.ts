@@ -217,6 +217,27 @@ export interface ClaudeUsage {
 }
 
 /** What a Claude session's status line reports about itself, once per update. */
+/** One object the user placed on a Loom canvas, as the session is told about it. */
+export interface ScreenItem {
+  title: string
+  format: string
+  /** The edge of the screen it holds, or 'floating'. */
+  placed: string
+  /** The diagram source, for a diagram lifted out of a reply. */
+  source?: string
+}
+
+/** Tokens and dollars a session spent on Ember's own tools: what it wrote into them, re-reading that, and the tools' definitions. Estimates. */
+export interface EmberCost {
+  tabId: string
+  calls: number
+  outTokens: number
+  carryTokens: number
+  overheadTokens: number
+  tokens: number
+  usd: number
+}
+
 export interface ClaudeStatus {
   tabId: string
   sessionId: string
@@ -228,48 +249,6 @@ export interface ClaudeStatus {
   durationMs: number | null
   cacheWarm: boolean | null
   at: number
-}
-
-/**
- * What a tab's Claude session last said and is doing now, from its transcript, for the
- * overview. `said` is the last sentence or two of the last assistant text; `doing` the
- * tool call in flight, emptied when the turn ends.
- */
-export interface SessionBrief {
-  tabId: string
-  sessionId: string
-  cwd: string
-  said: string
-  saidAt: number
-  doing: string
-  doingAt: number
-  turnEnded: boolean
-  at: number
-  /** The whole of the last reply, markdown as written, for a card opened up to read it. */
-  full: string
-  /** Tokens across the session's whole transcript, each message counted once. */
-  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number }
-  /** What it has changed: files touched and lines in and out, from its edit calls. */
-  edits: { files: number; count: number; added: number; removed: number }
-  /** When the transcript began, if it says. */
-  startedAt: number
-}
-
-/**
- * One thing a session did, for the overview's log: an edit, a command, a lookup.
- * Taken from the transcript's tool calls, so it is what happened rather than what the
- * screen showed.
- */
-export interface ActivityEntry {
-  tabId: string
-  at: number
-  kind: 'edit' | 'write' | 'read' | 'search' | 'run' | 'agent' | 'web' | 'tool' | 'done'
-  /** The line as the log shows it: "App.ts", "pnpm build", "finished". */
-  text: string
-  /** Full path or command, for the tooltip. */
-  detail: string
-  added: number
-  removed: number
 }
 
 export interface ClaudeConfig {
@@ -326,6 +305,12 @@ export const TODO_SOURCES = ['gmail', 'outlook', 'slack', 'jira', 'github'] as c
 export type TodoSource = (typeof TODO_SOURCES)[number]
 
 export interface EmberConfig {
+  /**
+   * Ember Hands — Ember's own pointer on the desktop. 'show' (the default): Claude may
+   * point at things and explain them, never click. 'act': it may also click and type,
+   * with STOP always on screen. 'off': neither.
+   */
+  hands?: 'off' | 'show' | 'act'
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
@@ -388,8 +373,8 @@ export interface EmberConfig {
   /** Which coding-agent CLI Ember's own AI features run through. Never an API key. */
   agent: AgentConfig
   /**
-   * Features that need an API key of their own (the voice call, the key-based
-   * orchestrator) or reach into one person's accounts. Off in a fresh install: Ember's
+   * Features that need an API key of their own or reach into one person's
+   * accounts. Off in a fresh install: Ember's
    * promise is that it runs on the CLIs you already have and asks for no keys.
    */
   labs: { enabled: boolean }
@@ -441,19 +426,13 @@ export interface RealtimeAuth {
   error?: string
 }
 
-/** What the voice asked Claude, and what came back. */
+/** A question put to the Claude session in a tab, and what came back. */
 export interface AskResult {
   ok: boolean
   text?: string
   /** The turn ran out of time; what's here is real but unfinished. */
   partial?: boolean
   error?: string
-}
-
-/** One line of a call, for the transcript strip. */
-export interface VoiceLine {
-  who: 'user' | 'voice'
-  text: string
 }
 
 /** One message in the orchestrator's shared conversation, in OpenAI's chat shape. */
@@ -470,7 +449,7 @@ export interface TurnResult {
   error?: string
 }
 
-/** A session the voice handed work to has gone quiet. */
+/** A session the orchestrator handed work to has gone quiet. */
 export interface CrewNote {
   tabId: string
   kind: 'progress' | 'done'
@@ -511,10 +490,12 @@ export interface PanelOption {
 export interface PanelPush {
   tabId: string
   title: string
-  format: 'markdown' | 'code' | 'mermaid' | 'html' | 'url' | 'ask' | 'images'
+  format: 'markdown' | 'code' | 'mermaid' | 'html' | 'url' | 'ask' | 'images' | 'view'
   content: string
   /** Language hint for 'code'. */
   language?: string
+  /** The file it was shown from (show_file), so the canvas can edit a note in place. */
+  file?: string
   /** The buttons on an `ask` panel. Ignored by every other format. */
   options?: PanelOption[]
   /** Show a free-text box under an `ask` panel's options. Default true. */
@@ -714,11 +695,26 @@ export interface EmberBridge {
     /** Make a local image or video loadable by the canvas. */
     media(path: string): Promise<{ src: string; kind: 'image' | 'video' | 'audio'; name: string } | { error: string }>
     /** Host a small document (a mermaid diagram) on the bridge; returns its URL. */
-    doc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string): Promise<string>
+    doc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string): Promise<string>
+    /** A quick question about one object, answered on the side — not a turn of the session. */
+    sideAsk(question: string, about: string, source: string, cwd?: string): Promise<{ ok: boolean; text: string; error?: string }>
+    /** How a document rendered (a diagram that failed to parse), for the session that showed it. */
+    docStatus(id: string, status: { ok: boolean; error: string; repaired: boolean }): void
+    /** Show a file on the tab's canvas by path (a note, the todo list, anything show_file takes). */
+    showFile(tabId: string, path: string, title?: string): Promise<{ ok?: boolean; title?: string; error?: string }>
     onMedia(cb: (m: CanvasMedia) => void): () => void
     onAnnotate(cb: (a: CanvasAnnotate) => void): () => void
+    /** Point at something on this canvas with Ember's pointer; answer with pointed(). */
+    onPoint(cb: (p: { tabId: string; reqId: string; object: string; text: string; say: string; step?: number; steps?: number }) => void): () => void
+    pointed(reqId: string, result: { ok: boolean; error?: string; found?: string }): void
     annotated(reqId: string, result: CanvasAnnotateResult): void
     onSteps(cb: (s: CanvasSteps) => void): () => void
+    /** Tell main what the user has placed on this tab's canvas, for the session's on_screen tool. */
+    screen(tabId: string, items: ScreenItem[]): void
+    /** What a subagent of this tab's session is doing now, read from its own log. */
+    onAgent(cb: (a: { tabId: string; agentId: string; action: string; at: number }) => void): () => void
+    /** What Ember's own tools have cost this tab's session so far. */
+    onCost(cb: (c: EmberCost) => void): () => void
   }
   panel: {
     /** Base URL of the local bridge, for the panel webview to load documents from. */
@@ -767,10 +763,10 @@ export interface EmberBridge {
     /** When this machine last checked, if ever. */
     todoState(): Promise<{ lastCheckedAt?: string; sources?: string[] }>
   }
-  voice: {
-    /** Put a spoken question to the Claude session in a tab and wait for the whole turn. */
+  converse: {
+    /** Put a question to the Claude session in a tab and wait for the whole turn. */
     ask(tabId: string, sessionId: string, question: string): Promise<AskResult>
-    /** Abandon whatever question is in flight for a tab — the call ended, or the tab did. */
+    /** Abandon whatever question is in flight for a tab — the tab closed, or it was cancelled. */
     cancel(tabId: string): void
     /** Is there a Claude session in this tab for a question to reach? */
     ready(tabId: string): Promise<boolean>
@@ -801,9 +797,8 @@ export interface EmberBridge {
     leave(): Promise<boolean>
   }
   /**
-   * Work handed to a session and left running — the difference between the voice being a
-   * remote control and being an orchestrator. `voice.ask` blocks the call until the turn
-   * finishes; this returns at once and reports back when the session goes quiet.
+   * Work handed to a session and left running. `converse.ask` waits for the whole turn;
+   * this returns at once and reports back when the session goes quiet.
    */
   crew: {
     dispatch(tabId: string, sessionId: string, task: string): Promise<{ ok: boolean; error?: string }>
@@ -843,14 +838,6 @@ export interface EmberBridge {
   /** What the Claude session in a tab reports through its status line. */
   claude: {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
-  }
-  /** What every Claude session last said and is doing, for the overview surface. */
-  overview: {
-    all(): Promise<SessionBrief[]>
-    onBrief(cb: (b: SessionBrief) => void): () => void
-    /** The log so far, oldest first. */
-    activity(): Promise<ActivityEntry[]>
-    onActivity(cb: (e: ActivityEntry[]) => void): () => void
   }
   window: {
     minimize(): void

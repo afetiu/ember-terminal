@@ -184,10 +184,7 @@ export class Settings {
       title: 'Effects',
       tab: 'Look',
       fields: [
-        { path: 'effects.glow', label: 'Glow', kind: 'range', min: 0, max: 1, step: 0.02 },
         { path: 'effects.scanlines', label: 'Scanlines', kind: 'range', min: 0, max: 0.4, step: 0.01 },
-        { path: 'effects.vignette', label: 'Vignette', kind: 'range', min: 0, max: 1, step: 0.02 },
-        { path: 'effects.ambient', label: 'React to output', kind: 'toggle' },
         { path: 'effects.outputMotion', label: 'Output rises into place', kind: 'toggle' },
         { path: 'effects.adaptive', label: 'Shed effects when slow', kind: 'toggle' },
       ],

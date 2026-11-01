@@ -105,10 +105,10 @@ export const DEFAULT_CONFIG: EmberConfig = {
   },
   scrollback: 10000,
   effects: {
-    glow: 1,
+    glow: 0,
     scanlines: 0,
-    vignette: 0.48,
-    ambient: true,
+    vignette: 0,
+    ambient: false,
     outputMotion: true,
     // Above this, animating arrivals costs more than it adds — a build log should
     // stay instant. Roughly a screenful per second.

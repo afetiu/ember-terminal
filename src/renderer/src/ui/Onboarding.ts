@@ -293,7 +293,6 @@ export class Onboarding {
       ['Ctrl Shift T', 'A new session. Alt Shift + and − split the one you are in.'],
       ['Ctrl Shift J', 'The panel beside the terminal, where your agent draws.'],
       ['Ctrl Shift G', 'The map: a living architecture view of a project.'],
-      ['Ctrl Shift S', 'Overview: every session and what it last said.'],
       ['F1', 'Every shortcut. Ctrl , opens Settings.'],
     ]) {
       const k = document.createElement('div')

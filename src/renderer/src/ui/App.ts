@@ -1,5 +1,4 @@
-import type { ClaudeStatus, ClaudeUsage, EmberConfig, GitStatus, SessionBrief, ThemeConfig, TurnMessage } from '@shared/types'
-import type { OverviewChoice, OverviewOrch, OverviewRow } from './Overview'
+import type { ClaudeStatus, EmberConfig, GitStatus, ThemeConfig, TurnMessage } from '@shared/types'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
 import { Session } from '../core/Session'
@@ -14,6 +13,7 @@ import { FontPicker } from './FontPicker'
 import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
+import { PhoneHost } from '../phone/PhoneHost'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
 import { parseAccountUrl } from '../../../../resources/relay/protocol.js'
@@ -54,8 +54,8 @@ export class App {
   private readonly titleBar: TitleBar
   private readonly orchestrator: Orchestrator
   private readonly remote: Remote
+  private phone: PhoneHost | null = null
   private readonly pairSheet: PairSheet
-  /** False without an OpenAI key, which hides the call button. */
   private readonly palette: Palette
   private readonly search: Search
   private readonly focusRing: FocusRing
@@ -131,17 +131,13 @@ export class App {
   private readonly gitByCwd = new Map<string, GitStatus | null>()
   /** What each tab's Claude session last said through its status line, by tab id. */
   private readonly claudeByTab = new Map<string, ClaudeStatus>()
-  /** The plan's usage windows, for the overview's numbers. */
-  private plan: ClaudeUsage | null = null
   /** Open items on the todo list, for the sidebar's Todo button. */
   private todoOpen = 0
   /**
-   * The session tab you were last in before going to a place (overview, todo, notes,
-   * map). The shortcut that took you there takes you back to it.
+   * The session tab you were last in before going to a place (todo, notes, map). The shortcut that took you there takes you back to it.
    */
   private lastSessionId: string | null = null
   /** What each tab's Claude session last said and is doing, from its transcript, by tab id. */
-  private readonly briefByTab = new Map<string, SessionBrief>()
   private lastGitAt = 0
   private gitPending = new Set<string>()
 
@@ -152,8 +148,6 @@ export class App {
     this.columnW = config.window.sidebarWidth
 
     this.titleBar = new TitleBar(() => this.toggleSidebar(), {
-      onPanel: () => this.togglePanel(),
-      onVisualize: () => this.visualizeHere(),
       onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
@@ -216,20 +210,17 @@ export class App {
     )
     this.cheatsheet = new Cheatsheet()
 
-    // The other way in. Same agent, same conversation — this one works in a room with
-    // other people in it, which the call does not.
+    // The orchestrator, written to. Same agent and conversation as a connected phone.
     this.orchestrator = new Orchestrator({
       onSend: async (text) => void (await this.sendToOrchestrator(text)),
       onClose: () => this.toggleOrchestrator(),
     })
     this.sidebar.mountBelowCards(this.orchestrator.el)
 
-    // The third front end. Everything it hands us is routed into the same two methods the
-    // panel and the call already use, which is what keeps it one agent rather than three.
+    // The phone. What it types is routed into the same method the panel uses, which is
+    // what keeps it one agent rather than two.
     this.remote = new Remote({
       onText: (text) => this.sendToOrchestrator(text),
-      onTool: (name, args) => this.runVoiceTool(this.activeId ?? '', name, args),
-      onSpoken: (who, text) => this.rememberSpoken({ who, text }),
       onPanelAct: (text, submit) => {
         // Routed to the tab the phone is acting on, which is the active one — the same
         // place the desk's own panel buttons land.
@@ -237,9 +228,32 @@ export class App {
         if (group) this.sendToSession(group, text, submit)
       },
       recap: () => this.recentConversation(),
+      onPhone: (m, from) => this.phone?.handle(m, from) ?? false,
       onChange: () => {
-        this.syncVoiceChrome()
+        this.syncOrchChrome()
         this.pairSheet.tick()
+      },
+    })
+
+    this.phone = new PhoneHost({
+      send: (to, msg) => this.remote.sendTo(to, msg),
+      tabs: () =>
+        this.groups.map((g) => ({
+          id: g.id,
+          title: g.displayTitle,
+          cwd: g.focused?.cwd ?? '',
+          working: g.loom?.busy ?? false,
+          loom: !!g.loom,
+          active: g.id === this.activeId,
+        })),
+      deskName: () => this.remote.account?.deviceName ?? 'Ember',
+      type: (tabId, text, submit) => {
+        const g = this.groups.find((x) => x.id === tabId)
+        if (g) this.sendToSession(g, text, submit)
+      },
+      keys: (tabId, data) => {
+        const s = this.groups.find((x) => x.id === tabId)?.focused
+        if (s) window.ember.write(s.id, data)
       },
     })
 
@@ -291,7 +305,7 @@ export class App {
     this.wireGlobalKeys()
     this.wirePty()
     this.wirePanel()
-    this.wireVoice()
+    this.wireLinks()
     this.wireConfigReload()
     this.exposeDiagnostics()
 
@@ -391,12 +405,6 @@ export class App {
         await this.remote.start(fresh)
         return fresh
       },
-      /** What the call controls are actually showing right now. */
-      callChrome: () => ({
-        button: document.querySelector('.ember-orch-call')?.textContent ?? '',
-        pill: document.querySelector('.ember-orch-pill')?.textContent ?? '',
-        markOnCall: document.querySelector('.ember-voicetoggle.is-orch')?.classList.contains('is-oncall') ?? false,
-      }),
       /**
        * Drive the written half without opening the panel.
        *
@@ -410,37 +418,32 @@ export class App {
       },
       /** The shared conversation — the thing both channels read and write. */
       thread: () => ({
-        turns: this.turns.map((t) => ({ who: t.who, text: t.text.slice(0, 200), spoken: !!t.spoken })),
+        turns: this.turns.map((t) => ({ who: t.who, text: t.text.slice(0, 200) })),
         history: this.history.length,
         open: this.orchestrator.isOpen,
       }),
       orchestrator: () => this.toggleOrchestrator(),
       /**
-       * Run one `ask_claude` round trip without a microphone.
+       * Run one `ask_claude` round trip directly.
        *
        * This is the join between the two loops, and it is the part that cannot be
        * checked by looking: it types into a real Claude session and reads the answer back
-       * off the transcript. A probe can drive it; a person with a headset cannot tell a
-       * working bridge from a lucky one.
+       * off the transcript. A probe can drive it; from inside a conversation a working
+       * bridge and a lucky one look the same.
        */
       ask: (question: string) => this.askClaude(this.activeId ?? '', question),
       /**
-       * Call one of the voice's tools without a microphone.
+       * Call one of the orchestrator's tools directly.
        *
-       * The orchestration is the part a person on a headset genuinely cannot check: that
-       * `send_work` returns in milliseconds rather than blocking, and that the hand-off
-       * reports back by itself, are both invisible from inside a conversation.
+       * That `send_work` returns in milliseconds rather than blocking, and that the
+       * hand-off reports back by itself, are both invisible from inside a conversation.
        */
       tool: (name: string, args: Record<string, unknown>) =>
-        this.runVoiceTool(this.activeId ?? '', name, args ?? {}),
+        this.runOrchTool(this.activeId ?? '', name, args ?? {}),
       /** Drive the active card's status line, for watching the digits roll on demand. */
       setCardStatus: (text: string) => this.sidebar.pinStatus(this.activeId ?? '', text),
       /**
-       * The panels, and where a dictated sentence would go right now.
-       *
-       * The last of those is the only way to check the routing at all: focus inside
-       * the panel belongs to a different process, so nothing about it is visible from
-       * this document except the flag the panel keeps.
+       * The panels: open, filled, and whether one is picking.
        */
       panels: () =>
         this.groups.map((g) => ({
@@ -562,7 +565,8 @@ export class App {
     // One font for the window: the chrome follows the terminal font unless the
     // interface font is deliberately set to something else.
     s.setProperty('--term-font', font.family)
-    s.setProperty('--ui-font', font.uiFamily || font.family)
+    // The interface reads in the system text face unless one is chosen; the terminal font is for the terminal.
+    s.setProperty('--ui-font', font.uiFamily || "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif")
     // Writing surfaces (notes, the todo list) follow the terminal's size, not a fixed one.
     s.setProperty('--app-size', `${font.size}px`)
     s.setProperty('--sidebar-w', `${win.sidebarWidth}px`)
@@ -571,7 +575,7 @@ export class App {
     s.setProperty('--fx-vignette', String(effects.vignette))
     // A full-window layer the compositor blends on every frame, for gradients whose
     // strength is zero. When every effect is off the layer does not exist.
-    this.fx.style.display = effects.glow || effects.scanlines || effects.vignette || effects.ambient ? '' : 'none'
+    this.fx.style.display = effects.scanlines ? '' : 'none'
   }
 
   private wireConfigReload(): void {
@@ -799,9 +803,10 @@ export class App {
     if (cwd) session.initialCwd = cwd
     session.tabId = group.id
     if (!warm) group.add(session)
-    // A Loom tab is the same shell with a canvas over its output space. It is attached
-    // before the shell starts, so even the first prompt sits at the bottom.
-    if (opts?.loom) {
+    // Every tab is a Loom tab: the shell, with a canvas over its output space for when an
+    // agent runs in it. Attached before the shell starts. Only a caller that asks for a bare
+    // terminal (loom: false) gets one.
+    if (opts?.loom !== false) {
       session.surface = 'canvas'
       group.loom = new LoomView(group.id, group.panesEl, session, this.config, {
         send: (text, submit) => this.sendToSession(group, text, submit),
@@ -846,6 +851,11 @@ export class App {
    * not; with no tab at all, a tab of its own. Its own surface, not a note.
    */
   async openTodoIn(group: Group | null): Promise<void> {
+    // In a session it is the notebook beside the canvas.
+    if (group?.loom) {
+      group.loom.openDrawer('todo')
+      return
+    }
     let g = group ?? this.placeGroup('todo')
     if (!g) {
       g = new Group(() => this.syncTabs())
@@ -892,86 +902,7 @@ export class App {
   }
 
   /**
-   * Show the overview in a tab: over its terminals if it has any, as the tab itself if
-   * not; with no tab at all, a tab of its own. Same shape as the todo list.
-   */
-  async openOverviewIn(group: Group | null): Promise<void> {
-    let g = group ?? this.placeGroup('overview')
-    if (!g) {
-      g = new Group(() => this.syncTabs())
-      this.tuneGroup(g)
-      g.pop.set(0)
-      g.pop.to(1)
-      g.slide.set(0)
-      this.stack.appendChild(g.el)
-      this.groups.push(g)
-      g.customTitle = 'Overview'
-      sound.play('open')
-      this.applyPaneStyles()
-      await this.activate(g.id, true)
-    } else if (g.id !== this.activeId) {
-      await this.activate(g.id)
-    }
-    const target = g
-    const hosted = target.panes.length > 0
-    const view = target.ensureOverview({
-      onActivate: (tabId) => void this.activate(tabId),
-      onSend: (tabId, text) => {
-        const to = this.groups.find((x) => x.id === tabId)
-        if (to) this.sendToSession(to, text, true)
-      },
-      onKeys: (tabId, data) => {
-        const s = this.groups.find((x) => x.id === tabId)?.focused
-        if (!s) return
-        window.ember.write(s.id, data)
-        sound.play('toggle')
-      },
-      onOpenTodo: () => void this.goPlace('todo'),
-      onOpenNotes: (id) => void (id ? this.openNoteInPlace(id) : this.goPlace('notes')),
-      onNewNote: () => void this.newNoteInPlace(),
-      onTodoChanged: () => void this.countTodo(),
-      onTitle: (title) => {
-        target.customTitle = title
-        this.syncTabs()
-      },
-      onOrchestrate: (text) => void this.sendToOrchestrator(text),
-      ...(hosted
-        ? {
-            onClose: () => {
-              target.hideOverview()
-              target.focusFirst()
-              this.syncTabs()
-            },
-          }
-        : { onClose: () => this.leavePlace() }),
-    })
-    view.render(this.overviewRows(performance.now()), this.orchBrief(), this.planFor())
-    view.focus()
-    this.startPaneMotion()
-    this.syncTabs()
-  }
-
-  /**
-   * The orchestrator as the overview shows it: only its last reply, and whether it is
-   * busy. Same conversation as the sidebar's card — `turns` is the one history — but
-   * the page is a glance, not a log, so it shows the latest exchange and nothing older.
-   */
-  private orchBrief(): OverviewOrch {
-    for (let i = this.turns.length - 1; i >= 0; i--) {
-      const t = this.turns[i]!
-      if (t.who === 'agent' && t.text) return { said: t.text, did: t.did ?? [], busy: this.orchBusy }
-      if (t.who === 'system') return { said: t.text, did: [], busy: this.orchBusy }
-    }
-    return { said: '', did: [], busy: this.orchBusy }
-  }
-
-  /** The plan's windows, when the user asked to see them. */
-  private planFor(): ClaudeUsage | null {
-    return this.config.claude.usageLimits ? this.plan : null
-  }
-
-  /**
-   * The tab that is a place: the overview, the list, the notes or the map as a tab of
+   * The tab that is a place: the list, the notes or the map as a tab of
    * its own, with no shell under it. There is at most one of each — the sidebar's
    * buttons go to it rather than making another.
    */
@@ -980,7 +911,7 @@ export class App {
       this.groups.find(
         (g) =>
           g.panes.length === 0 &&
-          (place === 'overview' ? g.isOverview : place === 'todo' ? g.isTodo : place === 'notes' ? g.isNote : g.isMap)
+          (place === 'todo' ? g.isTodo : place === 'notes' ? g.isNote : g.isMap)
       ) ?? null
     )
   }
@@ -989,18 +920,22 @@ export class App {
   private activePlace(): Place | null {
     const g = this.activeGroup
     if (!g || g.panes.length > 0) return null
-    return g.isOverview ? 'overview' : g.isTodo ? 'todo' : g.isNote ? 'notes' : g.isMap ? 'map' : null
+    return g.isTodo ? 'todo' : g.isNote ? 'notes' : g.isMap ? 'map' : null
   }
 
   /**
    * Go to a place. With `toggle` — the keyboard shortcut — pressing it again while there
-   * goes back to the session you came from, so the overview is one key away and so is
+   * goes back to the session you came from, so a place is one key away and so is
    * the work.
    */
   async goPlace(place: Place, toggle = false): Promise<void> {
+    // In a session, your todo list and notes are the notebook beside it, not a tab of their own.
+    if ((place === 'todo' || place === 'notes') && this.activeGroup?.loom) {
+      this.activeGroup.loom.openDrawer(place === 'todo' ? 'todo' : 'notes')
+      return
+    }
     if (toggle && this.activePlace() === place) return this.leavePlace()
     const g = this.placeGroup(place)
-    if (place === 'overview') return this.openOverviewIn(g)
     if (place === 'todo') return this.openTodoIn(g)
     if (place === 'map') {
       await this.openMapIn(g)
@@ -1019,111 +954,6 @@ export class App {
     const back =
       this.groups.find((g) => g.id === this.lastSessionId && g.panes.length > 0) ?? this.groups.find((g) => g.panes.length > 0)
     if (back) void this.activate(back.id)
-  }
-
-  /** Open one note in the notes place. */
-  private async openNoteInPlace(id: string): Promise<void> {
-    const g = this.placeGroup('notes')
-    if (!g) return void (await this.newNoteGroup(id))
-    await this.activate(g.id)
-    await g.note?.open(id)
-    g.note?.focus()
-  }
-
-  private async newNoteInPlace(): Promise<void> {
-    const g = this.placeGroup('notes') ?? (await this.newNoteGroup())
-    if (g.id !== this.activeId) await this.activate(g.id)
-    await g.note?.create('')
-    g.note?.focus()
-  }
-
-  /** Ctrl+Shift+S: the overview, or back to the session if it is up. */
-  private toggleOverview(): void {
-    const g = this.activeGroup
-    if (g?.isOverview && g.panes.length > 0) {
-      g.hideOverview()
-      g.focusFirst()
-      this.syncTabs()
-      return
-    }
-    void this.goPlace('overview', true)
-  }
-
-  /**
-   * The picker a session is waiting on, read off its screen: the options and a few
-   * lines above them for the question. Box-drawing is stripped — the card has its own
-   * frame — and the block is dedented so it reads as text, not as a screenshot.
-   */
-  private static readScreen(text: string): { screen: string[]; choices: OverviewChoice[] } | null {
-    const lines = text
-      .split('\n')
-      .map((l) => l.replace(/[│┃╭╮╰╯]/g, ' ').replace(/\s+$/, ''))
-      .filter((l) => l.trim() && !/^[\s─━═┄┈╌-]+$/.test(l))
-      .slice(-16)
-    const choiceRe = /^\s*([❯›▸>*])?\s*([1-9])[.)]\s+(.+)$/
-    // The last run of options on screen is the live one; a numbered list higher up is
-    // only output.
-    let last = -1
-    for (let i = lines.length - 1; i >= 0 && last === -1; i--) if (choiceRe.test(lines[i]!)) last = i
-    if (last === -1) return null
-    let first = last
-    while (first > 0 && choiceRe.test(lines[first - 1]!)) first--
-    // A picker's own footer ("Esc to cancel · Enter to confirm") belongs to it; whatever
-    // is under that is the rest of the screen, not the question.
-    if (lines[last + 1] && /\b(esc|enter|confirm|cancel|tab)\b/i.test(lines[last + 1]!)) last++
-    // Only the question goes on the card — the lines above the options. The options
-    // themselves become the card's buttons; showing them twice was the clutter.
-    const above = lines.slice(Math.max(0, first - 6), first)
-    const indent = above.length ? Math.min(...above.map((l) => l.match(/^\s*/)![0].length)) : 0
-    const screen = above.map((l) => l.slice(indent))
-    const choices: OverviewChoice[] = []
-    for (const l of lines.slice(first, last + 1)) {
-      const m = l.match(choiceRe)
-      if (!m) continue
-      choices.push({ key: m[2]!, label: m[3]!.trim(), selected: !!m[1] && m[1] !== '*' })
-    }
-    return { screen, choices }
-  }
-
-  /**
-   * Every shell tab, as the overview shows it. A tab that is showing the overview
-   * is the one you are looking from, not one to look at — even when a shell
-   * sits underneath it — so it is left out.
-   *
-   * A todo or notes tab is in here too, shell or no shell. It is one of the things you
-   * have open, and leaving the pane-less ones out meant the list you keep all day was
-   * the one thing the overview could not see.
-   */
-  private overviewRows(now: number): OverviewRow[] {
-    const t = this.config.theme
-    const hues = [t.cyan, t.magenta, t.green, t.yellow, t.blue, t.red]
-    return this.groups
-      .filter((g) => g.panes.length > 0 && !g.isOverview)
-      .map((g, i) => {
-        const focused = g.focused
-        const cwd = focused?.cwd || focused?.initialCwd || ''
-        const activity = g.aggregate(now)
-        const picker =
-          activity.state === 'attention' && activity.attention === 'question' && focused ? App.readScreen(focused.visibleText()) : null
-        return {
-          tabId: g.id,
-          // A tab showing a surface over its shell is titled for the surface; the row is
-          // about the shell underneath.
-          title: g.isTodo || g.isNote || g.isMap ? (focused?.title ?? g.displayTitle) : g.displayTitle,
-          cwd,
-          git: this.gitByCwd.get(cwd) ?? null,
-          url: focused?.urls[focused.urls.length - 1] ?? null,
-          activity,
-          claude: this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null,
-          brief: this.briefByTab.get(g.id) ?? null,
-          unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
-          isActive: g.id === this.activeId,
-          panes: g.panes.length,
-          hue: hues[i % hues.length]!,
-          screen: picker?.screen ?? null,
-          choices: picker?.choices ?? [],
-        }
-      })
   }
 
   private async countTodo(): Promise<void> {
@@ -1228,6 +1058,10 @@ export class App {
    * With no tab at all, a notes tab is made.
    */
   async openNotesIn(group: Group | null, mode: 'list' | 'new' | 'open', text?: string, id?: string): Promise<void> {
+    if (group?.loom) {
+      group.loom.openDrawer('notes', mode === 'open' ? id : undefined, mode === 'new' ? (text ?? '') : undefined)
+      return
+    }
     if (!group) {
       const g = await this.newNoteGroup(mode === 'open' ? id : undefined)
       if (mode === 'new') await g.note?.create(text ?? '')
@@ -1399,7 +1233,6 @@ export class App {
     window.ember.crew.forget(id)
     this.claudeByTab.delete(id)
     this.crewTasks.delete(id)
-    // A closed tab must not keep the microphone or go on being read aloud.
 
     if (this.groups.length === 0) {
       // Nothing left to show: the window stays, with the empty state and the sidebar's
@@ -1498,7 +1331,7 @@ export class App {
       .map((e) => `${e.className}:${e.scrollTop}/${e.scrollLeft}`)
     const entry = {
       id: g.id,
-      surface: g.isTodo ? 'todo' : g.isOverview ? 'overview' : g.isNote ? 'note' : 'shell',
+      surface: g.isTodo ? 'todo' : g.isNote ? 'note' : 'shell',
       dy: Math.round(dy),
       dx: Math.round(dx),
       dh: Math.round(dh),
@@ -1551,8 +1384,6 @@ export class App {
     const { slideStiffness, slideDamping } = this.config.motion
     group.slide.stiffness = slideStiffness
     group.slide.damping = slideDamping
-    // A voice tab is already a conversation with its own canvas; a second panel beside
-    // it would be two answers to the same question.
     this.deferPanel(group)
   }
 
@@ -1666,15 +1497,6 @@ export class App {
     })
 
     void this.countTodo()
-    window.ember.usage.onState((u) => (this.plan = u))
-    void window.ember.usage.state().then((u) => (this.plan = u))
-
-    // The transcript's view of each session, for the overview. Main keeps them from the
-    // moment a session announces itself; this mirror is what the rows are built from.
-    window.ember.overview.onBrief((brief) => this.briefByTab.set(brief.tabId, brief))
-    void window.ember.overview.all().then((all) => {
-      for (const b of all) this.briefByTab.set(b.tabId, b)
-    })
 
     window.ember.panel.onPush((push) => {
       const group = this.groups.find((g) => g.id === push.tabId)
@@ -1722,14 +1544,10 @@ export class App {
   }
 
   /**
-   * Dictation and narration, per tab.
-   *
-   * Both are switches over an existing session rather than a different kind of session:
-   * flipping either one changes nothing about the shell, the CLI, or the conversation,
-   * so you can go hands-free mid-task and come back to the keyboard without anything
-   * having moved. That was the point — not a voice mode you enter and leave.
+   * The links that arrive from outside the window: the phone, `ember` and `notes` typed in
+   * a shell, notes changed on disk, and sessions the orchestrator handed work to.
    */
-  private wireVoice(): void {
+  private wireLinks(): void {
     // The phone link comes up at boot and stays up. It is not started on demand because
     // the demand arrives from the other side: the point is that the user can reach a laptop
     // that has been sitting untouched for hours.
@@ -1750,7 +1568,10 @@ export class App {
     window.ember.notes.onOpen(async ({ mode, text, id, tabId }) => {
       // In the tab that asked, over its shell — the way `claude` runs where it was typed.
       // A request with no tab (the palette) lands on the tab you are looking at.
-      const group = this.groups.find((g) => g.id === tabId) ?? this.activeGroup
+      const asked = this.groups.find((g) => g.id === tabId) ?? this.activeGroup
+      // Never over a session: a Loom tab's canvas and the list would draw over each other.
+      // The list opens in a tab of its own instead.
+      const group = asked?.loom ? null : asked
       if (mode === 'todo') await this.openTodoIn(group)
       else await this.openNotesIn(group, mode ?? 'list', text, id)
     })
@@ -1764,7 +1585,7 @@ export class App {
 
 
 
-    // A session the voice handed work to has gone quiet. This is the whole difference
+    // A session the orchestrator handed work to has gone quiet. This is the whole difference
     // between dispatching work and forgetting about it.
     this.wireOrchestratorTools()
     window.ember.crew.onNote((note) => {
@@ -1790,7 +1611,7 @@ export class App {
    * One agent, two ways in.
    *
    * `history` is the whole point of this section. Both channels append to it and both
-   * read from it, so a thread started out loud continues in text without re-explaining
+   * read from it, so a thread started on the phone continues at the desk without re-explaining
    * anything — which is the thing that was actually asked for, not "a chat box as well".
    * A call is a front end; the conversation outlives it.
    */
@@ -1833,16 +1654,6 @@ export class App {
       .slice(0, 2000)
   }
 
-  /** What was said on the phone, folded into the same thread. */
-  private rememberSpoken(line: { who: 'user' | 'voice'; text: string }): void {
-    const text = line.text.trim()
-    if (!text) return
-    this.history.push({ role: line.who === 'user' ? 'user' : 'assistant', content: text })
-    this.turns.push({ who: line.who === 'user' ? 'you' : 'agent', text, spoken: true })
-    this.trimHistory()
-    this.paintOrchestrator()
-  }
-
   /** Something the orchestrator should know happened: shown in its thread. */
   private notice(line: string): void {
     this.turns.push({ who: 'system', text: line })
@@ -1854,7 +1665,7 @@ export class App {
     this.orchestrator.toggle()
     this.sidebar.el.classList.toggle('has-orch', this.orchestrator.isOpen)
     this.setColumn(this.columnWidth())
-    this.syncVoiceChrome()
+    this.syncOrchChrome()
     if (this.orchestrator.isOpen) this.orchestrator.render(this.turns, this.orchBusy)
     else this.activeGroup?.focused?.focus()
   }
@@ -1922,7 +1733,7 @@ export class App {
     window.ember.orch.onTool(({ reqId, name, args }) => {
       this.orchUsed.push(name === 'ask_claude' ? 'ask_session' : name)
       if (this.orchBusy) this.orchestrator.render([...this.turns, { who: 'agent', text: '', did: [...this.orchUsed] }], true)
-      void this.runVoiceTool(this.activeId ?? '', name, args)
+      void this.runOrchTool(this.activeId ?? '', name, args)
         .catch((err: Error) => `That failed: ${err.message}`)
         .then((out) => window.ember.orch.toolResult(reqId, out))
     })
@@ -1946,21 +1757,13 @@ export class App {
   }
 
   /**
-   * Fold what was said on a call into the same conversation.
+   * Everything the orchestrator can do, dispatched by name.
    *
-   * Without this the two channels would be two agents wearing one name: you would say
-   * something out loud, hang up, start typing, and be met by something with no idea what
-   * you had just been discussing.
+   * Every branch returns a *sentence*, including the failures: the agent is waiting on
+   * this string, and "there is no session in that tab" is something it can act on where
+   * an exception would leave it with nothing to recover from.
    */
-  /**
-   * Everything the voice can do, dispatched by name.
-   *
-   * Every branch returns a *sentence*, including the failures. The voice is holding the
-   * floor waiting for this string, so "there is no session in that tab" has to be
-   * something it can say out loud — an exception would leave the call silent with nothing
-   * to recover from.
-   */
-  private async runVoiceTool(tabId: string, name: string, args: Record<string, unknown>): Promise<string> {
+  private async runOrchTool(tabId: string, name: string, args: Record<string, unknown>): Promise<string> {
     const arg = (k: string): string => String(args[k] ?? '').trim()
 
     switch (name) {
@@ -2002,11 +1805,10 @@ export class App {
        * The one tool that destroys something.
        *
        * Two refusals rather than one, and both matter more here than they would at the
-       * keyboard, because the thing calling this may be doing so on a spoken instruction
-       * from a car and cannot see what it is about to throw away.
+       * keyboard, because the agent calling this cannot see what it is about to throw away.
        *
        * The last-session guard stays even though closing the last tab no longer quits
-       * Ember: an agent on a call should not be the one that clears the desk, and the
+       * Ember: an agent should not be the one that clears the desk, and the
        * session it is talking through may be that last one.
        */
       case 'close_session': {
@@ -2035,12 +1837,11 @@ export class App {
   }
 
   /**
-   * Turn whatever the voice called a session into a real tab id.
+   * Turn whatever the orchestrator called a session into a real tab id.
    *
-   * It has only ever seen what `describeCrew` said, and speech being what it is, it will
-   * say "the ember one" or "two" as readily as an id. Matching on the id, the position
-   * and the title covers all three without making the model be precise about something
-   * it heard out loud.
+   * It has only ever seen what `describeCrew` said, and it will say "the ember one" or
+   * "two" as readily as an id. Matching on the id, the position and the title covers all
+   * three without making the model be precise.
    */
   private resolveTab(said: string): string | null {
     if (!said) return null
@@ -2055,7 +1856,7 @@ export class App {
     return byTitle?.id ?? null
   }
 
-  /** Every session and what it is doing, as one line each for the voice to read. */
+  /** Every session and what it is doing, as one line each for the orchestrator to read. */
   private describeCrew(): string {
     if (!this.groups.length) return 'There are no sessions open.'
     const now = performance.now()
@@ -2072,7 +1873,7 @@ export class App {
   }
 
   /**
-   * The synchronous half: ask, and hold the call until the turn completes.
+   * The synchronous half: ask, and wait until the turn completes.
    *
    * Only for things the user is actually waiting to hear. Work goes through `sendWork`.
    */
@@ -2086,7 +1887,7 @@ export class App {
       return this.watchTurn(tabId, 5 * 60_000)
     }
 
-    const result = await window.ember.voice.ask(tabId, session.id, question)
+    const result = await window.ember.converse.ask(tabId, session.id, question)
     if (!result.ok) return result.error ?? 'Claude could not answer that.'
     if (result.partial) {
       return `${result.text ?? ''} — that is as far as it got; it is still working.`
@@ -2170,7 +1971,7 @@ export class App {
   }
 
   /**
-   * Open a tab, start Claude in it, and give it the brief — without blocking the call.
+   * Open a tab, start Claude in it, and give it the brief — without waiting for it.
    *
    * Coming up takes several seconds, which is far too long to hold the floor for. So the
    * id comes back immediately and the rest happens behind the conversation: the task is
@@ -2262,7 +2063,7 @@ export class App {
     for (let i = 0; i < 60; i++) {
       await new Promise((r) => window.setTimeout(r, 1000))
       if (!this.groups.some((g) => g.id === tabId)) return
-      if (!(await window.ember.voice.ready(tabId))) continue
+      if (!(await window.ember.converse.ready(tabId))) continue
 
       if (!task) {
         window.ember.crew.follow(tabId)
@@ -2281,7 +2082,7 @@ export class App {
     this.notice(`Session ${tabId} never finished starting. Tell the user to look at it.`)
   }
 
-  /** Match a spoken folder name against his real project directories. */
+  /** Match a folder name as said against the real project directories. */
   private async resolveDirectory(said: string): Promise<string | undefined> {
     if (/[/\\]/.test(said)) return said
     const want = said.trim().toLowerCase()
@@ -2315,24 +2116,12 @@ export class App {
   private crewNotes = 0
 
 
-  private syncVoiceChrome(): void {
+  private syncOrchChrome(): void {
     this.orchestrator.setAgent(`via ${(AGENTS[this.config.agent.default] ?? AGENTS.claude).name}`)
     this.sidebar.setOrchestrator({
-      // Deliberately not gated on the key. Hiding this button when OpenAI is not set up
-      // hides the only way to reach the panel that says OpenAI is not set up — the
-      // failure explains itself only if you can get to it.
       available: !!this.activeGroup,
       open: this.orchestrator.isOpen,
-      call: 'idle',
-      hearing: false,
-      speaking: false,
       thinking: this.orchBusy,
-    })
-    this.titleBar.setVisualize(this.activeGroup?.focused?.activity.current.isClaude === true)
-    this.titleBar.setPanel({
-      available: !!this.activeGroup,
-      open: this.activeGroup?.panel?.isOpen === true,
-      unseen: this.activeGroup?.panel?.hasContent === true && this.activeGroup?.panel?.isOpen === false,
     })
   }
 
@@ -2413,7 +2202,7 @@ export class App {
     if (!group) return
     group.ensurePanel(this.panelHooks(group)).toggle()
     this.startPaneMotion()
-    this.syncVoiceChrome()
+    this.syncOrchChrome()
   }
 
   /** Arm "point at something on the panel and talk about it". */
@@ -2636,35 +2425,28 @@ export class App {
     // were sitting in front of went on claiming it needed you indefinitely.
     if (document.hasFocus()) this.activeGroup?.acknowledge()
 
-    // A place (the overview, the list, the notes, the map as a tab of its own) has its
+    // A place (the list, the notes, the map as a tab of its own) has its
     // button at the top of the column, so it is not also a card in the list.
     const models: CardModel[] = this.groups.filter((g) => g.panes.length > 0).map((g) => {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
-      const isVoice = false
       return {
         id: g.id,
         title: g.displayTitle,
-        subtitle: isVoice
-          ? 'talking'
-          : g.isSplit
-            ? `${g.panes.length} panes`
-            : (focused?.profile.name ?? ''),
+        subtitle: g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
         accent: g.isTodo
           ? this.config.theme.cyan
           : g.isMap
             ? this.config.theme.green
-          : g.isOverview
-            ? this.config.theme.magenta
-            : g.isNote
+          : g.isNote
               ? this.config.theme.yellow
               : (focused?.profile.accent ?? this.config.theme.cursor),
-        kind: g.isTodo ? 'todo' : g.isMap ? 'map' : g.isOverview ? 'overview' : g.isNote ? 'note' : 'shell',
+        kind: g.isTodo ? 'todo' : g.isMap ? 'map' : g.isNote ? 'note' : 'shell',
         activity,
-        paneCount: isVoice ? 1 : g.panes.length,
+        paneCount: g.panes.length,
         reaction: this.reactionFor(g, now),
         git: this.gitByCwd.get(cwd) ?? null,
         url: focused?.urls[focused.urls.length - 1] ?? null,
@@ -2673,22 +2455,12 @@ export class App {
       }
     })
     this.sidebar.render(models, this.activeId)
-    this.sidebar.renderNav(this.activePlace(), {
-      overview: models.filter((m) => m.activity.state === 'attention' && m.id !== this.activeId).length,
-      todo: this.todoOpen,
-    })
+    this.sidebar.renderNav(this.activePlace(), { todo: this.todoOpen })
 
-    // The overview reads the same refresh the cards do, so it is never staler than they are.
-    if (this.groups.some((g) => g.overview)) {
-      const rows = this.overviewRows(now)
-      const orch = this.orchBrief()
-      const plan = this.planFor()
-      for (const g of this.groups) g.overview?.render(rows, orch, plan)
-    }
     // Narration is only audible for the tab on screen, so the speech layer has to know
     // which that is — checked on the activity tick rather than only on switch, so it
     // cannot drift out of step with what is actually being shown.
-    this.syncVoiceChrome()
+    this.syncOrchChrome()
 
     this.updateFocusRing()
 
@@ -2749,6 +2521,8 @@ export class App {
   }
 
   /** Type into every pane of the active group at once. */
+  private swallowPasteUntil = 0
+
   /** Paste with terminal semantics: LF becomes CR, as xterm's own paste does. */
   private pasteClipboard(): void {
     void navigator.clipboard.readText().then((text) => {
@@ -2801,7 +2575,7 @@ export class App {
   private commandTable(): CommandSpec[] {
     return [
       ...this.contextRows(),
-      { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n'], run: (a) => void this.newGroup(undefined, a[0]) },
+      { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'loom', 'canvas'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
       {
         id: 'project',
         group: 'Session',
@@ -2928,17 +2702,7 @@ export class App {
       { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.goPlace('notes') },
       { id: 'note-new', group: 'Notes', title: 'New note', cli: 'note [text]', run: (a) => void this.openNotesIn(this.activeGroup, 'new', a.join(' ') || undefined) },
       { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.goPlace('todo') },
-      {
-        id: 'loom',
-        group: 'Session',
-        title: 'New Loom session — a terminal whose output is a canvas',
-        hint: 'Ctrl+Shift+L',
-        cli: 'loom [dir]',
-        aliases: ['canvas', 'rich'],
-        run: (a) => void this.newGroup(undefined, a.join(' ') || this.activeGroup?.focused?.cwd || undefined, { loom: true }),
-      },
       { id: 'map', group: 'Map', title: 'Architecture map of a project', hint: 'Ctrl+Shift+G', cli: 'map [project]', aliases: ['arch'], run: (a) => this.openMapIn(this.placeGroup('map'), a.join(' ') || undefined) },
-      { id: 'overview', group: 'Sessions', title: 'Overview of every session', hint: 'Ctrl+Shift+S', cli: 'overview', aliases: ['ov', 'all', 'sessions'], run: () => void this.goPlace('overview') },
       {
         id: 'todo-check',
         group: 'Todo',
@@ -2976,11 +2740,11 @@ export class App {
       },
       {
         id: 'devices',
-        group: 'Voice',
-        title: this.remote.joined ? 'Your devices…' : 'Connect your phone',
+        group: 'Phone',
+        title: this.remote.joined ? 'Connect your phone — your devices' : 'Connect your phone',
         cli: 'devices',
         // The phone link goes through a relay Deep Answer Labs runs; until that is a real
-        // public service it is Labs, like the call.
+        // public service it is Labs.
         run: () => {
           if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
           void this.pairSheet.show()
@@ -2988,7 +2752,7 @@ export class App {
       },
       {
         id: 'orchestrator',
-        group: 'Voice',
+        group: 'Orchestrator',
         title: this.orchestrator.isOpen ? 'Hand the orchestrator something, or close it' : 'Hand the orchestrator something, or open it',
         hint: 'Ctrl+Shift+M',
         cli: 'orch [text]',
@@ -3103,24 +2867,6 @@ export class App {
         { id: 'todo-dismiss', group: 'Todo', title: 'Take an item off the list without ticking it', cli: 'dismiss <words>', aliases: ['x', 'rm'], run: (a) => todo.dismiss(a.join(' ')) },
         { id: 'todo-open', group: 'Todo', title: 'Open where an item came from', cli: 'open <words>', aliases: ['o'], run: (a) => todo.openSource(a.join(' ')) },
         { id: 'todo-sources', group: 'Todo', title: 'Where Check todos looks', cli: 'sources', run: () => void this.settings.show(this.config, 'Todo') },
-      ]
-    }
-    const overview = g?.overview
-    if (overview && g.panes.length > 0) {
-      return [
-        {
-          id: 'overview-back',
-          group: 'Overview',
-          title: 'Back to the shell',
-          hint: 'Esc',
-          cli: 'back',
-          aliases: ['b'],
-          run: () => {
-            g.hideOverview()
-            g.focusFirst()
-            this.syncTabs()
-          },
-        },
       ]
     }
     return []
@@ -3389,11 +3135,6 @@ export class App {
           this.toggleTodo()
           return
         }
-        if (ctrl && e.shiftKey && e.code === 'KeyS') {
-          e.preventDefault()
-          this.toggleOverview()
-          return
-        }
         if (ctrl && e.shiftKey && e.code === 'KeyG') {
           e.preventDefault()
           this.toggleMap()
@@ -3429,10 +3170,11 @@ export class App {
           void this.newGroup()
           return
         }
-        // A Loom session: the shell, with its output space turned into a canvas.
+        // Ctrl+Shift+L was "new Loom session"; every session is one now, so it opens one
+        // in the same directory, as it always did.
         if (ctrl && e.shiftKey && e.code === 'KeyL') {
           e.preventDefault()
-          void this.newGroup(undefined, active?.cwd || undefined, { loom: true })
+          void this.newGroup(undefined, active?.cwd || undefined)
           return
         }
         if (ctrl && e.shiftKey && e.code === 'KeyW') {
@@ -3458,13 +3200,6 @@ export class App {
         if (ctrl && e.shiftKey && e.code === 'KeyM') {
           e.preventDefault()
           this.toggleOrchestrator()
-          return
-        }
-        // Not Ctrl+Shift+P — that is the palette. Shift-modified because a bare Ctrl+J
-        // is a line feed, which the shell is entitled to receive.
-        if (ctrl && e.shiftKey && e.code === 'KeyJ') {
-          e.preventDefault()
-          this.togglePanel()
           return
         }
         if (ctrl && e.shiftKey && e.code === 'KeyE') {
@@ -3540,7 +3275,21 @@ export class App {
           if (!inField) {
             e.preventDefault()
             this.pasteClipboard()
+            // Electron's built-in Edit menu also pastes on Ctrl+V, natively, into the same
+            // terminal: that second paste is what doubled every paste. Swallow it.
+            this.swallowPasteUntil = performance.now() + 400
           }
+        }
+      },
+      { capture: true },
+    )
+    window.addEventListener(
+      'paste',
+      (e) => {
+        const t = e.target as HTMLElement | null
+        if (performance.now() < this.swallowPasteUntil && t?.classList.contains('xterm-helper-textarea')) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
         }
       },
       { capture: true },

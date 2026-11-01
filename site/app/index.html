@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#16120F">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ember">
+  <title>Ember</title>
+  <link rel="manifest" href="/app/manifest.webmanifest">
+  <link rel="icon" href="/app/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/app/icon-192.png">
+  <link rel="stylesheet" href="/app/style.css">
+  <script src="/app/jsqr.js" defer></script>
+  <script type="module" src="/app/app.js"></script>
+</head>
+<body>
+  <!-- Join: shown when this phone holds no account key. -->
+  <main id="join" class="join" hidden>
+    <div class="join-card glass">
+      <img class="join-mark" src="/app/icon-192.png" alt="" width="56" height="56">
+      <h1>Connect this phone to Ember</h1>
+      <ol class="join-steps">
+        <li>Open Ember on your computer.</li>
+        <li>Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and choose <strong>Connect your phone</strong>.</li>
+        <li>Scan the QR code that appears.</li>
+      </ol>
+      <button type="button" id="join-scan" class="join-scan">Scan the code</button>
+      <div id="join-cam" class="join-cam" hidden><video id="join-video" playsinline muted></video><button type="button" id="join-cam-x" class="join-cam-x">Cancel</button></div>
+      <form id="join-paste" class="join-paste"><input id="join-link" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="…or paste the link from Ember"><button type="submit">Join</button></form>
+      <p id="join-err" class="join-err" hidden></p>
+      <button type="button" id="join-back" class="join-back" hidden>Back</button>
+      <p class="join-note">The QR code is like a house key: anyone who scans it can see and type into your sessions. Only scan it on your own phone, and don't share screenshots of it.</p>
+    </div>
+  </main>
+
+  <!-- The app proper. -->
+  <div id="shell" class="shell" hidden>
+    <header class="top">
+      <div class="bar">
+        <button id="desk-btn" class="desk" type="button" aria-haspopup="dialog">
+          <span class="desk-dot" id="desk-dot" aria-hidden="true"></span>
+          <span class="desk-name" id="desk-name">Connecting</span>
+        </button>
+        <button id="settings-btn" class="icon-btn" type="button" aria-label="Settings" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
+      <nav class="tabs" id="tabs" aria-label="Sessions"></nav>
+    </header>
+
+    <main id="stage-wrap" class="stage-wrap">
+      <div id="banner" class="banner" hidden role="status"></div>
+      <section id="stage" class="stage" aria-live="polite"></section>
+    </main>
+
+    <footer class="dock">
+      <div class="strip" id="strip" hidden>
+        <div class="strip-dots" id="strip-dots" role="tablist" aria-label="Turns"></div>
+        <button id="latest-btn" class="latest" type="button" hidden>Latest</button>
+      </div>
+      <div class="keys" id="keys" hidden>
+        <button type="button" data-key="esc">Esc</button>
+        <button type="button" data-key="1">1</button>
+        <button type="button" data-key="2">2</button>
+        <button type="button" data-key="3">3</button>
+        <button type="button" data-key="enter">Enter</button>
+        <button type="button" data-key="shift-tab">Shift+Tab</button>
+      </div>
+      <form class="composer" id="composer" autocomplete="off">
+        <button id="keys-toggle" class="keys-toggle" type="button" aria-expanded="false" aria-controls="keys">keys</button>
+        <label class="sr-only" for="input">Message to the session</label>
+        <textarea id="input" rows="1" placeholder="Write to the session" enterkeyhint="enter" spellcheck="true"></textarea>
+        <button id="send" class="send" type="submit" disabled>Send</button>
+      </form>
+    </footer>
+  </div>
+
+  <!-- Sheets -->
+  <div id="scrim" class="scrim" hidden></div>
+  <section id="settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <div class="sheet-head">
+      <h2 id="settings-title">Settings</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <dl class="facts">
+      <dt>This phone</dt><dd id="s-device"></dd>
+      <dt>Computer</dt><dd id="s-desk"></dd>
+      <dt>Relay</dt><dd id="s-relay"></dd>
+      <dt>Link</dt><dd id="s-status"></dd>
+    </dl>
+    <div id="s-desks" class="desk-list"></div>
+    <button id="forget" class="danger" type="button">Forget this computer</button>
+    <p class="fine">Removes the key from this phone. To connect again, scan the QR code in Ember.</p>
+  </section>
+
+  <section id="viewer" class="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-title" hidden>
+    <div class="viewer-head">
+      <h2 id="viewer-title"></h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="viewer-body" id="viewer-body"></div>
+  </section>
+</body>
+</html>

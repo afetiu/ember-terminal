@@ -3,7 +3,6 @@ import { Panel, type PanelHooks } from '../ui/Panel'
 import { NoteView, type NoteHooks } from '../ui/Notes'
 import { TodoView, type TodoHooks } from '../ui/Todo'
 import { MapView, type MapHooks } from '../ui/MapView'
-import { OverviewView, type OverviewHooks } from '../ui/Overview'
 import type { Session } from './Session'
 import type { ActivitySnapshot, ActivityState } from './Activity'
 import type { LoomView } from '../canvas/LoomView'
@@ -84,7 +83,6 @@ export class Group {
   ensureNote(hooks: NoteHooks): NoteView {
     if (this.map) this.hideMap()
     if (this.todo) this.hideTodo()
-    if (this.overview) this.hideOverview()
     if (!this.note) {
       this.note = new NoteView(hooks)
       this.cover(this.note.el, true)
@@ -98,7 +96,7 @@ export class Group {
   /**
    * Lay a surface over the terminals. `inPane` puts it over the focused pane only when
    * the tab is split — what a note or the todo list wants, since they were asked for in
-   * one shell. The overview and the map are about everything, and take the whole tab.
+   * one shell. The map is about everything, and takes the whole tab.
    */
   private cover(el: HTMLElement, inPane: boolean): void {
     const slot = inPane && this.isSplit ? this.slots[this.panes.findIndex((p) => p.id === this.focused?.id)] : undefined
@@ -128,35 +126,9 @@ export class Group {
   /** The todo list, over this tab's terminals or as the tab itself. Its own thing, not a note. */
   todo: TodoView | null = null
 
-  /** Every session at a glance, over this tab's terminals or as the tab itself. */
-  overview: OverviewView | null = null
-
-  ensureOverview(hooks: OverviewHooks): OverviewView {
-    if (this.map) this.hideMap()
-    if (this.note) this.hideNote()
-    if (this.todo) this.hideTodo()
-    if (!this.overview) {
-      this.overview = new OverviewView(hooks)
-      this.cover(this.overview.el, false)
-    }
-    return this.overview
-  }
-
-  hideOverview(): void {
-    if (!this.overview) return
-    this.overview.dispose()
-    this.overview = null
-    this.uncover()
-  }
-
-  get isOverview(): boolean {
-    return this.overview !== null
-  }
-
   ensureTodo(hooks: TodoHooks): TodoView {
     if (this.map) this.hideMap()
     if (this.note) this.hideNote()
-    if (this.overview) this.hideOverview()
     if (!this.todo) {
       this.todo = new TodoView(hooks)
       this.cover(this.todo.el, true)
@@ -181,7 +153,6 @@ export class Group {
   ensureMap(hooks: MapHooks): MapView {
     if (this.note) this.hideNote()
     if (this.todo) this.hideTodo()
-    if (this.overview) this.hideOverview()
     if (!this.map) {
       this.map = new MapView(hooks)
       this.cover(this.map.el, false)
@@ -430,10 +401,6 @@ export class Group {
     }
     if (this.map) {
       this.map.focus()
-      return
-    }
-    if (this.overview) {
-      this.overview.focus()
       return
     }
     if (this.note) {

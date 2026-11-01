@@ -15,9 +15,8 @@ import { UsageWatcher } from './usage.js'
 import { detectAgents, pingAgent } from './agents.js'
 import { agentSpec } from '../shared/agents.js'
 import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
-import { allActivity, allBriefs, onActivity, onBrief } from './overview.js'
 import { clearLegacyState } from './state.js'
-import { bridgeEnv, bridgeOrigin, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd } from './bridge.js'
+import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { watchState } from './transcript.js'
@@ -44,6 +43,24 @@ import type {
 export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig) => void): void {
   // Loom tabs: the transcript feed, media and page annotations for the canvas.
   registerCanvas({ origin: bridgeOrigin, hostDoc, markCanvasTab })
+  // "Ask about this" from the canvas: one short answer, in a run of its own, so the session's
+  // turn is not interrupted and its context is not spent. Read-only.
+  ipcMain.handle('ember:canvas:sideAsk', async (_e, question: string, about: string, source: string, cwd?: string) => {
+    const prompt =
+      `Answer the user's question about one object on their screen, briefly: a few sentences or a short list, ` +
+      `plain markdown, no preamble. You may read files if it helps, but do not change anything.\n\n` +
+      `The object: ${about}\n${source ? `Its content:\n${String(source).slice(0, 12000)}\n` : ''}\nThe question: ${question}`
+    const { runAgent } = await import('./agents.js')
+    return runAgent(prompt, { timeoutMs: 120_000, ...(cwd ? { cwd } : {}) }).done
+  })
+  ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
+  ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {
+    try {
+      return showFile(tabId, path, title)
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  })
   const broadcast = (channel: string, payload: unknown) => {
     for (const win of BrowserWindow.getAllWindows()) {
       // The cursor overlay is a window too, but not one of ours to talk to this way.
@@ -94,12 +111,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.on('ember:desk:overlay:interactive', (_e, on: boolean) => setOverlayInteractive(on === true))
   ipcMain.handle('ember:desk:overlay:state', () => overlayState())
   app.on('before-quit', () => stopDesk())
-
-  // The overview: what every Claude session last said and is doing.
-  ipcMain.handle('ember:overview:all', () => allBriefs())
-  onBrief((b) => broadcast('ember:overview:brief', b))
-  ipcMain.handle('ember:overview:activity', () => allActivity())
-  onActivity((e) => broadcast('ember:overview:act', e))
 
   ipcMain.handle('ember:config', () => loadConfig())
 
@@ -163,16 +174,16 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     else void shell.openPath(NOTES_DIR)
   })
 
-  // The voice's one tool. It types into the tab's focused pane and reads the answer back
+  // The orchestrator's ask_claude. It types into the tab's focused pane and reads the answer back
   // off Claude Code's transcript — see `converse.ts` for why that beats calling the API.
-  ipcMain.handle('ember:voice:ask', (_e, tabId: string, sessionId: string, question: string) =>
+  ipcMain.handle('ember:converse:ask', (_e, tabId: string, sessionId: string, question: string) =>
     askClaude(host, tabId, sessionId, question)
   )
-  ipcMain.on('ember:voice:cancel', (_e, tabId: string) => cancelAsk(tabId))
-  ipcMain.handle('ember:voice:ready', (_e, tabId: string) => canAsk(tabId))
+  ipcMain.on('ember:converse:cancel', (_e, tabId: string) => cancelAsk(tabId))
+  ipcMain.handle('ember:converse:ready', (_e, tabId: string) => canAsk(tabId))
   // What the tab's transcript watcher is looking at — the only window into a
   // pipeline whose every failure mode is silence.
-  ipcMain.handle('ember:voice:watch', (_e, tabId: string) => watchState(tabId))
+  ipcMain.handle('ember:converse:watch', (_e, tabId: string) => watchState(tabId))
 
   // The orchestrator's written half. One turn per call: main makes the request because
   // it holds the key, the renderer runs the tools because it holds the sessions.
@@ -203,7 +214,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   })
 
   // The crew: work handed to a session and left running. Distinct from `ask` above,
-  // which blocks the call until the turn completes.
+  // which waits until the turn completes.
   ipcMain.handle('ember:crew:dispatch', (_e, tabId: string, sessionId: string, task: string) =>
     dispatch(host, tabId, sessionId, task)
   )
@@ -211,7 +222,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.handle('ember:crew:drain', (_e, tabId: string) => drain(tabId))
   ipcMain.on('ember:crew:follow', (_e, tabId: string) => follow(tabId))
   ipcMain.on('ember:crew:forget', (_e, tabId: string) => forgetTabCrew(tabId))
-  // A session going quiet is the one thing the voice cannot find out by asking.
+  // A session going quiet is the one thing the orchestrator cannot find out by asking.
   onCrewNote((note) => broadcast('ember:crew:note', note))
   app.on('before-quit', () => forgetCrew())
 

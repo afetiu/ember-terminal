@@ -95,19 +95,28 @@ export async function open(key, blob) {
   }
 }
 
+/** Where the phone app lives. The key rides in the fragment, which never reaches a server. */
+export const APP_URL = 'https://ember.deepanswerlabs.com/app/'
+
 /** The account code, as a QR payload and back. One secret, nothing else to mistype. */
-export function accountUrl(relay, key) {
-  return `ember://join?relay=${encodeURIComponent(relay)}&key=${key}`
+export function accountUrl(relay, key, defaultRelay) {
+  const r = relay && relay !== defaultRelay ? `&r=${encodeURIComponent(relay)}` : ''
+  return `${APP_URL}#k=${key}${r}`
 }
 
-export function parseAccountUrl(text) {
+/** Either form: the app link (`…/app/#k=…&r=…`) or the older `ember://join?relay=…&key=…`. */
+export function parseAccountUrl(text, defaultRelay) {
   try {
     const u = new URL(String(text).trim())
-    if (u.protocol !== 'ember:') return null
-    const relay = u.searchParams.get('relay')
-    const key = u.searchParams.get('key')
-    if (!relay || !key) return null
-    return { relay, key }
+    if (u.protocol === 'ember:') {
+      const relay = u.searchParams.get('relay')
+      const key = u.searchParams.get('key')
+      return relay && key ? { relay, key } : null
+    }
+    const h = new URLSearchParams(u.hash.replace(/^#/, ''))
+    const key = h.get('k')
+    const relay = h.get('r') || defaultRelay
+    return key && relay ? { relay, key } : null
   } catch {
     return null
   }

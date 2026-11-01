@@ -129,48 +129,36 @@ const INSTRUCTIONS = [
 
 /** What the CLI is told in a Loom tab, where the terminal is replaced by a canvas. */
 const CANVAS_INSTRUCTIONS = [
-  'This session is running in an Ember Loom tab. The user does not read a terminal transcript: ',
-  'everything you write is rendered on a canvas, and the canvas is yours to direct. The goal is that ',
-  'the user understands at a glance, with as little noise as possible.\n\n',
-
-  'What renders by itself, with no tool call:\n',
-  '- Your replies, as rich text: headings, lists, tables, code with its language. Keep prose short and plain.\n',
-  '- A ```mermaid fence in a reply becomes a live diagram right there. It is the cheapest way to show a ',
-  'flow, a sequence, a structure, a state machine or a timeline — prefer it to describing one.\n',
-  '- `![caption](C:\\absolute\\path.png)` in a reply shows that image inline (png, jpg, gif, webp, svg).\n',
-  '- Images that tools return — a Read of an image, a browser screenshot — appear inline automatically.\n',
-  '- Your edits appear as diffs and your commands as one quiet line each; do not paste them again.\n',
-  '- If you have a TodoWrite tool, your todo list is pinned as the steps card (see show_steps).\n',
-  '- `[Run the tests](ember:run the tests)` in a reply is a button: pressing it sends that text as the ',
-  "user's next message. `[label](ember-type:text)` fills their prompt without sending.\n\n",
-
-  'Tools for the rest:\n',
-  '- show_panel puts a piece inline at this point of the conversation: an html page for mockups, charts, ',
-  'interactive explainers and small tools; markdown for a longer reference worth keeping; mermaid for a ',
-  'bigger diagram. Pushing again with the same title updates that piece in place, so a plan, a status ',
-  'board or a design can live and change instead of piling up.\n',
-  '- show_media shows images, GIFs, video and audio by absolute path or URL: before/after screenshots, a ',
-  'recording of a test run, a rendered clip.\n',
-  '- open_url opens a live browser inside the canvas: the dev server you just started, the page you ',
-  'changed, the docs you are quoting.\n',
-  '- annotate then points at things on that live page — a box and a numbered label on elements found by ',
-  'CSS selector or by their visible text, each with a short note. Use it to show exactly where something ',
-  'is ("this button", "the error is here") instead of describing where to look.\n',
-  '- ask_panel puts a question as buttons, whenever the answer is a choice.\n',
-  '- show_steps pins a steps card in the corner of the canvas. For anything with more than two steps, ',
-  'put the plan there at the start and update it as each step starts and finishes; it is how the user ',
-  'follows long work at a glance without reading every line.\n\n',
-
-  'How to choose: show when seeing beats reading. A comparison is a table; a flow or an architecture is ',
-  'a diagram; a UI change is a screenshot, or the live page with the change annotated; numbers are a ',
-  'chart; a decision is ask_panel. Do not illustrate what one sentence says, do not repeat a visual in ',
-  'prose, and never describe a piece after showing it — the user is looking at it. One good visual beats ',
-  'three. Simple questions get simple answers with no visuals at all.\n\n',
-
-  `The user also keeps notes in Ember: plain .md files in ${process.env.EMBER_NOTES_DIR || 'their Documents\\Ember Notes folder'}, `,
-  'with a `notes` command on PATH (`notes list`, `notes read <note>`, `notes new <text>`, `notes append ',
-  '<note> <text>`). One of them is the todo list: `todo add "…"`, `todo done <words>`, `todo list`. When a ',
-  'turn ends with something only the user can do, add it there, once.',
+  // Every word here is in context on every call of every session, so it is short, and it
+  // steers to what is cheap: what renders by itself costs nothing extra, an html page is
+  // written once and then re-read on every later call while it stays in the conversation.
+  'This session runs in an Ember Loom tab: your replies are drawn on a canvas, not read as terminal text.\n',
+  'Free (no tool): markdown in your reply renders rich; a ```mermaid fence becomes a live diagram; a markdown ',
+  'table becomes a table; `![caption](C:\\abs\\path.png)` shows an image; `[label](ember:text)` is a button ',
+  'that sends text. Prefer these — they are the cheapest way to show something.\n',
+  'A file on disk: show_file with its path — markdown, html, pdf, csv, json, code, images, video — never paste ',
+  'its content. Numbers and lists: show_view with data only (charts, stats, table, timeline, kanban, compare, ',
+  'progress) — Ember draws it. A visual you will reuse: define_view once, then show_view with data.\n',
+  'show_panel html only for one-off interactive pages and mockups; keep it small and use ',
+  'var(--ember-ink|strong|muted|accent|line|surface) instead of writing a theme.\n',
+  'To change something already shown, use edit_panel with small find/replace edits; never resend a whole ',
+  'piece to change part of it. When the user refers to something they see, call on_screen for its title.\n',
+  'What you show stays on the board across turns: update it by title, do not show it again. For any work ',
+  'with more than two steps, put the plan up with show_steps first and update each step as it starts and ',
+  'finishes; if the user interrupts mid-work, keep the same plan going rather than starting a new one.\n',
+  'When the canvas shows it, reply in one or two sentences — never list or recap what is on screen. ',
+  'Default to no visual. Show something only when seeing it is clearly the best way to understand or decide ',
+  '(a structure, a comparison, numbers, a choice); routine status, small facts and confirmations are words. ',
+  'At most one new visual per turn unless asked; prefer updating what is already up. ',
+  'To point at something on the canvas (a node in your diagram, a bar, a row), use point with object (its title) and ',
+  'text (the label) — the canvas is not visible to look. Never draw again something already on the canvas in order ',
+  'to point at it or explain it: point at the one that is there (titles from on_screen). ',
+  'Ember Hands — the user\'s real screen: to show them anything there, look (the screen as text) then point at it ',
+  'on their screen with a short note; walk through steps with point step/steps. Never take a screenshot to explain ',
+  'something to the user and never draw the screen on the canvas — they are looking at the real thing. Screenshots ',
+  'are only for when you yourself must see pixels. Act (click, type) only when they asked and Hands allows it. ',
+  'Never described afterwards. open_url + annotate to point at a live page; show_media for images and video.\n',
+  "The user's notes and todo list: the notes and todo tools (show them on the canvas, add, tick). When a turn leaves something only they can do, add a todo once; when you finish something on their list, tick it.",
 ].join('')
 
 const TOOLS = [
@@ -309,99 +297,179 @@ const TOOLS = [
  */
 const CANVAS_TOOLS = [
   {
-    ...TOOLS[0],
+    name: 'show_panel',
     description:
-      'Put a piece on the canvas, inline at this point of the conversation: an html page (mockups, charts, ' +
-      'interactive explainers, small tools), markdown (a reference worth keeping), mermaid (a diagram) or ' +
-      'code. Pushing again with the same title replaces that piece in place, so it can track the work. Do ' +
-      'not ask permission and do not describe the piece afterwards. ' +
-      INTERACTIVE,
-  },
-  {
-    ...TOOLS[1],
-    description:
-      'Ask the user a question as a card on the canvas, with the answers as buttons. Pressing one sends it ' +
-      'as their next message. Use this whenever the answer is a choice. Ask, then stop and wait; do not ' +
-      'repeat the question in prose.',
-  },
-  {
-    ...TOOLS[2],
-    description:
-      'Open a live web page inline in the canvas, as a real browser: a dev server you started, a page you ' +
-      'changed, docs you are quoting. Follow up with annotate to point at things on it.',
-  },
-  {
-    name: 'annotate',
-    description:
-      'Point at things on the live page open in the canvas (open_url first, or pass url). Each mark draws a ' +
-      'box and a numbered label on an element found by CSS selector or by its visible text, with an ' +
-      'optional short note; the page scrolls to the first one. Use it to show exactly where something is ' +
-      'instead of describing where to look. Marks replace the previous ones; clear removes them all. The ' +
-      'result says which marks were found.',
+      'Put a piece on the canvas: html (interactive page, chart, mockup — a complete small document), ' +
+      'markdown, mermaid or code. Same title again replaces it in place; to change part of it use edit_panel. ' +
+      'Prefer a ```mermaid fence or a markdown table in your reply when that is enough.',
     inputSchema: {
       type: 'object',
       properties: {
-        marks: {
-          type: 'array',
-          description: 'What to point at, in order. Up to 12.',
-          items: {
-            type: 'object',
-            properties: {
-              selector: { type: 'string', description: 'A CSS selector for the element.' },
-              text: { type: 'string', description: 'Visible text of the element, when there is no good selector.' },
-              label: { type: 'string', description: 'A short label on the box. Defaults to its number.' },
-              note: { type: 'string', description: 'A sentence shown beside the box.' },
-            },
-          },
-        },
-        url: { type: 'string', description: 'Open this page first (http or https).' },
-        clear: { type: 'boolean', description: 'Remove all marks instead.' },
+        title: { type: 'string' },
+        format: { type: 'string', enum: ['markdown', 'mermaid', 'code', 'html'] },
+        content: { type: 'string', description: 'For html: a whole document, no ``` fence.' },
+        language: { type: 'string' },
+      },
+      required: ['title', 'format', 'content'],
+    },
+  },
+  {
+    name: 'show_file',
+    description:
+      'Show a file by path without sending its content: .md rendered, .html live, .pdf, .csv as a sortable ' +
+      'table, .json as a tree, code highlighted, images/gif/video/audio. It redraws when the file changes.',
+    inputSchema: {
+      type: 'object',
+      properties: { path: { type: 'string', description: 'Absolute path.' }, title: { type: 'string' } },
+      required: ['path'],
+    },
+  },
+  {
+    name: 'show_view',
+    description:
+      'Draw data with a view; send data only. bar|line|area: {labels, values} or {labels, series:[{name, values}]}; ' +
+      'pie: {labels, values}; stats: {items:[{label, value, delta?, hint?}]}; table: {columns, rows}; ' +
+      'timeline: {items:[{when, title, text?}]}; kanban: {columns:[{name, cards:[text|{title,text}]}]}; ' +
+      'compare: {items:[{title, points:[], verdict?, best?}]}; progress: {items:[{label, value, max?}]}; ' +
+      'json: {value}; or a name from define_view. Same title again updates it in place.',
+    inputSchema: {
+      type: 'object',
+      properties: { title: { type: 'string' }, view: { type: 'string' }, data: { type: 'object' } },
+      required: ['title', 'view', 'data'],
+    },
+  },
+  {
+    name: 'define_view',
+    description:
+      'Save a reusable view: a complete small html document that draws window.EMBER_DATA (theme colours in ' +
+      'window.EMBER_THEME: accent, ink, strong, dim, line, surface, cats). Then show_view with view=name sends ' +
+      'only data. Views persist across sessions.',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'a-z, 0-9, -' }, html: { type: 'string' } },
+      required: ['name', 'html'],
+    },
+  },
+  {
+    name: 'notes',
+    description:
+      "The user's notes. show: put a note on the canvas by name, live (cheap; content is not sent). list: note titles. " +
+      'append: add text to a note. create: a new note.',
+    inputSchema: {
+      type: 'object',
+      properties: { op: { type: 'string', enum: ['show', 'list', 'append', 'create'] }, name: { type: 'string' }, text: { type: 'string' } },
+      required: ['op'],
+    },
+  },
+  {
+    name: 'todo',
+    description:
+      "The user's todo list. show: the live checklist on the canvas. add: a new item. done: tick the open item containing text — " +
+      'do this yourself when you finish something that is on the list.',
+    inputSchema: {
+      type: 'object',
+      properties: { op: { type: 'string', enum: ['show', 'add', 'done'] }, text: { type: 'string' } },
+      required: ['op'],
+    },
+  },
+  {
+    name: 'look',
+    description:
+      "Ember Hands: read the user's screen as text, fast, no screenshot — with no window, the open windows; with a " +
+      'window title, its controls (name, type, position). Use it to find what to point at or act on.',
+    inputSchema: { type: 'object', properties: { window: { type: 'string' }, depth: { type: 'number' } } },
+  },
+  {
+    name: 'point',
+    description:
+      "Ember Hands: show the user something — Ember's pointer glides to it and a short note appears beside it. On the " +
+      'canvas (a node in a diagram, a bar, a row): object + text. On the desktop: ' +
+      'beside it. Never clicks. Target a control by window title + its visible name (and type, e.g. Button), or screen x,y. ' +
+      'Use it whenever you explain where something is in an app. For a walkthrough pass step and steps.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        object: { type: 'string', description: 'On the canvas: the object\'s title (from on_screen). Then text = the label to point at inside it.' },
+        text: { type: 'string', description: 'With object: the visible text to point at (a node, a bar, a row).' },
+        window: { type: 'string', description: 'On the desktop: window title, or part of it.' },
+        name: { type: 'string', description: 'The control\'s visible name.' },
+        ctype: { type: 'string' },
+        x: { type: 'number' },
+        y: { type: 'number' },
+        say: { type: 'string', description: 'One or two short sentences shown beside it.' },
+        step: { type: 'number' },
+        steps: { type: 'number' },
       },
     },
   },
   {
-    name: 'show_media',
+    name: 'act',
     description:
-      'Show images, GIFs, video or audio inline in the canvas, by absolute local path or http(s) URL: ' +
-      'screenshots, before/after pairs, a recording of a test run, a rendered clip. Several items show ' +
-      'side by side.',
+      'Ember Hands: click and type on the desktop, with the pointer visible and STOP on screen. Only when the user set ' +
+      'Hands to "Show & act". A script of desk commands, one per line (focus "<window>", press "<window>" "<name>", ' +
+      'click X Y, type "<text>", key ctrl+s, wait "<window>"). Prefer controls by name over coordinates.',
+    inputSchema: { type: 'object', properties: { script: { type: 'string' } }, required: ['script'] },
+  },
+  {
+    name: 'edit_panel',
+    description:
+      'Change a piece already on the canvas with find/replace edits — far cheaper than resending it. Works on ' +
+      'shown pieces and on diagrams/tables in your replies (titles from on_screen). Each find must be unique ' +
+      'unless all is true.',
     inputSchema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'Optional heading.' },
-        items: {
+        title: { type: 'string' },
+        edits: {
           type: 'array',
           items: {
             type: 'object',
-            properties: {
-              path: { type: 'string', description: 'Absolute path to an image, video or audio file.' },
-              url: { type: 'string', description: 'An http(s) URL instead of a path.' },
-              caption: { type: 'string', description: 'A short caption.' },
-            },
+            properties: { find: { type: 'string' }, replace: { type: 'string' }, all: { type: 'boolean' } },
+            required: ['find', 'replace'],
           },
         },
       },
-      required: ['items'],
+      required: ['title', 'edits'],
+    },
+  },
+  {
+    name: 'on_screen',
+    description: 'What is on the canvas now (your pieces, diagrams/tables in replies, what the user placed), with titles and sources.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'ask_panel',
+    description: 'Ask a question as buttons; pressing one sends it as the next message. Then stop and wait.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        question: { type: 'string' },
+        options: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { label: { type: 'string' }, value: { type: 'string' }, hint: { type: 'string' } },
+            required: ['label'],
+          },
+        },
+        freeText: { type: 'boolean' },
+      },
+      required: ['title', 'question'],
     },
   },
   {
     name: 'show_steps',
-    description:
-      'Pin the plan as a steps card in the corner of the canvas, and update it as you go: call it again ' +
-      'with the whole list each time a step starts or finishes. Use it for any work with more than two ' +
-      'steps. An empty list removes the card.',
+    description: 'The plan of the work, shown at the top of the canvas with live progress. Call it first for multi-step work, then again with the whole list each time a step starts or finishes. Empty list removes it.',
     inputSchema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'Optional heading, e.g. what the plan is for.' },
+        title: { type: 'string' },
         steps: {
           type: 'array',
           items: {
             type: 'object',
-            properties: {
-              text: { type: 'string', description: 'The step, as a short imperative.' },
-              status: { type: 'string', enum: ['pending', 'active', 'done'], description: 'Default pending.' },
-            },
+            properties: { text: { type: 'string' }, status: { type: 'string', enum: ['pending', 'active', 'done'] } },
             required: ['text'],
           },
         },
@@ -410,8 +478,47 @@ const CANVAS_TOOLS = [
     },
   },
   {
-    ...TOOLS[3],
-    description: 'Fold away the pieces on the canvas. Use when what is up is finished with.',
+    name: 'open_url',
+    description: 'Open a live web page in the canvas (dev server, docs). Then annotate to point at things.',
+    inputSchema: { type: 'object', properties: { url: { type: 'string' }, title: { type: 'string' } }, required: ['url'] },
+  },
+  {
+    name: 'annotate',
+    description: 'Mark elements on the open page by CSS selector or visible text, each with a short note. Replaces earlier marks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        marks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { selector: { type: 'string' }, text: { type: 'string' }, label: { type: 'string' }, note: { type: 'string' } },
+          },
+        },
+        url: { type: 'string' },
+        clear: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'show_media',
+    description: 'Show images, GIFs, video or audio by absolute path or URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        items: {
+          type: 'array',
+          items: { type: 'object', properties: { path: { type: 'string' }, url: { type: 'string' }, caption: { type: 'string' } } },
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'clear_panel',
+    description: 'Minimize the pieces on the canvas.',
+    inputSchema: { type: 'object', properties: {} },
   },
 ]
 
@@ -454,15 +561,17 @@ async function call(name, args) {
   }
   switch (name) {
     case 'show_panel': {
-      await post('/panel', {
+      const sent = await post('/panel', {
         title: args.title,
         format: args.format ?? 'markdown',
         content: args.content,
         language: args.language,
         replace: args.replace === true,
       })
+      if (sent?.render && !sent.render.ok)
+        return `"${args.title}" is on the canvas, but its diagram did not render: ${sent.render.error}. The user sees the source instead. Fix the syntax now with edit_panel (title "${args.title}").`
       const shown = CANVAS
-        ? `"${args.title}" is on the canvas. The user can see it — do not describe it to them.`
+        ? `"${args.title}" is on the canvas${sent?.render?.repaired ? ' (Ember quoted some labels so the diagram would parse)' : ''}. The user can see it — do not describe it to them.`
         : `The panel is now showing "${args.title}". The user can see it — do not describe it to them.`
       // A fragment still shows — Ember wraps it — but it shows as Ember's page, not the
       // model's. Say so on the result, where it is read, rather than only in the schema.
@@ -520,6 +629,91 @@ async function call(name, args) {
       const r = await post('/canvas/media', { title: args.title ?? '', items })
       const errs = Array.isArray(r.errors) && r.errors.length ? ` Not shown: ${r.errors.join('; ')}.` : ''
       return `Showing ${r.shown} item${r.shown === 1 ? '' : 's'} on the canvas. The user can see them — do not describe them.${errs}`
+    }
+    case 'show_file': {
+      if (!CANVAS) throw new Error('show_file is only available in an Ember Loom tab')
+      const path = String(args.path ?? '')
+      if (/\.(png|jpe?g|gif|webp|bmp|svg|mp4|webm|mov|m4v|mp3|wav|ogg|m4a)$/i.test(path)) {
+        const r = await post('/canvas/media', { title: args.title ?? '', items: [{ path }] })
+        if (!r.shown) throw new Error(Array.isArray(r.errors) && r.errors.length ? r.errors.join('; ') : 'could not show it')
+        return 'Shown on the canvas.'
+      }
+      const r = await post('/canvas/file', { path, ...(args.title ? { title: String(args.title) } : {}) })
+      return `Shown as "${r.title}"; it updates when the file is saved.`
+    }
+    case 'show_view': {
+      if (!CANVAS) throw new Error('show_view is only available in an Ember Loom tab')
+      await post('/panel', {
+        title: String(args.title ?? 'View'),
+        format: 'view',
+        content: JSON.stringify({ view: String(args.view ?? ''), data: args.data ?? {} }),
+      })
+      return `Shown "${args.title}".`
+    }
+    case 'define_view': {
+      if (!CANVAS) throw new Error('define_view is only available in an Ember Loom tab')
+      const r = await post('/canvas/view', { name: String(args.name ?? ''), html: String(args.html ?? '') })
+      return `Saved view "${r.name}". Use show_view with view "${r.name}" and data.`
+    }
+    case 'notes': {
+      if (!CANVAS) throw new Error('notes is only available in an Ember Loom tab')
+      const r = await post('/canvas/notes', { op: String(args.op ?? ''), name: String(args.name ?? ''), text: String(args.text ?? '') })
+      if (args.op === 'list') return (r.notes ?? []).join('\n') || 'No notes.'
+      if (args.op === 'show') return `Showing "${r.title}" on the canvas, live.`
+      return r.created ? `Created the note "${r.title}".` : `Added to "${r.title}".`
+    }
+    case 'todo': {
+      if (!CANVAS) throw new Error('todo is only available in an Ember Loom tab')
+      const op = String(args.op ?? '')
+      if (op === 'show') {
+        await post('/canvas/notes', { op: 'show', name: 'todo' })
+        return 'The todo list is on the canvas.'
+      }
+      const r = await post('/canvas/notes', { op: op === 'add' ? 'todo_add' : 'todo_done', text: String(args.text ?? '') })
+      return op === 'add' ? 'Added to the todo list.' : `Ticked: ${r.done}`
+    }
+    case 'look': {
+      const r = await post('/desk/look', { ...(args.window ? { window: String(args.window) } : {}), ...(typeof args.depth === 'number' ? { depth: args.depth } : {}) })
+      if (!r.ok) throw new Error(r.error || 'could not read the screen')
+      return r.out || '(nothing found)'
+    }
+    case 'point': {
+      const r = await post('/desk/point', {
+        ...(args.object ? { object: String(args.object), text: String(args.text ?? '') } : {}),
+        ...(args.window ? { window: String(args.window) } : {}),
+        ...(args.name ? { name: String(args.name) } : {}),
+        ...(args.ctype ? { ctype: String(args.ctype) } : {}),
+        ...(typeof args.x === 'number' ? { x: args.x } : {}),
+        ...(typeof args.y === 'number' ? { y: args.y } : {}),
+        ...(args.say ? { say: String(args.say) } : {}),
+        ...(typeof args.step === 'number' ? { step: args.step, steps: args.steps } : {}),
+      })
+      if (!r.ok) throw new Error(r.error || 'could not point there')
+      return `Pointing at ${r.found || `${r.x},${r.y}`}${args.say ? ' with the note shown' : ''}.`
+    }
+    case 'act': {
+      const r = await post('/desk/act', { script: String(args.script ?? '') })
+      if (!r.ok) throw new Error(r.error || 'the actions did not complete')
+      return `Done in ${r.ms}ms.${r.output ? `\n${String(r.output).slice(0, 2000)}` : ''}`
+    }
+    case 'edit_panel': {
+      if (!CANVAS) throw new Error('edit_panel is only available in an Ember Loom tab')
+      const r = await post('/panel/edit', { title: String(args.title ?? ''), edits: Array.isArray(args.edits) ? args.edits : [] })
+      if (r.render && !r.render.ok) return `Updated "${args.title}", but its diagram still does not render: ${r.render.error}. Fix it with another edit_panel.`
+      return `Updated "${args.title}" in place (${r.edits} edit${r.edits === 1 ? '' : 's'}).`
+    }
+    case 'on_screen': {
+      if (!CANVAS) throw new Error('on_screen is only available in an Ember Loom tab')
+      const r = await post('/canvas/screen', {})
+      const items = Array.isArray(r.items) ? r.items : []
+      if (!items.length) return 'Nothing is placed on the canvas right now.'
+      return items
+        .map((it, i) => {
+          const where = it.placed === 'inline' || it.placed === 'in the reply' ? it.placed : it.placed === 'floating' ? 'placed on screen' : `placed on screen, along the ${it.placed}`
+          const head = `${i + 1}. "${it.title}" — ${it.format}, ${where}`
+          return it.source ? `${head}\n\`\`\`${it.format === 'mermaid' ? 'mermaid' : ''}\n${it.source}\n\`\`\`` : head
+        })
+        .join('\n\n') + '\n\nTo change one, call show_panel with its exact title and format.'
     }
     case 'show_steps': {
       if (!CANVAS) throw new Error('show_steps is only available in an Ember Loom tab')

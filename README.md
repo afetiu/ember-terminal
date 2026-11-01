@@ -524,38 +524,12 @@ back exactly as it was. The editor autosaves 400ms after you stop typing — the
 dirty dot, because the way to protect writing is to write it down. The tab has its own
 badge in the sidebar, a page with a folded corner, so it is never mistaken for a shell.
 
-### The overview
+### Places
 
-A page to work from, not just to glance at. Overview, Todo, Notes and Map are four
-permanent buttons at the top of the sidebar — places, not cards in the session list.
-`ember overview` (`ov`) or Ctrl+Shift+S goes there; the same key again goes back to the
-session you came from (Ctrl+Shift+D and Ctrl+Shift+G do the same for the list and the
-map). The Overview button carries a badge for sessions waiting on you, Todo one for
-open items.
-
-- **The numbers** along the top: sessions (working, waiting), tokens processed and how
-  much came from cache, spend from the status lines, lines added and removed, the
-  fullest context window, the plan's windows (when Settings › Claude shows them), and a
-  sparkline of actions over the last hour.
-- **A card per session**, in tab order so nothing reshuffles under your cursor: state,
-  folder, the last thing its Claude said, the tool it is on, and a foot of quiet facts
-  (branch, model, tokens, +/− lines, cost, a context bar). A card that wants you grows:
-  a permission picker is shown as the session's own screen draws it, with its options
-  as buttons (1, 2, 3, Enter, Esc) that press the key in that session. A finished reply
-  you have not seen stays open in full until you touch the card. ⤢ (or Space) opens
-  any card in place: the whole reply and its recent actions. Arrows walk the cards,
-  Enter goes to one, typing on a focused card starts an answer in its box.
-- **The rail**: the todo list (tick or add from here), the last notes you touched, and
-  a quiet activity log — one line per action across every session (edits with their
-  +/− lines, commands, subagents, finished turns), changes only or everything.
-- **The orchestrator** along the foot, as one exchange: its last reply and a line to
-  answer.
-
-Everything comes from Claude Code's own transcripts: main reads each session's file
-once when it announces itself over the bridge (totals, last reply, recent actions) and
-then tails it (`src/main/overview.ts`). `scripts/probe-overview-page.mjs` stages two
-Claude sessions — one on a permission picker — and checks the whole page;
-`--theme "One Light"` runs it on a light palette.
+Todo, Notes and Map are permanent buttons at the top of the sidebar — places, not cards in
+the session list. Ctrl+Shift+D and Ctrl+Shift+G go to the list and the map; the same key
+again goes back to the session you came from. The Todo button carries a badge for open
+items.
 
 ### The todo list
 

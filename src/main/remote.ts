@@ -25,7 +25,9 @@ import { CONFIG_DIR } from './config.js'
 const ACCOUNT_PATH = join(CONFIG_DIR, 'account.json')
 
 /** Where devices meet. Overridable for anyone running their own. */
-const DEFAULT_RELAY = 'https://ember-relay-15d6f9a3939b.herokuapp.com'
+const DEFAULT_RELAY = 'https://ember-relay.afetiu3.workers.dev'
+/** The old Heroku relay, retired for the Cloudflare one: accounts that point at it move over. */
+const RETIRED_RELAYS = ['https://ember-relay-15d6f9a3939b.herokuapp.com']
 
 export interface Account {
   relay: string
@@ -69,7 +71,7 @@ export function readAccount(): Account | null {
     // copied from another machine still works — and gets its own identity rather than
     // fighting the machine it was copied from for the same slot on the relay.
     const account: Account = {
-      relay: a.relay || DEFAULT_RELAY,
+      relay: a.relay && !RETIRED_RELAYS.includes(a.relay) ? a.relay : DEFAULT_RELAY,
       key: a.key,
       deviceId: a.deviceId || freshDeviceId(),
       deviceName: a.deviceName || defaultName(),

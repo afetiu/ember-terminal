@@ -3,14 +3,8 @@
  * The orchestrator, as something you can see and write to.
  *
  * The agent itself is not this class — it is the shared history plus the tool loop in
- * `App`, which the voice and this panel both drive. This is one of its two front ends,
- * and it exists because the other one only works when you are alone: in an office you
- * cannot talk to it, and an assistant you can only reach by speaking is an assistant you
- * cannot reach most of the working day.
- *
- * Both channels write into the same conversation, so a thread started out loud continues
- * in text without re-explaining anything, and the panel is where a call is visible —
- * whether one is up, and the one button that starts or ends it.
+ * `App`, which this panel and a connected phone both drive. Both write into the same
+ * conversation, so a thread started on one continues on the other.
  */
 
 export interface OrchestratorHooks {
@@ -26,8 +20,6 @@ export interface Turn {
   text: string
   /** Set on an agent turn that used tools, so the work it did is visible. */
   did?: string[]
-  /** Spoken rather than typed. Worth showing, so the two channels are distinguishable. */
-  spoken?: boolean
 }
 
 export class Orchestrator {
@@ -44,7 +36,7 @@ export class Orchestrator {
     this.el = document.createElement('aside')
     this.el.className = 'ember-orch'
 
-    // ---- header: what this is, and whether a call is up ----
+    // ---- header: what this is, and which agent it runs through ----
     const head = document.createElement('header')
     head.className = 'ember-orch-head'
 
@@ -133,8 +125,7 @@ export class Orchestrator {
    * Paint the whole conversation.
    *
    * Rebuilt rather than appended because turns are *revised* — an agent turn grows tool
-   * results as its loop runs, and a spoken turn is corrected when the final transcript
-   * arrives. Diffing that costs more than redrawing a list nobody will ever scroll for
+   * results as its loop runs. Diffing that costs more than redrawing a list nobody will ever scroll for
    * hours.
    */
   render(turns: Turn[], busy: boolean): void {
@@ -150,7 +141,7 @@ export class Orchestrator {
 
     for (const t of turns) {
       const row = document.createElement('div')
-      row.className = `ember-orch-turn is-${t.who}${t.spoken ? ' is-spoken' : ''}`
+      row.className = `ember-orch-turn is-${t.who}`
 
       if (t.did?.length) {
         const did = document.createElement('div')

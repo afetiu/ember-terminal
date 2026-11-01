@@ -5,35 +5,23 @@ import type { Account, PanelPush, RemoteDevice } from '@shared/types'
 /**
  * The phone, as another front end on the same orchestrator.
  *
- * The panel and the call already share one conversation; this adds whatever devices are on
- * the account to that list rather than adding another agent. Everything arriving here is
- * handled by the code that already handles the panel's composer and the call's tool
- * requests — a message off the wire is a typed message, a tool request off the wire is a
- * tool request. That is the whole design, and it is why this file is small.
- *
- * WHY THE PHONE HOLDS THE CALL. When the user is driving, the microphone that matters is the
- * phone's, so the phone runs its own WebRTC session straight to OpenAI. Audio therefore
- * never crosses the relay — only tool calls and their results do, which are small and
- * latency-tolerant. A weak cell signal degrades dispatching, not the conversation, and if
- * the link drops in a tunnel the call carries on regardless.
- *
- * The desk mints the ephemeral secret and sends it over, so the real OpenAI key never goes
- * near a device that can be left in a taxi.
+ * This adds whatever devices are on the account to the orchestrator's conversation rather
+ * than adding another agent. A message typed on a phone is handled by the same code as the
+ * panel's composer, so both land in one thread. That is the whole design, and it is why this
+ * file is small.
  */
 
 export interface RemoteHooks {
   /** A message typed on a phone. Resolves with the answer and the tools it used. */
   onText: (text: string) => Promise<{ text: string; did: string[] }>
-  /** A tool a phone's voice called. Always resolves — see `runVoiceTool`. */
-  onTool: (name: string, args: Record<string, unknown>) => Promise<string>
-  /** Something said on a phone's call, to fold into the shared conversation. */
-  onSpoken: (who: 'user' | 'voice', text: string) => void
   /** A button pressed on a panel document shown on a phone. */
   onPanelAct: (text: string, submit: boolean) => void
-  /** The conversation so far, for briefing a call as it connects. */
+  /** The conversation so far, for briefing a phone as it connects. */
   recap: () => string
   /** Anything worth repainting: link state, which devices are here. */
   onChange: () => void
+  /** Ember on the phone (docs/specs/phone.md): true when the message was its. */
+  onPhone?: (m: Record<string, unknown>, from: string) => boolean
 }
 
 export type LinkState = 'off' | 'connecting' | 'online' | 'offline'
@@ -48,7 +36,7 @@ export class Remote {
   devices: RemoteDevice[] = []
 
   /** Counters, for the probe. Nothing in the app reads these. */
-  readonly stats = { texts: 0, tools: 0, lines: 0, secrets: 0, notes: 0, panels: 0, acts: 0, lastTool: '', errors: [] as string[] }
+  readonly stats = { texts: 0, secrets: 0, notes: 0, panels: 0, acts: 0, errors: [] as string[] }
 
   constructor(private readonly hooks: RemoteHooks) {}
 
@@ -94,6 +82,11 @@ export class Remote {
     await this.link.start()
   }
 
+  /** One sealed message to one device on the account. */
+  sendTo(to: string, msg: Record<string, unknown>): void {
+    void this.link?.send(to, msg)
+  }
+
   stop(): void {
     this.link?.stop()
     this.link = null
@@ -104,6 +97,7 @@ export class Remote {
   private async receive(m: Record<string, unknown>, from: string): Promise<void> {
     const kind = String(m['t'] ?? '')
     const reply = (body: Record<string, unknown>) => this.link?.send(from, { ...body, id: m['id'] })
+    if (this.hooks.onPhone?.(m, from)) return
 
     try {
       switch (kind) {
@@ -122,19 +116,6 @@ export class Remote {
           break
         }
 
-        // A tool the phone's voice called. The result is a sentence either way: the model
-        // is holding the floor waiting for this string.
-        case 'tool': {
-          this.stats.tools++
-          this.stats.lastTool = String(m['name'] ?? '')
-          const out = await this.hooks.onTool(
-            String(m['name'] ?? ''),
-            (m['args'] as Record<string, unknown>) ?? {}
-          )
-          await reply({ t: 'toolResult', text: out })
-          break
-        }
-
         // Someone tapped a button on a panel shown on the phone. It lands in the same
         // place the desk's own panel acts do — the session the panel belongs to.
         case 'act':
@@ -142,12 +123,6 @@ export class Remote {
           this.hooks.onPanelAct(String(m['text'] ?? ''), m['submit'] !== false)
           break
 
-        // A line of the phone's call, so this laptop's thread has it too. This is what
-        // makes a conversation had in the car continue at the desk.
-        case 'line':
-          this.stats.lines++
-          this.hooks.onSpoken(m['who'] === 'user' ? 'user' : 'voice', String(m['text'] ?? ''))
-          break
 
       }
     } catch (err) {

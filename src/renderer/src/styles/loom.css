@@ -64,8 +64,7 @@
 }
 
 .loom-flow {
-  max-width: 1180px;
-  margin: 0 auto;
+  margin: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -211,7 +210,6 @@
 /* ---------------------------------------------------------------- replies */
 
 .loom-say {
-  max-width: 108ch;
   margin: 2px 0 10px;
   color: var(--l-ink);
   word-break: break-word;
@@ -1159,4 +1157,4058 @@
 }
 .loom-rawpill.is-on {
   display: flex;
+}
+
+/* ==========================================================================
+   The stage: you and the agent, now. One turn, no log.
+   ========================================================================== */
+
+.loom-flow {
+  justify-content: flex-start;
+}
+.loom-turn:not(.is-shown),
+.loom-flow > .loom-seam {
+  display: none;
+}
+.loom-turn.is-shown {
+  border-top: 0;
+  padding-top: 4px;
+}
+/* The steps are not listed: the one being taken is the large line at the foot. */
+.loom-turn.is-shown > .loom-tool,
+.loom-turn.is-shown > .loom-say:not(.is-current),
+.loom-turn.is-shown > .loom-note-line {
+  display: none;
+}
+
+.loom-turn.is-shown > .loom-ask {
+  font-size: 0.95em;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--l-dim);
+  padding: 7px 14px 7px 12px;
+  margin-bottom: 18px;
+  animation: loom-rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.loom-turn.is-shown > .loom-say.is-current {
+  font-size: 1.14em;
+  line-height: 1.7;
+  animation: loom-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.loom-slot,
+.loom-shelf {
+  animation: loom-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes loom-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- the now line */
+
+.loom-now {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 10px;
+  z-index: 3;
+  display: none;
+  height: 2.6em;
+  font-size: 1.28em;
+  pointer-events: none;
+}
+.loom-now.is-on {
+  display: block;
+}
+.loom-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.9em;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  color: var(--l-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  animation: loom-now-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    opacity 260ms,
+    transform 260ms;
+}
+.loom-now-line.is-out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.loom-now-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-now-glyph {
+  color: var(--l-accent);
+  animation: loom-breathe 1s ease-in-out infinite;
+}
+.loom-now-detail {
+  position: absolute;
+  left: calc(1em + 12px);
+  bottom: 0;
+  font-size: 0.6em;
+  color: var(--l-faint);
+}
+@keyframes loom-now-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- the input, framed */
+
+/* Claude Code's own prompt, keys and all, with its rules masked away and this drawn
+   round it instead: still monospace, still a caret, just held in a quieter shape. */
+.loom-frame-box {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  pointer-events: none;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
+  transition:
+    top 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 200ms,
+    box-shadow 200ms;
+}
+.loom-frame-box.is-on {
+  display: block;
+}
+.loom-frame-box.is-focus {
+  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--c-accent) 12%, transparent),
+    0 10px 40px -18px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.loom-bar {
+  position: absolute;
+  z-index: 5;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 0 4px;
+  color: var(--c-fg);
+  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.loom-bar.is-on {
+  display: flex;
+}
+.loom-bar > span {
+  opacity: 0.62;
+}
+.loom-bar-mode {
+  border: 1px solid color-mix(in srgb, var(--c-fg) 22%, transparent);
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  color: var(--c-fg);
+  font: inherit;
+  padding: 3px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+.loom-bar-mode::before {
+  content: '⏵⏵ ';
+  opacity: 0.7;
+}
+.loom-bar-mode.is-default::before {
+  content: '';
+}
+.loom-bar-mode.is-bypass {
+  color: #ff5c7a;
+  border-color: rgba(255, 92, 122, 0.5);
+  background: rgba(255, 92, 122, 0.1);
+}
+.loom-bar-mode.is-edits {
+  color: #f5c451;
+  border-color: rgba(245, 196, 81, 0.5);
+  background: rgba(245, 196, 81, 0.1);
+}
+.loom-bar-mode.is-plan,
+.loom-bar-mode.is-auto {
+  color: #5ad1e6;
+  border-color: rgba(90, 209, 230, 0.5);
+  background: rgba(90, 209, 230, 0.1);
+}
+.loom-bar-mode:hover {
+  filter: brightness(1.2);
+}
+.loom-bar-glyph {
+  color: var(--c-accent);
+  margin-right: 6px;
+}
+.loom-bar > .loom-bar-model {
+  opacity: 0.85;
+}
+.loom-bar-ctx {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.loom-bar-ctx i {
+  display: inline-block;
+  width: 54px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--c-accent) var(--p), color-mix(in srgb, var(--c-fg) 14%, transparent) var(--p));
+}
+.loom-bar-ctx.is-high i {
+  background: linear-gradient(90deg, #ff5c7a var(--p), color-mix(in srgb, var(--c-fg) 14%, transparent) var(--p));
+}
+.loom-bar > .loom-bar-rest {
+  margin-left: auto;
+  opacity: 0.42;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------- the sign */
+
+.loom-sign {
+  padding: 2px;
+  gap: 4px;
+}
+.loom-sign button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 0.95em var(--l-mono);
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+.loom-sign kbd {
+  font: inherit;
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+.loom-sign .loom-sign-clear {
+  display: none;
+}
+.loom-sign .loom-sign-clear.is-on {
+  display: inline-flex;
+  color: var(--l-ink);
+}
+.loom-sign-clear .c {
+  color: var(--l-accent);
+}
+
+/* ---------------------------------------------------------------- pinned objects */
+
+.loom-pins {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.loom-piece-head {
+  cursor: grab;
+  touch-action: none;
+}
+.loom-piece.is-pinned {
+  position: absolute;
+  margin: 0;
+  pointer-events: auto;
+  max-height: calc(100% - 12px);
+  min-width: 240px;
+  min-height: 40px;
+  overflow: auto;
+  resize: both;
+  background: color-mix(in srgb, var(--c-bg) 90%, transparent);
+  backdrop-filter: blur(18px);
+  border-color: color-mix(in srgb, var(--c-accent) 35%, transparent);
+  box-shadow: 0 24px 70px -28px #000;
+}
+.loom-piece.is-pinned.is-dragging {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--c-accent) 40%, transparent),
+    0 34px 90px -30px #000;
+  opacity: 0.94;
+}
+.loom-piece.is-pinned.is-dragging .loom-piece-head {
+  cursor: grabbing;
+}
+.loom-piece.is-pinned .loom-web {
+  height: 360px;
+}
+@keyframes loom-pin-in {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: none;
+  }
+}
+/* While dragging, frames must not swallow the pointer. */
+.loom.is-dragging iframe,
+.loom.is-dragging webview {
+  pointer-events: none;
+}
+.loom-piece-acts .loom-close-btn,
+.loom-piece.is-pinned .loom-pin-btn,
+.loom-piece.is-pinned button[data-p="expand"] {
+  display: none;
+}
+.loom-piece.is-pinned .loom-piece-acts .loom-close-btn {
+  display: inline-block;
+}
+.loom-piece.is-pinned .loom-piece-acts {
+  opacity: 1;
+}
+
+.loom-diagram {
+  position: relative;
+}
+.loom-diagram.is-lifted {
+  display: none;
+}
+.loom-diagram-pin {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 6px;
+  background: color-mix(in srgb, var(--c-bg) 80%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.loom-diagram:hover .loom-diagram-pin {
+  opacity: 1;
+}
+
+/* Room for the now line under the last words. */
+.loom:has(.loom-now.is-on) .loom-scroll {
+  padding-bottom: 5em;
+}
+
+/* A pinned object is a box you size: its content fills it, whatever size you give it. */
+.loom-piece.is-pinned {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.loom-piece.is-pinned > .loom-piece-head {
+  flex: none;
+}
+.loom-piece.is-pinned > .loom-piece-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.loom-piece.is-pinned .loom-frame,
+.loom-piece.is-pinned .loom-web {
+  flex: 1 1 auto;
+  height: 100% !important;
+  min-height: 0;
+}
+.loom-piece.is-pinned .loom-media {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.loom-piece.is-pinned .loom-media img,
+.loom-piece.is-pinned .loom-media video {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.loom-piece.is-pinned::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid color-mix(in srgb, var(--c-accent) 60%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--c-accent) 60%, transparent);
+  border-radius: 0 0 4px 0;
+  pointer-events: none;
+}
+
+.loom-bar > .loom-bar-ember {
+  opacity: 0.7;
+  cursor: help;
+}
+
+/* ---------------------------------------------------------------- placing objects */
+
+/* The words step aside for what is placed, and glide while they do. */
+.loom-scroll {
+  transition:
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    bottom 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.loom-piece-acts button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.loom-piece-acts svg,
+.loom-lift svg,
+.loom-grip svg {
+  display: block;
+}
+
+/* A grip on the left of every title bar says "this can be picked up". */
+.loom-grip {
+  display: inline-flex;
+  color: var(--l-faint);
+  margin: 0 -4px 0 -4px;
+  cursor: grab;
+  transition: color 120ms;
+}
+.loom-piece-head:hover .loom-grip,
+.loom-lift:hover .loom-grip {
+  color: var(--l-accent);
+}
+.loom-drag-hint {
+  color: var(--l-faint);
+  font-size: 0.9em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 160ms;
+}
+.loom-piece:not(.is-pinned) .loom-piece-head:hover .loom-drag-hint {
+  opacity: 1;
+}
+.loom-piece:not(.is-pinned) .loom-piece-head:hover {
+  background: color-mix(in srgb, var(--c-accent) 6%, transparent);
+}
+
+/* A diagram in the text: a slim bar along its top, on hover, to pick it up by. */
+.loom-lift {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  color: var(--l-dim);
+  font-size: 0.8em;
+  cursor: grab;
+  touch-action: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--c-bg) 88%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 140ms;
+}
+.loom-diagram:hover .loom-lift {
+  opacity: 1;
+}
+.loom-lift button {
+  margin-left: auto;
+  display: inline-flex;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px;
+  background: none;
+  color: var(--l-dim);
+  cursor: pointer;
+}
+.loom-lift button:hover {
+  color: var(--l-ink);
+  background: var(--l-card-2);
+}
+
+/* What is lifted out leaves a gap that closes. */
+.loom-heal {
+  transition: height 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------------------------------------------------------------- stepping through turns */
+
+.loom-turns {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+  color: var(--l-faint);
+}
+.loom-sign .loom-turns button {
+  padding: 3px 5px;
+}
+.loom-sign .loom-turns button[disabled] {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.loom-turns-at {
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.loom-turns.is-past .loom-turns-at {
+  color: var(--l-ink);
+}
+.loom-sign .loom-turns-now {
+  color: var(--l-accent);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+/* Looking back: a quiet edge says this is not the turn in progress. */
+.loom.is-past .loom-scroll {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+
+/* ---------------------------------------------------------------- the context menu */
+
+.loom-menu {
+  position: absolute;
+  z-index: 9;
+  display: none;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-bg) 94%, #000);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 50px -20px #000;
+  font-size: 0.86em;
+}
+.loom-menu.is-on {
+  display: block;
+  animation: loom-pin-in 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.loom-menu-head {
+  padding: 5px 10px 6px;
+  color: var(--l-faint);
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+.loom-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--l-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.loom-menu button:hover,
+.loom-menu button:focus-visible {
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  outline: none;
+}
+.loom-lift-name {
+  color: var(--l-ink);
+  font-weight: 600;
+}
+.loom-lift-hint {
+  color: var(--l-faint);
+}
+.loom-diagram.is-updated {
+  border-color: var(--l-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--l-accent) 22%, transparent);
+}
+
+/* ---------------------------------------------------------------- minimized, and motion */
+
+.loom-piece.is-min > .loom-piece-body {
+  display: none;
+}
+.loom-piece.is-min > .loom-piece-head {
+  border-bottom: 0;
+}
+.loom-piece.is-pinned.is-min {
+  resize: none;
+  min-height: 0;
+}
+.loom-piece.is-pinned.is-min::after {
+  display: none;
+}
+.loom-piece.is-animating {
+  overflow: hidden;
+}
+.loom-piece.is-min .loom-piece-head {
+  cursor: grab;
+}
+
+/* Placed objects settle into place rather than jump; never while held. */
+.loom-piece.is-pinned:not(.is-dragging) {
+  transition:
+    left 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 300ms,
+    box-shadow 300ms,
+    opacity 200ms;
+}
+.loom-piece.is-pinned.is-dragging {
+  transition: box-shadow 200ms;
+  transform: scale(1.01);
+}
+
+.loom-turn.is-shown {
+  animation: loom-rise 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-pop.is-on {
+  animation: loom-pin-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-piece-acts button,
+.loom-sign button,
+.loom-menu button,
+.loom-bar-mode {
+  transition:
+    background-color 140ms,
+    color 140ms,
+    opacity 140ms,
+    filter 140ms;
+}
+.loom-frame-box {
+  transition:
+    top 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms,
+    box-shadow 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loom *,
+  .loom-frame-box,
+  .loom-bar {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ==========================================================================
+   Design layer (2026-10-31): neutral first, colour for meaning.
+
+   The theme's colour tinted everything — text, borders, boxes, buttons — so nothing
+   stood out. Here the ink is neutral (a warm off-white on dark, near-black on light,
+   only faintly tinted by the theme), surfaces are told apart by depth rather than tint,
+   and the accent is kept for what is live or chosen: the caret, focus, links, the now
+   line, the selected object. Green, amber, red and blue mean done, warning, error and
+   information, and nothing else. Prose is set in the system's text face; everything you
+   type, and all code, stays in the terminal's monospace.
+   ========================================================================== */
+
+.loom,
+.loom-bar,
+.loom-frame-box,
+.loom-modal {
+  --l-ink: color-mix(in srgb, var(--c-fg) 14%, #e7e4df);
+  --l-strong: color-mix(in srgb, var(--c-fg) 8%, #f7f5f2);
+  --l-dim: color-mix(in srgb, var(--l-ink) 64%, transparent);
+  --l-faint: color-mix(in srgb, var(--l-ink) 40%, transparent);
+  --l-line: rgba(255, 255, 255, 0.075);
+  --l-line-strong: rgba(255, 255, 255, 0.13);
+  /* Three levels: the canvas, things on it, things over it. */
+  --l-s1: color-mix(in srgb, var(--c-bg) 86%, #fff 4%);
+  --l-s2: color-mix(in srgb, var(--c-bg) 80%, #fff 7%);
+  --l-s3: color-mix(in srgb, var(--c-bg) 90%, #000);
+  --l-card: var(--l-s1);
+  --l-card-2: rgba(255, 255, 255, 0.04);
+  --l-shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -16px rgba(0, 0, 0, 0.6);
+  --l-shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 22px 60px -26px rgba(0, 0, 0, 0.75);
+  --l-shadow-3: 0 24px 70px -20px rgba(0, 0, 0, 0.8);
+  /* Meaning. */
+  --l-ok: #5fbf8f;
+  --l-warn: #e0b45a;
+  --l-err: #e2676f;
+  --l-info: #6aa8e6;
+  --l-prose: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  --l-r-card: 12px;
+  --l-r-ctl: 8px;
+}
+body.is-light .loom,
+body.is-light .loom-bar,
+body.is-light .loom-frame-box,
+body.is-light .loom-modal {
+  --l-ink: color-mix(in srgb, var(--c-fg) 14%, #23211f);
+  --l-strong: color-mix(in srgb, var(--c-fg) 8%, #121110);
+  --l-line: rgba(0, 0, 0, 0.08);
+  --l-line-strong: rgba(0, 0, 0, 0.14);
+  --l-s1: color-mix(in srgb, var(--c-bg) 90%, #fff);
+  --l-s2: #fff;
+  --l-s3: #fff;
+  --l-card-2: rgba(0, 0, 0, 0.035);
+  --l-shadow-1: 0 6px 20px -14px rgba(0, 0, 0, 0.25);
+  --l-shadow-2: 0 18px 50px -24px rgba(0, 0, 0, 0.3);
+  --l-shadow-3: 0 22px 60px -20px rgba(0, 0, 0, 0.35);
+  --l-ok: #2f8f5f;
+  --l-warn: #a8740f;
+  --l-err: #c03a45;
+  --l-info: #2f6fb8;
+}
+
+.loom {
+  color: var(--l-ink);
+}
+
+/* ---------------------------------------------------------------- type */
+
+.loom-say {
+  font-family: var(--l-prose);
+  font-size: 1.02em;
+  line-height: 1.68;
+  color: var(--l-ink);
+  letter-spacing: 0.005em;
+}
+.loom-turn.is-shown > .loom-say.is-current {
+  font-size: 1.12em;
+  line-height: 1.7;
+}
+.loom-say h1,
+.loom-say h2,
+.loom-say h3,
+.loom-say h4 {
+  font-family: var(--l-prose);
+  color: var(--l-strong);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.loom-say h1 {
+  font-size: 1.6em;
+  margin: 0.9em 0 0.4em;
+}
+.loom-say h2 {
+  font-size: 1.3em;
+  margin: 1.2em 0 0.4em;
+}
+.loom-say h3 {
+  font-size: 1.08em;
+}
+.loom-say h4 {
+  font-size: 0.95em;
+  color: var(--l-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.loom-say h1::before,
+.loom-say h2::before {
+  content: none;
+}
+.loom-say strong {
+  color: var(--l-strong);
+  font-weight: 650;
+}
+.loom-say em {
+  color: var(--l-ink);
+}
+.loom-say li::marker {
+  color: var(--l-faint);
+}
+.loom-say ol li::marker {
+  font-family: var(--l-mono);
+  font-size: 0.9em;
+}
+.loom-say code {
+  font: 0.88em var(--l-mono);
+  color: var(--l-strong);
+  background: var(--l-card-2);
+  border-color: var(--l-line);
+}
+.loom-say blockquote {
+  border-left-color: var(--l-line-strong);
+  color: var(--l-dim);
+}
+.loom-say hr {
+  border-top-color: var(--l-line);
+}
+.loom-link {
+  color: var(--l-accent);
+}
+
+/* Your words: the terminal's face, quiet, a hairline at the side. */
+.loom-turn.is-shown > .loom-ask,
+.loom-ask {
+  font-family: var(--l-mono);
+  color: var(--l-dim);
+  background: none;
+  border-left: 2px solid var(--l-line-strong);
+  border-radius: 0;
+  padding: 2px 0 2px 14px;
+}
+.loom-caret {
+  color: var(--l-accent);
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.loom-piece,
+.loom-diagram,
+.loom-code,
+.loom-table,
+.loom-note,
+.loom-out {
+  background: var(--l-s1);
+  border: 1px solid var(--l-line);
+  border-radius: var(--l-r-card);
+  box-shadow: var(--l-shadow-1);
+}
+.loom-piece-head {
+  border-bottom-color: var(--l-line);
+  background: rgba(255, 255, 255, 0.015);
+}
+.loom-piece-kind {
+  color: var(--l-faint);
+  font-size: 0.78em;
+  letter-spacing: 0.1em;
+}
+.loom-piece-title {
+  color: var(--l-strong);
+  font-family: var(--l-prose);
+  font-weight: 600;
+}
+.loom-piece.is-pinned {
+  background: color-mix(in srgb, var(--l-s2) 94%, transparent);
+  border-color: var(--l-line-strong);
+  box-shadow: var(--l-shadow-2);
+}
+.loom-piece.is-pinned:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 35%, var(--l-line-strong));
+}
+.loom-piece.is-pinned::after {
+  border-color: var(--l-faint);
+}
+.loom-piece.is-updated,
+.loom-diagram.is-updated {
+  border-color: var(--l-accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--l-accent) 18%, transparent),
+    var(--l-shadow-2);
+}
+
+.loom-menu,
+.loom-pop,
+.loom-steps,
+.loom-sign {
+  background: var(--l-s3);
+  border: 1px solid var(--l-line-strong);
+  box-shadow: var(--l-shadow-3);
+}
+
+/* ---------------------------------------------------------------- tables */
+
+.loom-table th {
+  color: var(--l-dim);
+  font-weight: 600;
+  font-size: 0.86em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: none;
+}
+.loom-table td {
+  color: var(--l-ink);
+}
+
+/* ---------------------------------------------------------------- meaning */
+
+.loom-steps li.is-done .m {
+  color: var(--l-ok);
+}
+.loom-steps li.is-now .m,
+.loom-steps-head .c {
+  color: var(--l-accent);
+}
+.loom-interrupt {
+  color: var(--l-warn);
+}
+.loom-peek-line.is-error,
+.loom-quiet-row.is-error {
+  color: var(--l-err);
+}
+.loom-bar-mode.is-bypass {
+  color: var(--l-err);
+  border-color: color-mix(in srgb, var(--l-err) 45%, transparent);
+  background: color-mix(in srgb, var(--l-err) 10%, transparent);
+}
+.loom-bar-mode.is-edits {
+  color: var(--l-warn);
+  border-color: color-mix(in srgb, var(--l-warn) 45%, transparent);
+  background: color-mix(in srgb, var(--l-warn) 10%, transparent);
+}
+.loom-bar-mode.is-plan,
+.loom-bar-mode.is-auto {
+  color: var(--l-info);
+  border-color: color-mix(in srgb, var(--l-info) 45%, transparent);
+  background: color-mix(in srgb, var(--l-info) 10%, transparent);
+}
+.loom-bar-mode.is-default {
+  color: var(--l-dim);
+  border-color: var(--l-line-strong);
+  background: none;
+}
+.loom-bar-ctx i {
+  background: linear-gradient(90deg, var(--l-ink) var(--p), var(--l-line-strong) var(--p));
+}
+.loom-bar-ctx.is-high i {
+  background: linear-gradient(90deg, var(--l-warn) var(--p), var(--l-line-strong) var(--p));
+}
+
+/* ---------------------------------------------------------------- calmer chrome */
+
+.loom-bar {
+  color: var(--l-ink);
+  gap: 16px;
+}
+.loom-bar > span {
+  opacity: 1;
+  color: var(--l-faint);
+}
+.loom-bar > .loom-bar-model {
+  color: var(--l-dim);
+}
+.loom-bar-glyph {
+  color: var(--l-faint);
+}
+.loom-bar > .loom-bar-rest {
+  opacity: 1;
+  color: var(--l-faint);
+}
+
+.loom-frame-box {
+  border-color: var(--l-line-strong);
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--l-r-card);
+}
+body.is-light .loom-frame-box {
+  background: rgba(0, 0, 0, 0.02);
+}
+.loom-frame-box.is-focus {
+  border-color: color-mix(in srgb, var(--c-accent) 50%, var(--l-line-strong));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--c-accent) 10%, transparent),
+    0 12px 40px -22px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+
+.loom-sign {
+  border-radius: 99px;
+  padding: 3px;
+  opacity: 0.55;
+  transition: opacity 180ms;
+}
+.loom-sign:hover,
+.loom-sign:focus-within,
+.loom.is-past .loom-sign {
+  opacity: 1;
+}
+.loom-sign button {
+  color: var(--l-dim);
+  border-radius: 99px;
+}
+.loom-sign button:hover {
+  color: var(--l-strong);
+  background: var(--l-card-2);
+}
+
+.loom-piece-acts {
+  opacity: 0;
+}
+.loom-piece:hover .loom-piece-acts,
+.loom-piece.is-pinned .loom-piece-acts {
+  opacity: 0.6;
+}
+.loom-piece .loom-piece-acts:hover {
+  opacity: 1;
+}
+.loom-piece-acts button {
+  border-radius: var(--l-r-ctl);
+  color: var(--l-dim);
+}
+.loom-piece-acts button:hover {
+  color: var(--l-strong);
+  background: var(--l-card-2);
+}
+
+.loom-menu {
+  border-radius: var(--l-r-card);
+}
+.loom-menu button {
+  border-radius: var(--l-r-ctl);
+  font-family: var(--l-prose);
+}
+.loom-menu button:hover,
+.loom-menu button:focus-visible {
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--l-strong);
+}
+
+.loom-now-line {
+  color: var(--l-strong);
+}
+.loom-now-detail {
+  color: var(--l-faint);
+}
+.loom-act {
+  border-color: var(--l-line-strong);
+  background: var(--l-s1);
+  color: var(--l-strong);
+  border-radius: var(--l-r-ctl);
+  box-shadow: var(--l-shadow-1);
+}
+.loom-act:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 50%, var(--l-line-strong));
+  background: color-mix(in srgb, var(--c-accent) 8%, var(--l-s1));
+}
+
+/* The spinner cycles glyphs of different widths: a fixed slot keeps the words still. */
+.loom-now-glyph {
+  flex: none;
+  display: inline-block;
+  width: 1.25em;
+  text-align: center;
+}
+.loom-now-detail {
+  left: calc(1.25em + 12px);
+}
+
+/* ---------------------------------------------------------------- titles get the room */
+
+.loom-piece-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.loom-drag-hint {
+  display: none;
+  flex: 0 0 auto;
+}
+.loom-piece:not(.is-pinned) .loom-piece-head:hover .loom-drag-hint {
+  display: inline;
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- see-through, on top */
+
+.loom-fade-btn {
+  display: none !important;
+}
+.loom-piece.is-pinned .loom-fade-btn {
+  display: inline-flex !important;
+}
+.loom-piece.is-pinned.is-faded {
+  opacity: var(--fade, 1);
+}
+.loom-piece.is-pinned.is-faded .loom-fade-btn {
+  color: var(--l-accent);
+}
+
+/* ---------------------------------------------------------------- the turn timeline */
+
+.loom-rail {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  top: 22px;
+  max-height: calc(100% - 44px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 4px 6px;
+}
+.loom-rail::-webkit-scrollbar {
+  display: none;
+}
+.loom-rail.is-on {
+  display: flex;
+}
+/* The line joining the points: it grows with them. */
+.loom-rail::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 10px;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--l-line-strong);
+  pointer-events: none;
+}
+.loom-dot {
+  position: relative;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--l-faint);
+  background: var(--c-bg);
+  cursor: pointer;
+  animation: loom-dot-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms,
+    background-color 160ms,
+    box-shadow 200ms;
+}
+/* A bigger target than the point itself. */
+.loom-dot::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+}
+.loom-dot:hover {
+  transform: scale(1.35);
+  border-color: var(--l-ink);
+}
+.loom-dot.is-at {
+  border-color: var(--l-accent);
+  background: var(--l-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--l-accent) 18%, transparent);
+}
+.loom-dot.is-live:not(.is-at) {
+  border-color: var(--l-accent);
+}
+.loom-dot.is-working {
+  animation: loom-dot-breathe 1.4s ease-in-out infinite;
+}
+@keyframes loom-dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes loom-dot-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--l-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--l-accent) 0%, transparent);
+  }
+}
+.loom:has(.loom-rail.is-on) .loom-scroll {
+  padding-left: 44px;
+}
+
+/* ==========================================================================
+   Glass. Objects are frosted panes, not boxes: no drawn border, a translucent
+   body that blurs and lifts what is behind it, light catching the top edge, a
+   hairline of light around the rim, and a deep soft shadow to sit them above
+   the canvas. What is placed on screen is the most lifted of all.
+   ========================================================================== */
+
+.loom-piece,
+.loom-diagram {
+  border: 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c-bg) 52%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    0 18px 48px -30px rgba(0, 0, 0, 0.65);
+}
+.loom-piece.is-pinned {
+  background: color-mix(in srgb, var(--c-bg) 42%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.055),
+    0 32px 80px -30px rgba(0, 0, 0, 0.72),
+    0 6px 18px -10px rgba(0, 0, 0, 0.4);
+}
+.loom-piece.is-pinned:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 22%, rgba(255, 255, 255, 0.06)),
+    0 32px 80px -30px rgba(0, 0, 0, 0.72),
+    0 6px 18px -10px rgba(0, 0, 0, 0.4);
+}
+.loom-piece.is-pinned.is-dragging {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 35%, transparent),
+    0 44px 100px -30px rgba(0, 0, 0, 0.8);
+}
+.loom-piece.is-updated,
+.loom-diagram.is-updated {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 14%, transparent),
+    0 32px 80px -30px rgba(0, 0, 0, 0.72);
+}
+
+/* The title bar is part of the pane: no rule under it, just light fading down. */
+.loom-piece-head {
+  border-bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.045), transparent);
+  padding: 9px 10px 7px 14px;
+}
+.loom-piece.is-min > .loom-piece-head {
+  background: rgba(255, 255, 255, 0.03);
+}
+.loom-piece-kind {
+  font-size: 0.72em;
+  opacity: 0.8;
+}
+
+/* The resize corner: a hint of a curve, not a drawn glyph. */
+.loom-piece.is-pinned::after {
+  right: 6px;
+  bottom: 6px;
+  width: 9px;
+  height: 9px;
+  border-width: 0 1.5px 1.5px 0;
+  border-color: rgba(255, 255, 255, 0.18);
+  border-radius: 0 0 6px 0;
+  opacity: 0;
+  transition: opacity 160ms;
+}
+.loom-piece.is-pinned:hover::after {
+  opacity: 1;
+}
+
+/* The other surfaces lose their outlines too. */
+.loom-code,
+.loom-table,
+.loom-note,
+.loom-out {
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.loom-menu,
+.loom-pop,
+.loom-steps,
+.loom-sign {
+  border: 0;
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(1.6);
+  backdrop-filter: blur(26px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 24px 70px -24px rgba(0, 0, 0, 0.75);
+}
+.loom-frame-box {
+  border: 0;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.loom-frame-box.is-focus {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 9%, transparent),
+    0 14px 44px -24px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+
+/* On a light theme the glass is milk, and the rim is a shade, not a light. */
+body.is-light .loom-piece,
+body.is-light .loom-diagram {
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 18px 48px -30px rgba(0, 0, 0, 0.3);
+}
+body.is-light .loom-piece.is-pinned {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 30px 70px -30px rgba(0, 0, 0, 0.35);
+}
+body.is-light .loom-piece-head {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
+}
+body.is-light .loom-menu,
+body.is-light .loom-pop,
+body.is-light .loom-steps,
+body.is-light .loom-sign {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 22px 60px -24px rgba(0, 0, 0, 0.35);
+}
+body.is-light .loom-code,
+body.is-light .loom-table,
+body.is-light .loom-note,
+body.is-light .loom-out,
+body.is-light .loom-frame-box {
+  background: rgba(0, 0, 0, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ---------------------------------------------------------------- a clean bar */
+
+/* Title, and three quiet controls that appear on hover. The whole bar is the handle. */
+.loom-piece-head {
+  cursor: grab;
+  gap: 8px;
+}
+.loom-piece-head .loom-grip,
+.loom-piece-head .loom-piece-kind,
+.loom-piece-head .loom-drag-hint {
+  display: none !important;
+}
+.loom-piece-title {
+  font-size: 0.95em;
+  opacity: 0.92;
+}
+.loom-piece-acts {
+  gap: 0;
+  opacity: 0 !important;
+  transform: translateX(4px);
+  transition:
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-piece:hover > .loom-piece-head .loom-piece-acts,
+.loom-piece.is-full > .loom-piece-head .loom-piece-acts,
+.loom-piece-head:focus-within .loom-piece-acts {
+  opacity: 0.75 !important;
+  transform: none;
+}
+.loom-piece-acts button {
+  min-width: 26px;
+  height: 26px;
+}
+.loom-piece-acts button:hover {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- snapped */
+
+/* Part of the layout at its edge, not over it: flatter, beneath anything floating. */
+.loom-piece.is-snapped {
+  resize: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    0 10px 30px -22px rgba(0, 0, 0, 0.6);
+}
+.loom-piece.is-snapped::after {
+  display: none;
+}
+
+/* Where it would go if you let go here. */
+.loom-snap-preview {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c-accent) 9%, transparent);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--c-accent) 45%, transparent),
+    0 0 40px -10px color-mix(in srgb, var(--c-accent) 35%, transparent);
+  opacity: 0;
+  transform: scale(0.98);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-snap-preview.is-on {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------- full screen */
+
+.loom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 64px;
+  background: rgba(8, 7, 10, 0.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+.loom-modal.is-on {
+  display: flex;
+  animation: loom-modal-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-piece.is-full {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none;
+  margin: 0;
+  resize: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 1 !important;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--c-bg) 78%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(1.5);
+  backdrop-filter: blur(30px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 40px 120px -30px rgba(0, 0, 0, 0.85);
+  animation: loom-full-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  font: 14px/1.6 var(--term-font), 'Cascadia Code', Consolas, monospace;
+  color: var(--c-fg);
+}
+.loom-piece.is-full::after {
+  display: none;
+}
+.loom-piece.is-full > .loom-piece-head {
+  flex: none;
+  cursor: default;
+}
+.loom-piece.is-full > .loom-piece-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.loom-piece.is-full .loom-frame,
+.loom-piece.is-full .loom-web {
+  flex: 1 1 auto;
+  height: 100% !important;
+}
+.loom-piece.is-full .loom-media img,
+.loom-piece.is-full .loom-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.loom-piece.is-full .loom-close-btn,
+.loom-piece.is-full .loom-min-btn {
+  display: none !important;
+}
+@keyframes loom-modal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes loom-full-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The modal is outside the canvas, so it carries the canvas's base tokens itself. */
+.loom-modal {
+  --l-accent: var(--c-accent);
+  --l-mono: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  --l-card: var(--l-s1);
+}
+
+/* ---------------------------------------------------------------- resize from any edge */
+
+.loom-piece.is-pinned {
+  resize: none !important;
+}
+.loom-piece.is-pinned::after {
+  display: none !important;
+}
+.loom-rz {
+  position: absolute;
+  z-index: 3;
+  display: none;
+}
+.loom-piece.is-pinned:not(.is-full) > .loom-rz {
+  display: block;
+}
+.loom-rz[data-rz='n'],
+.loom-rz[data-rz='s'] {
+  left: 12px;
+  right: 12px;
+  height: 8px;
+  cursor: ns-resize;
+}
+.loom-rz[data-rz='n'] {
+  top: -3px;
+}
+.loom-rz[data-rz='s'] {
+  bottom: -3px;
+}
+.loom-rz[data-rz='e'],
+.loom-rz[data-rz='w'] {
+  top: 12px;
+  bottom: 12px;
+  width: 8px;
+  cursor: ew-resize;
+}
+.loom-rz[data-rz='e'] {
+  right: -3px;
+}
+.loom-rz[data-rz='w'] {
+  left: -3px;
+}
+.loom-rz[data-rz='ne'],
+.loom-rz[data-rz='nw'],
+.loom-rz[data-rz='se'],
+.loom-rz[data-rz='sw'] {
+  width: 14px;
+  height: 14px;
+}
+.loom-rz[data-rz='ne'] {
+  top: -3px;
+  right: -3px;
+  cursor: nesw-resize;
+}
+.loom-rz[data-rz='sw'] {
+  bottom: -3px;
+  left: -3px;
+  cursor: nesw-resize;
+}
+.loom-rz[data-rz='nw'] {
+  top: -3px;
+  left: -3px;
+  cursor: nwse-resize;
+}
+.loom-rz[data-rz='se'] {
+  bottom: -3px;
+  right: -3px;
+  cursor: nwse-resize;
+}
+/* A minimized object only gets wider or narrower. */
+.loom-piece.is-min > .loom-rz:not([data-rz='e']):not([data-rz='w']) {
+  display: none !important;
+}
+/* A snapped object resizes from its inner edge only. */
+.loom-piece.is-snapped > .loom-rz {
+  display: none !important;
+}
+.loom-piece.is-snapped[data-snap='left'] > .loom-rz[data-rz='e'],
+.loom-piece.is-snapped[data-snap='right'] > .loom-rz[data-rz='w'],
+.loom-piece.is-snapped[data-snap='top'] > .loom-rz[data-rz='s'],
+.loom-piece.is-snapped[data-snap='bottom'] > .loom-rz[data-rz='n'] {
+  display: block !important;
+  top: 12px;
+  bottom: 12px;
+}
+.loom-piece.is-snapped[data-snap='top'] > .loom-rz[data-rz='s'],
+.loom-piece.is-snapped[data-snap='bottom'] > .loom-rz[data-rz='n'] {
+  top: auto;
+  bottom: auto;
+  left: 12px;
+  right: 12px;
+}
+.loom-piece.is-snapped[data-snap='top'] > .loom-rz[data-rz='s'] {
+  bottom: -3px;
+}
+.loom-piece.is-snapped[data-snap='bottom'] > .loom-rz[data-rz='n'] {
+  top: -3px;
+}
+/* While resizing, nothing eases: the edge follows the pointer exactly. */
+.loom-piece.is-resizing {
+  transition: none !important;
+}
+/* A thin light on the edge under the pointer says it can be pulled. */
+.loom-rz::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  opacity: 0;
+  transition: opacity 140ms;
+}
+.loom-rz:hover::before,
+.loom-piece.is-resizing > .loom-rz:active::before {
+  opacity: 0.6;
+}
+.loom-rz[data-rz='n']::before,
+.loom-rz[data-rz='s']::before {
+  inset: 3px 30% 3px 30%;
+  height: 2px;
+}
+.loom-rz[data-rz='e']::before,
+.loom-rz[data-rz='w']::before {
+  inset: 30% 3px 30% 3px;
+  width: 2px;
+}
+.loom-rz[data-rz='ne']::before,
+.loom-rz[data-rz='nw']::before,
+.loom-rz[data-rz='se']::before,
+.loom-rz[data-rz='sw']::before {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- anything in a reply can be picked up */
+
+.loom-liftable {
+  position: relative;
+}
+.loom-img-wrap {
+  display: inline-block;
+  max-width: 100%;
+}
+/* A small handle, top right, on hover: the object's name, and the grip to take it by. */
+.loom-liftable > .loom-lift {
+  left: auto;
+  right: 8px;
+  top: 8px;
+  padding: 4px 9px 4px 6px;
+  gap: 6px;
+  border-radius: 99px;
+  font-size: 0.78em;
+  color: var(--l-dim);
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 6px 18px -8px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(-3px);
+  transition:
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 2;
+}
+.loom-liftable:hover > .loom-lift {
+  opacity: 1;
+  transform: none;
+}
+.loom-liftable > .loom-lift .loom-lift-name {
+  color: var(--l-ink);
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.loom-liftable > .loom-lift:active {
+  cursor: grabbing;
+}
+/* Inside a placed object, the table or code fills it and scrolls. */
+.loom-piece > .loom-piece-body > .loom-table,
+.loom-piece > .loom-piece-body > .loom-code {
+  margin: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.loom-piece > .loom-piece-body > .loom-img-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+.loom-piece > .loom-piece-body > .loom-img-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ==========================================================================
+   The plan, and the board.
+   ========================================================================== */
+
+/* The stage no longer fills the height with the exchange alone. */
+.loom-flow {
+  min-height: 0;
+}
+/* The corner card is replaced by the plan. */
+.loom-steps {
+  display: none !important;
+}
+
+.loom-plan {
+  display: none;
+  margin: 2px 0 18px;
+  padding: 14px 16px 10px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c-bg) 52%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    0 18px 48px -30px rgba(0, 0, 0, 0.65);
+  font-family: var(--l-prose);
+  animation: loom-rise 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-plan.is-on {
+  display: block;
+}
+.loom-plan-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.loom-plan-title {
+  color: var(--l-strong);
+  font-weight: 650;
+  font-size: 1.02em;
+}
+.loom-plan-count {
+  color: var(--l-accent);
+  font-family: var(--l-mono);
+  font-size: 0.85em;
+}
+.loom-plan-time {
+  margin-left: auto;
+  color: var(--l-faint);
+  font-family: var(--l-mono);
+  font-size: 0.8em;
+}
+.loom-plan-bar {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--l-line);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.loom-plan-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--l-accent);
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-plan-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.loom-plan-steps li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 4px;
+  border-radius: 10px;
+  transition:
+    background-color 300ms,
+    opacity 300ms;
+}
+.loom-plan-steps li[data-state='active'] {
+  background: color-mix(in srgb, var(--c-accent) 7%, transparent);
+}
+.loom-plan-steps li[data-state='todo'] {
+  opacity: 0.55;
+}
+.loom-plan-steps .m svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  margin-top: 2px;
+  overflow: visible;
+}
+.loom-plan-steps .ring {
+  fill: none;
+  stroke: var(--l-line-strong);
+  stroke-width: 1.6;
+}
+.loom-plan-steps .spin {
+  fill: none;
+  stroke: var(--l-accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 14 50;
+  opacity: 0;
+  transform-origin: 10px 10px;
+}
+.loom-plan-steps .tick {
+  fill: none;
+  stroke: #14110e;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+}
+.loom-plan-steps li[data-state='active'] .spin {
+  opacity: 1;
+  animation: loom-plan-spin 1s linear infinite;
+}
+.loom-plan-steps li[data-state='done'] .ring {
+  fill: var(--l-ok, #5fbf8f);
+  stroke: var(--l-ok, #5fbf8f);
+  transition:
+    fill 300ms,
+    stroke 300ms;
+}
+.loom-plan-steps li[data-state='done'] .tick {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1) 120ms;
+}
+.loom-plan-steps li.is-changing[data-state='done'] .m svg {
+  animation: loom-plan-pop 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-plan-steps li.is-changing[data-state='active'] {
+  animation: loom-plan-glow 700ms ease-out;
+}
+.loom-plan-steps .text {
+  color: var(--l-ink);
+  line-height: 1.45;
+}
+.loom-plan-steps li[data-state='active'] .text {
+  color: var(--l-strong);
+  font-weight: 600;
+}
+.loom-plan-steps li[data-state='done'] .text {
+  color: var(--l-dim);
+}
+.loom-plan-steps .body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.loom-plan-steps .now {
+  color: var(--l-dim);
+  font-family: var(--l-mono);
+  font-size: 0.82em;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-plan-steps .now:empty {
+  display: none;
+}
+.loom-plan-steps .now:not(:empty) {
+  animation: loom-rise 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-plan-steps .dur {
+  color: var(--l-faint);
+  font-family: var(--l-mono);
+  font-size: 0.78em;
+  padding-top: 3px;
+}
+/* Finished: one line, a check, the time it took. Click to see the steps again. */
+.loom-plan.is-complete:not(.is-open) .loom-plan-steps,
+.loom-plan.is-complete:not(.is-open) .loom-plan-bar {
+  display: none;
+}
+.loom-plan.is-complete .loom-plan-head {
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.loom-plan.is-complete .loom-plan-count {
+  color: var(--l-ok, #5fbf8f);
+}
+.loom-plan.is-complete .loom-plan-count::before {
+  content: '✓ ';
+}
+@keyframes loom-plan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes loom-plan-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes loom-plan-glow {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-accent) 35%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+/* The board: what Claude has shown, newest first, under the exchange. It stays across turns. */
+.loom-board {
+  display: none;
+  margin-top: 14px;
+}
+.loom-board.is-on {
+  display: block;
+}
+.loom-board > .loom-slot:empty {
+  display: none;
+}
+.loom-board > .loom-slot {
+  animation: loom-rise 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* A board object can be closed like a placed one. */
+.loom-board .loom-piece .loom-piece-acts .loom-close-btn {
+  display: inline-flex;
+}
+
+/* The rail scrolls, so its edges clip: room inside for the glow ring and the hover growth. */
+.loom-rail {
+  left: 2px;
+  top: 12px;
+  padding: 10px 12px 14px;
+  max-height: calc(100% - 28px);
+}
+.loom-rail::before {
+  top: 18px;
+  bottom: 18px;
+}
+
+/* ---------------------------------------------------------------- notes on the canvas */
+
+.loom-piece.is-editing > .loom-piece-body > .loom-frame {
+  display: none;
+}
+.loom-note-edit {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  padding: 14px 16px;
+  background: transparent;
+  color: var(--l-ink);
+  font: 0.92em/1.6 var(--l-mono);
+  caret-color: var(--l-accent);
+}
+.loom-piece.is-editing {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
+    0 24px 60px -30px rgba(0, 0, 0, 0.7);
+}
+
+/* The picker: a small search over your notes and the todo list. */
+.loom-picker {
+  position: absolute;
+  z-index: 10;
+  top: 56px;
+  left: 50%;
+  width: min(460px, 86%);
+  transform: translateX(-50%);
+  padding: 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-bg) 66%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(1.6);
+  backdrop-filter: blur(26px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 30px 80px -24px rgba(0, 0, 0, 0.8);
+  animation: loom-pin-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom.is-picking {
+  display: block;
+  height: 100% !important;
+}
+.loom-picker input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  outline: none;
+  border-radius: 9px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--l-strong);
+  font: 1em var(--l-prose);
+}
+.loom-picker ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 320px;
+  overflow: auto;
+}
+.loom-picker li {
+  padding: 7px 12px;
+  border-radius: 8px;
+  color: var(--l-ink);
+  font-family: var(--l-prose);
+  cursor: pointer;
+}
+.loom-picker li.is-at,
+.loom-picker li:hover {
+  background: color-mix(in srgb, var(--c-accent) 15%, transparent);
+  color: var(--l-strong);
+}
+.loom-picker li.is-none {
+  color: var(--l-faint);
+  cursor: default;
+  background: none;
+}
+
+/* ---------------------------------------------------------------- the narration trail */
+
+/* While Claude works, its words go to the trail at the foot, not the reply area. */
+.loom-turn.is-shown.is-working > .loom-say {
+  display: none;
+}
+.loom-trail {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: calc(2.6em * 1.28 + 14px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+.loom-trail.is-on {
+  opacity: 1;
+}
+.loom-trail-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  max-width: min(980px, 100%);
+  font-family: var(--l-prose);
+  color: var(--l-ink);
+  line-height: 1.45;
+  transform-origin: left bottom;
+  animation: loom-trail-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 420ms;
+}
+.loom-trail-item[data-age='0'] {
+  font-size: 1.04em;
+  color: var(--l-strong);
+}
+.loom-trail-item[data-age='1'] {
+  opacity: 0.62;
+  transform: scale(0.97);
+}
+.loom-trail-item[data-age='2'] {
+  opacity: 0.38;
+  transform: scale(0.94);
+}
+.loom-trail-item[data-age='3'] {
+  opacity: 0.2;
+  transform: scale(0.91);
+  filter: blur(0.4px);
+}
+.loom-trail-item.is-leaving {
+  opacity: 0 !important;
+  transform: translateY(-10px) scale(0.9) !important;
+}
+.loom-trail-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--l-faint);
+  transform: translateY(-1px);
+}
+.loom-trail-item[data-age='0'] .loom-trail-dot {
+  background: var(--l-accent);
+  animation: loom-dot-breathe 1.6s ease-in-out infinite;
+}
+@keyframes loom-trail-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+/* Room above the foot for the trail while it is up. */
+.loom:has(.loom-trail.is-on) .loom-scroll {
+  padding-bottom: 12em;
+}
+
+/* ---------------------------------------------------------------- the now line as an odometer */
+
+.loom-now-line {
+  animation: none;
+  transition: none;
+}
+.loom-now-line.is-out {
+  opacity: 1;
+  transform: none;
+}
+.loom-now-text {
+  display: inline-flex;
+  overflow: hidden;
+  line-height: 1.35;
+  height: 1.35em;
+}
+.loom-now-text .ch {
+  display: inline-block;
+  white-space: pre;
+  animation: loom-odo-in 520ms cubic-bezier(0.2, 1.25, 0.35, 1) backwards;
+}
+.loom-now-line.is-out .loom-now-text .ch {
+  animation: loom-odo-out 420ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+.loom-now-detail {
+  display: inline-flex;
+  overflow: hidden;
+  line-height: 1.4;
+  height: 1.4em;
+}
+.loom-now-detail .ch {
+  display: inline-block;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+.loom-now-detail .ch.is-roll {
+  animation: loom-odo-in 360ms cubic-bezier(0.2, 1.25, 0.35, 1);
+}
+@keyframes loom-odo-in {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes loom-odo-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateY(-105%);
+  }
+}
+
+/* ==========================================================================
+   The turns as a strip of film: a dark frosted strip with the edge lines of
+   35 mm stock, each turn a sprocket hole punched in it. The turn on screen is
+   the frame in the gate, lit; while Claude works, light runs down the strip
+   and the newest frame flickers like a projector lamp.
+   ========================================================================== */
+
+.loom-rail {
+  left: 8px;
+  top: 14px;
+  width: 22px;
+  padding: 12px 0 14px;
+  gap: 9px;
+  max-height: calc(100% - 30px);
+  border-radius: 11px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px calc(100% - 1px), rgba(255, 255, 255, 0.05) calc(100% - 1px)),
+    color-mix(in srgb, var(--c-bg) 55%, #000);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 30px -18px rgba(0, 0, 0, 0.7);
+  overflow-x: hidden;
+}
+.loom-rail::before {
+  display: none;
+}
+/* Light running down the strip while the film moves. */
+.loom-rail::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -40%;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--c-accent) 18%, transparent), transparent);
+  opacity: 0;
+}
+.loom-rail.is-working::after {
+  opacity: 1;
+  animation: loom-film-run 2.4s linear infinite;
+}
+@keyframes loom-film-run {
+  from {
+    top: -40%;
+  }
+  to {
+    top: 100%;
+  }
+}
+
+/* A sprocket hole: a small rounded rectangle punched into the strip. */
+.loom-dot {
+  width: 10px;
+  height: 8px;
+  border: 0;
+  border-radius: 2.5px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 1.5px rgba(0, 0, 0, 0.7),
+    0 0.5px 0 rgba(255, 255, 255, 0.06);
+  animation: loom-dot-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-dot::after {
+  inset: -5px -6px;
+  border-radius: 4px;
+}
+.loom-dot:hover {
+  transform: scale(1.25);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.28);
+}
+.loom-dot.is-live:not(.is-at) {
+  background: color-mix(in srgb, var(--c-accent) 35%, rgba(255, 255, 255, 0.08));
+}
+/* The frame in the gate: lit, with the warm spill of a projector lamp. */
+.loom-dot.is-at {
+  border: 0;
+  background: var(--c-accent);
+  box-shadow:
+    0 0 6px 1px color-mix(in srgb, var(--c-accent) 70%, transparent),
+    0 0 14px 3px color-mix(in srgb, var(--c-accent) 30%, transparent);
+}
+.loom-dot.is-working {
+  animation: loom-lamp 1.8s steps(1, end) infinite;
+}
+@keyframes loom-lamp {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  8% {
+    filter: brightness(1.35);
+  }
+  12% {
+    filter: brightness(0.85);
+  }
+  20% {
+    filter: brightness(1.15);
+  }
+  55% {
+    filter: brightness(1);
+  }
+  60% {
+    filter: brightness(1.25);
+  }
+}
+
+/* The live line and the narration keep to the words' column: clear of the film strip,
+   clear of anything placed on the screen, gliding when the column moves. */
+.loom-now,
+.loom-trail {
+  left: calc(max(var(--ins-l, 0px), 30px) + 22px);
+  right: calc(var(--ins-r, 0px) + 22px);
+  transition:
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    right 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    bottom 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms;
+}
+.loom-now {
+  bottom: calc(var(--ins-b, 0px) + 10px);
+}
+.loom-trail {
+  bottom: calc(var(--ins-b, 0px) + 2.6em * 1.28 + 14px);
+}
+
+/* The context menu is solid: nothing shows through it. */
+.loom-menu {
+  background: color-mix(in srgb, var(--c-bg) 90%, #ffffff 6%) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+body.is-light .loom-menu {
+  background: #ffffff !important;
+}
+
+/* ==========================================================================
+   One thing in focus. The board is a row of chips and one open object.
+   ========================================================================== */
+
+.loom-board.is-on {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.loom-board > .loom-slot {
+  order: 1;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.loom-board > .loom-slot.is-shelved {
+  order: 0;
+  flex: 0 0 auto;
+  max-width: 300px;
+  animation: none;
+}
+.loom-slot.is-shelved > .loom-piece {
+  margin: 0;
+  border-radius: 99px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition:
+    box-shadow 160ms,
+    transform 160ms;
+}
+.loom-slot.is-shelved > .loom-piece:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+.loom-slot.is-shelved > .loom-piece > .loom-piece-body,
+.loom-slot.is-shelved > .loom-piece > .loom-rz {
+  display: none;
+}
+.loom-slot.is-shelved .loom-piece-head {
+  padding: 5px 14px;
+  background: none;
+  cursor: pointer;
+}
+.loom-slot.is-shelved .loom-piece-title {
+  font-size: 0.86em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-slot.is-shelved .loom-piece-acts {
+  display: none;
+}
+
+/* A plan step carries what was shown during it. */
+.loom-plan-steps li.has-att {
+  cursor: pointer;
+}
+.loom-plan-steps .att {
+  margin-top: 3px;
+  color: var(--l-accent);
+  font-size: 0.78em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.loom-plan-steps .att::before {
+  content: '◫ ';
+}
+.loom-plan-steps li.has-att:hover .att {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------- the now line: one rolling reel */
+
+.loom-reel {
+  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.4em;
+  line-height: 1.4;
+  overflow: hidden;
+  /* The edges of the window soften, as on a wheel turning behind glass. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+}
+.loom-reel-track {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+.loom-reel-row {
+  display: block;
+  height: 1.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-now-line {
+  align-items: center;
+}
+
+/* No edge line for an earlier turn: the film strip already says which turn is on screen. */
+.loom.is-past .loom-scroll {
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------- the menu: ask first, then a grid */
+
+.loom-menu {
+  width: 330px;
+  padding: 10px;
+  border-radius: 14px;
+}
+.loom-menu-head {
+  padding: 2px 4px 8px;
+}
+.loom-menu-ask textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  border: 0;
+  outline: none;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  color: var(--l-strong);
+  font: 0.95em/1.45 var(--l-prose);
+  transition: box-shadow 160ms;
+}
+.loom-menu-ask textarea:focus {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+.loom-menu.is-change .loom-menu-ask textarea {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--l-warn, #e0b45a) 60%, transparent);
+}
+body.is-light .loom-menu-ask textarea {
+  background: rgba(0, 0, 0, 0.04);
+}
+.loom-menu-answer {
+  display: none;
+  margin-top: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--l-ink);
+  font: 0.92em/1.6 var(--l-prose);
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-menu-answer.is-on {
+  display: block;
+}
+.loom-menu-answer p {
+  margin: 0 0 0.6em;
+}
+.loom-menu-answer p:last-child {
+  margin-bottom: 0;
+}
+.loom-menu-answer .err {
+  color: var(--l-err, #e2676f);
+}
+.loom-menu-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+.loom-menu-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--l-accent);
+  animation: loom-menu-dot 1s ease-in-out infinite;
+}
+.loom-menu-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.loom-menu-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes loom-menu-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+.loom-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.loom-menu .loom-menu-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-height: 62px;
+  padding: 10px 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--l-dim);
+  font: 0.78em var(--l-prose);
+  text-align: center;
+  transition:
+    background-color 140ms,
+    color 140ms,
+    transform 140ms;
+}
+.loom-menu .loom-menu-grid button svg {
+  width: 17px;
+  height: 17px;
+}
+.loom-menu .loom-menu-grid button:hover {
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--l-strong);
+  transform: translateY(-1px);
+}
+body.is-light .loom-menu .loom-menu-grid button {
+  background: rgba(0, 0, 0, 0.035);
+}
+
+/* The film strip, quieter: it should be there when you look for it, not pull the eye. */
+.loom-rail {
+  width: 16px;
+  left: 10px;
+  gap: 8px;
+  padding: 10px 0 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  opacity: 0.55;
+  transition: opacity 220ms;
+}
+.loom-rail:hover {
+  opacity: 1;
+}
+body.is-light .loom-rail {
+  background: rgba(0, 0, 0, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+.loom-dot {
+  width: 7px;
+  height: 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+.loom-dot.is-at {
+  background: color-mix(in srgb, var(--c-accent) 85%, transparent);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+.loom-dot.is-live:not(.is-at) {
+  background: color-mix(in srgb, var(--c-accent) 30%, rgba(255, 255, 255, 0.06));
+}
+.loom-rail::after {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--c-accent) 8%, transparent), transparent);
+}
+
+/* ---------------------------------------------------------------- activity, in the turn */
+
+.loom-activity {
+  margin: 6px 0 14px;
+}
+.loom-activity:not(:has(.is-on)) {
+  display: none;
+}
+.loom-activity .loom-trail,
+.loom-activity .loom-now {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  pointer-events: none;
+}
+.loom-activity .loom-trail {
+  margin-bottom: 4px;
+}
+.loom-activity .loom-trail:not(.is-on) {
+  display: none;
+}
+.loom-activity .loom-now {
+  height: auto;
+  font-size: 1.12em;
+}
+.loom-activity .loom-now-line {
+  position: relative;
+  bottom: auto;
+}
+.loom-activity .loom-now-detail {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  display: block;
+  margin: 2px 0 0 calc(1.25em + 12px);
+}
+/* No reserved space at the foot any more. */
+.loom:has(.loom-trail.is-on) .loom-scroll,
+.loom:has(.loom-now.is-on) .loom-scroll {
+  padding-bottom: 30px;
+}
+
+/* ---------------------------------------------------------------- queued messages */
+
+.loom-queue {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.loom-queue.is-on {
+  display: flex;
+}
+.loom-activity:has(.loom-queue.is-on) {
+  display: block;
+}
+.loom-queue-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: min(900px, 100%);
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: loom-rise 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-queue-tag {
+  flex: none;
+  font: 0.72em var(--l-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--l-accent);
+  animation: loom-queue-wait 2s ease-in-out infinite;
+}
+.loom-queue-text {
+  color: var(--l-dim);
+  font-family: var(--l-mono);
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes loom-queue-wait {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- the menu actions as a list */
+
+.loom-menu-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 8px;
+}
+.loom-menu .loom-menu-grid button {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: none;
+  color: var(--l-ink);
+  font: 0.88em var(--l-prose);
+  text-align: left;
+}
+.loom-menu .loom-menu-grid button svg {
+  width: 15px;
+  height: 15px;
+  color: var(--l-dim);
+}
+.loom-menu .loom-menu-grid button:hover {
+  transform: none;
+}
+.loom-menu .loom-menu-grid button:hover svg {
+  color: var(--l-accent);
+}
+body.is-light .loom-menu .loom-menu-grid button {
+  background: none;
+}
+
+/* ==========================================================================
+   THE SYSTEM (2026-10-31, the professional pass). Last in the file: it wins.
+
+   Type: prose in the system text face, mono only for what you type, code and
+   commands; one scale, 12 / 13 / 14 / 16 / 20 / 26. Space: a 4px grid.
+   Corners: 16 for objects, 10 for controls, round for pills. Colour: neutral
+   everywhere; the accent marks the live thing, the selection, the one
+   primary action. Motion: one curve, 150 / 250 / 400ms, one loop at a time.
+   ========================================================================== */
+
+.loom,
+.loom-bar,
+.loom-frame-box,
+.loom-modal {
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-26: 26px;
+  --r-obj: 16px;
+  --r-ctl: 10px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t1: 150ms;
+  --t2: 250ms;
+  --t3: 400ms;
+  /* Readable: faint text never drops below AA on the canvas. */
+  --l-dim: color-mix(in srgb, var(--l-ink) 72%, transparent);
+  --l-faint: color-mix(in srgb, var(--l-ink) 54%, transparent);
+  --rim: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+  --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --fill-1: rgba(255, 255, 255, 0.035);
+  --fill-2: rgba(255, 255, 255, 0.06);
+  --focus: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+body.is-light .loom,
+body.is-light .loom-bar,
+body.is-light .loom-frame-box,
+body.is-light .loom-modal {
+  --rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+  --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --fill-1: rgba(0, 0, 0, 0.03);
+  --fill-2: rgba(0, 0, 0, 0.055);
+}
+
+.loom {
+  font-family: var(--l-prose);
+  font-size: var(--fs-14);
+}
+.loom :focus-visible,
+.loom-bar :focus-visible,
+.loom-modal :focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ---------------------------------------------------------------- one column, left-aligned */
+
+/* The words keep a reading width and start at the left; objects use the whole width. */
+.loom-scroll {
+  padding: 20px 28px 28px;
+}
+.loom:has(.loom-rail.is-on) .loom-scroll {
+  padding-left: 48px;
+}
+.loom-turn.is-shown > .loom-say,
+.loom-activity,
+.loom-turn.is-shown > .loom-ask,
+.loom-plan,
+.loom-turn > .loom-note-line {
+  max-width: 82ch;
+}
+.loom-plan {
+  max-width: 920px;
+}
+
+/* You: a compact line, your own words in the terminal's face, a small dot to say who. */
+.loom-turn.is-shown > .loom-ask,
+.loom-ask {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 500 var(--fs-13) / 1.5 var(--l-mono);
+  color: var(--l-dim);
+  animation: loom-rise var(--t3) var(--ease);
+}
+.loom-ask .loom-caret {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--l-faint);
+  color: transparent;
+  font-size: 0;
+  transform: translateY(-1px);
+}
+
+/* Claude: the primary text. */
+.loom-turn.is-shown > .loom-say.is-current,
+.loom-say {
+  font: 400 var(--fs-16) / 1.65 var(--l-prose);
+  color: var(--l-ink);
+  letter-spacing: 0;
+}
+.loom-say h1 {
+  font-size: var(--fs-26);
+  font-weight: 600;
+  margin: 24px 0 8px;
+}
+.loom-say h2 {
+  font-size: var(--fs-20);
+  font-weight: 600;
+  margin: 20px 0 8px;
+}
+.loom-say h3 {
+  font-size: var(--fs-16);
+  font-weight: 600;
+  margin: 16px 0 4px;
+}
+.loom-say h4 {
+  font-size: var(--fs-12);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--l-dim);
+}
+.loom-say p {
+  margin: 0 0 12px;
+}
+.loom-say ul,
+.loom-say ol {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.loom-say li {
+  margin: 4px 0;
+}
+.loom-say code {
+  font-size: var(--fs-13);
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--fill-2);
+  color: var(--l-strong);
+}
+.loom-say blockquote {
+  border-left: 2px solid var(--fill-2);
+  padding-left: 16px;
+}
+
+/* Buttons Claude offers: quiet pills; the accent only on hover. */
+.loom-act {
+  gap: 8px;
+  margin: 4px 8px 4px 0;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-ink);
+  font: 500 var(--fs-13) var(--l-prose);
+  transition:
+    background-color var(--t1) var(--ease),
+    box-shadow var(--t1) var(--ease);
+}
+.loom-act::before {
+  content: none;
+}
+.loom-act:hover {
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+
+/* ---------------------------------------------------------------- objects: one anatomy */
+
+.loom-piece-head {
+  gap: 8px;
+  padding: 10px 12px 8px 14px;
+  font: 500 var(--fs-13) var(--l-prose);
+}
+.loom-piece-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--l-faint);
+}
+.loom-piece-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.loom-piece-title {
+  font: 600 var(--fs-13) var(--l-prose);
+  color: var(--l-strong);
+  opacity: 1;
+}
+.loom-piece,
+.loom-diagram {
+  border-radius: var(--r-obj);
+}
+.loom-piece-acts button {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+/* Chips use the same anatomy, smaller. */
+.loom-slot.is-shelved > .loom-piece {
+  border-radius: 999px;
+}
+.loom-slot.is-shelved .loom-piece-head {
+  padding: 6px 14px 6px 10px;
+}
+.loom-slot.is-shelved .loom-piece-title {
+  font-weight: 500;
+  color: var(--l-ink);
+}
+/* Loading: the object shimmers in its own shape until it has drawn. */
+.loom-piece-body.is-loading,
+.loom-diagram.is-loading {
+  position: relative;
+  min-height: 140px;
+}
+.loom-piece-body.is-loading::before,
+.loom-diagram.is-loading::before {
+  content: '';
+  position: absolute;
+  inset: 12px 16px;
+  border-radius: var(--r-ctl);
+  background: linear-gradient(100deg, var(--fill-1) 30%, var(--fill-2) 50%, var(--fill-1) 70%) 0 0 / 300% 100%;
+  animation: loom-shimmer 1.4s linear infinite;
+  pointer-events: none;
+}
+.loom-piece-body.is-loading > .loom-frame,
+.loom-diagram.is-loading > .loom-frame {
+  opacity: 0;
+}
+.loom-frame {
+  transition: opacity var(--t2) var(--ease);
+}
+@keyframes loom-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* ---------------------------------------------------------------- the plan */
+
+.loom-plan {
+  padding: 16px 16px 12px;
+  border-radius: var(--r-obj);
+}
+.loom-plan-title {
+  font: 600 var(--fs-14) var(--l-prose);
+}
+.loom-plan-count {
+  font: 500 var(--fs-12) var(--l-mono);
+  color: var(--l-dim);
+}
+.loom-plan.is-complete .loom-plan-count::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--l-ok);
+  transform: translateY(-1px);
+}
+.loom-plan-steps .text {
+  font-size: var(--fs-14);
+}
+.loom-plan-steps .now,
+.loom-plan-steps .dur {
+  font-size: var(--fs-12);
+}
+.loom-plan-steps .att {
+  color: var(--l-dim);
+  font-size: var(--fs-12);
+}
+.loom-plan-steps .att::before {
+  content: '';
+}
+.loom-plan-steps li.has-att:hover .att {
+  color: var(--l-ink);
+}
+
+/* ---------------------------------------------------------------- live: the one loop */
+
+.loom-now {
+  font-size: var(--fs-16);
+}
+.loom-now-line {
+  color: var(--l-strong);
+  font-weight: 500;
+}
+.loom-now-detail {
+  font: var(--fs-12) var(--l-mono);
+  color: var(--l-faint);
+}
+.loom-trail-item {
+  font-size: var(--fs-14);
+}
+.loom-trail-item[data-age='0'] {
+  font-size: var(--fs-14);
+}
+/* Only the live glyph loops. */
+.loom-trail-item[data-age='0'] .loom-trail-dot,
+.loom-queue-tag,
+.loom-dot.is-working,
+.loom-rail.is-working::after,
+.loom-steps li.is-now .m {
+  animation: none !important;
+}
+.loom-trail-item[data-age='0'] .loom-trail-dot {
+  background: var(--l-dim);
+}
+.loom-queue-tag {
+  opacity: 0.85;
+  color: var(--l-dim);
+}
+.loom-queue-item {
+  border-radius: var(--r-ctl);
+  box-shadow: var(--rim);
+}
+
+/* ---------------------------------------------------------------- the input */
+
+.loom-frame-box {
+  border-radius: 14px;
+  background: var(--fill-1);
+  box-shadow: var(--rim-top), var(--rim);
+}
+.loom-frame-box.is-focus {
+  box-shadow:
+    var(--rim-top),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 8%, transparent);
+}
+.loom-frame-box::before {
+  content: 'Ask Claude…   / for commands';
+  position: absolute;
+  left: var(--ph-left, 40px);
+  top: var(--ph-top, 10px);
+  height: var(--ph-h, 20px);
+  display: flex;
+  align-items: center;
+  font: var(--fs-14) var(--l-prose);
+  color: var(--l-faint);
+  opacity: 0;
+  transition: opacity var(--t2) var(--ease);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.loom-frame-box.is-empty::before {
+  opacity: 1;
+}
+.loom-frame-box::after {
+  content: '↵ send';
+  position: absolute;
+  right: 14px;
+  bottom: 9px;
+  font: var(--fs-12) var(--l-prose);
+  color: var(--l-faint);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- the status line */
+
+.loom-bar {
+  gap: 16px;
+  padding: 0 6px;
+  font: var(--fs-12) / 1 var(--l-prose);
+}
+.loom-bar > span,
+.loom-bar > .loom-bar-model,
+.loom-bar > .loom-bar-rest,
+.loom-bar > .loom-bar-ember {
+  color: var(--l-faint);
+  opacity: 1;
+}
+.loom-bar > .loom-bar-model {
+  color: var(--l-dim);
+  font-weight: 500;
+}
+.loom-bar-mode,
+.loom-bar-mode.is-bypass,
+.loom-bar-mode.is-edits,
+.loom-bar-mode.is-plan,
+.loom-bar-mode.is-auto,
+.loom-bar-mode.is-default {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-dim);
+  font: 500 var(--fs-12) var(--l-prose);
+  letter-spacing: 0;
+  filter: none;
+}
+.loom-bar-mode::before,
+.loom-bar-mode.is-default::before {
+  content: none;
+}
+.loom-bar-mode i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-faint);
+}
+.loom-bar-mode.is-bypass i {
+  background: var(--l-err);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--l-err) 60%, transparent);
+}
+.loom-bar-mode.is-edits i {
+  background: var(--l-warn);
+}
+.loom-bar-mode.is-plan i,
+.loom-bar-mode.is-auto i {
+  background: var(--l-info);
+}
+.loom-bar-mode:hover {
+  background: var(--fill-2);
+  color: var(--l-ink);
+}
+.loom-bar-ctx i {
+  width: 44px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--l-dim) var(--p), var(--fill-2) var(--p));
+}
+.loom-bar-ctx.is-high i {
+  background: linear-gradient(90deg, var(--l-warn) var(--p), var(--fill-2) var(--p));
+}
+
+/* ---------------------------------------------------------------- top controls */
+
+.loom-sign {
+  gap: 2px;
+  padding: 3px;
+  opacity: 1;
+  border-radius: 999px;
+}
+.loom-sign button {
+  height: 28px;
+  padding: 0 10px;
+  font: 500 var(--fs-12) var(--l-prose);
+  color: var(--l-dim);
+}
+.loom-sign .loom-sign-icon {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+.loom-sign .loom-sign-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.loom-sign button:hover {
+  color: var(--l-strong);
+  background: var(--fill-2);
+}
+.loom-sign-clear .c {
+  color: var(--l-dim);
+  font-variant-numeric: tabular-nums;
+}
+.loom-rawpill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font: 500 var(--fs-12) var(--l-prose);
+}
+.loom-rawpill.is-on {
+  display: inline-flex;
+}
+.loom-rawpill svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------------------------------------------------------------- the menu */
+
+.loom-menu-head {
+  font: 600 var(--fs-12) var(--l-prose);
+  color: var(--l-dim);
+  letter-spacing: 0;
+}
+.loom-menu .loom-menu-grid button {
+  font-size: var(--fs-13);
+  border-radius: 8px;
+}
+.loom-menu .loom-menu-grid button:hover {
+  background: var(--fill-2);
+}
+.loom-menu .loom-menu-grid button:hover svg {
+  color: var(--l-ink);
+}
+.loom-menu-ask textarea {
+  font-size: var(--fs-14);
+  border-radius: var(--r-ctl);
+}
+.loom-menu-answer {
+  font-size: var(--fs-13);
+  border-radius: var(--r-ctl);
+}
+
+/* ---------------------------------------------------------------- the film strip, the board */
+
+.loom-rail {
+  opacity: 0.75;
+}
+.loom-board.is-on {
+  gap: 8px;
+  margin-top: 16px;
+}
+.loom-lift {
+  font: 500 var(--fs-12) var(--l-prose);
+}
+.loom-liftable > .loom-lift .loom-lift-name {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- light theme parity */
+
+body.is-light .loom-frame-box {
+  background: rgba(255, 255, 255, 0.7);
+}
+body.is-light .loom-ask .loom-caret {
+  background: rgba(0, 0, 0, 0.35);
+}
+body.is-light .loom-sign,
+body.is-light .loom-menu {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.07),
+    0 18px 50px -22px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------------------------------------------------------------- Ember Hands control */
+
+.loom-sign .loom-sign-hands {
+  gap: 6px;
+  padding: 0 10px 0 8px;
+}
+.loom-sign .loom-sign-hands svg {
+  width: 15px;
+  height: 15px;
+}
+.loom-sign .loom-sign-hands.is-off {
+  color: var(--l-faint);
+}
+.loom-sign .loom-sign-hands.is-show svg {
+  color: var(--c-accent);
+}
+.loom-sign .loom-sign-hands.is-act {
+  color: var(--l-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--l-err) 45%, transparent);
+}
+.loom-sign .loom-sign-hands.is-act svg {
+  color: var(--l-err);
+}
+
+/* ==========================================================================
+   The notebook: your todo list and notes, in one drawer beside the canvas.
+   ========================================================================== */
+
+.loom-sign .loom-sign-book {
+  position: relative;
+}
+.loom-sign .loom-sign-book .b {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font: 600 10px/14px var(--l-prose);
+  text-align: center;
+}
+.loom-sign .loom-sign-book.is-active {
+  color: var(--l-strong);
+  background: var(--fill-2);
+}
+
+.loom-drawer {
+  position: absolute;
+  z-index: 8;
+  top: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: min(380px, 44%);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-obj);
+  background: color-mix(in srgb, var(--c-bg) 92%, #ffffff 4%);
+  box-shadow:
+    var(--rim-top),
+    var(--rim),
+    0 30px 80px -30px rgba(0, 0, 0, 0.75);
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--t3) var(--ease),
+    opacity var(--t2) var(--ease);
+  font-family: var(--l-prose);
+}
+.loom-drawer.is-on {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+body.is-light .loom-drawer {
+  background: #ffffff;
+}
+.loom-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px 12px;
+}
+.loom-drawer-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fill-1);
+}
+.loom-drawer-tabs button,
+.loom-drawer-x,
+.loom-drawer-bar button,
+.loom-drawer-add .new {
+  border: 0;
+  background: none;
+  color: var(--l-dim);
+  font: 500 var(--fs-13) var(--l-prose);
+  cursor: pointer;
+  transition:
+    background-color var(--t1) var(--ease),
+    color var(--t1) var(--ease);
+}
+.loom-drawer-tabs button {
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+.loom-drawer-tabs button span {
+  color: var(--l-faint);
+  font-variant-numeric: tabular-nums;
+}
+.loom-drawer-tabs button.is-on {
+  background: var(--fill-2);
+  color: var(--l-strong);
+}
+.loom-drawer-x {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 8px;
+}
+.loom-drawer-x:hover,
+.loom-drawer-bar button:hover,
+.loom-drawer-add .new:hover {
+  background: var(--fill-2);
+  color: var(--l-strong);
+}
+.loom-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 12px 14px;
+}
+.loom-drawer-add {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.loom-drawer-add input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  border-radius: var(--r-ctl);
+  padding: 9px 12px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-strong);
+  font: var(--fs-14) var(--l-prose);
+}
+.loom-drawer-add input:focus {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+.loom-drawer-add .new {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--r-ctl);
+}
+.loom-drawer-todo,
+.loom-drawer-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.loom-drawer-todo li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 7px 6px;
+  border-radius: var(--r-ctl);
+  transition: background-color var(--t1) var(--ease);
+}
+.loom-drawer-todo li:hover {
+  background: var(--fill-1);
+}
+.loom-drawer-todo .box {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--l-faint);
+  color: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--t2) var(--ease),
+    box-shadow var(--t2) var(--ease),
+    color var(--t2) var(--ease);
+}
+.loom-drawer-todo .box svg {
+  width: 13px;
+  height: 13px;
+}
+.loom-drawer-todo li.is-done .box {
+  background: var(--l-ok);
+  box-shadow: none;
+  color: #14110e;
+}
+.loom-drawer-todo .t {
+  color: var(--l-ink);
+  font-size: var(--fs-14);
+  line-height: 1.45;
+}
+.loom-drawer-todo li.is-done .t {
+  color: var(--l-faint);
+  text-decoration: line-through;
+}
+.loom-drawer-todo .go {
+  opacity: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--fill-2);
+  color: var(--l-ink);
+  font: 500 var(--fs-12) var(--l-prose);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--t1) var(--ease);
+}
+.loom-drawer-todo li:hover .go {
+  opacity: 1;
+}
+.loom-drawer-todo .go:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+.loom-drawer-todo li.empty,
+.loom-drawer-notes li.empty {
+  display: block;
+  padding: 18px 6px;
+  color: var(--l-faint);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+.loom-drawer-done {
+  margin-top: 10px;
+}
+.loom-drawer-done summary {
+  padding: 6px;
+  color: var(--l-faint);
+  font-size: var(--fs-12);
+  cursor: pointer;
+  list-style: none;
+}
+.loom-drawer-notes li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-ctl);
+  cursor: pointer;
+  transition: background-color var(--t1) var(--ease);
+}
+.loom-drawer-notes li:hover {
+  background: var(--fill-1);
+}
+.loom-drawer-notes .t {
+  color: var(--l-strong);
+  font: 600 var(--fs-14) var(--l-prose);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.loom-drawer-notes .a {
+  color: var(--l-faint);
+  font-size: var(--fs-12);
+}
+.loom-drawer-notes .p {
+  grid-column: 1 / -1;
+  color: var(--l-dim);
+  font-size: var(--fs-12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.loom-drawer-body.is-note {
+  display: flex;
+  flex-direction: column;
+}
+.loom-drawer-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.loom-drawer-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.loom-drawer-bar button svg {
+  width: 14px;
+  height: 14px;
+}
+.loom-drawer-bar .back svg {
+  transform: rotate(-90deg);
+}
+.loom-drawer-editor {
+  flex: 1 1 auto;
+  min-height: 240px;
+  border: 0;
+  outline: none;
+  resize: none;
+  border-radius: var(--r-ctl);
+  padding: 12px 14px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-ink);
+  font: var(--fs-13) / 1.6 var(--l-mono);
+  caret-color: var(--c-accent);
+}
+.loom-drawer-saved {
+  margin-top: 6px;
+  color: var(--l-faint);
+  font-size: var(--fs-12);
+}
+/* The notebook opens over a plain shell too, where the canvas itself is not showing. With
+   Claude running, the canvas keeps its own height, so the notebook stops above the input. */
+.loom.has-drawer:not(.is-on) {
+  display: block;
+  height: 100% !important;
+  pointer-events: none;
+}
+.loom.has-drawer > .loom-drawer {
+  pointer-events: auto;
+}
+.loom.has-drawer:not(.is-on) > :not(.loom-drawer) {
+  display: none !important;
+}
+.loom-drawer-body {
+  overflow-x: hidden;
+}
+.loom-drawer-todo .t {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.loom-drawer-todo .t a.loom-link {
+  color: var(--l-dim);
+  text-decoration-color: var(--l-faint);
+}
+.loom-menu-hint {
+  margin: 6px 2px 0;
+  color: var(--l-faint);
+  font: var(--fs-12) var(--l-prose);
+}
+/* In full screen the bar has one job: get out of it. */
+.loom-piece.is-full .loom-piece-acts button[data-p='more'],
+.loom-piece.is-full .loom-piece-acts button[data-p='fold'],
+.loom-piece.is-full .loom-piece-acts .loom-close-btn {
+  display: none !important;
+}
+.loom-piece.is-full .loom-piece-acts {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* One gutter for the turn: your dot and the live glyph share a 20px column, centred on
+   their line, and the text after both starts at the same x. */
+.loom-turn.is-shown > .loom-ask,
+.loom-ask {
+  align-items: center;
+  gap: 12px;
+}
+.loom-ask .loom-caret {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: none;
+  transform: none;
+}
+.loom-ask .loom-caret::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-faint);
+}
+body.is-light .loom-ask .loom-caret {
+  background: none;
+}
+body.is-light .loom-ask .loom-caret::before {
+  background: rgba(0, 0, 0, 0.35);
+}
+.loom-now-line {
+  align-items: center;
+  gap: 12px;
+}
+.loom-now-glyph {
+  flex: 0 0 20px;
+  width: 20px;
+  text-align: center;
+}
+.loom-activity .loom-now-detail {
+  margin-left: 32px;
+}
+.loom-trail-item {
+  gap: 12px;
+}
+.loom-trail-dot {
+  margin: 0 7px;
+}
+
+/* A link, in this turn, to an object changed in the turn it belongs to. */
+.loom-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-dim);
+  font: var(--fs-13) var(--l-prose);
+  cursor: pointer;
+  transition:
+    background-color var(--t1) var(--ease),
+    color var(--t1) var(--ease);
+}
+.loom-ref b {
+  color: var(--l-ink);
+  font-weight: 600;
+}
+.loom-ref svg {
+  width: 14px;
+  height: 14px;
+}
+.loom-ref:hover {
+  background: var(--fill-2);
+  color: var(--l-ink);
+}
+
+/* What Claude says and shows can be selected and copied (the app as a whole is not). */
+.loom-scroll,
+.loom-say,
+.loom-activity,
+.loom-menu-answer,
+.loom-drawer-body,
+.loom-plan-steps,
+.loom-piece-body {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: auto;
+}
+.loom-say a,
+.loom-link,
+.loom-menu-answer a {
+  cursor: pointer;
+}
+.loom-say ::selection,
+.loom-menu-answer ::selection,
+.loom-drawer-body ::selection {
+  background: color-mix(in srgb, var(--c-accent) 35%, transparent);
+  color: var(--l-strong);
+}
+
+/* ---------------------------------------------------------------- subagents, quietly */
+
+.loom-agents {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0 32px;
+}
+.loom-agents.is-on {
+  display: flex;
+}
+.loom-activity:has(.loom-agents.is-on) {
+  display: block;
+}
+.loom-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 460px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  font: var(--fs-12) var(--l-prose);
+  color: var(--l-dim);
+  cursor: pointer;
+  pointer-events: auto;
+  animation: loom-rise var(--t2) var(--ease);
+  transition: background-color var(--t1) var(--ease);
+}
+.loom-agent:hover {
+  background: var(--fill-2);
+}
+.loom-agent .m {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--l-faint);
+}
+.loom-agent[data-state='running'] .m {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-accent) 35%, transparent);
+  border-top: 1.5px solid var(--c-accent);
+  box-sizing: border-box;
+  animation: loom-plan-spin 0.9s linear infinite;
+}
+.loom-agent[data-state='done'] .m {
+  background: var(--l-ok);
+  box-shadow: none;
+}
+.loom-agent[data-state='failed'] .m {
+  background: var(--l-err);
+  box-shadow: none;
+}
+.loom-agent .d {
+  color: var(--l-ink);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.loom-agent[data-state='done'] .d,
+.loom-agent[data-state='failed'] .d {
+  color: var(--l-dim);
+  font-weight: 400;
+}
+.loom-agent .a {
+  color: var(--l-faint);
+  font-family: var(--l-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.loom-agent .t {
+  color: var(--l-faint);
+  font-variant-numeric: tabular-nums;
+}
+.loom-agent-steps {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--l-dim);
+  font: var(--fs-12) / 1.6 var(--l-mono);
+}
+.loom-agent-sum {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow: auto;
+  color: var(--l-ink);
+  font: var(--fs-13) / 1.55 var(--l-prose);
+}
+
+/* ---------------------------------------------------------------- Ember's pointer, inside the canvas */
+
+.loom-guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t2) var(--ease);
+}
+.loom-guide.is-on {
+  opacity: 1;
+}
+.loom-guide-arrow {
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(242, 164, 58, 0.45)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+}
+.loom-guide-tag {
+  position: absolute;
+  left: 20px;
+  top: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2a43a;
+  color: #1a1206;
+  font: 600 11px/16px var(--l-prose);
+  white-space: nowrap;
+}
+.loom-guide-note {
+  position: absolute;
+  left: 26px;
+  top: 46px;
+  width: max-content;
+  max-width: 300px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #1b140e 90%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 0 0 1px rgba(242, 164, 58, 0.28),
+    0 14px 40px -12px rgba(0, 0, 0, 0.7);
+  color: #f3ece2;
+  font: var(--fs-13) / 1.5 var(--l-prose);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--t2) var(--ease),
+    transform var(--t2) var(--ease);
+}
+.loom-guide-note.is-left {
+  left: auto;
+  right: 6px;
+}
+.loom-guide-note.is-on {
+  opacity: 1;
+  transform: none;
+}
+.loom-guide-note .h {
+  margin-bottom: 4px;
+  color: #f2a43a;
+  font: 600 var(--fs-12) var(--l-prose);
+}
+
+/* Full screen keeps the same bar: ⋯, minimize, and × for a placed object; the expand
+   button reads "exit full screen". */
+.loom-modal .loom-piece.is-full .loom-piece-acts button[data-p='more'],
+.loom-modal .loom-piece.is-full .loom-piece-acts button[data-p='fold'] {
+  display: inline-flex !important;
+}
+.loom-modal .loom-piece.is-full.is-pinned .loom-piece-acts .loom-close-btn {
+  display: inline-flex !important;
+}
+.loom-menu.is-floating {
+  position: fixed;
+  z-index: 2100;
+}
+
+/* The notebook slides on its own layer; the canvas under it is isolated, so its frosted
+   objects are not re-drawn (and do not flicker) while the drawer moves over them. */
+.loom-drawer {
+  will-change: transform, opacity;
+  contain: layout paint style;
+  backface-visibility: hidden;
+}
+.loom-scroll {
+  isolation: isolate;
+  contain: paint;
+}
+
+/* While something is dragged or resized, one invisible layer over the whole window takes
+   every pointer event, so frames and pages under the pointer cannot swallow the release. */
+.loom-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: transparent;
+}
+/* Held: no easing at all, it follows the pointer exactly. */
+.loom-piece.is-dragging,
+.loom-piece.is-resizing {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* A notebook row being carried onto the canvas. */
+.loom-drawer-notes li[data-id],
+.loom-drawer-todo li[data-t] {
+  cursor: grab;
+}
+.loom-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: var(--r-ctl, 10px);
+  background: color-mix(in srgb, #1b140e 92%, transparent);
+  box-shadow: var(--rim), 0 12px 32px -10px rgba(0, 0, 0, 0.7);
+  color: var(--l-ink, #f3ece2);
+  font: 500 13px var(--l-prose);
+  pointer-events: none;
+  opacity: 0.75;
+}
+.loom-drag-ghost span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.loom-drag-ghost svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.loom-drag-ghost.is-ok {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px var(--focus, #f2a43a), 0 12px 32px -10px rgba(0, 0, 0, 0.7);
+}
+.loom.is-drop .loom-scroll {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus, #f2a43a) 40%, transparent);
+}
+
+/* The words move aside for objects smoothly, and never while one is still held. */
+.loom-scroll {
+  transition:
+    left var(--t3, 400ms) var(--ease),
+    right var(--t3, 400ms) var(--ease),
+    top var(--t3, 400ms) var(--ease),
+    bottom var(--t3, 400ms) var(--ease);
+}
+.loom.is-dragging .loom-scroll {
+  transition: none;
+}
+
+/* ---------------------------------------------------------------- objects in the reply */
+
+/* Sizable where they sit: the right edge, the bottom edge, and a corner grip on hover. */
+.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='s'],
+.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='e'],
+.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='se'] {
+  display: block;
+}
+.loom-piece:not(.is-pinned):not(.is-full) > .loom-rz[data-rz='se']::after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--l-dim);
+  border-bottom: 2px solid var(--l-dim);
+  border-bottom-right-radius: 3px;
+  opacity: 0;
+  transition: opacity var(--t1) var(--ease);
+}
+.loom-piece:not(.is-pinned):hover > .loom-rz[data-rz='se']::after {
+  opacity: 0.6;
+}
+.loom-piece.is-sized > .loom-piece-body {
+  overflow: auto;
+}
+.loom-piece.is-sized > .loom-piece-body > iframe {
+  height: 100% !important;
+}
+
+/* It can come out of the reply: the bar says so on hover, and the object lifts when held. */
+.loom-piece:not(.is-pinned) > .loom-piece-head {
+  cursor: grab;
+}
+.loom-lift-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  padding: 2px 9px 2px 6px;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-dim);
+  font: 500 var(--fs-12) var(--l-prose);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--t2) var(--ease),
+    transform var(--t2) var(--ease);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.loom-lift-hint svg {
+  width: 12px;
+  height: 12px;
+}
+.loom-piece:not(.is-pinned) > .loom-piece-head:hover .loom-lift-hint {
+  opacity: 1;
+  transform: none;
+}
+.loom-piece.is-pinned .loom-lift-hint {
+  display: none;
+}
+.loom-piece.is-peeling {
+  cursor: grabbing;
+  transform: translateY(-3px) scale(1.006);
+  box-shadow:
+    var(--rim),
+    0 22px 50px -18px rgba(0, 0, 0, 0.65),
+    0 0 0 1px color-mix(in srgb, var(--focus, #f2a43a) 35%, transparent);
+  transition:
+    transform var(--t1) var(--ease),
+    box-shadow var(--t1) var(--ease);
 }

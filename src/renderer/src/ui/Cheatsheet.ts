@@ -39,8 +39,7 @@ export class Cheatsheet {
       title: 'Sessions',
       items: [
         { keys: 'Ctrl Shift T', what: 'New session' },
-        { keys: 'Ctrl Shift L', what: 'New Loom session — the output is a canvas' },
-        { keys: 'Ctrl `', what: 'Loom: the real Claude Code screen, and back' },
+        { keys: 'Ctrl `', what: 'CLI view: the real Claude Code screen, and back' },
         { keys: 'Ctrl Shift W', what: 'Close focused pane' },
         { keys: 'F2', what: 'Rename session' },
         { keys: 'Ctrl Tab', what: 'Next session' },
@@ -77,14 +76,12 @@ export class Cheatsheet {
       ],
     },
     {
-      title: 'Panel & voice',
+      title: 'Panel & orchestrator',
       items: [
         { keys: 'Ctrl Shift J', what: 'Show / hide the panel' },
         { keys: 'Ctrl Shift E', what: 'Point at something on the panel' },
         { keys: 'click a button', what: 'Sends it to this session' },
         { keys: 'Ctrl Shift M', what: 'Orchestrator — write to it' },
-        { keys: 'Ctrl Shift L', what: '…or call it and talk' },
-        { keys: 'Esc', what: 'Hang up (only while on a call)' },
       ],
     },
   ]

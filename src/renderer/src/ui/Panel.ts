@@ -1,6 +1,7 @@
 import { Spring } from '../motion/spring'
 import { PICK_RUNTIME, PICK_STYLE } from './panelPick'
 import type { PanelPush } from '@shared/types'
+import { docTone } from '../core/docTone'
 
 /**
  * The bit of `<webview>` this file uses.
@@ -384,9 +385,7 @@ export class Panel {
       return
     }
     // The page is drawn in main, which cannot see the theme, so it is told which way it faces.
-    const paper = getComputedStyle(document.documentElement).getPropertyValue('--c-bg').trim().replace('#', '')
-    const tone = document.body.classList.contains('is-light') ? `?tone=light&paper=${encodeURIComponent(paper)}` : ''
-    this.navigate(`${origin}/doc/${push.id}${tone}`)
+    this.navigate(`${origin}/doc/${push.id}${docTone()}`)
   }
 
   /** Redraw the document for a theme that turned from light to dark, or back, under it. */

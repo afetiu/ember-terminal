@@ -1,4 +1,5 @@
 import type { PanelOption, PanelPush } from '../shared/types.js'
+import { customViewDocument, viewDocument, type ViewTheme } from './panelView.js'
 
 /**
  * Turn a pushed panel into the page the panel webview loads.
@@ -216,52 +217,58 @@ const STYLE = `
 :root { color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: transparent; }
+/* One type system with the canvas: prose in the text face, code alone in monospace;
+   sizes from the scale (12/13/14/16/20/26), spacing on a 4px grid, no frames of its own. */
 body {
-  padding: 20px 22px 40px;
-  color: #D9D2EA;
-  font: 13.5px/1.65 "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+  padding: 16px 18px 24px;
+  color: #d8d4dd;
+  font: 400 14px/1.6 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
   overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4, h5, h6 { color: #F0EAFB; font-weight: 600; line-height: 1.25; margin: 1.4em 0 0.5em; }
-h1 { font-size: 1.5em; } h2 { font-size: 1.28em; } h3 { font-size: 1.12em; }
-h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
-p { margin: 0.75em 0; }
-a { color: #E08BFF; text-underline-offset: 3px; }
-strong { color: #F5EFFF; font-weight: 600; }
-em { color: #C9BFE0; }
+h1, h2, h3, h4, h5, h6 { color: #f3f1f5; font-weight: 600; line-height: 1.25; letter-spacing: -0.012em; margin: 24px 0 8px; }
+h1 { font-size: 26px; } h2 { font-size: 20px; } h3 { font-size: 16px; }
+h4, h5, h6 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #a7a2ad; }
+h1:first-child, h2:first-child, h3:first-child, h4:first-child { margin-top: 0; }
+p { margin: 0 0 12px; }
+a { color: #E08BFF; text-decoration: underline; text-decoration-color: rgba(224, 139, 255, 0.35); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+strong { color: #f3f1f5; font-weight: 600; }
+em { color: inherit; }
 code {
-  background: rgba(199, 78, 255, 0.13);
-  border: 1px solid rgba(199, 78, 255, 0.18);
-  border-radius: 4px;
-  padding: 0.08em 0.36em;
-  font-size: 0.92em;
-  color: #E9DDFB;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font: 13px/1.5 "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+  color: #f3f1f5;
 }
 pre.code {
-  background: rgba(12, 6, 22, 0.55);
-  border: 1px solid rgba(199, 78, 255, 0.16);
+  background: rgba(255, 255, 255, 0.035);
   border-radius: 10px;
-  padding: 13px 15px;
+  padding: 12px 16px;
   overflow-x: auto;
-  margin: 1em 0;
+  margin: 12px 0;
 }
-pre.code code { background: none; border: 0; padding: 0; color: #D9D2EA; font-size: 12.5px; }
-pre.mermaid { background: none; border: 0; text-align: center; margin: 1.2em 0; }
-blockquote {
-  margin: 1em 0;
-  padding: 2px 0 2px 14px;
-  border-left: 2px solid rgba(199, 78, 255, 0.45);
-  color: #B7ADCE;
-}
-ul, ol { margin: 0.7em 0; padding-left: 1.4em; }
-li { margin: 0.3em 0; }
-li::marker { color: #C74EFF; }
-hr { border: 0; border-top: 1px solid rgba(199, 78, 255, 0.2); margin: 1.7em 0; }
+pre.code code { background: none; padding: 0; color: #d8d4dd; font-size: 13px; line-height: 1.55; }
+pre.mermaid { background: none; border: 0; text-align: center; margin: 16px 0; }
+.mm-fail { margin: 12px 0; padding: 12px 16px; border-radius: 10px; background: rgba(127, 127, 127, 0.07); }
+.mm-fail-t { font-size: 12px; opacity: 0.7; margin-bottom: 8px; }
+.mm-fail pre.code { margin: 0; max-height: 260px; overflow: auto; background: none; padding: 0; }
+/* Pinned on a Loom screen and resized: the diagram fits the box it is given, both ways. */
+.ember-fit body { padding: 8px 12px; }
+.ember-fit pre.mermaid { margin: 0; }
+.ember-fit pre.mermaid svg { max-height: calc(100vh - 24px); }
+blockquote { margin: 12px 0; padding: 0 0 0 16px; border-left: 2px solid rgba(255, 255, 255, 0.14); color: #a7a2ad; }
+ul, ol { margin: 0 0 12px; padding-left: 20px; }
+li { margin: 4px 0; }
+li::marker { color: #8a8590; }
+hr { border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 24px 0; }
 img, svg { max-width: 100%; height: auto; }
-table { border-collapse: collapse; width: 100%; margin: 1em 0; display: block; overflow-x: auto; }
-th, td { border: 1px solid rgba(199, 78, 255, 0.18); padding: 7px 11px; text-align: left; }
-th { background: rgba(199, 78, 255, 0.1); color: #F0EAFB; font-weight: 600; }
-.ember-raw { color: #D9D2EA; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; display: block; overflow-x: auto; font-size: 13px; }
+th, td { border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background: none; color: #8a8590; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+tr:last-child td { border-bottom: 0; }
+.ember-raw { color: #d8d4dd; }
 `
 
 /**
@@ -274,18 +281,17 @@ th { background: rgba(199, 78, 255, 0.1); color: #F0EAFB; font-weight: 600; }
  */
 const LIGHT_STYLE = `
 :root { color-scheme: light; }
-body { color: #2E2640; }
-h1, h2, h3, h4, h5, h6, strong, th { color: #1B1426; }
-a { color: #7A22AE; }
-em { color: #4A3F5E; }
-code { background: rgba(130, 39, 184, 0.08); border-color: rgba(130, 39, 184, 0.18); color: #3B2156; }
-pre.code { background: rgba(46, 38, 64, 0.05); border-color: rgba(130, 39, 184, 0.16); }
-pre.code code, .ember-raw { color: #2E2640; }
-blockquote { border-left-color: rgba(130, 39, 184, 0.45); color: #564A6B; }
-li::marker { color: #8227B8; }
-hr { border-top-color: rgba(130, 39, 184, 0.2); }
-th, td { border-color: rgba(130, 39, 184, 0.2); }
-th { background: rgba(130, 39, 184, 0.07); }
+body { color: #2b2830; }
+h1, h2, h3, strong { color: #141217; }
+h4, h5, h6, th, blockquote { color: #6b6672; }
+a { color: #7A22AE; text-decoration-color: rgba(122, 34, 174, 0.35); }
+code { background: rgba(0, 0, 0, 0.05); color: #141217; }
+pre.code { background: rgba(0, 0, 0, 0.03); }
+pre.code code, .ember-raw { color: #2b2830; }
+blockquote { border-left-color: rgba(0, 0, 0, 0.14); }
+li::marker { color: #8a8590; }
+hr { border-top-color: rgba(0, 0, 0, 0.08); }
+th, td { border-bottom-color: rgba(0, 0, 0, 0.07); }
 `
 
 /** The controls and scrollbars on paper. Alone, this is what an authored page gets: its own design is left alone. */
@@ -350,13 +356,14 @@ const INTERACT_STYLE = `
   align-items: center;
   gap: 6px;
   margin: 2px 4px 2px 0;
-  padding: 5px 12px;
-  border: 1px solid rgba(199, 78, 255, 0.35);
+  padding: 6px 12px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: rgba(199, 78, 255, 0.12);
-  color: #F0EAFB;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f3f1f5;
   font: inherit;
-  font-size: 0.92em;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
@@ -365,11 +372,11 @@ const INTERACT_STYLE = `
 .ember-act.is-sent { background: rgba(120, 255, 190, 0.16); border-color: rgba(120, 255, 190, 0.4); }
 
 .ember-ask {
-  border: 1px solid rgba(199, 78, 255, 0.22);
-  border-radius: 12px;
-  background: rgba(28, 16, 48, 0.5);
-  padding: 16px 18px;
-  margin: 0 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 16px;
+  margin: 0 0 12px;
 }
 .ember-ask-q > :first-child { margin-top: 0; }
 .ember-ask-q > :last-child { margin-bottom: 0; }
@@ -575,12 +582,173 @@ const MERMAID_LIGHT = {
   edgeLabelBackground: '#FBF8FD',
 }
 
-const mermaidBoot = (light: boolean) => `
+/** The theme the renderer is showing, so a document is drawn in Ember's colours rather than the default purple. */
+export interface DocPalette {
+  accent: string
+  fg: string
+  bg: string
+}
+
+function hexRgb(h: string): [number, number, number] {
+  const n = parseInt(h.replace('#', ''), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+/** `a` laid over `b` at `t` (0..1), as hex: mermaid computes shades from it, so no rgba(). */
+function mix(a: string, b: string, t: number): string {
+  const x = hexRgb(a)
+  const y = hexRgb(b)
+  return `#${x.map((v, i) => Math.round(v * t + y[i]! * (1 - t)).toString(16).padStart(2, '0')).join('')}`
+}
+
+function rgba(h: string, alpha: number): string {
+  return `rgba(${hexRgb(h).join(', ')}, ${alpha})`
+}
+
+/**
+ * The ink a document is set in: neutral, only faintly the theme's. A theme whose text is
+ * its accent colour would otherwise make every word, box and border the same hue.
+ */
+function inkOf(p: DocPalette, light: boolean): { ink: string; strong: string; dim: string } {
+  return light
+    ? { ink: mix(p.fg, '#23211f', 0.14), strong: mix(p.fg, '#121110', 0.08), dim: mix(p.fg, '#6a6560', 0.14) }
+    : { ink: mix(p.fg, '#e7e4df', 0.14), strong: mix(p.fg, '#f7f5f2', 0.08), dim: mix(p.fg, '#9a958e', 0.14) }
+}
+
+/** Where a session's own views live; set by the bridge, which knows the config folder. */
+let loadView: (name: string) => string | null = () => null
+export function setViewLoader(fn: (name: string) => string | null): void {
+  loadView = fn
+}
+
+/** The theme a data view is drawn in: neutral ink, the accent, the category hues. */
+function viewTheme(palette: DocPalette | undefined, light: boolean): { theme: ViewTheme; bg: string } {
+  const p = palette ?? { accent: light ? '#8227B8' : '#C74EFF', fg: light ? '#2E2640' : '#D9D2EA', bg: light ? '#FBF7F2' : '#1a1424' }
+  const { ink, strong, dim } = inkOf(p, light)
+  return {
+    bg: p.bg,
+    theme: {
+      accent: p.accent,
+      ink,
+      strong,
+      dim,
+      line: light ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.08)',
+      surface: light ? 'rgba(0,0,0,0.035)' : 'rgba(255,255,255,0.04)',
+      cats: CATEGORY.map((c) => (light ? c : mix(c, p.bg, 0.9))),
+    },
+  }
+}
+
+/** Muted, distinguishable hues for diagrams that colour by category (pie slices, timelines, mind maps). */
+const CATEGORY = ['#6aa8e6', '#5fbf8f', '#e0b45a', '#c98bd9', '#e2876f', '#5cc3c0', '#9aa36a', '#d27a9b']
+
+function mermaidPalette(p: DocPalette, light = false): Record<string, unknown> {
+  const { ink, strong } = inkOf(p, light)
+  const node = light ? mix(p.bg, '#ffffff', 0.4) : mix('#ffffff', p.bg, 0.06)
+  const border = light ? mix(ink, p.bg, 0.25) : mix(ink, p.bg, 0.28)
+  const vars: Record<string, unknown> = {
+    background: 'transparent',
+    primaryColor: node,
+    primaryTextColor: strong,
+    primaryBorderColor: border,
+    secondaryColor: light ? mix(p.bg, '#ffffff', 0.6) : mix('#ffffff', p.bg, 0.04),
+    tertiaryColor: light ? mix(p.bg, '#ffffff', 0.8) : mix('#ffffff', p.bg, 0.025),
+    // The accent is the connection: lines and arrows, nothing else.
+    lineColor: mix(p.accent, p.bg, 0.75),
+    textColor: ink,
+    mainBkg: node,
+    nodeBorder: border,
+    clusterBkg: light ? 'rgba(0, 0, 0, 0.025)' : 'rgba(255, 255, 255, 0.025)',
+    clusterBorder: light ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
+    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif",
+    fontSize: '13px',
+    edgeLabelBackground: p.bg,
+    actorBkg: node,
+    actorBorder: border,
+    actorTextColor: strong,
+    signalColor: ink,
+    signalTextColor: ink,
+    noteBkgColor: light ? mix(p.accent, '#ffffff', 0.08) : mix(p.accent, p.bg, 0.1),
+    noteTextColor: strong,
+    noteBorderColor: rgba(p.accent, 0.4),
+    titleColor: strong,
+    pieTitleTextColor: strong,
+    pieSectionTextColor: light ? '#ffffff' : '#14110e',
+    pieStrokeColor: p.bg,
+    pieOuterStrokeColor: border,
+  }
+  // Charts: bars and lines in the muted palette, axes in the ink, no plate behind them.
+  vars['xyChart'] = {
+    backgroundColor: 'transparent',
+    titleColor: strong,
+    xAxisLabelColor: ink,
+    xAxisTitleColor: ink,
+    xAxisTickColor: border,
+    xAxisLineColor: border,
+    yAxisLabelColor: ink,
+    yAxisTitleColor: ink,
+    yAxisTickColor: border,
+    yAxisLineColor: border,
+    plotColorPalette: CATEGORY.map((c) => (light ? c : mix(c, p.bg, 0.85))).join(', '),
+  }
+  CATEGORY.forEach((c, i) => {
+    vars[`pie${i + 1}`] = c
+    vars[`cScale${i}`] = light ? mix(c, '#ffffff', 0.35) : mix(c, p.bg, 0.45)
+    vars[`cScaleLabel${i}`] = strong
+  })
+  return vars
+}
+
+/** Neutral ink, depth for surfaces, the accent for links and focus only. */
+function paletteStyle(p: DocPalette, light = false): string {
+  const { ink, strong, dim } = inkOf(p, light)
+  const line = light ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.07)'
+  const surface = light ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.035)'
+  const chip = light ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)'
+  return `
+body { color: ${ink}; }
+h1, h2, h3, strong { color: ${strong}; }
+h4, h5, h6, th, blockquote { color: ${dim}; }
+a { color: ${p.accent}; text-decoration-color: ${rgba(p.accent, 0.35)}; }
+code { background: ${chip}; color: ${strong}; }
+pre.code { background: ${surface}; }
+pre.code code, .ember-raw { color: ${ink}; }
+blockquote { border-left-color: ${line}; }
+li::marker { color: ${dim}; }
+hr { border-top-color: ${line}; }
+th, td { border-bottom-color: ${line}; }
+.ember-act { border-color: transparent; background: ${chip}; color: ${strong}; }
+.ember-act:hover { background: ${rgba(p.accent, 0.14)}; border-color: transparent; }
+.ember-ask { border-color: transparent; background: ${surface}; }
+.ember-ask-opt { border-color: transparent; background: ${surface}; color: ${strong}; }
+.ember-ask-opt:hover { background: ${rgba(p.accent, 0.12)}; border-color: transparent; }
+::-webkit-scrollbar-thumb { background: ${line}; background-clip: padding-box; }
+`
+}
+
+const PROSE_FONT = "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif"
+
+/** Diagram details the theme variables cannot reach: rounded nodes, even strokes, edge labels as pills. */
+const MERMAID_CSS = [
+  '.node rect, .node polygon, .node circle, .node ellipse, .node path { stroke-width: 1px; }',
+  '.node rect { rx: 8px; ry: 8px; }',
+  '.flowchart-link, .edgePath .path { stroke-width: 1.5px; }',
+  '.edgeLabel, .edgeLabel p, .edgeLabel span { font-size: 12px; }',
+  '.edgeLabel rect, .labelBkg { rx: 6px; ry: 6px; }',
+  '.edgeLabel .label, .labelBkg { padding: 2px 6px; border-radius: 6px; }',
+  '.cluster rect { rx: 10px; ry: 10px; stroke-width: 1px; stroke-dasharray: 0; }',
+  '.cluster-label, .cluster .label { font-size: 12px; font-weight: 500; }',
+  '.nodeLabel, .label { font-size: 13px; }',
+  'text { font-family: inherit; }',
+].join(' ')
+
+const mermaidBoot = (light: boolean, palette?: DocPalette) => `
 <script src="/vendor/mermaid.min.js"></script>
 <script>
   (function () {
     var blocks = document.querySelectorAll('pre.mermaid')
     if (!blocks.length) return
+    var PROSE_FONT_JS = ${JSON.stringify(PROSE_FONT)}
     if (!window.mermaid) {
       blocks.forEach(function (b) { b.className = 'code' })
       return
@@ -589,20 +757,93 @@ const mermaidBoot = (light: boolean) => `
       startOnLoad: false,
       theme: 'base',
       securityLevel: 'strict',
-      fontFamily: 'inherit',
-      themeVariables: ${JSON.stringify(light ? MERMAID_LIGHT : MERMAID_DARK)}
+      fontFamily: ${JSON.stringify(PROSE_FONT)},
+      themeVariables: ${JSON.stringify({ ...(palette ? mermaidPalette(palette, light) : light ? MERMAID_LIGHT : MERMAID_DARK), fontFamily: PROSE_FONT, fontSize: '13px' })},
+      themeCSS: ${JSON.stringify(MERMAID_CSS)},
+      flowchart: { curve: 'basis', padding: 14, nodeSpacing: 44, rankSpacing: 52, htmlLabels: true },
+      sequence: { actorFontFamily: PROSE_FONT_JS, messageFontFamily: PROSE_FONT_JS, noteFontFamily: PROSE_FONT_JS },
+      xyChart: { titleFontSize: 14, xAxis: { labelFontSize: 12, titleFontSize: 12 }, yAxis: { labelFontSize: 12, titleFontSize: 12 } },
+      suppressErrorRendering: true
     })
     // A frame that loads while hidden (a background tab, a canvas not yet shown) has no
     // layout, and mermaid measuring text there draws an empty diagram for good. Wait
     // until the frame has a size.
     var started = false
-    function start() {
+    // Nothing Claude writes ever shows mermaid's error bomb. Each diagram is parsed first;
+    // a failure is repaired (labels with brackets, colons, slashes or & quoted — the usual
+    // cause); what still fails becomes a quiet card with the source. Then the canvas is
+    // told how it went, so the session that drew it can hear about it and fix it.
+    function repair(src) {
+      var t = src.replace(/^\\s*\x60\x60\x60(?:mermaid)?\\s*/, '').replace(/\\s*\x60\x60\x60\\s*$/, '')
+      var edge = '(?=\\\\s*(?:[-=.ox<]{2,}|&|;|:::|$))'
+      var q = function (s) { return '"' + s.replace(/"/g, "'") + '"' }
+      if (/^\\s*(flowchart|graph)\\b/m.test(t)) {
+        t = t.replace(new RegExp('(\\\\b[\\\\w-]+)\\\\[(?!["\\\\[(/\\\\\\\\])(.+?)\\\\]' + edge, 'gm'), function (_, id, s) { return id + '[' + q(s) + ']' })
+        t = t.replace(new RegExp('(\\\\b[\\\\w-]+)\\\\((?!["(\\\\[])(.+?)\\\\)' + edge, 'gm'), function (_, id, s) { return id + '(' + q(s) + ')' })
+        t = t.replace(new RegExp('(\\\\b[\\\\w-]+)\\\\{(?!["{])(.+?)\\\\}' + edge, 'gm'), function (_, id, s) { return id + '{' + q(s) + '}' })
+        t = t.replace(/\\|(?!")([^|\\n]+)\\|/g, function (_, s) { return '|' + q(s.trim()) + '|' })
+        // A node called "end" closes a subgraph instead.
+        t = t.replace(/\\bend\\b(?=\\s*[\\[({])/g, 'endNode')
+      }
+      return t
+    }
+    function fallback(b, src, err) {
+      var card = document.createElement('div')
+      card.className = 'mm-fail'
+      var head = document.createElement('div')
+      head.className = 'mm-fail-t'
+      head.textContent = 'This diagram could not be drawn' + (err ? ' — ' + err : '')
+      var pre = document.createElement('pre')
+      pre.className = 'code'
+      var code = document.createElement('code')
+      code.textContent = src
+      pre.appendChild(code)
+      card.append(head, pre)
+      b.replaceWith(card)
+    }
+    function report(status) {
+      var id = (document.querySelector('meta[name="ember-doc"]') || {}).content
+      if (!id || window.parent === window) return
+      try { window.parent.postMessage({ emberDocStatus: { id: id, ok: status.ok, error: status.error || '', repaired: !!status.repaired } }, '*') } catch (e) {}
+    }
+    async function check(b) {
+      var src = b.textContent || ''
+      try {
+        if (await window.mermaid.parse(src, { suppressErrors: true })) return { ok: true }
+        var fixed = repair(src)
+        if (fixed !== src && (await window.mermaid.parse(fixed, { suppressErrors: true }))) {
+          b.textContent = fixed
+          return { ok: true, repaired: true }
+        }
+        var err = ''
+        try { await window.mermaid.parse(src) } catch (e) { err = String((e && e.message) || e).split('\\n').filter(Boolean).slice(0, 2).join(' ').slice(0, 300) }
+        fallback(b, src, err)
+        return { ok: false, error: err || 'syntax error' }
+      } catch (e) {
+        fallback(b, src, '')
+        return { ok: false, error: String(e && e.message || e).slice(0, 300) }
+      }
+    }
+    async function start() {
       if (started || !window.innerWidth) return
       started = true
       removeEventListener('resize', start)
-      window.mermaid.run({ nodes: blocks }).then(fixContrast).catch(function () {
-        blocks.forEach(function (b) { b.className = 'code' })
+      var results = []
+      for (var i = 0; i < blocks.length; i++) results.push(await check(blocks[i]))
+      var good = Array.prototype.filter.call(document.querySelectorAll('pre.mermaid'), function (b) { return b.isConnected })
+      try {
+        if (good.length) await window.mermaid.run({ nodes: good, suppressErrors: true })
+        fixContrast()
+      } catch (e) {
+        good.forEach(function (b) { if (!b.querySelector('svg')) fallback(b, b.textContent || '', '') })
+      }
+      // Anything mermaid still drew as an error is swapped for the quiet card too.
+      document.querySelectorAll('svg[aria-roledescription="error"]').forEach(function (s) {
+        var host = s.closest('pre') || s.parentElement
+        if (host) fallback(host, '', 'syntax error')
       })
+      var bad = results.filter(function (r) { return !r.ok })
+      report({ ok: !bad.length, error: bad.map(function (r) { return r.error }).join('; '), repaired: results.some(function (r) { return r.repaired }) })
     }
     addEventListener('resize', start)
     start()
@@ -639,13 +880,13 @@ const mermaidBoot = (light: boolean) => `
   })()
 </script>`
 
-function shell(body: string, act: string, viaParent = false, light = false): string {
-  const head = body.includes('class="mermaid"') ? mermaidBoot(light) : ''
+function shell(body: string, act: string, viaParent = false, light = false, palette?: DocPalette): string {
+  const head = body.includes('class="mermaid"') ? mermaidBoot(light, palette) : ''
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}</style>
+<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}</style>
 </head><body${light ? ' class="light"' : ''}>${body}${head}${runtime(act, viaParent)}</body></html>`
 }
 
@@ -698,7 +939,7 @@ const HTML_BASE = `
 html, body { margin: 0; background: transparent; }
 body {
   color: #D9D2EA;
-  font: 13.5px/1.6 "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font: 400 14px/1.6 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
 }
 h1, h2, h3, h4, h5, h6 { color: #F0EAFB; }
 a { color: #E08BFF; }
@@ -710,7 +951,7 @@ const HTML_BASE_LIGHT = `
 html, body { margin: 0; background: transparent; }
 body {
   color: #2E2640;
-  font: 13.5px/1.6 "CaskaydiaCove NF", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font: 400 14px/1.6 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
 }
 h1, h2, h3, h4, h5, h6 { color: #1B1426; }
 a { color: #7A22AE; }
@@ -1013,10 +1254,10 @@ export type PanelTarget = 'bridge' | 'phone'
 /** The light ground the guard measures against when the renderer does not say which. */
 const DEFAULT_PAPER = '#FBF7F2'
 
-export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false, paper = DEFAULT_PAPER): string {
+export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false, paper = DEFAULT_PAPER, palette?: DocPalette): string {
   const act = push.act ?? ''
   const viaParent = target === 'phone'
-  const html = renderFor(push, act, viaParent, light, paper)
+  const html = renderFor(push, act, viaParent, light, paper, palette).replace(/<head>|<head\s[^>]*>/i, (h) => `${h}<meta name="ember-doc" content="${push.id}">`)
   // The phone bundles mermaid rather than fetching it from a bridge it cannot see.
   return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : withHeightReport(html)
 }
@@ -1028,14 +1269,14 @@ export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'brid
  * is in them. The frame is on another origin, so the document has to say. In the panel's
  * webview the document is the top window and this does nothing.
  */
-const HEIGHT_REPORT = `<script>(function(){if(window.parent===window)return;var last=-1;function post(){var d=document.documentElement,b=document.body;var h=Math.ceil(Math.max(d.scrollHeight,b?b.scrollHeight:0));if(Math.abs(h-last)<2)return;last=h;try{parent.postMessage({emberDocHeight:h},'*')}catch(e){}}addEventListener('load',post);try{var ro=new ResizeObserver(post);ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}catch(e){}setTimeout(post,30);setTimeout(post,400);setTimeout(post,1500)})()</script>`
+const HEIGHT_REPORT = `<script>(function(){if(window.parent===window)return;addEventListener('message',function(e){if(e.data&&e.data.emberFit)document.documentElement.classList.add('ember-fit');var f=e.data&&e.data.emberFind;if(f){var want=String(f.text||'').trim().toLowerCase(),best=null,bl=1e9;document.querySelectorAll('g.node,.nodeLabel,text,tspan,th,td,li,button,a,h1,h2,h3,h4,p,span,div,rect,path').forEach(function(el){var t=(el.textContent||'').trim().toLowerCase();if(!t||t.indexOf(want)<0)return;var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var g=el.closest&&el.closest('g.node');if(g){r=g.getBoundingClientRect();t=(g.textContent||'').trim().toLowerCase()}if(t.length<bl){bl=t.length;best=r}});try{parent.postMessage({emberFound:{id:f.id,rect:best?{x:best.left,y:best.top,w:best.width,h:best.height}:null}},'*')}catch(_){}}});addEventListener('contextmenu',function(e){var t=e.target;if(t&&t.closest&&t.closest('a,input,textarea,select,button'))return;e.preventDefault();var label='';var n=t&&t.closest&&t.closest('.node,.cluster,.actor,.edgeLabel,text');if(n)label=(n.textContent||'').trim().slice(0,80);try{parent.postMessage({emberContext:{x:e.clientX,y:e.clientY,text:String(getSelection()||'').slice(0,500),part:label}},'*')}catch(_){}});var last=-1;function post(){var d=document.documentElement,b=document.body;var h=Math.ceil(Math.max(d.scrollHeight,b?b.scrollHeight:0));if(Math.abs(h-last)<2)return;last=h;try{parent.postMessage({emberDocHeight:h},'*')}catch(e){}}addEventListener('load',post);try{var ro=new ResizeObserver(post);ro.observe(document.documentElement);if(document.body)ro.observe(document.body)}catch(e){}setTimeout(post,30);setTimeout(post,400);setTimeout(post,1500)})()</script>`
 
 function withHeightReport(html: string): string {
   const at = html.toLowerCase().lastIndexOf('</body>')
   return at === -1 ? html + HEIGHT_REPORT : html.slice(0, at) + HEIGHT_REPORT + html.slice(at)
 }
 
-function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean, paper: string): string {
+function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean, paper: string, palette?: DocPalette): string {
   switch (push.format) {
     case 'html':
       // Passed through as its own document. It is untrusted, and it is contained by
@@ -1049,14 +1290,15 @@ function renderFor(push: PanelPush, act: string, viaParent: boolean, light: bool
         `<pre class="code"><code data-lang="${escapeHtml(push.language ?? '')}">${escapeHtml(push.content)}</code></pre>`,
         act,
         viaParent,
-        light
+        light,
+        palette
       )
 
     case 'mermaid':
-      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, act, viaParent, light)
+      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, act, viaParent, light, palette)
 
     case 'ask':
-      return shell(askCard(push), act, viaParent, light)
+      return shell(askCard(push), act, viaParent, light, palette)
 
     case 'url':
       // On the desk a url push navigates the webview instead of building a page. The
@@ -1065,14 +1307,29 @@ function renderFor(push: PanelPush, act: string, viaParent: boolean, light: bool
         `<p>Opening <a href="${escapeHtml(push.content)}" target="_blank" rel="noreferrer">${escapeHtml(push.content)}</a>…</p>`,
         act,
         viaParent,
-        light
+        light,
+        palette
       )
 
+    case 'view': {
+      let spec: { view?: string; data?: unknown; title?: string } = {}
+      try {
+        spec = JSON.parse(push.content)
+      } catch {
+        return shell(`<p>This view's data is not valid JSON.</p>`, act, viaParent, light, palette)
+      }
+      const name = String(spec.view ?? '')
+      const { theme, bg } = viewTheme(palette, light)
+      const own = loadView(name)
+      if (own) return graft(customViewDocument(own, spec.data ?? {}, push.title, theme), act, viaParent, light, paper)
+      return shell(viewDocument(name, spec.data ?? {}, push.title, theme, bg), act, viaParent, light, palette)
+    }
+
     case 'images':
-      return shell(gallery(push.content, viaParent), act, viaParent, light)
+      return shell(gallery(push.content, viaParent), act, viaParent, light, palette)
 
     case 'markdown':
     default:
-      return shell(markdownToHtml(push.content), act, viaParent, light)
+      return shell(markdownToHtml(push.content), act, viaParent, light, palette)
   }
 }

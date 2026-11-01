@@ -1,3 +1,5 @@
+// @ts-expect-error - plain ES shared verbatim with the phone bundle
+import { accountUrl } from '../../../../resources/relay/protocol.js'
 import QRCode from 'qrcode'
 import type { Account, RemoteDevice } from '@shared/types'
 
@@ -172,7 +174,7 @@ export class PairSheet {
       join.innerHTML = '<summary>This machine joins an existing one</summary>'
       const field = document.createElement('textarea')
       field.rows = 3
-      field.placeholder = 'ember://join?...'
+      field.placeholder = 'https://ember.deepanswerlabs.com/app/#k=…'
       field.spellcheck = false
       const go = document.createElement('button')
       go.className = 'ember-pair-minor'
@@ -195,7 +197,8 @@ export class PairSheet {
     // and a service would be a third party learning the one secret kept off the wire.
     const canvas = document.createElement('canvas')
     canvas.className = 'ember-pair-qr'
-    await QRCode.toCanvas(canvas, `ember://join?relay=${encodeURIComponent(account.relay)}&key=${account.key}`, {
+    // A plain https link: the phone camera opens the app, and the key stays in the fragment.
+    await QRCode.toCanvas(canvas, accountUrl(account.relay, account.key), {
       width: 240,
       margin: 1,
       // High contrast on white: a phone camera reading a dark, translucent terminal window

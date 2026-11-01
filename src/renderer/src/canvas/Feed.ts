@@ -28,6 +28,10 @@ export interface FeedContext {
   send(text: string, submit: boolean): void
   /** Turn a local image path into something an <img> can load. */
   localImage(path: string): Promise<string | null>
+  /** Subagents: started (by its tool call), given an id, finished. */
+  agent?: (e: { kind: 'start'; key: string; desc: string; type: string; at: string } | { kind: 'id'; key: string; agentId: string } | { kind: 'end'; key?: string; agentId?: string; ok: boolean; summary: string; at: string }) => void
+  /** A call to one of Ember's tools, as the transcript records it — to rebuild the canvas of a resumed session. */
+  replay?: (tool: string, input: Json, at: string) => void
   /** Host a mermaid diagram and give back a frame URL. */
   diagram(source: string): Promise<string>
   /** Put a bridge document in a frame that sizes itself to its content. */
@@ -295,8 +299,22 @@ export class Feed {
     this.turn = this.newTurn()
   }
 
+  /** What the session is doing right now, as one sentence: the last step it started. */
+  get action(): string {
+    return this.act
+  }
+  private act = ''
+
+  /** When the line being read was written. */
+  private at = ''
+
   get isEmpty(): boolean {
     return this.seen.size === 0
+  }
+
+  /** Every turn that has something in it, oldest first. */
+  turns(): HTMLElement[] {
+    return Array.from(this.el.querySelectorAll<HTMLElement>(':scope > .loom-turn')).filter((t) => t.childElementCount > 0)
   }
 
   private newTurn(): HTMLElement {
@@ -304,6 +322,7 @@ export class Feed {
     this.el.appendChild(t)
     this.turn = t
     this.quiet = null
+    this.act = ''
     return t
   }
 
@@ -327,6 +346,7 @@ export class Feed {
       }
       // Subagents' own steps: their summary arrives as the Task result.
       if (line['isSidechain'] === true) continue
+      this.at = String(line['timestamp'] ?? '')
       try {
         if (line['type'] === 'user') this.user(line)
         else if (line['type'] === 'assistant') this.assistant(line)
@@ -342,6 +362,9 @@ export class Feed {
   slotFor(tool: string): HTMLElement {
     for (let i = this.anchors.length - 1; i >= 0; i--) {
       const a = this.anchors[i]!
+      // Only this turn's calls. A piece can arrive before its call is in the transcript;
+      // an unused slot from an earlier turn would put it on a turn that is not on screen.
+      if (!this.turn.contains(a.el)) break
       if (a.name !== tool) continue
       if (a.used) break
       a.used = true
@@ -410,6 +433,16 @@ export class Feed {
       if (out) this.turn.appendChild(el('pre', 'loom-note', escapeHtml(out.slice(0, 12000))))
       return
     }
+    // A background task reporting in is not something you said: one quiet line, no new turn.
+    if (clean.startsWith('<task-notification>')) {
+      const summary = /<summary>([\s\S]*?)<\/summary>/.exec(clean)?.[1]?.trim() ?? 'A background task reported in'
+      const taskId = /<task-id>([^<]+)<\/task-id>/.exec(clean)?.[1]?.trim()
+      const status = /<status>([^<]+)<\/status>/.exec(clean)?.[1]?.trim() ?? ''
+      const result = /<result>([\s\S]*?)<\/result>/.exec(clean)?.[1]?.trim() ?? summary
+      if (taskId) this.ctx.agent?.({ kind: 'end', agentId: taskId, ok: !/fail|error|stopped|killed/i.test(status), summary: result.slice(0, 600), at: this.at })
+      this.turn.appendChild(el('div', 'loom-note-line', escapeHtml(summary)))
+      return
+    }
     if (/^\[Request interrupted by user/.test(clean)) {
       this.turn.appendChild(el('div', 'loom-interrupt', 'interrupted'))
       return
@@ -462,6 +495,7 @@ export class Feed {
       const src = diagrams[Number(host.dataset['diagram'])]
       if (!src) return
       host.dataset['askLabel'] = 'this diagram'
+      host.dataset['source'] = src
       void this.ctx.diagram(src).then((url) => {
         if (url) this.ctx.mountFrame(host, url, 120)
         else host.innerHTML = `<pre class="loom-out">${escapeHtml(src)}</pre>`
@@ -485,6 +519,7 @@ export class Feed {
       return
     }
     if (name.startsWith(PANEL_PREFIX)) {
+      this.ctx.replay?.(name.slice(PANEL_PREFIX.length), input, this.at)
       // The piece itself arrives through the bridge; this marks where it belongs.
       const slot = el('div', 'loom-slot')
       this.turn.appendChild(slot)
@@ -495,6 +530,7 @@ export class Feed {
     if (QUIET.has(name)) {
       if (!this.quiet) this.quiet = new QuietGroup(this.turn)
       const item = this.quiet.add(id, name, input)
+      this.act = cap(item.row.querySelector('.loom-quiet-label')?.textContent ?? name)
       this.tools.set(id, { quiet: { group: this.quiet, item }, name, input })
       return
     }
@@ -505,18 +541,22 @@ export class Feed {
       const view = new ToolView(this.turn, 'shell', name)
       const command = String(input['command'] ?? '')
       view.setHead('$', firstLine(command, 160), String(input['description'] ?? ''))
+      this.act = String(input['description'] ?? '').trim() || `$ ${firstLine(command, 120)}`
       this.tools.set(id, { view, name, input })
       return
     }
     if (AGENTS.has(name)) {
       const view = new ToolView(this.turn, 'agent', name)
       view.setHead(String(input['subagent_type'] ?? 'agent'), String(input['description'] ?? ''), '')
+      this.act = cap(String(input['description'] ?? '').trim() || 'Working with an agent')
+      this.ctx.agent?.({ kind: 'start', key: id, desc: String(input['description'] ?? 'agent'), type: String(input['subagent_type'] ?? ''), at: this.at })
       this.tools.set(id, { view, name, input })
       return
     }
     if (name === 'ExitPlanMode') {
       const view = new ToolView(this.turn, 'plan', name)
       view.setHead('Plan', '', 'waiting for your approval below')
+      this.act = 'A plan is waiting for your approval below'
       const r = renderMarkdown(String(input['plan'] ?? ''))
       const body = el('div', 'loom-say', r.html)
       view.body.appendChild(body)
@@ -532,12 +572,14 @@ export class Feed {
     const source = mcp ? mcp[1]!.replace(/^plugin_[^_]+_/, '').replace(/^claude_ai_/, '').replace(/[-_]/g, ' ') : ''
     const arg = Object.values(input).find((v) => typeof v === 'string' && v.trim()) as string | undefined
     view.setHead(label, arg ? firstLine(arg, 100) : '', source)
+    this.act = cap(`${label}${arg ? ` ${firstLine(arg, 80)}` : ''}`)
     this.tools.set(id, { view, name, input })
   }
 
   private edit(id: string, name: string, input: Json): void {
     const view = new ToolView(this.turn, 'edit', name)
     const file = String(input['file_path'] ?? input['notebook_path'] ?? '')
+    this.act = `${name === 'Write' ? 'Writing' : 'Editing'} ${base(file)}`
     let lines: DiffLine[] = []
     if (name === 'Edit') lines = diffLines(String(input['old_string'] ?? ''), String(input['new_string'] ?? ''))
     else if (name === 'MultiEdit' && Array.isArray(input['edits'])) {
@@ -574,7 +616,9 @@ export class Feed {
 
     if (entry.quiet) {
       entry.quiet.group.done(entry.quiet.item, text, isError)
-      for (const src of images) this.picture(entry.quiet.group.shelf, src, base(entry.input['file_path']))
+      // Images Claude reads (screenshots it takes to see the screen) are its own looking,
+      // not something to show: they stay out of the canvas. Shown images come from show_media.
+      void images
       return
     }
     const view = entry.view
@@ -610,11 +654,18 @@ export class Feed {
       } else if (tail.length) {
         view.peek.innerHTML = `<div class="loom-peek-line">${escapeHtml(tail[tail.length - 1]!.slice(0, 200))}</div>`
       }
-      for (const src of images) this.picture(view.peek, src, 'output')
+      void images
       return
     }
 
     if (AGENTS.has(entry.name)) {
+      // A background agent answers at once with its id; one that ran in the turn answers with its result.
+      const launched = /agentId:\s*([a-z0-9]+)/i.exec(text)
+      if (launched && /background|launched|async/i.test(text)) this.ctx.agent?.({ kind: 'id', key: id, agentId: launched[1]! })
+      else {
+        if (launched) this.ctx.agent?.({ kind: 'id', key: id, agentId: launched[1]! })
+        this.ctx.agent?.({ kind: 'end', key: id, ok: !isError, summary: text.slice(0, 600), at: this.at })
+      }
       const r = renderMarkdown(text)
       const body = el('div', 'loom-say', r.html)
       view.body.appendChild(body)
@@ -629,19 +680,10 @@ export class Feed {
       view.body.appendChild(pre)
     }
     if (isError) view.peek.innerHTML = `<div class="loom-peek-line is-error">${escapeHtml(firstLine(stripAnsi(text), 200))}</div>`
-    for (const src of images) this.picture(view.peek, src, entry.name)
+    void images
   }
 
-  private picture(host: HTMLElement, src: string, label: string): void {
-    const fig = el('figure', 'loom-figure')
-    const img = document.createElement('img')
-    img.src = src
-    img.alt = label
-    img.dataset['zoom'] = '1'
-    fig.dataset['askLabel'] = `this image (${label})`
-    fig.appendChild(img)
-    host.appendChild(fig)
-  }
+
 
   // -------------------------------------------------------------- system
 
@@ -658,4 +700,8 @@ export class Feed {
     if (/hook|statusline|^\s*$/i.test(subtype)) return
     this.turn.appendChild(el('div', 'loom-note-line', escapeHtml(firstLine(text, 300))))
   }
+}
+
+function cap(s: string): string {
+  return s ? s[0]!.toUpperCase() + s.slice(1) : s
 }

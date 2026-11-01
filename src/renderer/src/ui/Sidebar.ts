@@ -2,7 +2,7 @@ import type { ActivitySnapshot } from '../core/Activity'
 import type { ClaudeStatus, GitStatus } from '@shared/types'
 import { ticker } from '../motion/ticker'
 import { Spring } from '../motion/spring'
-import { drawMapBadge, drawMascot, drawNoteBadge, drawOverviewBadge, drawShellBadge, drawTodoBadge, type Reaction } from './Mascot'
+import type { Reaction } from './Mascot'
 import { Odometer } from './Odometer'
 
 /**
@@ -28,8 +28,8 @@ const ORCH_MARK = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" a
   <circle class="ember-orch-hub" cx="8" cy="8" r="2.3" fill="currentColor"/>
 </svg>`
 
-/** The four things that are places rather than sessions. */
-export type Place = 'overview' | 'todo' | 'notes' | 'map'
+/** The three things that are places rather than sessions. */
+export type Place = 'todo' | 'notes' | 'map'
 
 /**
  * The places' marks. Drawn, 16px, `currentColor`, the same stroke as the orchestrator's,
@@ -37,28 +37,22 @@ export type Place = 'overview' | 'todo' | 'notes' | 'map'
  */
 const PLACES: Array<{ id: Place; label: string; title: string; svg: string }> = [
   {
-    id: 'overview',
-    label: 'Overview',
-    title: 'Overview — every session, the numbers, the log  (Ctrl+Shift+S · ember overview)',
-    svg: '<rect x="2" y="2" width="5" height="5" rx="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.3"/>',
-  },
-  {
     id: 'todo',
     label: 'Todo',
     title: 'Todo list  (Ctrl+Shift+D · ember todo)',
-    svg: '<rect x="2.5" y="2.5" width="11" height="11" rx="2.2"/><path d="M5.3 8.2 L7.2 10.1 L10.8 5.9"/>',
+    svg: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
   },
   {
     id: 'notes',
     label: 'Notes',
     title: 'Notes  (ember notes)',
-    svg: '<path d="M4 1.8 H9.5 L12.5 4.8 V14.2 H4 Z"/><path d="M9.3 2 V5 H12.3"/><path d="M6 8.2 H10.5 M6 10.8 H9.5"/>',
+    svg: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
   },
   {
     id: 'map',
     label: 'Map',
     title: 'Architecture map  (Ctrl+Shift+G · ember map)',
-    svg: '<circle cx="4" cy="4" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="8" cy="12" r="2"/><path d="M5.9 4.2 H10 M5 5.8 L7 10.2 M11 6.3 L9 10.2"/>',
+    svg: '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.2 8.2l3.6 7.6M16.8 8.2l-3.6 7.6"/>',
   },
 ]
 
@@ -68,7 +62,7 @@ export interface CardModel {
   subtitle: string
   accent: string
   /** What the tab holds. A Claude session is a shell that a Claude took over; a note or the todo list is neither. */
-  kind: 'shell' | 'note' | 'todo' | 'overview' | 'map'
+  kind: 'shell' | 'note' | 'todo' | 'map'
   activity: ActivitySnapshot
   /** >1 when the card holds a split. */
   paneCount: number
@@ -111,15 +105,10 @@ interface CardNode {
   meta: HTMLElement
   metaSignature: string
   close: HTMLElement
-  canvas: HTMLCanvasElement
-  ctx: CanvasRenderingContext2D
-  seed: number
   model: CardModel
   /** 0..1 progress of the press-and-hold close gesture. */
   hold: number
   holding: boolean
-  /** What the badge currently shows, so it is redrawn only when that changes. */
-  badgeKey?: string
 }
 
 /**
@@ -190,11 +179,11 @@ export class Sidebar {
     this.orchBtn.innerHTML = ORCH_MARK
     this.orchBtn.addEventListener('click', () => this.handlers.onOrchestrator())
 
+    add.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
     head.append(label, this.orchBtn, add)
 
-    // The places, always there, above the sessions: four buttons in one row, so the
-    // overview, the list, the notes and the map are one click from anywhere and none of
-    // them takes a card's worth of room in the list below.
+    // The places — todo, notes, map — as one quiet row of icons at the foot of the column.
+    // The column is the session list; the places are a click away, never in its way.
     const nav = document.createElement('div')
     nav.className = 'ember-places'
     nav.setAttribute('role', 'toolbar')
@@ -206,7 +195,7 @@ export class Sidebar {
       btn.dataset['place'] = p.id
       btn.title = p.title
       btn.setAttribute('aria-label', p.label)
-      btn.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>`
+      btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p.svg}</svg>`
       const name = document.createElement('span')
       name.className = 'ember-place-name'
       name.textContent = p.label
@@ -218,8 +207,6 @@ export class Sidebar {
       nav.append(btn)
       this.navBtns.set(p.id, { btn, badge })
     }
-    this.el.append(nav)
-
     this.list = document.createElement('div')
     this.list.className = 'ember-cards'
 
@@ -228,7 +215,7 @@ export class Sidebar {
     this.plate.addEventListener('animationend', () => this.plate.classList.remove('is-landed'))
     this.list.appendChild(this.plate)
 
-    this.el.append(head, this.list)
+    this.el.append(head, this.list, nav)
   }
 
   /**
@@ -303,24 +290,6 @@ export class Sidebar {
     this.plate.style.transform = `translate3d(0, ${this.plateY.value.toFixed(2)}px, 0) scaleY(${(1 + stretch).toFixed(3)})`
   }
 
-  private drawBadge(node: CardNode, t: number): void {
-    const size = 38
-    const { state, attention, isClaude } = node.model.activity
-    if (node.model.kind === 'todo') {
-      drawTodoBadge(node.ctx, size, node.model.accent)
-    } else if (node.model.kind === 'map') {
-      drawMapBadge(node.ctx, size, node.model.accent)
-    } else if (node.model.kind === 'overview') {
-      drawOverviewBadge(node.ctx, size, node.model.accent)
-    } else if (node.model.kind === 'note') {
-      drawNoteBadge(node.ctx, size, node.model.accent)
-    } else if (isClaude) {
-      drawMascot(node.ctx, size, { state, attention }, t, node.seed, node.model.reaction)
-    } else {
-      drawShellBadge(node.ctx, size, state, t)
-    }
-  }
-
   /**
    * Re-place the selection plate now, from layout, without a journey.
    *
@@ -343,11 +312,11 @@ export class Sidebar {
   }
 
   /**
-   * Which place is on stage, and the counts worth a badge: how many sessions want you
-   * (on the overview) and how many items are open (on the list).
+   * Which place is on stage, and the count worth a badge: how many items are open on
+   * the list.
    */
   renderNav(active: Place | null, counts: Partial<Record<Place, number>>): void {
-    const sig = `${active}|${counts.overview ?? 0}|${counts.todo ?? 0}`
+    const sig = `${active}|${counts.todo ?? 0}`
     if (sig === this.navSig) return
     this.navSig = sig
     for (const [id, { btn, badge }] of this.navBtns) {
@@ -356,7 +325,6 @@ export class Sidebar {
       const n = counts[id] ?? 0
       badge.hidden = n <= 0
       badge.textContent = n > 99 ? '99+' : String(n)
-      badge.classList.toggle('is-hot', id === 'overview')
     }
   }
 
@@ -408,17 +376,6 @@ export class Sidebar {
 
     this.aimPlate(activeId)
 
-    // A badge is a picture of a state, drawn when the state changes and not otherwise.
-    // It used to animate — typing, waving, dozing — at 30 frames a second for as long as
-    // a session worked, and on a glass window every one of those frames re-composited
-    // the sidebar. A still picture says the same thing.
-    for (const node of this.nodes.values()) {
-      const a = node.model.activity
-      const key = `${node.model.kind}|${a.state}|${a.attention ?? ''}|${a.isClaude ? 1 : 0}|${node.model.accent}|${node.model.reaction ?? ''}`
-      if (node.badgeKey === key) continue
-      node.badgeKey = key
-      this.drawBadge(node, 0)
-    }
     if (this.needsFrames()) this.ensureTicking()
   }
 
@@ -428,35 +385,28 @@ export class Sidebar {
    */
   private renderMeta(node: CardNode, card: CardModel): void {
     const git = card.git ? `${card.git.branch}${card.git.dirty ? `*${card.git.dirty}` : ''}` : ''
-    const claude = Sidebar.claudeChip(card.claude)
+    const claude = `${card.claude?.model ?? ''}|${card.claude?.contextPercent === null || !card.claude ? '' : Math.round(card.claude.contextPercent)}`
     const signature = `${git}|${card.url ?? ''}|${card.unread > 0}|${claude}`
     if (signature === node.metaSignature) return
     node.metaSignature = signature
 
     node.meta.replaceChildren()
     node.root.classList.toggle('has-unread', card.unread > 0)
-
-    if (claude && card.claude) {
+    const bits: string[] = []
+    if (card.claude?.model) bits.push(card.claude.model)
+    if (card.claude && card.claude.contextPercent !== null) bits.push(`${Math.round(card.claude.contextPercent)}%`)
+    if (git) bits.push(git)
+    if (bits.length) {
       const el = document.createElement('span')
-      el.className = 'ember-chip is-claude'
-      el.dataset['hot'] = String((card.claude.contextPercent ?? 0) >= 80)
-      el.textContent = claude
-      el.title = Sidebar.claudeTitle(card.claude)
+      el.className = 'ember-card-metatext'
+      el.dataset['hot'] = String((card.claude?.contextPercent ?? 0) >= 80)
+      el.textContent = bits.join(' · ')
+      if (card.claude) el.title = Sidebar.claudeTitle(card.claude)
       node.meta.appendChild(el)
     }
-
-    if (git) {
-      const el = document.createElement('span')
-      el.className = 'ember-chip is-git'
-      el.dataset['dirty'] = String(!!card.git?.dirty)
-      el.textContent = git
-      el.title = card.git?.dirty ? `${card.git.dirty} changed file(s)` : 'clean'
-      node.meta.appendChild(el)
-    }
-
     if (card.url) {
       const el = document.createElement('button')
-      el.className = 'ember-chip is-url'
+      el.className = 'ember-card-link'
       el.textContent = card.url.replace(/^https?:\/\//, '')
       el.title = `Open ${card.url}`
       el.addEventListener('click', (e) => {
@@ -465,16 +415,6 @@ export class Sidebar {
       })
       node.meta.appendChild(el)
     }
-  }
-
-  /** `Fable · 34% · $0.42` — whichever of the three the status line has reported. */
-  private static claudeChip(s: ClaudeStatus | null): string {
-    if (!s) return ''
-    const parts: string[] = []
-    if (s.model) parts.push(s.model)
-    if (s.contextPercent !== null) parts.push(`${Math.round(s.contextPercent)}%`)
-    if (s.costUsd !== null) parts.push(`$${s.costUsd < 10 ? s.costUsd.toFixed(2) : s.costUsd.toFixed(1)}`)
-    return parts.join(' · ')
   }
 
   private static claudeTitle(s: ClaudeStatus): string {
@@ -495,10 +435,9 @@ export class Sidebar {
     root.dataset['id'] = card.id
     root.setAttribute('role', 'tab')
 
-    const badge = document.createElement('div')
-    badge.className = 'ember-card-badge'
-    const canvas = document.createElement('canvas')
-    badge.appendChild(canvas)
+    // The state as a dot: working (the accent, breathing), waiting for you (amber), resting.
+    const badge = document.createElement('span')
+    badge.className = 'ember-card-state'
 
     const body = document.createElement('div')
     body.className = 'ember-card-body'
@@ -520,7 +459,7 @@ export class Sidebar {
     close.className = 'ember-card-close'
     close.setAttribute('aria-label', `Hold to close ${card.title}`)
     close.title = 'Hold to close'
-    close.innerHTML = '&#xE8BB;'
+    close.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
     // Deliberately no click handler: closing a terminal is destructive and a stray
     // click should never do it. The gesture is press-and-hold, driven in tick().
     close.addEventListener('pointerdown', (e) => {
@@ -558,19 +497,7 @@ export class Sidebar {
       if ((e as MouseEvent).button === 1) this.handlers.onClose(card.id)
     })
 
-    const dpr = window.devicePixelRatio || 1
-    const size = 38
-    canvas.width = Math.round(size * dpr)
-    canvas.height = Math.round(size * dpr)
-    canvas.style.width = `${size}px`
-    canvas.style.height = `${size}px`
-    const ctx = canvas.getContext('2d')!
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
     requestAnimationFrame(() => root.classList.remove('is-entering'))
-
-    // Stable per-card offset so blinks and bobs never fall into lockstep.
-    const seed = [...card.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 7
 
     return {
       root,
@@ -581,42 +508,20 @@ export class Sidebar {
       meta,
       metaSignature: '',
       close,
-      canvas,
-      ctx,
-      seed,
       model: card,
       hold: 0,
       holding: false,
     }
   }
 
-  /**
-   * The orchestrator's button, carrying both things worth knowing at a glance: whether
-   * the column is open, and whether a call is up. The second job is load-bearing —
-   * with the column closed, this mark is the only thing on screen saying the microphone
-   * is open. The states are worth telling apart because during a call you are usually
-   * not looking at the screen: connecting, hearing you, thinking, speaking.
-   */
-  setOrchestrator(state: {
-    available: boolean
-    open: boolean
-    call: 'idle' | 'connecting' | 'live' | 'failed'
-    hearing: boolean
-    speaking: boolean
-    thinking: boolean
-  }): void {
-    const live = state.call === 'live'
+  /** The orchestrator's button: whether the column is open, and whether it is working. */
+  setOrchestrator(state: { available: boolean; open: boolean; thinking: boolean }): void {
     const b = this.orchBtn
     b.classList.toggle('is-hidden', !state.available)
     b.classList.toggle('is-on', state.open)
-    b.classList.toggle('is-connecting', state.call === 'connecting')
-    b.classList.toggle('is-failed', state.call === 'failed')
-    b.classList.toggle('is-oncall', live)
-    b.classList.toggle('is-hearing', live && state.hearing)
-    b.classList.toggle('is-thinking', live && state.thinking)
-    b.classList.toggle('is-speaking', live && state.speaking)
+    b.classList.toggle('is-thinking', state.thinking)
     b.setAttribute('aria-pressed', String(state.open))
-    b.title = live ? 'On a call — open the orchestrator to hang up  (Ctrl+Shift+M · ember orch)' : ORCH_TITLE
+    b.title = ORCH_TITLE
   }
 
   /**

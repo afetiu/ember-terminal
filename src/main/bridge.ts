@@ -4,15 +4,15 @@ import { dirname, extname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
 import { app, BrowserWindow } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
-import { renderPanelDocument } from './panelDoc.js'
+import { renderPanelDocument, setViewLoader } from './panelDoc.js'
+import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, rebindFromStatus, unbindSession } from './transcript.js'
-import { registerMedia, requestAnnotate, serveMedia } from './canvas.js'
-import { forgetBrief, trackBrief } from './overview.js'
-import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, saveNote } from './notes.js'
+import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedia } from './canvas.js'
+import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { homedir } from 'node:os'
-import { deskEnv, deskState, haltDesk, onActivity, resumeDesk, setDeskBridge, startDesk, stopDesk } from './desk.js'
+import { deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskState, haltDesk, onActivity, resumeDesk, setDeskBridge, startDesk, stopDesk } from './desk.js'
 import type { DeskActivity } from '../shared/types.js'
 
 /**
@@ -306,7 +306,7 @@ function broadcast(channel: string, payload: unknown): void {
   }
 }
 
-const FORMATS = new Set(['markdown', 'code', 'mermaid', 'html', 'url', 'ask'])
+const FORMATS = new Set(['markdown', 'code', 'mermaid', 'html', 'url', 'ask', 'view'])
 
 /**
  * Images a tab's session has seen or shown, newest first.
@@ -459,6 +459,7 @@ function handlePush(body: Record<string, unknown>): { ok: true; push: PanelPush 
     format: format as PanelPush['format'],
     content,
     ...(body['language'] ? { language: String(body['language']).slice(0, 40) } : {}),
+    ...(body['file'] ? { file: String(body['file']) } : {}),
     ...(options.length ? { options } : {}),
     ...(body['freeText'] === false ? { freeText: false } : {}),
     replace: body['replace'] === true,
@@ -477,6 +478,208 @@ function handlePush(body: Record<string, unknown>): { ok: true; push: PanelPush 
   stacks.set(tabId, stack)
 
   return { ok: true, push }
+}
+
+/** Pushes waiting to hear how they rendered: a diagram that would not draw is reported to the session. */
+const docWaiters = new Map<string, (s: { ok: boolean; error: string; repaired: boolean }) => void>()
+
+export function docStatus(id: string, status: { ok: boolean; error: string; repaired: boolean }): void {
+  docWaiters.get(id)?.(status)
+  docWaiters.delete(id)
+}
+
+/** Wait a moment for a canvas to say how a document drew. Null if nobody said (hidden, or no diagram). */
+function awaitRender(id: string, ms = 4500): Promise<{ ok: boolean; error: string; repaired: boolean } | null> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => {
+      docWaiters.delete(id)
+      resolve(null)
+    }, ms)
+    docWaiters.set(id, (s) => {
+      clearTimeout(t)
+      resolve(s)
+    })
+  })
+}
+
+const hasDiagram = (p: PanelPush) => p.format === 'mermaid' || (p.format === 'markdown' && /```\s*mermaid/i.test(p.content))
+
+/** Where sessions' own views are kept. */
+const VIEWS_DIR = join(CONFIG_DIR, 'views')
+setViewLoader((name) => {
+  if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(name)) return null
+  const file = join(VIEWS_DIR, `${name}.html`)
+  try {
+    return existsSync(file) ? readFileSync(file, 'utf8') : null
+  } catch {
+    return null
+  }
+})
+
+const CODE_LANGS: Record<string, string> = {
+  '.ts': 'ts', '.tsx': 'tsx', '.js': 'js', '.mjs': 'js', '.cjs': 'js', '.jsx': 'jsx', '.py': 'python', '.rs': 'rust', '.go': 'go',
+  '.cs': 'csharp', '.java': 'java', '.kt': 'kotlin', '.rb': 'ruby', '.php': 'php', '.sh': 'bash', '.ps1': 'powershell', '.sql': 'sql',
+  '.css': 'css', '.scss': 'scss', '.yml': 'yaml', '.yaml': 'yaml', '.toml': 'toml', '.xml': 'xml', '.txt': 'text', '.log': 'text', '.ini': 'ini',
+}
+
+/**
+ * A PDF, drawn page by page with pdf.js into a scroller of fixed height: the pages as
+ * pictures, sharp at the frame's width, lazily as they scroll into view. No plugin.
+ */
+function pdfPage(mediaId: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;background:transparent;font:13px system-ui,sans-serif;color:var(--ember-muted,#999)}
+#v{height:640px;overflow:auto;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px}
+canvas{display:block;max-width:100%;border-radius:6px;box-shadow:0 10px 30px -12px rgba(0,0,0,.55);background:#fff}
+.n{font-size:11px;opacity:.6;margin-top:-8px}
+</style></head><body><div id="v"><div class="n">Opening…</div></div>
+<script type="module">
+// Loaded with import(), not an import line: the bundler rewrites lines that start with import.
+const pdfjs = await import('/vendor/pdf.min.mjs')
+pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.min.mjs'
+const v = document.getElementById('v')
+try {
+  const doc = await pdfjs.getDocument('/media/${mediaId}').promise
+  v.innerHTML = ''
+  const width = () => Math.min(900, v.clientWidth - 28)
+  const slots = []
+  for (let i = 1; i <= Math.min(doc.numPages, 200); i++) {
+    const c = document.createElement('canvas')
+    c.dataset.p = i
+    c.style.width = width() + 'px'
+    c.style.aspectRatio = '0.7727'
+    v.appendChild(c)
+    slots.push(c)
+  }
+  const draw = async (c) => {
+    if (c.dataset.done) return
+    c.dataset.done = '1'
+    const page = await doc.getPage(Number(c.dataset.p))
+    const base = page.getViewport({ scale: 1 })
+    const scale = (width() / base.width) * (window.devicePixelRatio || 1)
+    const vp = page.getViewport({ scale })
+    c.width = vp.width
+    c.height = vp.height
+    c.style.aspectRatio = vp.width + ' / ' + vp.height
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise
+  }
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && draw(e.target)), { root: v, rootMargin: '600px' })
+  slots.forEach((c) => io.observe(c))
+  const n = document.createElement('div')
+  n.className = 'n'
+  n.textContent = doc.numPages + (doc.numPages === 1 ? ' page' : ' pages')
+  v.appendChild(n)
+} catch (e) {
+  v.innerHTML = '<div class="n">This PDF could not be opened: ' + String(e && e.message || e).replace(/</g, '&lt;') + '</div>'
+}
+</script></body></html>`
+}
+
+/** Files being shown, watched so a save redraws them. */
+const watched = new Map<string, { tabId: string; title: string; stop: () => void }>()
+
+/** Split a CSV/TSV line, honouring quotes. */
+function splitRow(line: string, sep: string): string[] {
+  const out: string[] = []
+  let cur = ''
+  let q = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]!
+    if (q) {
+      if (c === '"' && line[i + 1] === '"') {
+        cur += '"'
+        i++
+      } else if (c === '"') q = false
+      else cur += c
+    } else if (c === '"') q = true
+    else if (c === sep) {
+      out.push(cur)
+      cur = ''
+    } else cur += c
+  }
+  out.push(cur)
+  return out
+}
+
+/** Turn a file into a push: rendered, not resent by the session. */
+function pushForFile(tabId: string, path: string, title: string): PanelPush {
+  const ext = extname(path).toLowerCase()
+  const size = statSync(path).size
+  let body: Record<string, unknown>
+  if (ext === '.pdf') {
+    const m = registerMedia(path)
+    if ('error' in m) throw new Error(m.error)
+    // A PDF needs the browser's own viewer, which a sandboxed document frame may not load:
+    // it opens as a page in the canvas's browser instead, at a fixed, readable height.
+    body = { format: 'html', content: pdfPage(m.id) }
+  } else {
+    if (size > 4 * 1024 * 1024) throw new Error('file is larger than 4 MB')
+    const text = readFileSync(path, 'utf8')
+    const isTodo = path.toLowerCase() === join(NOTES_DIR, TODO_FILE).toLowerCase()
+    if (isTodo) {
+      const items = text
+        .split(/\r?\n/)
+        .map((l) => /^\s*[-*]\s*\[( |x|X)\]\s*(.*)$/.exec(l))
+        .filter((m): m is RegExpExecArray => !!m && !!m[2]!.trim())
+        .map((m) => ({ text: m[2]!.trim(), done: m[1] !== ' ' }))
+      body = { format: 'view', content: JSON.stringify({ view: 'todo', data: { items } }) }
+    } else if (ext === '.md' || ext === '.markdown') body = { format: 'markdown', content: text || ' ' }
+    else if (ext === '.html' || ext === '.htm') body = { format: 'html', content: text }
+    else if (ext === '.mmd' || ext === '.mermaid') body = { format: 'mermaid', content: text }
+    else if (ext === '.csv' || ext === '.tsv') {
+      const sep = ext === '.tsv' ? '\t' : text.split('\n', 1)[0]!.includes(';') && !text.split('\n', 1)[0]!.includes(',') ? ';' : ','
+      const lines = text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 2001)
+      const [head = '', ...rows] = lines
+      body = { format: 'view', content: JSON.stringify({ view: 'table', data: { columns: splitRow(head, sep), rows: rows.map((r) => splitRow(r, sep)) } }) }
+    } else if (ext === '.json') {
+      let value: unknown
+      try {
+        value = JSON.parse(text)
+      } catch {
+        value = text
+      }
+      body = { format: 'view', content: JSON.stringify({ view: 'json', data: { value } }) }
+    } else body = { format: 'code', content: text || ' ', language: CODE_LANGS[ext] ?? ext.slice(1) }
+  }
+  const result = handlePush({ tabId, title, file: path, ...body })
+  if (!result.ok) throw new Error(result.error)
+  return result.push
+}
+
+export function showFile(tabId: string, raw: string, title?: string): { ok: true; title: string; live: boolean } {
+  const path = raw.replace(/^file:\/\//, '')
+  if (!isAbsolute(path)) throw new Error('path must be absolute')
+  if (!existsSync(path)) throw new Error(`no such file: ${path}`)
+  const name = title || path.split(/[\\/]/).pop() || path
+  const push = pushForFile(tabId, path, name)
+  const { act: _act, ...forRenderer } = push
+  broadcast('ember:panel:push', forRenderer)
+  // Watch it: saved again, it redraws in place. One watcher per file, for a few hours.
+  watched.get(path)?.stop()
+  let last = statSync(path).mtimeMs
+  const timer = setInterval(() => {
+    try {
+      const m = statSync(path).mtimeMs
+      if (m === last) return
+      last = m
+      const again = pushForFile(tabId, path, name)
+      const { act: _a, ...r } = again
+      broadcast('ember:panel:push', r)
+    } catch {
+      /* gone or unreadable for a moment; try again next tick */
+    }
+  }, 900)
+  const stopAt = setTimeout(() => watched.get(path)?.stop(), 4 * 60 * 60 * 1000)
+  watched.set(path, {
+    tabId,
+    title: name,
+    stop: () => {
+      clearInterval(timer)
+      clearTimeout(stopAt)
+      watched.delete(path)
+    },
+  })
+  return { ok: true, title: name, live: true }
 }
 
 /** Which push a document secret belongs to, and therefore which tab it may speak for. */
@@ -500,7 +703,15 @@ function route(req: IncomingMessage, res: ServerResponse): void {
       const found = stack.find((p) => p.id === id)
       // ?tone=light&paper=rrggbb come from the renderer, the one place that knows the theme.
       const paper = /^[0-9a-f]{6}$/i.test(url.searchParams.get('paper') ?? '') ? `#${url.searchParams.get('paper')}` : undefined
-      if (found) return send(res, 200, renderPanelDocument(found, 'bridge', url.searchParams.get('tone') === 'light', paper), 'text/html; charset=utf-8')
+      // ?accent=&fg=&bg= (rrggbb): the theme's colours, so documents and diagrams match it.
+      const hex = (k: string) => (/^[0-9a-f]{6}$/i.test(url.searchParams.get(k) ?? '') ? `#${url.searchParams.get(k)}` : null)
+      const accent = hex('accent')
+      const fg = hex('fg')
+      const bg = hex('bg')
+      const palette = accent && fg && bg ? { accent, fg, bg } : undefined
+      // ?target=phone: the phone's version (answers by postMessage, not a POST to this bridge).
+      const target = url.searchParams.get('target') === 'phone' ? 'phone' : 'bridge'
+      if (found) return send(res, 200, renderPanelDocument(found, target, url.searchParams.get('tone') === 'light', paper, palette), 'text/html; charset=utf-8')
     }
     return send(res, 404, '<!doctype html><title>gone</title>', 'text/html; charset=utf-8')
   }
@@ -521,9 +732,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 
   // Mermaid, served to the document rather than bundled into it. One 3MB file that
   // Chromium then caches, instead of 3MB inlined into every diagram we push.
-  if (req.method === 'GET' && url.pathname === '/vendor/mermaid.min.js') {
-    const file = resourcePath('vendor', 'mermaid.min.js')
-    if (!existsSync(file)) return send(res, 404, '// mermaid was not shipped with this build', 'text/javascript')
+  const VENDOR = ['mermaid.min.js', 'pdf.min.mjs', 'pdf.worker.min.mjs']
+  if (req.method === 'GET' && url.pathname.startsWith('/vendor/') && VENDOR.includes(url.pathname.slice(8))) {
+    const file = resourcePath('vendor', url.pathname.slice(8))
+    if (!existsSync(file)) return send(res, 404, '// not shipped with this build', 'text/javascript')
     res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' })
     createReadStream(file).pipe(res)
     return
@@ -606,6 +818,51 @@ function route(req: IncomingMessage, res: ServerResponse): void {
             return send(res, 200, JSON.stringify({ ok: true, state: resumeDesk() }))
           case 'status':
             return send(res, 200, JSON.stringify({ ok: true, state: deskState() }))
+          // Ember Hands. Pointing shows and explains, and never clicks; acting clicks and
+          // types. Each is allowed only as far as the user's setting says.
+          case 'point': {
+            // Something on the canvas itself: Ember knows where it drew it, so the canvas points.
+            if (body['object']) {
+              const r = await requestCanvasPoint(broadcast, {
+                tabId: String(body['tabId'] ?? ''),
+                object: String(body['object']),
+                text: body['text'] ? String(body['text']) : '',
+                say: body['say'] ? String(body['say']).slice(0, 400) : '',
+                step: typeof body['step'] === 'number' ? body['step'] : undefined,
+                steps: typeof body['steps'] === 'number' ? body['steps'] : undefined,
+              })
+              return send(res, 200, JSON.stringify(r))
+            }
+            const mode = loadConfig().hands ?? 'show'
+            if (mode === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Ember Hands is off. The user can turn it on from the hand control at the top of the canvas.' }))
+            const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
+            const r = await deskPoint({
+              window: body['window'] ? String(body['window']) : undefined,
+              name: body['name'] ? String(body['name']) : undefined,
+              ctype: body['ctype'] ? String(body['ctype']) : undefined,
+              x: num(body['x']),
+              y: num(body['y']),
+              say: body['say'] ? String(body['say']).slice(0, 400) : undefined,
+              step: num(body['step']),
+              steps: num(body['steps']),
+            })
+            return send(res, 200, JSON.stringify(r))
+          }
+          case 'act': {
+            const mode = loadConfig().hands ?? 'show'
+            if (mode !== 'act')
+              return send(res, 200, JSON.stringify({ ok: false, error: `Ember Hands is set to "${mode === 'off' ? 'Off' : 'Show me'}": it may ${mode === 'off' ? 'not use the desktop' : 'point but not click or type'}. Ask the user to switch it to "Show & act" (the hand control at the top of the canvas), or point instead.` }))
+            const r = await deskAct(String(body['script'] ?? ''))
+            return send(res, 200, JSON.stringify(r))
+          }
+          case 'look': {
+            if ((loadConfig().hands ?? 'show') === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Ember Hands is off.' }))
+            const r = await deskLook(body['window'] ? String(body['window']) : undefined, typeof body['depth'] === 'number' ? body['depth'] : 4)
+            return send(res, 200, JSON.stringify(r))
+          }
+          case 'hide':
+            deskHideCallout()
+            return send(res, 200, JSON.stringify({ ok: true }))
           default:
             return send(res, 404, JSON.stringify({ error: 'no such route' }))
         }
@@ -622,6 +879,9 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const tabId = String(body['tabId'] ?? '')
         if (!tabId) return send(res, 400, JSON.stringify({ error: 'tabId is required' }))
         const auto = body['auto'] === true
+        // An image a session merely looked at (a screenshot for itself) is not put up in a
+        // Loom tab; only one it chose to show is.
+        if (auto && canvasTabs.has(tabId)) return send(res, 200, JSON.stringify({ ok: true, skipped: 'canvas' }))
         const raw = body['paths']
         const many = Array.isArray(raw) ? raw.slice(0, 12).map(String) : typeof raw === 'string' && raw ? [raw] : null
         const added = (many ?? [null])
@@ -640,14 +900,142 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return
   }
 
+  // Change a piece with a few find-and-replace edits instead of sending all of it again:
+  // the session writes a few tokens, not the whole page. Works on what was pushed, and on a
+  // diagram or table that sits in a reply (its source comes from the canvas's screen list).
+  // A file shown by its path: the session sends a path, not the content, so a long report
+  // or a page it already wrote costs it nothing to show. It stays live: saved again, it
+  // redraws in place.
+  if (req.method === 'POST' && url.pathname === '/canvas/file') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        const path = String(body['path'] ?? '')
+        if (!tabId || !path) throw new Error('tabId and path are required')
+        const r = showFile(tabId, path, body['title'] ? String(body['title']) : undefined)
+        send(res, 200, JSON.stringify(r))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // A session saving a view of its own: an html page that draws window.EMBER_DATA. Kept on
+  // disk, so every later session can send data to it by name.
+  if (req.method === 'POST' && url.pathname === '/canvas/view') {
+    void readJson(req)
+      .then((body) => {
+        const name = String(body['name'] ?? '').trim().toLowerCase()
+        const html = String(body['html'] ?? '')
+        if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(name)) throw new Error('name: 2-41 characters, a-z, 0-9 and -')
+        if ((BUILTIN_VIEWS as readonly string[]).includes(name)) throw new Error(`"${name}" is a built-in view`)
+        if (!/<html|<!doctype/i.test(html)) throw new Error('html must be a whole document')
+        mkdirSync(VIEWS_DIR, { recursive: true })
+        writeFileSync(join(VIEWS_DIR, `${name}.html`), html, 'utf8')
+        send(res, 200, JSON.stringify({ ok: true, name }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // The session's notes and todo list: show one by name, add a todo, tick one, write to a note.
+  if (req.method === 'POST' && url.pathname === '/canvas/notes') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        const op = String(body['op'] ?? '')
+        const name = String(body['name'] ?? '').trim()
+        const text = String(body['text'] ?? '')
+        const find = (q: string) => {
+          const n = q.toLowerCase().replace(/\.md$/, '')
+          const all = listNotes()
+          return all.find((x) => x.id.toLowerCase().replace(/\.md$/, '') === n) ?? all.find((x) => x.title.toLowerCase() === n) ?? all.find((x) => x.title.toLowerCase().includes(n) || x.id.toLowerCase().includes(n))
+        }
+        if (op === 'show') {
+          if (/^todos?$/i.test(name)) {
+            readTodo()
+            return send(res, 200, JSON.stringify(showFile(tabId, join(NOTES_DIR, TODO_FILE), 'Todo')))
+          }
+          const note = find(name)
+          if (!note) throw new Error(`No note matches "${name}". Notes: ${listNotes().slice(0, 30).map((x) => x.title).join(', ')}`)
+          return send(res, 200, JSON.stringify(showFile(tabId, join(NOTES_DIR, note.id), note.title)))
+        }
+        if (op === 'list') return send(res, 200, JSON.stringify({ ok: true, notes: listNotes().map((x) => x.title) }))
+        if (op === 'todo_add') {
+          if (!text.trim()) throw new Error('text is required')
+          const cur = readTodo()
+          writeTodo(`${cur.replace(/\s*$/, '')}\n- [ ] ${text.trim()}\n`)
+          return send(res, 200, JSON.stringify({ ok: true }))
+        }
+        if (op === 'todo_done') {
+          const q = text.trim().toLowerCase()
+          const lines = readTodo().split('\n')
+          const i = lines.findIndex((l) => /^\s*[-*]\s*\[ \]/.test(l) && l.toLowerCase().includes(q))
+          if (i < 0) throw new Error(`No open todo contains "${text}"`)
+          lines[i] = lines[i]!.replace('[ ]', '[x]')
+          writeTodo(lines.join('\n'))
+          return send(res, 200, JSON.stringify({ ok: true, done: lines[i]!.replace(/^\s*[-*]\s*\[x\]\s*/, '') }))
+        }
+        if (op === 'append' || op === 'create') {
+          const note = op === 'append' && name ? find(name) : undefined
+          if (note) {
+            const r = saveNote(note.id, `${(readNote(note.id) ?? '').replace(/\s*$/, '')}\n\n${text}\n`)
+            return send(res, 200, JSON.stringify({ ok: r.ok, title: note.title }))
+          }
+          const made = createNote(name && !text.startsWith('#') ? `# ${name}\n\n${text}\n` : `${text}\n`)
+          if (!made) throw new Error('could not create the note')
+          return send(res, 200, JSON.stringify({ ok: true, title: made.title, created: true }))
+        }
+        throw new Error(`unknown op "${op}"`)
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/panel/edit') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        const title = String(body['title'] ?? '')
+        if (!tabId || !title) throw new Error('tabId and title are required')
+        const edits = (Array.isArray(body['edits']) ? (body['edits'] as Array<Record<string, unknown>>) : []).slice(0, 40)
+        if (!edits.length) throw new Error('edits is required')
+        const norm = (t: string) => t.replace(/["'`“”‘’]/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
+        const pushed = (stacks.get(tabId) ?? []).find((p) => norm(p.title) === norm(title) && p.format !== 'images' && p.format !== 'url')
+        const placed = pushed ? null : screenOf(tabId).find((it) => norm(it.title) === norm(title) && it.source)
+        if (!pushed && !placed) throw new Error(`Nothing called "${title}" is on the canvas. Call on_screen for the exact titles.`)
+        let content = pushed ? pushed.content : placed!.source!
+        const format = pushed ? pushed.format : placed!.format === 'mermaid' ? 'mermaid' : placed!.format === 'code' ? 'code' : 'markdown'
+        for (const e of edits) {
+          const find = String(e['find'] ?? '')
+          const replace = String(e['replace'] ?? '')
+          if (!find) throw new Error('every edit needs find')
+          const count = content.split(find).length - 1
+          if (!count) throw new Error(`Not found in "${title}": ${find.slice(0, 120)}`)
+          if (count > 1 && e['all'] !== true) throw new Error(`Found ${count} times in "${title}" (add more context, or all: true): ${find.slice(0, 120)}`)
+          content = e['all'] === true ? content.split(find).join(replace) : content.replace(find, () => replace)
+        }
+        const result = handlePush({ tabId, title: pushed?.title ?? placed?.title ?? title, format, content, ...(pushed?.language ? { language: pushed.language } : {}) })
+        if (!result.ok) throw new Error(result.error)
+        const { act: _act, ...forRenderer } = result.push
+        const wait = hasDiagram(result.push) ? awaitRender(result.push.id) : null
+        broadcast('ember:panel:push', forRenderer)
+        if (!wait) return send(res, 200, JSON.stringify({ ok: true, edits: edits.length }))
+        void wait.then((render) => send(res, 200, JSON.stringify({ ok: true, edits: edits.length, render })))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
   if (req.method === 'POST' && url.pathname === '/panel') {
     void readJson(req)
       .then((body) => {
         const result = handlePush(body)
         if (!result.ok) return send(res, 400, JSON.stringify({ error: result.error }))
         const { act: _act, ...forRenderer } = result.push
+        const wait = canvasTabs.has(result.push.tabId) && hasDiagram(result.push) ? awaitRender(result.push.id) : null
         broadcast('ember:panel:push', forRenderer)
-        send(res, 200, JSON.stringify({ ok: true, id: result.push.id }))
+        if (!wait) return send(res, 200, JSON.stringify({ ok: true, id: result.push.id }))
+        void wait.then((render) => send(res, 200, JSON.stringify({ ok: true, id: result.push.id, render })))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return
@@ -662,7 +1050,6 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const sessionId = String(body['sessionId'] ?? '')
         const cwd = String(body['cwd'] ?? '')
         bindSession(tabId, sessionId, cwd)
-        if (tabId && sessionId && cwd) trackBrief(tabId, sessionId, cwd)
         send(res, 200, JSON.stringify({ ok: true }))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
@@ -723,6 +1110,25 @@ function route(req: IncomingMessage, res: ServerResponse): void {
   }
 
   // A Loom canvas's steps card: the plan, as the session keeps it.
+  // What the user has placed on the canvas, for the session to refer to and update in place.
+  // A piece Claude pushed carries its latest content, so it can be edited rather than redone.
+  if (req.method === 'POST' && url.pathname === '/canvas/screen') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        if (!tabId) throw new Error('tabId is required')
+        const stack = stacks.get(tabId) ?? []
+        const items = screenOf(tabId).map((it) => {
+          if (it.source) return it
+          const push = [...stack].reverse().find((p) => p.title === it.title)
+          return push && push.format !== 'url' ? { ...it, source: push.content.slice(0, 8000) } : it
+        })
+        send(res, 200, JSON.stringify({ items }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
   if (req.method === 'POST' && url.pathname === '/canvas/steps') {
     void readJson(req)
       .then((body) => {
@@ -949,7 +1355,7 @@ export async function startBridge(): Promise<void> {
  * in a frame of its own: model-authored markup is rendered on the bridge's origin, never
  * in the process that holds the IPC handles.
  */
-export function hostDoc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code', content: string): string {
+export function hostDoc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string): string {
   if (!port) return ''
   const result = handlePush({ tabId, title, format, content })
   return result.ok ? `http://127.0.0.1:${port}/doc/${result.push.id}` : ''
@@ -967,5 +1373,4 @@ export function forgetTab(tabId: string): void {
   stacks.delete(tabId)
   images.delete(tabId)
   unbindSession(tabId)
-  forgetBrief(tabId)
 }

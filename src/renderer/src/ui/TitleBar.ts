@@ -7,19 +7,19 @@
 import logoUrl from '../assets/logo.png'
 
 export interface VoiceToggles {
-  /** Show or hide the visualisation panel on the tab you are looking at. */
-  onPanel: () => void
-  /** Ask the Claude session in this tab to put what it is on about onto the panel. */
-  onVisualize: () => void
   /** Move between the dark and the light theme of the pair. */
   onMode: () => void
 }
 
+/** Lucide-style line icons, drawn in the text colour. */
+const svg = (d: string) =>
+  `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
+const MOON = svg('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>')
+const SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>')
+
 export class TitleBar {
   readonly el: HTMLElement
   private readonly voice: HTMLElement
-  private readonly panelBtn: HTMLButtonElement
-  private readonly visualizeBtn: HTMLButtonElement
   private readonly modeBtn: HTMLButtonElement
 
   constructor(
@@ -36,7 +36,7 @@ export class TitleBar {
     toggle.className = 'ember-sidebar-toggle'
     toggle.title = 'Toggle sidebar  (Ctrl+B · ember sidebar)'
     toggle.setAttribute('aria-label', 'Toggle sidebar')
-    toggle.innerHTML = '&#xE700;'
+    toggle.innerHTML = svg('<path d="M4 6h16M4 12h16M4 18h16"/>')
     toggle.addEventListener('click', () => this.onToggleSidebar())
 
     const mark = document.createElement('img')
@@ -55,41 +55,15 @@ export class TitleBar {
     drag.className = 'ember-drag'
     drag.addEventListener('dblclick', () => window.ember.window.toggleMaximize())
 
-    // Up here rather than over the terminal: anything floating on the grid ends up on
-    // top of whatever the CLI is drawing, which is exactly what the orb did before it
-    // was taken out. (The orchestrator's own button used to sit here too; it moved to
-    // the sidebar, next to the sessions it runs and on the edge its column opens from.)
+    // The window's own controls only: the side panel and its Visualize button are gone —
+    // every tab is a Loom canvas, which shows what the session shows, inline.
     this.voice = document.createElement('div')
     this.voice.className = 'ember-voicetoggles'
 
-    // The panel switch sits up here rather than inside the panel, because the one state
-    // it has to be reachable from is the one where the panel is a zero-width strip with
-    // nothing on it to press. In a flex wrapper, not directly in the bar: the title bar
-    // stretches its children, so a fixed-height button parked in it aligns to the top.
-    this.panelBtn = this.makeToggle(
-      'panel',
-      'Show or hide the panel  (Ctrl+Shift+J)',
-      '&#xE90D;',
-      toggles.onPanel
-    )
-    this.panelBtn.classList.add('ember-paneltoggle')
+    // Night and Day: one press between the dark theme and the light one.
+    this.modeBtn = this.makeToggle('mode', 'Switch to Day  (ember mode)', MOON, toggles.onMode)
 
-    // "Visualize": one press types `/visualize` into the tab's Claude session, which puts
-    // whatever is being discussed onto the panel. Shown only while a Claude is running in
-    // the focused pane; a shell has nothing to visualise.
-    this.visualizeBtn = document.createElement('button')
-    this.visualizeBtn.className = 'ember-visualize is-hidden'
-    this.visualizeBtn.title = 'Ask Claude to put this on the panel  (ember visualize)'
-    this.visualizeBtn.setAttribute('aria-label', 'Visualize this')
-    this.visualizeBtn.innerHTML = '<span class="ember-visualize-mark">&#xE9D2;</span><span>Visualize</span>'
-    this.visualizeBtn.addEventListener('click', toggles.onVisualize)
-
-    // Night and Day: one press between the dark theme and the light one. Up here because
-    // it is about the whole window, and it shows where you are — a moon at night, a sun
-    // by day.
-    this.modeBtn = this.makeToggle('mode', 'Switch to Day  (ember mode)', '&#xE708;', toggles.onMode)
-
-    this.voice.append(this.visualizeBtn, this.modeBtn, this.panelBtn)
+    this.voice.append(this.modeBtn)
 
     this.el.append(brand, drag, this.voice, this.buildWindowControls())
   }
@@ -105,32 +79,15 @@ export class TitleBar {
     return b
   }
 
-  /**
-   * The panel switch.
-   *
-   * `unseen` is the case that earns the button its place: a background session pushed
-   * something while the panel was closed, and without a mark here the only evidence
-   * would be a strip of nothing at the edge of the window.
-   */
-  /** The Visualize button exists only while a Claude session has the focused pane. */
-  setVisualize(available: boolean): void {
-    this.visualizeBtn.classList.toggle('is-hidden', !available)
-  }
-
   setMode(light: boolean): void {
-    // Segoe Fluent Icons: Brightness, QuietHours.
-    const glyph = light ? '\uE706' : '\uE708'
-    if (this.modeBtn.textContent !== glyph) this.modeBtn.textContent = glyph
+    const icon = light ? SUN : MOON
+    if (this.modeBtn.dataset['icon'] !== (light ? 'sun' : 'moon')) {
+      this.modeBtn.innerHTML = icon
+      this.modeBtn.dataset['icon'] = light ? 'sun' : 'moon'
+    }
     const label = light ? 'Switch to Night  (ember mode)' : 'Switch to Day  (ember mode)'
     this.modeBtn.title = label
     this.modeBtn.setAttribute('aria-label', label)
-  }
-
-  setPanel(state: { available: boolean; open: boolean; unseen: boolean }): void {
-    this.panelBtn.classList.toggle('is-hidden', !state.available)
-    this.panelBtn.classList.toggle('is-on', state.open)
-    this.panelBtn.classList.toggle('has-unseen', state.unseen)
-    this.panelBtn.setAttribute('aria-pressed', String(state.open))
   }
 
   private buildWindowControls(): HTMLElement {

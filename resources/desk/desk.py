@@ -11,7 +11,7 @@ draw Claude's cursor and show what it is doing in the sidebar.
 Protocol: one JSON line per connection: {"argv": [...], "token": "...", "tab": "..."}
           reply {"ok": bool, "out": "..."}.
 """
-import argparse, contextlib, ctypes, ctypes.wintypes as wt, io, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, traceback
+import argparse, contextlib, ctypes, ctypes.wintypes as wt, io, json, math, os, re, shlex, shutil, socket, subprocess, sys, threading, time, traceback
 
 DEPS = ("pyautogui", "pywinauto", "mss", "PIL", "pyperclip")
 PORT = int(os.environ.get("EMBER_DESK_PORT", "0") or 0)
@@ -21,7 +21,9 @@ BRIDGE_TOKEN = os.environ.get("EMBER_BRIDGE_TOKEN", "")
 HOME = os.environ.get("EMBER_HOME") or os.path.join(os.path.expanduser("~"), ".ember")
 HALT = os.path.join(HOME, "desk.halt")
 SHOT_DIR = os.path.join(os.environ.get("TEMP", "."), "ember-desk-shots")
-GLIDE = float(os.environ.get("EMBER_DESK_GLIDE", "0.12"))   # seconds for the drawn cursor to arrive before a click lands
+GLIDE = float(os.environ.get("EMBER_DESK_GLIDE", "1"))   # 0 turns the wait for the drawn cursor off; anything else = on
+SNAP_TTL = 0.7          # seconds a window's cached UI Automation tree stays good for a lookup
+READ_AHEAD_MAX_MS = 300  # windows whose tree takes longer than this to read are not read ahead
 FIND_TIMEOUT = float(os.environ.get("EMBER_DESK_FIND_TIMEOUT", "2"))   # how long a control may take to appear
 
 HELP = """desk - Claude drives the desktop (screenshots, mouse, keys, UI Automation). Part of Ember.
@@ -42,6 +44,8 @@ HELP = """desk - Claude drives the desktop (screenshots, mouse, keys, UI Automat
   desk settext TITLE NAME TEXT                            fill an edit control
   desk read TITLE [NAME]                                  visible text of a window / control
   desk clip [TEXT]                                        clipboard get / set
+  desk point TITLE NAME [--say TEXT] | desk point --xy X Y [--say TEXT]   show where something is (never clicks)
+  desk bench                                              time the read-only paths (no mouse, no keys)
   desk sleep S                                            pause inside a batch
   desk halt | desk resume | desk status                   the same Stop button Ember shows in its sidebar
 """
@@ -88,9 +92,24 @@ def _report(action, x=None, y=None, label=""):
         threading.Thread(target=pump, daemon=True).start()
     _reports.put(body)
 
+# Ember draws its pointer gliding to each point; the real click must land when it arrives,
+# not before. Both sides compute the glide from the same formula (distance in physical
+# pixels -> 180..650 ms), so no handshake is needed: the daemon just waits that long.
+_last_xy = None
+_last_at = 0.0
+def _glide_ms(x, y):
+    global _last_xy, _last_at
+    now = time.time()
+    if _last_xy is None or now - _last_at > 20: dist = 160.0   # appearing: a short glide in
+    else: dist = math.hypot(x - _last_xy[0], y - _last_xy[1])
+    _last_xy = (x, y); _last_at = now
+    if dist < 2: return 0.0
+    return max(180.0, min(650.0, 180.0 + 95.0 * math.log2(1.0 + dist / 60.0)))
+
 def _mark(x, y, action="move", label="", wait=0.0):
+    ms = _glide_ms(int(x), int(y))
     _report(action, int(x), int(y), label)
-    if wait: time.sleep(wait)
+    if wait and GLIDE and ms: time.sleep(ms / 1000.0 + 0.05)
 
 _pg_mod = None
 def _pg():
@@ -315,7 +334,9 @@ def _dump(h, max_depth, show_all, out):
     for pid in (dll.UIA_NamePropertyId, dll.UIA_ControlTypePropertyId, dll.UIA_BoundingRectanglePropertyId, dll.UIA_ValueValuePropertyId): cr.AddProperty(pid)
     cr.TreeScope = ui.tree_scope["subtree"]
     cr.TreeFilter = ui.iuia.ControlViewCondition
+    t0 = time.time()
     root = ui.iuia.ElementFromHandle(h).BuildUpdatedCache(cr)
+    _snap_ms[h] = (time.time() - t0) * 1000
     def walk(e, depth):
         try:
             name = e.CachedName or ""; ctype = _ctype_name(e.CachedControlType); r = e.CachedBoundingRectangle
@@ -336,6 +357,64 @@ def _dump(h, max_depth, show_all, out):
             for i in range(n): walk(kids.GetElement(i), depth + 1)
     walk(root, 0)
 
+# A window's control tree, read once over one cross-process call, kept for SNAP_TTL and
+# dropped by any action. find/press search it in-process instead of asking UIA again, and
+# after each action the foreground window is read ahead so the next lookup is already warm.
+_snap = {}      # hwnd -> (taken_at, cached_root)
+_snap_ms = {}   # hwnd -> how long its last read took (ms)
+def _snap_request(ui, dll):
+    cr = ui.iuia.CreateCacheRequest()
+    for pid in (dll.UIA_NamePropertyId, dll.UIA_ControlTypePropertyId, dll.UIA_BoundingRectanglePropertyId,
+                dll.UIA_IsOffscreenPropertyId, dll.UIA_ValueValuePropertyId):
+        cr.AddProperty(pid)
+    cr.TreeScope = ui.tree_scope["subtree"]
+    cr.TreeFilter = ui.iuia.ControlViewCondition
+    return cr
+
+def _snapshot(h, build=False):
+    got = _snap.get(h)
+    if got and time.time() - got[0] < SNAP_TTL: return got[1]
+    if not build: return None
+    ui = _iuia(); dll = ui.UIA_dll
+    t0 = time.time()
+    root = ui.iuia.ElementFromHandle(h).BuildUpdatedCache(_snap_request(ui, dll))
+    _snap_ms[h] = (time.time() - t0) * 1000
+    _snap[h] = (time.time(), root)
+    return root
+
+def _invalidate():
+    _snap.clear()
+
+def _find_cached(root, name, ctype):
+    """Matches in a cached tree: no cross-process calls at all."""
+    ui = _iuia()
+    exact = name.startswith("^") and name.endswith("$") and not _META.search(name[1:-1])
+    pat = None if exact else re.compile(name if name.startswith("^") else f".*{name}.*")
+    tid = ui.known_control_types.get(ctype) if ctype else None
+    out = []
+    def walk(e):
+        try:
+            nm = e.CachedName or ""
+            if (tid is None or e.CachedControlType == tid) and ((nm == name[1:-1]) if exact else bool(pat.match(nm))):
+                out.append(e)
+            kids = e.GetCachedChildren(); n = kids.Length
+        except Exception:
+            return
+        for i in range(n): walk(kids.GetElement(i))
+    walk(root)
+    return out
+
+def _read_ahead():
+    """After an action, while nobody is waiting: read the foreground window's tree so the next
+    find/press resolves from memory. Skipped for windows whose tree is slow to read."""
+    try:
+        time.sleep(0.08)   # let the UI settle after the action
+        h = _u32.GetForegroundWindow()
+        if not h or _snap_ms.get(h, 0) > READ_AHEAD_MAX_MS: return
+        _snapshot(h, build=True)
+    except Exception:
+        pass
+
 def _tree_lines(title, depth, show_all):
     h = _hwnd(title); out = []
     try: _dump(h, depth, show_all, out)
@@ -353,6 +432,10 @@ def _find_all(h, name, ctype):
     (when it is a plain ^literal$) and the control type go into the UIA condition, and the
     rest of the filtering runs on cached properties, so a web page with thousands of nodes
     costs one round trip instead of one per node."""
+    snap = _snapshot(h)
+    if snap is not None:
+        hit = _find_cached(snap, name, ctype)
+        if hit: return hit
     ui = _iuia(); dll = ui.UIA_dll
     exact = name.startswith("^") and name.endswith("$") and not _META.search(name[1:-1])
     conds = []
@@ -447,6 +530,55 @@ def cmd_read(a):
         return
     print("\n".join(l for l in _tree_lines(a.title, 25, True) if "''" not in l))
 
+def cmd_point(a):
+    """Show where something is: Ember's pointer glides there with a callout. Never clicks."""
+    say = (a.say or "").strip()
+    rect = None; found = ""
+    if a.xy:
+        x, y = a.xy
+    else:
+        if not a.title or not a.name: raise SystemExit("point: give TITLE NAME, or --xy X Y")
+        _, c = _ctrl(a)
+        r = c.rectangle(); x, y = (r.left + r.right) // 2, (r.top + r.bottom) // 2
+        rect = [r.left, r.top, r.right, r.bottom]; found = c.window_text()
+    _glide_ms(int(x), int(y))
+    _report("point", int(x), int(y), (say or found or "here")[:120])
+    print(json.dumps({"x": x, "y": y, "found": found, "rect": rect, "say": say}))
+
+def cmd_bench(a):
+    """The read-only paths, timed. Nothing here moves the mouse or presses a key."""
+    rows = []
+    def t(label, f):
+        t0 = time.time()
+        try: f(); ok = "ok"
+        except SystemExit as e: ok = str(e.code)[:60]
+        except Exception as e: ok = type(e).__name__
+        rows.append((label, (time.time() - t0) * 1000, ok))
+    fg = _u32.GetForegroundWindow()
+    t("windows (enumerate)", _enum_windows)
+    if fg:
+        _invalidate()
+        t(f"tree depth 3 ({_title(fg)[:30]})", lambda: _dump(fg, 3, False, []))
+        _invalidate()
+        t("snapshot read (cold)", lambda: _snapshot(fg, build=True))
+        t("find a Button (warm, from snapshot)", lambda: _find_cached(_snapshot(fg), ".", "Button"))
+        _invalidate()
+        t("find a Button (cold, one UIA call)", lambda: _find_all(fg, ".", "Button"))
+        def resolve():
+            cands = _find_all(fg, ".", "Button")
+            if cands: _pick(cands, fg)
+        t("press resolve, no invoke (cold)", resolve)
+        _snapshot(fg, build=True)
+        t("press resolve, no invoke (warm)", resolve)
+    note = [h for h, n in _enum_windows() if "notepad" in n.lower()]
+    if note:
+        _invalidate()
+        t("find MenuItem in Notepad (cold)", lambda: _find_all(note[0], "File", "MenuItem"))
+        _snapshot(note[0], build=True)
+        t("find MenuItem in Notepad (warm)", lambda: _find_all(note[0], "File", "MenuItem"))
+    w = max(len(r[0]) for r in rows)
+    for label, ms, ok in rows: print(f"{label:<{w}}  {ms:8.1f} ms  {ok}")
+
 def cmd_clip(a):
     import pyperclip
     if a.text: pyperclip.copy(" ".join(a.text)); print("copied")
@@ -475,12 +607,23 @@ def build_parser():
     x = s.add_parser("settext"); x.add_argument("title"); x.add_argument("name"); x.add_argument("text", nargs="+"); x.add_argument("--type", default="Edit"); x.set_defaults(f=cmd_settext)
     x = s.add_parser("read"); x.add_argument("title"); x.add_argument("name", nargs="?"); x.set_defaults(f=cmd_read)
     x = s.add_parser("clip"); x.add_argument("text", nargs="*"); x.set_defaults(f=cmd_clip)
+    x = s.add_parser("point"); x.add_argument("title", nargs="?"); x.add_argument("name", nargs="?"); x.add_argument("--xy", nargs=2, type=int)
+    x.add_argument("--type"); x.add_argument("--say"); x.set_defaults(f=cmd_point)
+    s.add_parser("bench").set_defaults(f=cmd_bench)
     return p
+
+# Commands that change what is on screen: they drop the cached trees, and after the reply
+# is sent the foreground window is read ahead.
+_ACTIONS = {"click", "press", "type", "key", "settext", "focus", "run", "drag", "scroll"}
+_acted = False
+_timings = []
 
 _parser = None
 def dispatch(argv):
-    global _parser
+    global _parser, _acted
     if _parser is None: _parser = build_parser()
+    if argv[:1] and argv[0] in _ACTIONS: _invalidate(); _acted = True
+    t0 = time.time()
     buf = io.StringIO(); ok = True
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
         try:
@@ -491,6 +634,8 @@ def dispatch(argv):
             if not ok and not isinstance(e.code, int): print(e.code)
         except Exception:
             ok = False; traceback.print_exc()
+    _timings.append({"cmd": argv[0] if argv else "", "ms": round((time.time() - t0) * 1000, 1)})
+    if argv[:1] and argv[0] in _ACTIONS: _invalidate()
     return ok, buf.getvalue()
 
 def run_batch(script):
@@ -559,14 +704,22 @@ def serve():
             if req.get("token") != TOKEN:
                 conn.sendall(b'ERR\ndesk only works inside an Ember shell\n' if raw else b'{"ok":false,"out":"desk only works inside an Ember shell"}\n'); continue
             argv = req.get("argv", []); _current_tab = str(req.get("tab", ""))
+            global _acted
+            _acted = False; _timings.clear(); t_req = time.time()
             if argv[:1] == ["__ping__"]: ok, out = True, "pong"
             elif argv[:1] == ["__quit__"]:
                 conn.sendall(b'{"ok":true,"out":"bye"}\n'); conn.close(); break
             elif argv[:1] == ["do"]: ok, out = run_batch(argv[1] if len(argv) == 2 else argv[1:])
             elif argv[:1] in (["-h"], ["--help"], ["help"], []): ok, out = True, HELP
             else: ok, out = dispatch(argv)
+            ms = round((time.time() - t_req) * 1000, 1)
             if raw: conn.sendall((("OK" if ok else "ERR") + "\n" + out.rstrip() + "\n").encode("utf-8"))
-            else: conn.sendall((json.dumps({"ok": ok, "out": out}) + "\n").encode("utf-8"))
+            else: conn.sendall((json.dumps({"ok": ok, "out": out, "ms": ms, "steps": list(_timings)}) + "\n").encode("utf-8"))
+            # The reply is out; read ahead before the next request comes in.
+            if _acted:
+                try: conn.close()
+                except Exception: pass
+                _read_ahead()
         except Exception:
             traceback.print_exc()
             try: conn.sendall((("ERR\n" + traceback.format_exc()) if raw else (json.dumps({"ok": False, "out": traceback.format_exc()}) + "\n")).encode("utf-8"))

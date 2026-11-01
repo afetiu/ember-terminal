@@ -5,8 +5,8 @@ Status: v1 built 2026-10-31, uncommitted. Concept pages: `loom-concepts.html`, `
 
 ## What it is
 
-A new kind of Ember tab (Ctrl+Shift+L, `ember loom [dir]`, palette "New Loom session"). It starts as
-a plain PowerShell with the prompt at the bottom of an empty space. Typing `claude` runs the real
+Every Ember tab is a Loom tab (since 2026-10-31; Ctrl+Shift+T, Ctrl+Shift+L and `ember new|loom [dir]` all open one). It starts as
+a plain PowerShell that looks and scrolls like PowerShell, prompt at the top. Typing `claude` runs the real
 Claude Code. The conversation is then drawn on a canvas above Claude Code's own input box: replies as
 rich text, mermaid fences as live diagrams, edits as diffs with line numbers, commands as one quiet
 line, exploration (reads, searches) folded into one line, images inline, and whatever the session
@@ -63,3 +63,20 @@ unchanged; the side panel is not used in a Loom tab.
 `npm run build`, then `node scripts/probe-loom.mjs --stage all` (real `claude`, isolated EMBER_HOME,
 a few cents of tokens; screenshots in `%TEMP%\loom-shots`). `--stage extras` checks show_steps,
 show_media and the Ctrl+` toggle.
+
+
+## The stage (2026-10-31)
+
+- Not a chat: the canvas shows the turn in progress only — your words, Claude's latest words, what it
+  showed — and one large "now" line for the step being taken, which replaces itself. Steps are not
+  listed; the full log is the real terminal (Ctrl+`). Ctrl+Shift+↑/↓ (or the stepper top right) steps
+  back through earlier turns; a new turn returns to now.
+- The input is Claude Code's real prompt with its rules and mode/status lines masked away
+  (pane `mask-image`), framed, at least three rows tall, with a bar under it: permission mode chip
+  (click = Shift+Tab), model, context meter, session cost, and Ember's own cost (`src/main/emberCost.ts`).
+- Objects (pieces, diagrams) can be dragged out and placed anywhere. The text takes the largest clear
+  area that holds it (`LoomView.reflow`: every side assignment tried, fit-without-scroll at the widest
+  column wins), so nothing is drawn under an object. Placed objects persist across turns; "clear screen"
+  removes them. The session sees them through the `on_screen` MCP tool and updates one in place by
+  calling show_panel with its title.
+- Documents and diagrams take the theme's accent/ink/ground via `?accent&fg&bg` on `/doc`.
