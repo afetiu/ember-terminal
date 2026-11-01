@@ -231,21 +231,6 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     ...otherAgentShims(),
     // Ember's own commands, as words you type, beside notes / note / todo on PATH.
     'function global:council { ember council @args }',
-    // What this terminal answers to, once, quietly, above the first prompt. A tab that
-    // starts an agent by itself never shows it: the agent takes the screen first.
-    // A small card, one command per line: the word bright, what it does dim. The agents
-    // listed are the ones actually installed.
-    'if (-not $env:EMBER_STARTUP_AGENT) {',
-    "  $ag = @('claude','codex','gemini','cursor-agent','opencode','copilot','qwen','amp','aider','crush') | Where-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue }",
-    "  $agents = ($ag | Select-Object -First 3) -join ', '",
-    "  $w = [Math]::Max(16, $agents.Length + 4)",
-    "  $row = { param($cmd, $what) Write-Host ('  ' + $cmd.PadRight($w)) -NoNewline -ForegroundColor Gray; Write-Host $what -ForegroundColor DarkGray }",
-    "  if ($ag) { & $row $agents 'start an AI agent' }",
-    "  & $row 'notes, todo' 'your notes and todo list'",
-    "  & $row 'council' 'ask your agents to debate a question'",
-    "  & $row 'ember --help' 'everything else Ember can do'",
-    "  Write-Host ''",
-    '}',
   ].join('\n')
 
   // Fold into an existing -Command rather than adding a second one: powershell.exe
