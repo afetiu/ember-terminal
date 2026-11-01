@@ -130,8 +130,8 @@
   const s = { x: -300, y: -300, visible: false, halted: false, label: '', lastMoveAt: 0, anim: null, pendingRipple: false, tilt: 0 }
   window.__desk = s   // read by scripts/probe-desk.mjs
 
-  // The same glide as the daemon (desk.py _glide_ms): physical pixels -> 180..650 ms.
-  function glideMs(dist) { return dist < 2 ? 0 : Math.max(180, Math.min(650, 180 + 95 * Math.log2(1 + dist / 60))) }
+  // The same glide as the daemon (desk.py _glide_ms): physical pixels -> 140..480 ms.
+  function glideMs(dist) { return dist < 2 ? 0 : Math.max(140, Math.min(480, 140 + 75 * Math.log2(1 + dist / 60))) }
   const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
   function moveTo(tx, ty) {
@@ -153,6 +153,8 @@
   }
 
   function ripple(x, y) {
+    // A press: the pointer dips, as a finger does, then the ring spreads.
+    svg.animate([{ scale: '1' }, { scale: '0.82' }, { scale: '1' }], { duration: 220, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' })
     const r = document.createElement('div')
     r.className = 'ripple'; r.style.left = x + 'px'; r.style.top = y + 'px'
     document.body.appendChild(r)

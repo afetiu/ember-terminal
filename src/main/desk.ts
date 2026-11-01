@@ -566,11 +566,13 @@ export async function deskPoint(opts: {
   let y = opts.y
   let rect: Rect | undefined
   let found = ''
-  if (opts.window && opts.name) {
+  const byNumber = !!opts.name && /^#\d+$/.test(opts.name.trim())
+  if (opts.name && (opts.window || byNumber)) {
     const why = await ensureRunning()
     if (why) return { ok: false, error: why }
     try {
-      const r = await callDaemon(['find', opts.window, opts.name, ...(opts.ctype ? ['--type', opts.ctype] : [])], 20_000)
+      const argv = byNumber ? ['find', opts.name.trim()] : ['find', opts.window!, opts.name, ...(opts.ctype ? ['--type', opts.ctype] : [])]
+      const r = await callDaemon(argv, 20_000)
       if (!r.ok) return { ok: false, error: r.out.trim() || 'not found', ms: Date.now() - t0 }
       const j = JSON.parse(r.out) as { name: string; center: [number, number]; rect: [number, number, number, number] }
       ;[x, y] = j.center
@@ -582,7 +584,7 @@ export async function deskPoint(opts: {
       return { ok: false, error: err instanceof Error ? err.message : String(err), ms: Date.now() - t0 }
     }
   }
-  if (typeof x !== 'number' || typeof y !== 'number') return { ok: false, error: 'point: give window + name, or x + y' }
+  if (typeof x !== 'number' || typeof y !== 'number') return { ok: false, error: 'point: give a number (name #N), window + name, or x + y' }
   const at = toOverlay(x, y)
   const label = (opts.say ?? found ?? '').slice(0, 120)
   state.last = { action: 'point', x, y, label, tab: '', at: Date.now() }

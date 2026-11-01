@@ -153,10 +153,11 @@ const CANVAS_INSTRUCTIONS = [
   'To point at something on the canvas (a node in your diagram, a bar, a row), use point with object (its title) and ',
   'text (the label) — the canvas is not visible to look. Never draw again something already on the canvas in order ',
   'to point at it or explain it: point at the one that is there (titles from on_screen). ',
-  'Ember Hands — the user\'s real screen: to show them anything there, look (the screen as text) then point at it ',
+  'Computer use — the user\'s real screen: to show them anything there, look (the screen as text) then point at it ',
   'on their screen with a short note; walk through steps with point step/steps. Never take a screenshot to explain ',
   'something to the user and never draw the screen on the canvas — they are looking at the real thing. Screenshots ',
-  'are only for when you yourself must see pixels. Act (click, type) only when they asked and Hands allows it. ',
+  'are only for when you yourself must see pixels. Act (click, type) only when they asked; one act call per sequence, ' +
+  'by control number, and decide the next step from the numbered screen it returns — no extra look in between. ',
   'Never described afterwards. open_url + annotate to point at a live page; show_media for images and video.\n',
   "The user's notes and todo list: the notes and todo tools (show them on the canvas, add, tick). When a turn leaves something only they can do, add a todo once; when you finish something on their list, tick it.",
 ].join('')
@@ -418,16 +419,18 @@ const CANVAS_TOOLS = [
   {
     name: 'look',
     description:
-      "Ember Hands: read the user's screen as text, fast, no screenshot — with no window, the open windows; with a " +
-      'window title, its controls (name, type, position). Use it to find what to point at or act on.',
+      "Computer use: read the user's screen as text, fast, no screenshot. No window: the open windows. A window " +
+      "title: its controls, numbered — #N [Type] 'name' (x,y). Act on them by number (press #N, click #N, " +
+      'settext #N text) and point with name "#N": no second search, no guessing names.',
     inputSchema: { type: 'object', properties: { window: { type: 'string' }, depth: { type: 'number' } } },
   },
   {
     name: 'point',
     description:
-      "Ember Hands: show the user something — Ember's pointer glides to it and a short note appears beside it. On the " +
+      "Computer use: show the user something — Ember's pointer glides to it and a short note appears beside it. On the " +
       'canvas (a node in a diagram, a bar, a row): object + text. On the desktop: ' +
-      'beside it. Never clicks. Target a control by window title + its visible name (and type, e.g. Button), or screen x,y. ' +
+      'beside it. Never clicks. Target a control by number (name "#N" from look or act), by window title + its ' +
+      'visible name (and type, e.g. Button), or screen x,y. ' +
       'Use it whenever you explain where something is in an app. For a walkthrough pass step and steps.',
     inputSchema: {
       type: 'object',
@@ -435,7 +438,7 @@ const CANVAS_TOOLS = [
         object: { type: 'string', description: 'On the canvas: the object\'s title (from on_screen). Then text = the label to point at inside it.' },
         text: { type: 'string', description: 'With object: the visible text to point at (a node, a bar, a row).' },
         window: { type: 'string', description: 'On the desktop: window title, or part of it.' },
-        name: { type: 'string', description: 'The control\'s visible name.' },
+        name: { type: 'string', description: 'The control\'s visible name, or its number "#N" from the last look or act.' },
         ctype: { type: 'string' },
         x: { type: 'number' },
         y: { type: 'number' },
@@ -448,9 +451,11 @@ const CANVAS_TOOLS = [
   {
     name: 'act',
     description:
-      'Ember Hands: click and type on the desktop, with the pointer visible and STOP on screen. Only when the user set ' +
-      'Hands to "Show & act". A script of desk commands, one per line (focus "<window>", press "<window>" "<name>", ' +
-      'click X Y, type "<text>", key ctrl+s, wait "<window>"). Prefer controls by name over coordinates.',
+      'Computer use: click and type on the desktop, with the pointer visible and STOP on screen. A script of desk ' +
+      'commands, one per line or ";"-separated: focus "<window>", press #N (or press "<window>" "<name>"), click #N ' +
+      '(or click X Y), settext #N "<text>", type "<text>", key ctrl+s, scroll -3, run <program>, wait "<window>". ' +
+      'Do the whole sequence in ONE call. The reply ends with what is on screen afterwards, numbered: chain the next ' +
+      'act from it without calling look again. Prefer numbers, then names, then coordinates.',
     inputSchema: { type: 'object', properties: { script: { type: 'string' } }, required: ['script'] },
   },
   {

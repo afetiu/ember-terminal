@@ -28,20 +28,21 @@ FIND_TIMEOUT = float(os.environ.get("EMBER_DESK_FIND_TIMEOUT", "2"))   # how lon
 
 HELP = """desk - Claude drives the desktop (screenshots, mouse, keys, UI Automation). Part of Ember.
 
-  desk do "focus X; press X ^OK$; shot"                  many steps in ONE call (';' separated)
+  desk do "focus X; press #4; type hi"                   many steps in ONE call (';' or one per line);
+                                                          ends with what is on screen now, numbered
   desk shot [--window T|--full] [--scale 0.5] [--png]     screenshot -> image path (default: foreground window)
   desk windows                                            visible top-level windows (* = foreground)
   desk focus TITLE                                        bring a window to front (substring or ^exact$)
   desk wait TITLE [--timeout S]                           wait for a window to appear
   desk run CMD [ARGS...]                                  launch a program
-  desk click X Y [--right] [--double]                     click at screen coords (from a shot's origin+scale)
+  desk click X Y | desk click #N [--right] [--double]     click at screen coords, or on a numbered control
   desk move X Y | desk drag X1 Y1 X2 Y2 | desk scroll N [X Y]
   desk type TEXT                                          type (long text is pasted)
   desk key COMBO [COMBO...]                               ctrl+s  alt+f4  enter  win+r
-  desk tree TITLE [--depth N] [--all]                     UI Automation control tree (names, types, centres)
+  desk tree TITLE [--depth N] [--all]                     the window's controls, numbered: #N [Type] 'name' (x,y)
   desk find TITLE NAME [--type Button]                    one control -> centre + rect
-  desk press TITLE NAME [--type Button]                   click a control by name, no coordinates
-  desk settext TITLE NAME TEXT                            fill an edit control
+  desk press TITLE NAME [--type Button] | desk press #N   click a control by name or by its number
+  desk settext TITLE NAME TEXT | desk settext #N TEXT     fill an edit control
   desk read TITLE [NAME]                                  visible text of a window / control
   desk clip [TEXT]                                        clipboard get / set
   desk point TITLE NAME [--say TEXT] | desk point --xy X Y [--say TEXT]   show where something is (never clicks)
@@ -94,7 +95,7 @@ def _report(action, x=None, y=None, label=""):
 
 # Ember draws its pointer gliding to each point; the real click must land when it arrives,
 # not before. Both sides compute the glide from the same formula (distance in physical
-# pixels -> 180..650 ms), so no handshake is needed: the daemon just waits that long.
+# pixels -> 140..480 ms, Fitts-like), so no handshake is needed: the daemon just waits that long.
 _last_xy = None
 _last_at = 0.0
 def _glide_ms(x, y):
@@ -104,12 +105,12 @@ def _glide_ms(x, y):
     else: dist = math.hypot(x - _last_xy[0], y - _last_xy[1])
     _last_xy = (x, y); _last_at = now
     if dist < 2: return 0.0
-    return max(180.0, min(650.0, 180.0 + 95.0 * math.log2(1.0 + dist / 60.0)))
+    return max(140.0, min(480.0, 140.0 + 75.0 * math.log2(1.0 + dist / 60.0)))
 
 def _mark(x, y, action="move", label="", wait=0.0):
     ms = _glide_ms(int(x), int(y))
     _report(action, int(x), int(y), label)
-    if wait and GLIDE and ms: time.sleep(ms / 1000.0 + 0.05)
+    if wait and GLIDE and ms: time.sleep(ms / 1000.0 + 0.02)
 
 _pg_mod = None
 def _pg():
@@ -262,6 +263,13 @@ def cmd_run(a):
     print("started:", " ".join(cmd))
 
 def cmd_click(a):
+    if _is_ref(a.x):
+        h, _, cx, cy, name, _ = _ref(a.x)
+        if h and _u32.GetForegroundWindow() != h: _u32.SetForegroundWindow(h)
+        a.x, a.y = cx, cy
+    else:
+        try: a.x, a.y = int(a.x), int(a.y)
+        except (TypeError, ValueError): raise SystemExit("click: X Y, or #N")
     _mark(a.x, a.y, "move", f"click at {a.x},{a.y}", wait=GLIDE)
     with _UserMouse() as m:
         pg = m.pg; pg.moveTo(a.x, a.y)
@@ -317,15 +325,25 @@ def _walk(el, depth, max_depth, show_all, out):
         r = el.rectangle(); name = el.window_text(); ctype = el.element_info.control_type
     except Exception:
         return
-    if show_all or ctype in _ACTIONABLE or (name and ctype in ("Text", "Document", "Window", "Pane")):
-        out.append(f"{'  '*depth}[{ctype}] {name!r}  @({r.left},{r.top},{r.right},{r.bottom}) c=({(r.left+r.right)//2},{(r.top+r.bottom)//2})")
+    if (r.right > r.left and r.bottom > r.top) and (show_all or ctype in _ACTIONABLE or (name and ctype in ("Text", "Document", "Window", "Pane"))):
+        n = len(_refs) + 1
+        _refs[n] = (None, el, (r.left+r.right)//2, (r.top+r.bottom)//2, name, ctype)
+        out.append(_ref_line(n, depth, ctype, name, r))
     if depth < max_depth:
         try:
             for c in el.children(): _walk(c, depth + 1, max_depth, show_all, out)
         except Exception:
             pass
 
-def _dump(h, max_depth, show_all, out):
+# The controls of the last list read (tree, or the "now" after a batch): #N -> one of them.
+_refs = {}
+
+def _ref_line(n, depth, ctype, name, r, value=None):
+    line = f"{' '*depth}#{n} [{ctype}] {name!r} ({(r.left+r.right)//2},{(r.top+r.bottom)//2})"
+    if value: line += f" = {str(value)[:160]!r}"
+    return line
+
+def _dump(h, max_depth, show_all, out, numbered=True):
     """The control tree of window h in ONE cross-process call (a cache request over the whole
     subtree), where walking children() node by node cost a COM round trip per node -- seconds
     on a web page. Same line format as _walk."""
@@ -337,20 +355,25 @@ def _dump(h, max_depth, show_all, out):
     t0 = time.time()
     root = ui.iuia.ElementFromHandle(h).BuildUpdatedCache(cr)
     _snap_ms[h] = (time.time() - t0) * 1000
+    if numbered: _refs.clear()
     def walk(e, depth):
         try:
             name = e.CachedName or ""; ctype = _ctype_name(e.CachedControlType); r = e.CachedBoundingRectangle
         except Exception:
             return
-        if show_all or ctype in _ACTIONABLE or (name and ctype in ("Text", "Document", "Window", "Pane", "Group", "Image", "Custom")):
-            line = f"{'  '*depth}[{ctype}] {name!r}  @({r.left},{r.top},{r.right},{r.bottom}) c=({(r.left+r.right)//2},{(r.top+r.bottom)//2})"
+        # Nothing to see (no size) is nothing to act on: left out, its children still walked.
+        sized = r.right > r.left and r.bottom > r.top
+        if sized and (show_all or ctype in _ACTIONABLE or (name and ctype in ("Text", "Document", "Window", "Pane", "Group", "Image", "Custom"))):
+            v = None
             if ctype in ("Edit", "ComboBox", "Document"):
                 try:
                     v = e.GetCachedPropertyValue(dll.UIA_ValueValuePropertyId)
-                    if v and v != name: line += f"  = {str(v)[:200]!r}"
+                    if v == name: v = None
                 except Exception:
-                    pass
-            out.append(line)
+                    v = None
+            n = len(_refs) + 1
+            _refs[n] = (h, e, (r.left+r.right)//2, (r.top+r.bottom)//2, name, ctype)
+            out.append(_ref_line(n, depth, ctype, name, r, v))
         if depth < max_depth:
             try: kids = e.GetCachedChildren(); n = kids.Length
             except Exception: return   # a leaf: NULL pointer, no .Length
@@ -419,8 +442,21 @@ def _tree_lines(title, depth, show_all):
     h = _hwnd(title); out = []
     try: _dump(h, depth, show_all, out)
     except Exception:
-        out = []; _walk(_win(title).wrapper_object(), 0, depth, show_all, out)
+        out = []; _refs.clear(); _walk(_win(title).wrapper_object(), 0, depth, show_all, out)
     return out
+
+def _ref(tok):
+    """'#12' -> (hwnd, wrapper, cx, cy, name, type) from the last list read."""
+    try: n = int(str(tok).lstrip("#"))
+    except ValueError: raise SystemExit(f"not a control number: {tok!r}")
+    got = _refs.get(n)
+    if not got: raise SystemExit(f"no control #{n} in the last list -- read it again with look / `desk tree`")
+    h, e, cx, cy, name, ctype = got
+    w = e if h is None else _wrap(e)
+    return h, w, cx, cy, name, ctype
+
+def _is_ref(tok):
+    return isinstance(tok, str) and tok.startswith("#") and tok[1:].isdigit()
 
 def cmd_tree(a):
     _report("look", label=f"read {a.title}")
@@ -475,6 +511,7 @@ def _ctrl(a, name=None, ctype=None):
     """One control of a window, resolved once. (A pywinauto WindowSpecification re-searches the
     whole tree on every attribute access, and waited a fixed 3 s when nothing matched.)"""
     name = a.name if name is None else name
+    if not name: raise SystemExit("which control? give TITLE NAME, or a number from the list: #N")
     ctype = getattr(a, "type", None) if ctype is None else ctype
     w = _win(a.title); h = _hwnd(a.title)
     deadline = time.time() + FIND_TIMEOUT
@@ -494,16 +531,27 @@ def _ctrl(a, name=None, ctype=None):
         time.sleep(0.1)
 
 def cmd_find(a):
+    if _is_ref(a.title):
+        h, c, cx, cy, name, ctype = _ref(a.title); r = c.rectangle()
+        print(json.dumps({"name": name, "type": ctype, "center": [(r.left+r.right)//2, (r.top+r.bottom)//2], "rect": [r.left, r.top, r.right, r.bottom]}))
+        return
     _, c = _ctrl(a); r = c.rectangle()
     print(json.dumps({"name": c.window_text(), "type": c.element_info.control_type,
                       "center": [(r.left+r.right)//2, (r.top+r.bottom)//2], "rect": [r.left, r.top, r.right, r.bottom]}))
 
 def cmd_press(a):
-    w, c = _ctrl(a)
-    h = _hwnd(a.title)
-    if _u32.GetForegroundWindow() != h: w.set_focus()
+    if _is_ref(a.title):
+        h, c, _, _, name, _ = _ref(a.title)
+        if h and _u32.GetForegroundWindow() != h:
+            if _u32.IsIconic(h): _u32.ShowWindow(h, 9)
+            _u32.SetForegroundWindow(h)
+        label = f"press {name or a.title}" + (f" in {_title(h)}" if h else "")
+    else:
+        w, c = _ctrl(a)
+        h = _hwnd(a.title)
+        if _u32.GetForegroundWindow() != h: w.set_focus()
+        label = f"press {c.window_text() or a.name} in {_title(h)}"
     r = c.rectangle(); cx, cy = (r.left+r.right)//2, (r.top+r.bottom)//2
-    label = f"press {c.window_text() or a.name} in {_title(h)}"
     _mark(cx, cy, "move", label, wait=GLIDE)
     try: c.invoke()
     except Exception:
@@ -512,6 +560,18 @@ def cmd_press(a):
     print("pressed:", c.window_text())
 
 def cmd_settext(a):
+    if _is_ref(a.title):
+        h, c, _, _, _, _ = _ref(a.title)
+        a.text = [a.name] + list(a.text or [])
+        if h and _u32.GetForegroundWindow() != h: _u32.SetForegroundWindow(h)
+        try: c.set_focus()
+        except Exception: pass
+        r = c.rectangle(); _mark((r.left+r.right)//2, (r.top+r.bottom)//2, "type", f"fill {c.window_text() or a.title}")
+        try: c.set_edit_text(" ".join(a.text))
+        except Exception:
+            with _UserMouse(): c.click_input()
+            _pg().hotkey("ctrl", "a"); _pg().write(" ".join(a.text))
+        print("set:", " ".join(a.text)); return
     w, c = _ctrl(a); w.set_focus()
     r = c.rectangle(); _mark((r.left+r.right)//2, (r.top+r.bottom)//2, "type", f"fill {c.window_text() or a.name}")
     try: c.set_edit_text(" ".join(a.text))
@@ -595,7 +655,7 @@ def build_parser():
     x = s.add_parser("wait"); x.add_argument("title"); x.add_argument("--timeout", type=float, default=10); x.set_defaults(f=cmd_wait)
     x = s.add_parser("sleep"); x.add_argument("seconds", type=float); x.set_defaults(f=cmd_sleep)
     x = s.add_parser("run"); x.add_argument("cmd", nargs=argparse.REMAINDER); x.set_defaults(f=cmd_run)
-    x = s.add_parser("click"); x.add_argument("x", type=int); x.add_argument("y", type=int); x.add_argument("--right", action="store_true"); x.add_argument("--double", action="store_true"); x.set_defaults(f=cmd_click)
+    x = s.add_parser("click"); x.add_argument("x"); x.add_argument("y", nargs="?"); x.add_argument("--right", action="store_true"); x.add_argument("--double", action="store_true"); x.set_defaults(f=cmd_click)
     x = s.add_parser("move"); x.add_argument("x", type=int); x.add_argument("y", type=int); x.set_defaults(f=cmd_move)
     x = s.add_parser("drag"); [x.add_argument(n, type=int) for n in ("x1", "y1", "x2", "y2")]; x.set_defaults(f=cmd_drag)
     x = s.add_parser("scroll"); x.add_argument("n", type=int); x.add_argument("x", type=int, nargs="?"); x.add_argument("y", type=int, nargs="?"); x.set_defaults(f=cmd_scroll)
@@ -603,8 +663,8 @@ def build_parser():
     x = s.add_parser("key"); x.add_argument("combo", nargs="+"); x.set_defaults(f=cmd_key)
     x = s.add_parser("tree"); x.add_argument("title"); x.add_argument("--depth", type=int, default=8); x.add_argument("--all", action="store_true"); x.set_defaults(f=cmd_tree)
     for n, f in (("find", cmd_find), ("press", cmd_press)):
-        x = s.add_parser(n); x.add_argument("title"); x.add_argument("name"); x.add_argument("--type"); x.set_defaults(f=f)
-    x = s.add_parser("settext"); x.add_argument("title"); x.add_argument("name"); x.add_argument("text", nargs="+"); x.add_argument("--type", default="Edit"); x.set_defaults(f=cmd_settext)
+        x = s.add_parser(n); x.add_argument("title"); x.add_argument("name", nargs="?"); x.add_argument("--type"); x.set_defaults(f=f)
+    x = s.add_parser("settext"); x.add_argument("title"); x.add_argument("name"); x.add_argument("text", nargs="*"); x.add_argument("--type", default="Edit"); x.set_defaults(f=cmd_settext)
     x = s.add_parser("read"); x.add_argument("title"); x.add_argument("name", nargs="?"); x.set_defaults(f=cmd_read)
     x = s.add_parser("clip"); x.add_argument("text", nargs="*"); x.set_defaults(f=cmd_clip)
     x = s.add_parser("point"); x.add_argument("title", nargs="?"); x.add_argument("name", nargs="?"); x.add_argument("--xy", nargs=2, type=int)
@@ -638,19 +698,43 @@ def dispatch(argv):
     if argv[:1] and argv[0] in _ACTIONS: _invalidate()
     return ok, buf.getvalue()
 
+def _split_steps(script):
+    """Steps separated by ';' or by line breaks (a script written one command per line)."""
+    if not isinstance(script, str): script = " ".join(shlex.quote(t) if t != ";" else ";" for t in script)
+    steps = []
+    for line in script.splitlines():
+        if not line.strip() or line.lstrip().startswith("#!"): continue
+        cur = []
+        for t in shlex.split(line, posix=True):
+            if t == ";": steps.append(cur); cur = []
+            elif t.endswith(";") and len(t) > 1: cur.append(t[:-1]); steps.append(cur); cur = []
+            else: cur.append(t)
+        if cur: steps.append(cur)
+    return [st for st in steps if st]
+
+NOW_MAX = 70   # lines of "what is on screen now" after a batch
+
+def _now():
+    """The foreground window after a batch, numbered, so the next step needs no look."""
+    try:
+        time.sleep(0.12)   # let the UI settle after the last action
+        h = _u32.GetForegroundWindow()
+        if not h: return ""
+        out = []
+        _dump(h, 12, False, out)
+        head = f"-- now: {_title(h)!r}" + (f" ({len(out)} controls, first {NOW_MAX})" if len(out) > NOW_MAX else "")
+        return head + "\n" + "\n".join(out[:NOW_MAX])
+    except Exception:
+        return ""
+
 def run_batch(script):
-    toks = shlex.split(script, posix=True) if isinstance(script, str) else list(script)
-    steps, cur = [], []
-    for t in toks:
-        if t == ";": steps.append(cur); cur = []
-        elif t.endswith(";") and len(t) > 1: cur.append(t[:-1]); steps.append(cur); cur = []
-        else: cur.append(t)
-    if cur: steps.append(cur)
+    steps = _split_steps(script)
     outs = []; ok = True
     for st in steps:
-        if not st: continue
         ok, out = dispatch(st); outs.append(out.rstrip())
         if not ok: outs.append(f"!! batch stopped at: {' '.join(st)}"); break
+    if any(st[0] in _ACTIONS for st in steps if st) and not os.path.exists(HALT):
+        outs.append(_now())
     return ok, "\n".join(o for o in outs if o)
 
 # ----------------------------------------------------------------------------- server
