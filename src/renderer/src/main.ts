@@ -1,10 +1,7 @@
 import '@xterm/xterm/css/xterm.css'
 import './styles/app.css'
-import './styles/map.css'
-import './styles/map-canvas.css'
 import './styles/onboarding.css'
 import './styles/loom.css'
-import './styles/council.css'
 import { App } from './ui/App'
 import { loadFont } from './core/fonts'
 

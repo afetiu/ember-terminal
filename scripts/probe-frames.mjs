@@ -4,7 +4,7 @@
  * Smoothness is not a feeling; it is the distribution of gaps between presented frames.
  * This records requestAnimationFrame timestamps in the page while each motion runs —
  * a tab opening, a switch, the panel sliding in over a real document, the panel closing,
- * the sidebar collapsing, the orchestrator column, the palette — and reports, per motion,
+ * the sidebar collapsing, the palette — and reports, per motion,
  * how many frames were late (gap over 20ms, i.e. a dropped frame at 60Hz), the worst gap,
  * and the 95th percentile. A motion is smooth when the late count is zero and the worst
  * gap is one frame.
@@ -178,10 +178,6 @@ for (let round = 1; round <= ROUNDS; round++) {
   await measure('sidebar: collapse', () => ev(`window.__ember.sidebar()`))
   await sleep(300)
   await measure('sidebar: expand', () => ev(`window.__ember.sidebar()`))
-  await sleep(300)
-  await measure('orchestrator: open', () => ev(`window.__ember.orchestrator()`))
-  await sleep(300)
-  await measure('orchestrator: close', () => ev(`window.__ember.orchestrator()`))
   await sleep(300)
   await measure('palette: open', () => ev(`window.__ember.openPalette('')`), 600)
   await measure('palette: close', () => send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }).then(() => send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })), 600)

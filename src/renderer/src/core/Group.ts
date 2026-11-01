@@ -2,7 +2,6 @@ import { Spring } from '../motion/spring'
 import { Panel, type PanelHooks } from '../ui/Panel'
 import { NoteView, type NoteHooks } from '../ui/Notes'
 import { TodoView, type TodoHooks } from '../ui/Todo'
-import { MapView, type MapHooks } from '../ui/MapView'
 import type { Session } from './Session'
 import type { ActivitySnapshot, ActivityState } from './Activity'
 import type { LoomView } from '../canvas/LoomView'
@@ -81,11 +80,10 @@ export class Group {
    * terminals the same surface is simply the tab.
    */
   ensureNote(hooks: NoteHooks): NoteView {
-    if (this.map) this.hideMap()
     if (this.todo) this.hideTodo()
     if (!this.note) {
       this.note = new NoteView(hooks)
-      this.cover(this.note.el, true)
+      this.cover(this.note.el)
     }
     return this.note
   }
@@ -94,12 +92,11 @@ export class Group {
   private coverHost: HTMLElement | null = null
 
   /**
-   * Lay a surface over the terminals. `inPane` puts it over the focused pane only when
-   * the tab is split — what a note or the todo list wants, since they were asked for in
-   * one shell. The map is about everything, and takes the whole tab.
+   * Lay a surface over the terminals: over the focused pane only when the tab is split,
+   * since a note or the todo list was asked for in one shell.
    */
-  private cover(el: HTMLElement, inPane: boolean): void {
-    const slot = inPane && this.isSplit ? this.slots[this.panes.findIndex((p) => p.id === this.focused?.id)] : undefined
+  private cover(el: HTMLElement): void {
+    const slot = this.isSplit ? this.slots[this.panes.findIndex((p) => p.id === this.focused?.id)] : undefined
     const host = slot ?? this.panesEl
     host.appendChild(el)
     if (this.panes.length > 0) {
@@ -127,11 +124,10 @@ export class Group {
   todo: TodoView | null = null
 
   ensureTodo(hooks: TodoHooks): TodoView {
-    if (this.map) this.hideMap()
     if (this.note) this.hideNote()
     if (!this.todo) {
       this.todo = new TodoView(hooks)
-      this.cover(this.todo.el, true)
+      this.cover(this.todo.el)
     }
     return this.todo
   }
@@ -145,47 +141,6 @@ export class Group {
 
   get isTodo(): boolean {
     return this.todo !== null
-  }
-
-  /** The architecture map, over this tab's terminals or as the tab itself. */
-  map: MapView | null = null
-
-  ensureMap(hooks: MapHooks): MapView {
-    if (this.note) this.hideNote()
-    if (this.todo) this.hideTodo()
-    if (!this.map) {
-      this.map = new MapView(hooks)
-      this.cover(this.map.el, false)
-    }
-    return this.map
-  }
-
-  hideMap(): void {
-    if (!this.map) return
-    this.map.dispose()
-    this.map = null
-    this.uncover()
-  }
-
-  get isMap(): boolean {
-    return this.map !== null
-  }
-
-  /** The council, as the tab itself. One council view, moved into whichever tab shows it. */
-  council: HTMLElement | null = null
-
-  ensureCouncil(el: HTMLElement): void {
-    if (this.map) this.hideMap()
-    if (this.todo) this.hideTodo()
-    if (this.note) this.hideNote()
-    if (this.council !== el) {
-      this.council = el
-      this.cover(el, false)
-    }
-  }
-
-  get isCouncil(): boolean {
-    return this.council !== null
   }
 
   /** Take the notes off a shell tab and give it back its title and its terminals. */
@@ -255,9 +210,9 @@ export class Group {
   /** The panel's full width for a stage this wide. */
   private panelWanted(fraction: number): number {
     const stage = this.stageW
-    // A share of the tab, with a floor. The share alone is right until something else
-    // takes a column — with the orchestrator open too, 42% of what was left came to
-    // 200px, which is not a width you can read a diagram or a table in. Below that the
+    // A share of the tab, with a floor. The share alone is right until the stage is
+    // narrow — 42% of a small window comes to 200px, which is not a width you can read
+    // a diagram or a table in. Below that the
     // panel takes a fixed minimum and the terminal gives up the difference, because when
     // you have deliberately opened a panel it is the thing you are looking at.
     return stage > 0 ? Math.max(fraction * stage, Math.min(Group.MIN_PANEL_PX, stage * 0.6)) : 0
@@ -414,10 +369,6 @@ export class Group {
     // A tab showing a note or the todo list takes typing there, not into the shell under it.
     if (this.todo) {
       this.todo.focus()
-      return
-    }
-    if (this.map) {
-      this.map.focus()
       return
     }
     if (this.note) {
@@ -584,8 +535,6 @@ export class Group {
     this.note = null
     this.todo?.dispose()
     this.todo = null
-    this.map?.dispose()
-    this.map = null
     this.el.remove()
   }
 }

@@ -539,35 +539,6 @@ export function drawTodoBadge(ctx: CanvasRenderingContext2D, s: number, accent: 
   ctx.globalAlpha = 1
 }
 
-/** Badge for the architecture map: three boxes joined by lines, one of them larger. */
-export function drawMapBadge(ctx: CanvasRenderingContext2D, s: number, accent: string): void {
-  ctx.clearRect(0, 0, s, s)
-  ctx.strokeStyle = accent
-  ctx.fillStyle = accent
-  ctx.lineWidth = 0.05 * s
-  ctx.lineJoin = 'round'
-  ctx.globalAlpha = 0.55
-  ctx.beginPath()
-  ctx.moveTo(0.38 * s, 0.29 * s)
-  ctx.lineTo(0.62 * s, 0.29 * s)
-  ctx.moveTo(0.28 * s, 0.4 * s)
-  ctx.lineTo(0.4 * s, 0.6 * s)
-  ctx.stroke()
-  ctx.globalAlpha = 1
-  const box = (x: number, y: number, w: number, h: number) => {
-    ctx.beginPath()
-    ctx.roundRect(x * s, y * s, w * s, h * s, 0.05 * s)
-    ctx.stroke()
-  }
-  box(0.14, 0.18, 0.24, 0.22)
-  box(0.62, 0.18, 0.24, 0.22)
-  box(0.3, 0.6, 0.4, 0.24)
-  ctx.globalAlpha = 0.45
-  ctx.fillRect(0.38 * s, 0.68 * s, 0.24 * s, 0.03 * s)
-  ctx.fillRect(0.38 * s, 0.75 * s, 0.16 * s, 0.03 * s)
-  ctx.globalAlpha = 1
-}
-
 /**
  * Badge for a plain shell session: a small terminal with a prompt and a caret that
  * behaves like the app's real one — travelling when busy, resting when not.

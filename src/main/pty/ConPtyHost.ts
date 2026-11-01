@@ -229,8 +229,6 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     '  & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args',
     '}',
     ...otherAgentShims(),
-    // Ember's own commands, as words you type, beside notes / note / todo on PATH.
-    'function global:council { ember council @args }',
   ].join('\n')
 
   // Fold into an existing -Command rather than adding a second one: powershell.exe

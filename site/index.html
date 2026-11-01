@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://ember.deepanswerlabs.com/">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
 <meta property="og:title" content="Ember — a terminal that keeps up with your agents">
-<meta property="og:description" content="A free Windows terminal for AI coding CLIs. Every session on one overview, a panel the agent draws on, a living map of your project.">
+<meta property="og:description" content="A free Windows terminal for AI coding CLIs. Every session on one overview, a panel the agent draws on, notes and a todo list beside your sessions.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -76,7 +76,7 @@
     </div>
   </div>
 
-  <!-- ===== The film: one Ember window, nine beats. Timings live in data-at / data-until /
+  <!-- ===== The film: one Ember window, seven beats. Timings live in data-at / data-until /
        data-type (seconds into the beat) and are played by film.js. Without JS the first
        beat shows as a still. ===== -->
   <div class="wrap hero__stage">
@@ -89,7 +89,7 @@
         </span>
       </div>
       <div class="film__view">
-        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; the overview shows every session on one page, with the numbers along the top and a log of edits, and a permission prompt is answered from its card; an orchestrator hands work to two sessions; an AI check fills the todo list from mail, GitHub, Jira and Slack and clears what is done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell; a map of the whole project lays itself out, traces the checkout flow, shows a session editing the API as the map updates in place, what would break if the database went down, and the map's history.">
+        <div class="win" role="img" aria-label="The Ember app window. A session asks how auth flows through its API and draws the answer on a panel beside the terminal; the overview shows every session on one page, with the numbers along the top and a log of edits, and a permission prompt is answered from its card; sessions add items to the todo list and tick what gets done; the api session writes the fix up with the notes command, and the note opens over its tab and fills in live, then the list of notes, then Esc returns to the shell.">
           <div class="win__bar">
             <span class="win__menu"></span>
             <span class="win__title"><i class="glowdot"></i>Ember</span>
@@ -104,34 +104,18 @@
           <div class="win__body">
             <!-- ---------- sidebar: stays put through every beat ---------- -->
             <div class="side">
-              <!-- the places: four buttons, always there, never a card (Sidebar.ts PLACES).
+              <!-- the places: three buttons, always there, never a card (Sidebar.ts PLACES).
                    film.js lights the one on stage and keeps the two badges. -->
               <div class="places">
                 <span class="place" data-place="overview"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.3"/><rect x="9" y="2" width="5" height="5" rx="1.3"/><rect x="2" y="9" width="5" height="5" rx="1.3"/><rect x="9" y="9" width="5" height="5" rx="1.3"/></svg><span>Overview</span><i class="place__badge is-hot">1</i></span>
                 <span class="place" data-place="todo"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.2"/><path d="M5.3 8.2 L7.2 10.1 L10.8 5.9"/></svg><span>Todo</span><i class="place__badge">4</i></span>
                 <span class="place" data-place="notes"><svg viewBox="0 0 16 16"><path d="M4 1.8 H9.5 L12.5 4.8 V14.2 H4 Z"/><path d="M9.3 2 V5 H12.3"/><path d="M6 8.2 H10.5 M6 10.8 H9.5"/></svg><span>Notes</span><i class="place__badge"></i></span>
-                <span class="place" data-place="map"><svg viewBox="0 0 16 16"><circle cx="4" cy="4" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="8" cy="12" r="2"/><path d="M5.9 4.2 H10 M5 5.8 L7 10.2 M11 6.3 L9 10.2"/></svg><span>Map</span><i class="place__badge"></i></span>
               </div>
               <p class="side__head mono">SESSIONS <span>+</span></p>
               <div class="scard" data-card="api"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>api</b><small class="mono">working</small></span><em class="scard__br mono">main</em></div>
               <div class="scard" data-card="docs"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>docs</b><small class="mono">idle</small></span><em class="scard__br mono">main</em></div>
               <div class="scard" data-card="web"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>web</b><small class="mono">waiting on you</small></span><em class="scard__br mono">ui ✱3</em></div>
               <div class="scard" data-card="scratch"><canvas class="cinder" width="76" height="76"></canvas><span class="scard__t"><b>scratch</b><small class="mono">idle</small></span><em class="scard__br mono"></em></div>
-
-              <!-- orchestrator pane (the orchestrator beat) -->
-              <div class="orch" data-scene="orch">
-                <div class="orch__in" data-at="0.3">
-                  <p class="orch__h"><b>Orchestrator</b><span class="orch__pill mono">text</span><span class="orch__x">✕</span></p>
-                  <div class="orch__log">
-                    <p class="bub bub--you" data-at="2.1">ship the login fix and update the docs</p>
-                    <p class="bub bub--ai" data-at="2.6">On it. <b>api</b> takes the fix, <b>docs</b> the write-up.</p>
-                    <p class="did mono" data-at="2.85"><i>→</i> sent to api</p>
-                    <p class="did mono" data-at="3.05"><i>→</i> sent to docs</p>
-                    <p class="bub bub--ai" data-at="6.3"><b>api</b> is done. Redirect fixed, 42 tests pass.</p>
-                  </div>
-                  <p class="orch__box"><span class="orch__ph" data-at="0" data-until="0.8">Tell it what to do…</span><span data-type="0.8,2.0" data-until="2.1">ship the login fix and update the docs</span></p>
-                </div>
-              </div>
 
               <p class="side__foot mono"><span>CLAUDE</span><span>5h 38% · wk 61%</span><span>MACHINE</span><span>CPU 12% · MEM 41%</span></p>
             </div>
@@ -141,11 +125,9 @@
               <div class="crumb">
                 <p class="crumb__i is-active" data-scene="panel"><b>api</b> <span>~/code/api</span> <em>main ↑1</em></p>
                 <p class="crumb__i" data-scene="overview"><b>Overview</b> <span>back to api with the same key</span> <em>Ctrl Shift S</em></p>
-                <p class="crumb__i" data-scene="orch"><b>api</b> <span>│</span> <b>docs</b> <em>split</em></p>
                 <p class="crumb__i" data-scene="todo"><b>Todo</b> <em>Ctrl Shift D</em></p>
                 <p class="crumb__i" data-scene="notes" data-cls="is-hid:2.0,7.4"><b>api</b> <span>~/code/api</span> <em>main</em></p>
                 <p class="crumb__i" data-scene="notes" data-cls="is-hid:0,2.0;is-hid:7.4,99"><b>Notes</b> <span>over api</span> <em>Documents\Ember Notes</em></p>
-                <p class="crumb__i" data-scene="map"><b>Map</b> <span>shop</span> <em>Ctrl Shift G</em></p>
                 <p class="crumb__i" data-scene="cli"><b>New session</b> <span>pick a CLI</span></p>
                 <p class="crumb__i" data-scene="splits"><b>api</b> <span>~/code/api</span> <em>3 panes</em></p>
                 <p class="crumb__i" data-scene="palette"><b>api</b> <span>~/code/api</span> <em>Ctrl K</em></p>
@@ -196,8 +178,8 @@
                 <!-- ===== BEAT 2: the overview =====
                      Built like the app's Overview (ui/Overview.ts, styles/overview.css): the
                      numbers along the top with hairlines and no boxes, solid cards in tab
-                     order, a rail with the list, the notes and a quiet log, the orchestrator
-                     on one line at the foot. web is waiting on a permission prompt; the
+                     order, a rail with the list, the notes and a quiet log. web is waiting
+                     on a permission prompt; the
                      cursor answers it from here, its card relaxes into a working one, and
                      the Overview badge in the sidebar drops to nothing. ===== -->
                 <div class="scene scene--ov" data-scene="overview">
@@ -257,7 +239,6 @@
                             <p class="ovc__top"><i class="ovc__dot"></i><b>scratch</b><span class="ovc__where">~/scratch</span></p>
                           </div>
                         </div>
-                        <p class="ov__dock"><span class="ov__who"><i></i>Orchestrator</span><span class="ov__said">api is done. Redirect fixed, 42 tests pass.</span><span class="ov__ask">Ask the orchestrator, or hand out work…</span></p>
                       </div>
                       <div class="ov__rail">
                         <div class="ovs">
@@ -294,58 +275,30 @@
                   </div>
                 </div>
 
-                <!-- ===== BEAT 3: the orchestrator (main shows the two sessions it drives) ===== -->
-                <div class="scene scene--orch" data-scene="orch">
-                  <div class="split2">
-                    <div class="pane">
-                      <p class="pane__h mono"><i></i>api</p>
-                      <div class="term term--sm">
-                        <p class="t-dim">PS <span class="c-cy">~/code/api</span> <span class="c-pk">main</span></p>
-                        <p><span class="c-acc">❯</span> <span data-type="3.1,3.45">fix the login redirect loop</span> <span class="from mono" data-at="3.1">from orchestrator</span></p>
-                        <p class="t-tool" data-at="3.7"><span class="c-acc">●</span> Read <span class="c-yl">src/auth/redirect.ts</span></p>
-                        <p class="t-tool" data-at="4.15"><span class="c-acc">●</span> Edit <span class="c-yl">redirect.ts</span> <span class="c-gr">+4</span> <span class="c-rd">−2</span></p>
-                        <p class="t-tool" data-at="4.7"><span class="c-acc">●</span> Bash <span class="c-yl">npm test</span></p>
-                        <p class="t-ok" data-at="5.3"><span class="c-gr">✓</span> 42 passed</p>
-                        <p class="t-say" data-at="5.6">Done. ?next= now survives the login.</p>
-                      </div>
-                    </div>
-                    <div class="pane">
-                      <p class="pane__h mono"><i></i>docs</p>
-                      <div class="term term--sm">
-                        <p class="t-dim">PS <span class="c-cy">~/code/docs</span> <span class="c-pk">main</span></p>
-                        <p><span class="c-acc">❯</span> <span data-type="3.3,3.75">update auth.md for the redirect fix</span> <span class="from mono" data-at="3.3">from orchestrator</span></p>
-                        <p class="t-tool" data-at="4.0"><span class="c-acc">●</span> Read <span class="c-yl">docs/auth.md</span></p>
-                        <p class="t-tool" data-at="4.9"><span class="c-acc">●</span> Edit <span class="c-yl">auth.md</span> <span class="c-gr">+12</span> <span class="c-rd">−3</span></p>
-                        <p class="t-tool" data-at="5.8"><span class="c-acc">●</span> Writing the example…</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- ===== BEAT 4: the todo list ===== -->
+                <!-- ===== BEAT 3: the todo list =====
+                     Sessions add what is left for you as they work and tick what gets done in
+                     front of them; the cursor ticks one by hand. ===== -->
                 <div class="scene scene--todo" data-scene="todo">
                   <div class="todo">
                     <div class="todo__head">
                       <h4>Todo</h4>
                       <span class="todo__count mono" data-seq="0|3 open;1.6|4 open;2.05|5 open;2.5|6 open;2.95|7 open;4.0|6 open;4.4|5 open;4.8|4 open"></span>
-                      <span class="todo__status mono" data-seq="0|;1.05|going through your sources…;3.5|ticking what's done…;5.3|added 4 · cleared 3"></span>
-                      <span class="todo__check flip" data-cursor="check" data-at="0.9" data-until="1.15"><i>✦</i> Check todos</span>
+                      <span class="todo__status mono" data-seq="0|;1.6|added by your sessions;4.0|ticked as it gets done;5.3|cleared 3 into the archive"></span>
                     </div>
-                    <div class="todo__scan flip" data-at="1.05" data-until="5.2"><i></i></div>
                     <ul class="todo__list">
-                      <li class="ti" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.0"></span><span class="ti__txt">Fix the login redirect loop</span><span class="ti__why mono" data-at="4.0">handled · api fixed it</span></div></li>
+                      <li class="ti" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-cursor="check" data-at="4.0"></span><span class="ti__txt">Fix the login redirect loop</span><span class="ti__why mono" data-at="4.0">done</span></div></li>
                       <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Rotate the staging secrets</span></div></li>
                       <li class="ti"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Draft the release notes</span></div></li>
-                      <li class="ti ti--new" data-at="1.6"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Reply to the invoice thread</span><span class="src src--mail mono">Mail</span></div></li>
-                      <li class="ti ti--new" data-at="2.05" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.4"></span><span class="ti__txt">Review PR #214 · login redirect</span><span class="ti__why mono" data-at="4.4">handled · merged</span><span class="src src--gh mono">GitHub</span></div></li>
-                      <li class="ti ti--new" data-at="2.5"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">WEB-88 · checkout button clipped on iOS</span><span class="src src--jira mono">Jira</span></div></li>
-                      <li class="ti ti--new" data-at="2.95" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.8"></span><span class="ti__txt">#deploys: is the queue fix live?</span><span class="ti__why mono" data-at="4.8">handled · answered</span><span class="src src--slack mono">Slack</span></div></li>
+                      <li class="ti ti--new" data-at="1.6"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Choose the new staging region</span><span class="src mono">api</span></div></li>
+                      <li class="ti ti--new" data-at="2.05" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.4"></span><span class="ti__txt">Review PR #214 · login redirect</span><span class="ti__why mono" data-at="4.4">done in api</span><span class="src mono">api</span></div></li>
+                      <li class="ti ti--new" data-at="2.5"><div class="ti__in"><span class="ti__box"></span><span class="ti__txt">Check the checkout button on an iPhone</span><span class="src mono">web</span></div></li>
+                      <li class="ti ti--new" data-at="2.95" data-until="5.2"><div class="ti__in"><span class="ti__box flip" data-at="4.8"></span><span class="ti__txt">Update auth.md for the redirect fix</span><span class="ti__why mono" data-at="4.8">done in docs</span><span class="src mono">docs</span></div></li>
                     </ul>
                     <p class="todo__arch mono flip" data-at="5.3"><span data-seq="0|▸ archive · 12;5.3|▸ archive · 15"></span></p>
                   </div>
                 </div>
 
-                <!-- ===== BEAT 5: notes =====
+                <!-- ===== BEAT 4: notes =====
                      Built like the app's Notes (ui/Notes.ts): one surface over the tab with two
                      states, a page editor and the list, never side by side. The api session
                      writes the fix up with the notes command; `notes new --open` lays the page
@@ -400,120 +353,6 @@
                   <p class="keycap keycap--mid mono" data-at="6.95" data-until="7.75"><kbd>Esc</kbd></p>
                 </div>
 
-                <!-- ===== BEAT 6: the map =====
-                     Built like the app's Map: areas are soft zones, parts are cards shaped by
-                     kind, lines are routed orthogonally through the gaps and drawn above the
-                     cards. Coordinates are the map's own; film.js moves a camera over them
-                     (SCENES.map.mcam), rounds the routes (data-pts) and toggles state classes
-                     in time windows (data-cls="class:from,to"). ===== -->
-                <div class="scene scene--map" data-scene="map">
-                  <div class="map">
-                    <div class="mworld" data-cls="in-flow:1.45,3.6;in-blast:6.4,7.6;in-past:8.2,8.8">
-                      <!-- areas -->
-                      <div class="marea" data-at="0.05" data-cls="is-dim:1.45,3.6" style="--hue:#7aa2f7;left:20px;top:20px;width:400px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Product</p></div>
-                      <div class="marea" data-at="0.12" data-cls="is-dim:1.45,3.6" style="--hue:#9ece6a;left:448px;top:20px;width:236px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Data</p></div>
-                      <div class="marea" data-at="0.19" data-cls="is-dim:1.45,3.6" style="--hue:#bb9af7;left:712px;top:20px;width:268px;height:320px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Third party</p></div>
-                      <div class="marea" data-at="0.26" data-cls="is-dim:1.45,3.6" style="--hue:#e0af68;left:20px;top:364px;width:960px;height:140px"><p class="marea__h"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M2 6h12"/></svg>Infra</p></div>
-
-                      <!-- parts -->
-                      <div class="mnode k-app" data-at="0.15" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:1.5,1.95;b2:6.4,7.6" style="--hue:#7aa2f7;left:40px;top:64px;width:160px;height:92px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6h12M4 4.5h.01M5.6 4.5h.01"/></svg></span><b class="mnode-name">web app</b><i class="mnode-dot"></i></p><p class="mnode-sum">Storefront, cart and checkout pages</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">app</span></p></div>
-                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:1.5,1.95">1</span>
-                      </div>
-                      <div class="mnode k-service" data-at="0.25" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:1.95,2.5;is-live:4.3,9.6;b1:6.4,7.6" style="--hue:#7aa2f7;left:236px;top:64px;width:164px;height:92px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="4.5" rx="1"/><rect x="2" y="9" width="12" height="4.5" rx="1"/><path d="M4.5 4.75h.01M4.5 11.25h.01"/></svg></span><b class="mnode-name">API</b><i class="mnode-dot"></i></p><p class="mnode-sum" data-seq="0|REST routes, auth and orders;4.7|REST routes, auth with refresh tokens;8.2|REST routes, auth and orders;8.8|REST routes, auth with refresh tokens">REST routes, auth and orders</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">service</span><span class="mnode-pips"><span class="mpip t-pr" data-at="4.95">PR <b>1</b></span></span></p></div>
-                        <p class="mnode-tags"><span class="mtag is-delta" data-at="4.75">Δ changed</span></p>
-                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:1.95,2.5">2</span>
-                        <p class="mnode-live" data-at="3.7"><span class="mlive-chip"><canvas data-cinder width="76" height="76"></canvas><b>api</b> editing auth/refresh.ts</span></p>
-                      </div>
-                      <div class="mnode k-job" data-at="0.35" data-status="ok" style="--hue:#7aa2f7;left:236px;top:218px;width:164px;height:92px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><circle cx="8" cy="8.5" r="5.5"/><path d="M8 5.5v3l2 1.5M6 1.5h4"/></svg></span><b class="mnode-name">worker</b><i class="mnode-dot"></i></p><p class="mnode-sum">Receipts and retrying failed charges</p><p class="mnode-meta"><span class="mnode-deploy">hosting</span><span class="mnode-kindword">job</span></p></div>
-                      </div>
-                      <div class="mnode k-datastore" data-at="0.45" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:2.9,3.35;b0:6.4,7.6" style="--hue:#9ece6a;left:468px;top:56px;width:196px;height:108px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><ellipse cx="8" cy="3.8" rx="5.5" ry="2"/><path d="M2.5 3.8v8.4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V3.8M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2"/></svg></span><b class="mnode-name">database</b><i class="mnode-dot"></i></p><p class="mnode-sum">Orders, users, stock</p><p class="mnode-meta"><span class="mnode-kindword">data</span><span class="mpip t-risk" data-at="0">backups <b>daily</b></span></p></div>
-                        <p class="mnode-tags mnode-tags--r"><span class="mtag is-blast" data-cls="is-on:6.4,7.6">if this goes down</span></p>
-                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:2.9,3.35">3</span>
-                      </div>
-                      <div class="mnode k-datastore k-small" data-at="5.2" data-status="ok" data-cls="is-lit:5.2,6.4;is-then:8.2,8.8" style="--hue:#9ece6a;left:468px;top:182px;width:196px;height:66px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><ellipse cx="8" cy="3.8" rx="5.5" ry="2"/><path d="M2.5 3.8v8.4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V3.8M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2"/></svg></span><b class="mnode-name">cache</b><i class="mnode-dot"></i></p><p class="mnode-sum">Sessions, 24 h</p></div>
-                        <p class="mnode-tags mnode-tags--r"><span class="mtag is-new" data-at="5.25">NEW</span></p>
-                      </div>
-                      <div class="mnode k-queue" data-at="0.52" data-status="ok" data-cls="is-flow:1.45,3.6;is-step:3.35,3.6" style="--hue:#9ece6a;left:468px;top:266px;width:196px;height:60px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><rect x="1.5" y="5" width="13" height="6" rx="3"/><path d="M5 5v6M8 5v6M11 5v6"/></svg></span><b class="mnode-name">queue</b><i class="mnode-dot"></i></p><p class="mnode-sum">Jobs for the worker</p></div>
-                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:3.35,3.6">4</span>
-                      </div>
-                      <div class="mnode k-external" data-at="0.6" data-cls="is-flow:1.45,3.6;is-step:2.5,2.9" style="--hue:#bb9af7;left:732px;top:64px;width:228px;height:84px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M4.5 12.5a3 3 0 0 1-.3-6 4 4 0 0 1 7.7-.7 2.8 2.8 0 0 1 .3 5.6z"/></svg></span><b class="mnode-name">payments</b><i class="mnode-dot"></i></p><p class="mnode-sum">Card charges and refunds</p><p class="mnode-meta"><span class="mnode-kindword">external</span><span class="mpip t-cost">2.9% <b>/ charge</b></span></p></div>
-                        <span class="mstep" data-cls="is-on:1.45,3.6;is-now:2.5,2.9">↗</span>
-                      </div>
-                      <div class="mnode k-external" data-at="0.66" style="--hue:#bb9af7;left:732px;top:218px;width:228px;height:84px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M4.5 12.5a3 3 0 0 1-.3-6 4 4 0 0 1 7.7-.7 2.8 2.8 0 0 1 .3 5.6z"/></svg></span><b class="mnode-name">email</b><i class="mnode-dot"></i></p><p class="mnode-sum">Receipts and password resets</p><p class="mnode-meta"><span class="mnode-kindword">external</span></p></div>
-                      </div>
-                      <div class="mnode k-infra" data-at="0.72" data-status="ok" style="--hue:#e0af68;left:40px;top:404px;width:206px;height:82px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">DNS</b><i class="mnode-dot"></i></p><p class="mnode-sum">Domain and TLS certificates</p></div>
-                      </div>
-                      <div class="mnode k-infra" data-at="0.78" data-status="ok" style="--hue:#e0af68;left:276px;top:404px;width:206px;height:82px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">hosting</b><i class="mnode-dot"></i></p><p class="mnode-sum">Runs the web app, API and worker</p></div>
-                      </div>
-                      <div class="mnode k-infra" data-at="0.84" data-status="warn" style="--hue:#e0af68;left:512px;top:404px;width:206px;height:82px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">CI</b><i class="mnode-dot"></i></p><p class="mnode-sum">Tests and deploys on every push</p><p class="mnode-meta"><span class="mpip t-risk">1 flaky test</span></p></div>
-                      </div>
-                      <div class="mnode k-infra" data-at="0.9" data-status="ok" style="--hue:#e0af68;left:748px;top:404px;width:212px;height:82px">
-                        <div class="mnode-body"><p class="mnode-head"><span class="mnode-glyph"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z"/><circle cx="8" cy="8" r="2"/></svg></span><b class="mnode-name">secrets</b><i class="mnode-dot"></i></p><p class="mnode-sum">Keys for payments and email</p></div>
-                      </div>
-
-                      <!-- lines: drawn above the parts, user → used -->
-                      <svg class="medges" viewBox="0 0 1000 524" aria-hidden="true">
-                        <g class="me" data-at="0.85" data-pts="200,110 236,110" data-flow="1.6,1.95" data-cls="is-flow:1.45,3.6;show-label:1.55,2.5;is-blast:6.4,7.6"><text>calls</text></g>
-                        <g class="me" data-at="0.95" data-pts="372,64 372,10 846,10 846,64" data-flow="2.0,2.5" data-cls="is-flow:1.45,3.6;show-label:2.0,2.95"><text>charges</text></g>
-                        <g class="me" data-at="0.9" data-pts="400,96 468,96" data-flow="2.6,2.9" data-cls="is-flow:1.45,3.6;show-label:2.6,3.35;is-blast:6.4,7.6;show-label:6.4,7.6"><text>reads/writes</text></g>
-                        <g class="me" data-at="1.0" data-pts="400,146 428,146 428,280 468,280" data-flow="3.0,3.35" data-cls="is-flow:1.45,3.6;show-label:3.0,3.6"><text>enqueues</text></g>
-                        <g class="me" data-at="1.05" data-pts="400,300 468,300"><text>consumes</text></g>
-                        <g class="me" data-at="1.1" data-pts="318,310 318,352 846,352 846,302"><text>sends</text></g>
-                        <g class="me" data-at="1.15" data-pts="246,445 276,445"><text>points to</text></g>
-                        <g class="me" data-at="1.2" data-pts="512,445 482,445"><text>deploys to</text></g>
-                        <g class="me" data-at="1.25" data-pts="718,445 748,445"><text>reads</text></g>
-                        <g class="me me--new" data-at="5.35" data-pts="400,122 440,122 440,214 468,214" data-lab="447,173,start" data-cls="show-label:5.5,6.4;is-hot:5.35,6.4;is-then:8.2,8.8"><text>stores sessions</text></g>
-                      </svg>
-                    </div>
-
-                    <!-- chrome on the canvas -->
-                    <div class="mhud mhud--tl" data-at="0">
-                      <span class="mhud__g"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg></span>
-                      <span class="mhud__t"><b>shop</b><small data-seq="0|surveying…;1.2|11 parts · up to date;5.3|12 parts · 1 new, 1 changed;8.2|v16 · yesterday;8.8|12 parts · 1 new, 1 changed"></small></span>
-                    </div>
-                    <div class="mhud mhud--tr" data-at="0.1">
-                      <span class="mbtn" data-cls="is-on:1.45,3.6"><svg viewBox="0 0 16 16"><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="4" r="1.5"/><circle cx="13" cy="12" r="1.5"/><path d="M4.5 8h3.5M8 8c1.5 0 2-4 3.5-4M8 8c1.5 0 2 4 3.5 4"/></svg>Flows</span>
-                      <span class="mbtn" data-cls="is-on:6.4,7.6"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="4.5" stroke-dasharray="2 1.6"/><circle cx="8" cy="8" r="7" stroke-dasharray="1.5 2"/></svg>Blast</span>
-                      <span class="mbtn" data-cls="is-on:7.7,9.6"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>Timeline</span>
-                      <span class="mbtn mbtn--acc"><svg viewBox="0 0 16 16"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5z"/></svg>Ask</span>
-                    </div>
-
-                    <!-- one line along the bottom: the flow, the blast, the timeline -->
-                    <div class="mbar mbar--flow" data-at="1.45" data-until="3.6">
-                      <span class="mbar__k">Flow · Checkout</span>
-                      <span class="mbar__s" data-seq="0|;1.5|The web app sends the cart to the API;1.95|The API charges the card;2.5|Payment ok · the API saves the order;2.9|The API queues the receipt email;3.35|4 steps · 1 external call"></span>
-                      <span class="mbar__dots"><i data-cls="is-now:1.5,1.95;is-done:1.95,9"></i><i data-cls="is-now:1.95,2.5;is-done:2.5,9"></i><i data-cls="is-now:2.5,2.9;is-done:2.9,9"></i><i data-cls="is-now:2.9,3.35;is-done:3.35,9"></i></span>
-                    </div>
-                    <div class="mbar mbar--blast" data-at="6.45" data-until="7.6">
-                      <span class="mbar__k">If database goes down</span>
-                      <span class="mbar__s"><b>API</b> fails first, then the <b>web app</b>. Checkout stops.</span>
-                    </div>
-                    <div class="mbar mbar--tl" data-at="7.7">
-                      <span class="mbar__k">Timeline</span>
-                      <span class="mtl2"><i style="left:0%"></i><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i><i style="left:100%"></i><b class="mtl2__fill" data-cls="is-past:7.95,8.75"></b><b class="mtl2__knob" data-cls="is-past:7.95,8.75"></b></span>
-                      <span class="mbar__v" data-seq="0|v17 · now;8.15|v16 · yesterday;8.8|v17 · now · +cache, API changed"></span>
-                    </div>
-
-                    <div class="mstrip" data-at="0.2">
-                      <span class="mstrip__live"><em class="mstrip__quiet" data-until="4.3">no one working here</em><span class="mstrip__chip" data-at="4.3"><i></i><b>api</b> on API</span></span>
-                      <span class="mstrip__ev"><i class="is-add">+</i>worker <small>yesterday</small></span>
-                      <span class="mstrip__ev"><i class="is-warn">!</i>CI · 1 flaky test <small>2 h</small></span>
-                      <span class="mstrip__ev is-fresh" data-at="4.8"><i class="is-delta">Δ</i>API · auth with refresh tokens <small>now</small></span>
-                      <span class="mstrip__ev is-fresh is-major" data-at="5.4"><i class="is-add">+</i>cache <small>now</small></span>
-                    </div>
-                  </div>
-                </div>
                 <!-- ===== extra scenes, used by "See it work" ===== -->
                 <div class="scene scene--cli" data-scene="cli">
                   <div class="pick">
@@ -594,17 +433,8 @@
 
               </div>
             </div>
-
-            <!-- the orchestrator's hand-off lines (drawn by film.js from the card positions) -->
-            <svg class="wires" data-scene="orch" aria-hidden="true">
-              <path class="wire" data-wire="api" data-at="2.85" pathLength="1"/>
-              <path class="wire" data-wire="docs" data-at="3.05" pathLength="1"/>
-              <path class="wire-p" data-wire="api" data-pulse="2.85,3.35" pathLength="1"/>
-              <path class="wire-p" data-wire="docs" data-pulse="3.05,3.55" pathLength="1"/>
-            </svg>
           </div>
 
-          <p class="toast" data-scene="orch"><span data-at="5.9" data-until="7.4"><i></i><b>api</b> finished</span></p>
           <span class="cursor" aria-hidden="true"><svg viewBox="0 0 20 24" width="20" height="24"><path d="M2 2 L2 19 L6.5 15 L9.5 22 L12.5 20.7 L9.6 14 L16 14 Z"/></svg><i></i></span>
         </div>
       </div>
@@ -612,13 +442,11 @@
       <div class="film__nav" role="group" aria-label="Features, one chapter each">
         <button type="button" class="beat" data-go="panel"><span class="beat__n">1</span>Panel<i class="beat__bar"><b></b></i></button>
         <button type="button" class="beat" data-go="overview"><span class="beat__n">2</span>Overview<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="orch"><span class="beat__n">3</span><span class="beat__full">Orchestrator</span><span class="beat__short" aria-hidden="true">Orch.</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="todo"><span class="beat__n">4</span>Todo<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="notes"><span class="beat__n">5</span>Notes<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="map"><span class="beat__n">6</span>Map<i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="cli"><span class="beat__n">7</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="splits"><span class="beat__n">8</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
-        <button type="button" class="beat" data-go="palette"><span class="beat__n">9</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="todo"><span class="beat__n">3</span>Todo<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="notes"><span class="beat__n">4</span>Notes<i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="cli"><span class="beat__n">5</span><span class="beat__full">Any CLI</span><span class="beat__short" aria-hidden="true">CLI</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="splits"><span class="beat__n">6</span><span class="beat__full">Splits &amp; themes</span><span class="beat__short" aria-hidden="true">Themes</span><i class="beat__bar"><b></b></i></button>
+        <button type="button" class="beat" data-go="palette"><span class="beat__n">7</span><span class="beat__full">Command line</span><span class="beat__short" aria-hidden="true">Cmd</span><i class="beat__bar"><b></b></i></button>
         <button type="button" class="film__pause" data-pause aria-label="Pause the film"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
       </div>
       <p class="film__cap" aria-live="polite"><span data-cap>The agent draws its answer. Buttons type back into the terminal.</span> <span class="see__keys" data-keys><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></span></p>
@@ -674,7 +502,7 @@
       </details>
       <details>
         <summary>What leaves my machine?</summary>
-        <p>Your work goes where your CLI already sends it, the same as in any terminal. Ember has no account and no telemetry. The few calls it makes on its own belong to features you can see and turn off, like the plan usage in the sidebar and the Map checking your repos for changes. Your settings, notes, todos and maps are plain files in your user folder.</p>
+        <p>Your work goes where your CLI already sends it, the same as in any terminal. Ember has no account and no telemetry. The few calls it makes on its own belong to features you can see and turn off, like the plan usage in the sidebar. Your settings, notes and todos are plain files in your user folder.</p>
       </details>
       <details>
         <summary>Will it change my PowerShell setup?</summary>

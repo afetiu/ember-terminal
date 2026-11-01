@@ -48,11 +48,7 @@ The first line of a note is its title and its file name; change one and you chan
   todo done <words…>           tick the first open item that contains the words
   todo list [--all]            print the open items (--all: ticked and archived ones too)
   todo clear done              move the ticked items to the archive, dated today
-  todo archive                 print the archive, newest day first
-  todo sources [names…]        where Check todos looks on this machine; names set it
-  todo check [sources…]        run /check-todos in Claude: mail, Slack, Jira, GitHub → the
-                               list, and ticks what is done (sources: gmail outlook slack
-                               jira github; default from Settings › Todo)`
+  todo archive                 print the archive, newest day first`
 
 // ---------------------------------------------------------------- the folder
 
@@ -234,8 +230,8 @@ function todoBody() {
 
 /**
  * Where ticked items go when the list is cleared: `## YYYY-MM-DD` per day, newest day
- * first, the same lines as the list. Kept beside it so `todo list --all` — what the
- * checker reads before adding anything — still sees a thing that was done and archived.
+ * first, the same lines as the list. Kept beside it so `todo list --all` still sees a
+ * thing that was done and archived.
  */
 const ARCHIVE = 'Todo.archive.md'
 
@@ -295,84 +291,17 @@ async function todo(sub, words) {
       console.log(`done: ${lines[i].replace(/^\s*- \[x\] /, '')}`)
       return
     }
-    case 'check': {
-      const SOURCES = ['gmail', 'outlook', 'slack', 'jira', 'github']
-      // The person's own Claude, in this shell, with its output showing. `todo` is on
-      // this PATH already if this is an Ember shell; the skill knows the fallback if not.
-      // Which sources to read is this machine's setting (Settings › Todo); words after
-      // `check` override it: `todo check gmail`.
-      let sources = words.map((w) => w.toLowerCase()).filter((w) => SOURCES.includes(w))
-      if (!sources.length) {
-        try {
-          const cfg = JSON.parse(readFileSync(join(process.env.EMBER_HOME || join(homedir(), '.ember'), 'config.json'), 'utf8'))
-          const t = cfg.todo ?? {}
-          sources = SOURCES.filter((s) => t[s] !== false)
-        } catch {
-          sources = [...SOURCES]
-        }
-      }
-      if (!sources.length) fail('no sources are ticked — Settings › Todo, or: todo check gmail')
-      // The bookmark Ember keeps: read it so this run starts where the last one ended,
-      // write it back when the run succeeds.
-      const stateFile = join(process.env.EMBER_HOME || join(homedir(), '.ember'), 'todo-check.json')
-      let state = {}
-      try {
-        state = JSON.parse(readFileSync(stateFile, 'utf8'))
-      } catch {
-        /* first run */
-      }
-      const startedAt = new Date().toISOString()
-      const args = [...sources, ...(state.lastCheckedAt ? [`since=${state.lastCheckedAt}`] : [])]
-      const { spawnSync } = await import('node:child_process')
-      const r = spawnSync('claude', ['-p', `/check-todos ${args.join(' ')}`, '--output-format', 'text', '--dangerously-skip-permissions'], {
-        stdio: 'inherit',
-        shell: true,
-        env: { ...process.env, EMBER_NOTES_DIR: DIR },
-      })
-      if ((r.status ?? 1) === 0) {
-        try {
-          mkdirSync(join(stateFile, '..'), { recursive: true })
-          writeFileSync(stateFile, JSON.stringify({ lastCheckedAt: startedAt, sources }, null, 2), 'utf8')
-        } catch {
-          /* the run still happened */
-        }
-      }
-      process.exit(r.status ?? 1)
-    }
-    case 'sources': {
-      // Settings > Todo, from the shell: no words prints it, words set exactly those.
-      const ALL = ['gmail', 'outlook', 'slack', 'jira', 'github']
-      const file = join(process.env.EMBER_HOME || join(homedir(), '.ember'), 'config.json')
-      let cfg = {}
-      try {
-        cfg = JSON.parse(readFileSync(file, 'utf8'))
-      } catch {
-        /* defaults */
-      }
-      const cur = cfg.todo ?? {}
-      const chosen = words.map((w) => w.toLowerCase())
-      const bad = chosen.filter((w) => !ALL.includes(w))
-      if (bad.length) fail(`todo sources: unknown ${bad.join(', ')} (one of ${ALL.join(', ')})`, 2)
-      if (chosen.length) {
-        cfg.todo = Object.fromEntries(ALL.map((s) => [s, chosen.includes(s)]))
-        mkdirSync(join(file, '..'), { recursive: true })
-        writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n', 'utf8')
-      }
-      const on = ALL.filter((s) => (chosen.length ? chosen.includes(s) : cur[s] !== false))
-      console.log(on.length ? on.join(' ') : 'none')
-      return
-    }
     case 'list':
     case 'ls': {
-      // --all includes ticked items, marked [x]: what the checker needs to see so a thing
+      // --all includes ticked items, marked [x]: what an agent needs to see so a thing
       // already handled is never added again.
       const all = flags.has('--all')
       const items = todoBody()
         .split('\n')
         .filter((l) => (all ? /^\s*- \[[ xX]\] /.test(l) : /^\s*- \[ \] /.test(l)))
         .map((l) => (all && /^\s*- \[[xX]\] /.test(l) ? `[x] ${l.replace(/^\s*- \[[xX]\] /, '')}` : l.replace(/^\s*- \[[ xX]\] /, '')))
-      // Archived items count as done too; without them the checker would add a thing
-      // back the day after it was cleared.
+      // Archived items count as done too; without them an agent would add a thing back
+      // the day after it was cleared.
       if (all) items.push(...archivedItems())
       if (!items.length) console.log('nothing to do')
       else for (const [n, item] of items.entries()) console.log(`${String(n + 1).padStart(2)}. ${item}`)

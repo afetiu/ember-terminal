@@ -110,7 +110,7 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     name: 'Codex CLI',
     vendor: 'OpenAI',
     bin: 'codex',
-    blurb: 'OpenAI’s coding agent, signed in with your ChatGPT plan. Panel, map and status all work.',
+    blurb: 'OpenAI’s coding agent, signed in with your ChatGPT plan. Panel and status both work.',
     homepage: 'https://developers.openai.com/codex/cli',
     install: { command: 'npm install -g @openai/codex', needs: 'Node.js 18+' },
     login: 'codex login',
@@ -133,11 +133,11 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     homepage: 'https://github.com/google-gemini/gemini-cli',
     install: { command: 'npm install -g @google/gemini-cli', needs: 'Node.js 20+' },
     login: 'gemini',
-    // Headless Gemini refuses to start in a folder nobody has trusted (exit 55), and the
-    // map runs in whatever project it is pointed at.
+    // Headless Gemini refuses to start in a folder nobody has trusted (exit 55), and a
+    // headless run happens in whatever folder it is pointed at.
     headless: ['--skip-trust'],
     // Non-interactive, `default` runs read-only tools and trusted MCP servers and turns
-    // down everything that would have asked. `plan` would also turn down the orchestrator.
+    // down everything that would have asked. `plan` would also turn down MCP tools.
     readOnly: ['--approval-mode', 'default'],
     promptArg: false,
     output: 'text',

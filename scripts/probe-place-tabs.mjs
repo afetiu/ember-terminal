@@ -1,8 +1,9 @@
 /**
- * The keyboard path: a new terminal (with its hint), `claude` typed, a diagram asked for,
- * then Ctrl+↑ onto it, Shift+→ to snap it right, Esc back to typing. Screenshots of each.
+ * The places as tabs: the sidebar's Todo and Notes buttons each open a tab of their own,
+ * and those are the only places there are. Prints the sidebar's buttons and the tabs,
+ * screenshots the result, and exits non-zero when a place is missing or an extra one shows.
  *
- *   node scripts/probe-kbd-canvas.mjs [out-prefix]
+ *   node scripts/probe-place-tabs.mjs [out-prefix]
  */
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -56,17 +57,28 @@ await wait(5000)
 const navs = await ev(`[...document.querySelectorAll('.ember-sidebar button')].map((b) => (b.getAttribute('aria-label') || b.title || '').slice(0, 30))`)
 console.log('  sidebar buttons:', JSON.stringify(navs))
 const clickLabel = (re) => ev(`(() => { const b = [...document.querySelectorAll('.ember-sidebar button')].find((x) => ${re}.test(x.getAttribute('aria-label') || x.title || '')); b?.click(); return !!b })()`)
-console.log('  council:', await clickLabel('/^Council/'))
-await wait(1500)
-await shot('council')
-console.log('  todo:', await clickLabel('/todo/i'))
+const failures = []
+const todo = await clickLabel('/^todo$/i')
+console.log('  todo:', todo)
+if (!todo) failures.push('no Todo button in the sidebar')
 await wait(1200)
-console.log('  notes:', await clickLabel('/^notes|notes/i'))
+const notes = await clickLabel('/^notes$/i')
+console.log('  notes:', notes)
+if (!notes) failures.push('no Notes button in the sidebar')
 await wait(1200)
-console.log('  map:', await clickLabel('/map/i'))
-await wait(1500)
+const gone = (navs ?? []).filter((l) => /council|orchestrat|^map$/i.test(l))
+if (gone.length) failures.push(`removed places still in the sidebar: ${gone.join(', ')}`)
 const tabs = await ev(`[...document.querySelectorAll('.ember-card .ember-card-title')].map((t) => t.textContent.trim())`)
 console.log('  tabs:', JSON.stringify(tabs))
+if (!tabs?.some((t) => /^todo/i.test(t))) failures.push('no Todo tab opened')
+if (!tabs?.some((t) => /notes/i.test(t))) failures.push('no Notes tab opened')
+if (tabs?.some((t) => /^(council|map)$/i.test(t))) failures.push('a Council or Map tab is open')
 await shot('tabs')
 ws.close()
 child.kill()
+if (failures.length) {
+  for (const f of failures) console.log(`  FAIL ${f}`)
+  process.exit(1)
+}
+console.log('  PLACE TABS OK')
+process.exit(0)

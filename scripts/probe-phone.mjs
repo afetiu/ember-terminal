@@ -2,9 +2,9 @@
 /**
  * The phone app itself, driven as a real page against a real desk.
  *
- * `probe-remote.mjs` proves the wire by standing in for the phone with a hand-written
- * client. That leaves the actual thing being shipped — `mobile/www/app.js`, the file
- * inside the APK — never once executed. A syntax error in it, a mis-wired button, an
+ * A hand-written client standing in for the phone would prove the wire and leave the
+ * actual thing being shipped — `mobile/www/app.js`, the file inside the APK — never
+ * once executed. A syntax error in it, a mis-wired button, an
  * element id that does not match the markup: all of that survives every other test here
  * and shows up as a blank screen on his phone, which is the one place it cannot be
  * debugged.
@@ -15,8 +15,7 @@
  * answer, does the answer appear on screen.
  *
  * The call is deliberately out of scope. WebRTC to OpenAI needs a microphone and a real
- * conversation, and faking either would prove nothing about the thing being faked — the
- * path up to it is covered by the `secret` case in probe-remote.
+ * conversation, and faking either would prove nothing about the thing being faked.
  *
  *   node scripts/probe-phone.mjs
  */
@@ -164,7 +163,6 @@ async function target(port, match) {
  *
  * Pushing a panel is an authenticated call and the token is per-run — it exists only in
  * the environment of the shells Ember spawned, so the only way to learn it is to ask one.
- * Same trick probe-layout uses.
  */
 async function readBridgeToken(cdp) {
   const file = join(EMBER_HOME, 'tok.txt')

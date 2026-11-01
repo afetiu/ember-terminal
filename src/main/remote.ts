@@ -18,7 +18,7 @@ import { CONFIG_DIR } from './config.js'
  * font sizes — a config file gets copied between machines and pasted into issues.
  *
  * It does reach the renderer, unlike the OpenAI key, and that is unavoidable: the link
- * runs there because that is where the orchestrator and its tools live. The boundary this
+ * runs there because that is where the tabs the phone drives live. The boundary this
  * key defends is the one across the internet, not the one inside the app.
  */
 

@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 /**
- * The title-bar controls, and the sidebar's minimised state.
+ * The sidebar's minimised state.
  *
- * Both are things that look fine in a screenshot of one state and are wrong in another.
- * Alignment especially: "the two buttons are not vertically aligned" is a two-pixel claim,
- * and two pixels is exactly the kind of thing that gets argued about from memory instead
- * of measured. So this measures — centre lines, to the pixel — and it measures the icons
- * inside the buttons rather than the buttons themselves, because that was the bug: two
- * buttons agreeing on their own boxes while their contents sat on different baselines.
+ * A thing that looks fine in a screenshot of one state and is wrong in another, so this
+ * measures it rather than looking.
  *
  *   node scripts/probe-chrome.mjs [outfile.png]
  */
@@ -107,42 +103,6 @@ try {
   await cdp.send('Runtime.enable')
   await cdp.send('Page.enable')
   await sleep(3500)
-
-  // ---------------------------------------------------------------- alignment
-  //
-  // The icons, not the buttons. One is a font glyph and one is an inline SVG, and an
-  // inline SVG sits on the text baseline — so two buttons can be perfectly aligned while
-  // what you actually see in them is not.
-  console.log('\nthe title-bar controls')
-  const marks = await cdp.eval(`(() => {
-    const box = (el) => {
-      if (!el) return null
-      const b = el.getBoundingClientRect()
-      return { top: +b.top.toFixed(1), mid: +(b.top + b.height / 2).toFixed(1), h: +b.height.toFixed(1), w: +b.width.toFixed(1) }
-    }
-    const panel = document.querySelector('.ember-paneltoggle')
-    const orch = document.querySelector('.ember-voicetoggle.is-orch')
-    return {
-      panelBtn: box(panel),
-      orchBtn: box(orch),
-      // What is actually drawn inside each.
-      panelInk: box(panel),
-      orchInk: box(orch?.querySelector('svg')),
-    }
-  })()`)
-
-  if (!marks.panelBtn || !marks.orchBtn) {
-    fail('one of the title-bar buttons is missing')
-  } else {
-    const btnDelta = Math.abs(marks.panelBtn.mid - marks.orchBtn.mid)
-    if (btnDelta > 0.6) fail(`the buttons themselves are ${btnDelta.toFixed(1)}px apart vertically`)
-    else pass('the two buttons share a centre line')
-
-    const inkDelta = Math.abs(marks.panelInk.mid - marks.orchInk.mid)
-    if (inkDelta > 0.6) {
-      fail(`what is drawn inside them is ${inkDelta.toFixed(1)}px apart — the icons look misaligned`)
-    } else pass(`and so does what is drawn inside them (${inkDelta.toFixed(1)}px apart)`)
-  }
 
   // ---------------------------------------------------------------- the sidebar
   console.log('\nthe sidebar')

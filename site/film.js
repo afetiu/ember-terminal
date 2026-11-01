@@ -58,22 +58,11 @@ const SCENES = {
       scratch: idle(),
     },
   },
-  orch: {
-    dur: 8.2, still: 6.6, sel: 'api', demo: 480,
-    cam: [[0, 290, 400, 1.7], [2.6, 290, 400, 1.7], [3.4, 560, 330, 1.55], [5.6, 560, 330, 1.55], [6.2, 300, 420, 1.6]],
-    cursor: [[0.25, [560, 640]], [0.7, '.orch__box', 'click'], [1.0, [300, 700]]],
-    cards: {
-      api: [[0, 'idle', null, 'idle'], [3.1, 'working', null, 'working · {t}', 0], [5.8, 'attention', 'handoff', 'done']],
-      docs: [[0, 'idle', null, 'idle'], [3.3, 'working', null, 'working · {t}', 0]],
-      web: idle(),
-      scratch: idle(),
-    },
-  },
   todo: {
     dur: 7.2, still: 6.0, sel: null, place: 'todo',
     todo: [[0, 3], [1.6, 4], [2.05, 5], [2.5, 6], [2.95, 7], [4.0, 6], [4.4, 5], [4.8, 4]],
     cam: [[0, 720, 330, 1.7]],
-    cursor: [[0.2, [760, 360]], [0.85, '[data-cursor=check]', 'click'], [1.3, [860, 330]]],
+    cursor: [[3.4, [760, 360]], [4.0, '[data-cursor=check]', 'click'], [4.5, [860, 330]]],
     cards: {
       api: idle(),
       docs: [[0, 'working', null, 'working · {t}', 142]],
@@ -89,22 +78,6 @@ const SCENES = {
     cursor: [[4.95, [620, 300]], [5.65, '[data-cursor=allnotes]', 'click'], [6.2, [640, 330]]],
     cards: {
       api: [[0, 'idle', null, 'idle'], [1.35, 'working', null, 'working · {t}', 0], [2.6, 'working', null, 'writing a note'], [5.1, 'attention', 'handoff', 'done']],
-      docs: [[0, 'attention', 'handoff', 'done']],
-      web: idle(),
-      scratch: idle(),
-    },
-  },
-  map: {
-    dur: 9.6, still: 5.8, sel: null, place: 'map',
-    // On a phone the window camera just frames the map; the map's own camera does the moving.
-    cam: [[0, 720, 360, 1.22]],
-    // The map's camera, in map coordinates: [t, x, y, zoom]. Whole system, the flow, into
-    // the API while a session edits it, out again for the blast and the timeline.
-    mcam: [[0, 500, 262, 1.02], [1.3, 500, 262, 0.9], [3.6, 500, 262, 0.9], [4.3, 390, 160, 1.42], [5.1, 390, 170, 1.42], [5.6, 430, 200, 1.3], [6.05, 430, 200, 1.3], [6.5, 500, 262, 0.9]],
-    mcamS: [[0, 500, 262, 0.84], [1.3, 500, 262, 0.84], [1.7, 250, 130, 1.55], [2.0, 250, 110, 1.55], [2.45, 620, 110, 1.25], [2.7, 620, 110, 1.25], [3.05, 470, 190, 1.5], [3.6, 470, 200, 1.5], [4.3, 360, 145, 1.8], [5.1, 360, 150, 1.8], [5.6, 440, 180, 1.55], [6.1, 440, 180, 1.55], [6.5, 350, 170, 1.3], [7.6, 350, 170, 1.3], [8.0, 500, 262, 0.9]],
-    mstill: [500, 262, 0.9],
-    cards: {
-      api: [[0, 'idle', null, 'idle'], [3.7, 'working', null, 'editing auth']],
       docs: [[0, 'attention', 'handoff', 'done']],
       web: idle(),
       scratch: idle(),
@@ -131,10 +104,6 @@ const SCENES = {
 }
 
 const SEEDS = { api: 0.3, docs: 1.7, web: 2.9, scratch: 4.1 }
-const MINI = { state: 'working', attention: null }
-// Where the map's camera looks from: the middle of the canvas between its top and bottom bars.
-const MAP_CX = 480
-const MAP_CY = 318
 
 function fmt(s) {
   s = Math.max(0, Math.floor(s))
@@ -156,85 +125,11 @@ function parseTimes(s) {
   return s.split(';').filter(Boolean).map((p) => p.split(',').map(Number))
 }
 
-// ---- the map's lines ------------------------------------------------------------------
-// Each <g class="me" data-pts="x,y x,y …"> is an orthogonal route (as the app's layout
-// hands them over). Here it becomes what the app draws: a dark halo, the line with rounded
-// corners, a notched arrowhead at the used end, its label on the longest run, and, for a
-// line on a traced flow (data-flow="from,to"), a pulse of light that travels it.
-const SVGNS = 'http://www.w3.org/2000/svg'
-
-function roundedPath(pts, r) {
-  let d = `M${pts[0][0]} ${pts[0][1]}`
-  for (let i = 1; i < pts.length - 1; i++) {
-    const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1]
-    const a = Math.min(r, Math.hypot(x - px, y - py) / 2, Math.hypot(nx - x, ny - y) / 2)
-    const ux = Math.sign(x - px), uy = Math.sign(y - py), vx = Math.sign(nx - x), vy = Math.sign(ny - y)
-    d += ` L${x - ux * a} ${y - uy * a} Q${x} ${y} ${x + vx * a} ${y + vy * a}`
-  }
-  const [lx, ly] = pts[pts.length - 1]
-  return `${d} L${lx} ${ly}`
-}
-
-function buildEdges(root) {
-  for (const g of root.querySelectorAll('.me[data-pts]')) {
-    const pts = g.dataset.pts.trim().split(/\s+/).map((p) => p.split(',').map(Number))
-    const n = pts.length
-    const [ex, ey] = pts[n - 1]
-    const [bx, by] = pts[n - 2]
-    const len = Math.hypot(ex - bx, ey - by) || 1
-    const ux = (ex - bx) / len, uy = (ey - by) / len
-    // The line stops where the arrowhead's notch starts, so the tip stays sharp.
-    const cut = pts.map((p) => p.slice())
-    cut[n - 1] = [ex - ux * 6, ey - uy * 6]
-    const d = roundedPath(cut, 12)
-    const mk = (tag, cls, attrs) => {
-      const el = document.createElementNS(SVGNS, tag)
-      el.setAttribute('class', cls)
-      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
-      return el
-    }
-    const halo = mk('path', 'me__halo', { d })
-    const line = mk('path', 'me__l', { d, pathLength: '1' })
-    // notched head, 10 long, 9 wide, tip on the part's edge
-    const px = -uy, py = ux
-    const at = (along, side) => `${(ex - ux * along + px * side).toFixed(1)} ${(ey - uy * along + py * side).toFixed(1)}`
-    const head = mk('path', 'me__a', { d: `M${at(0, 0)} L${at(10, 4.5)} L${at(7.4, 0)} L${at(10, -4.5)} Z` })
-    const label = g.querySelector('text')
-    g.prepend(halo, line, head)
-    if (label) {
-      // On the longest run, over the line on its halo; a short hop between two parts
-      // is too narrow for that, so its label sits just above it.
-      let best = 0, lx = 0, ly = 0, flat = false
-      for (let i = 1; i < n; i++) {
-        const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
-        if (l > best) { best = l; lx = (pts[i][0] + pts[i - 1][0]) / 2; ly = (pts[i][1] + pts[i - 1][1]) / 2; flat = pts[i][1] === pts[i - 1][1] }
-      }
-      label.setAttribute('class', 'me__t')
-      label.setAttribute('x', String(lx))
-      label.setAttribute('y', String(flat && best < 100 ? ly - 10 : ly))
-      // a hand-placed spot, where the route runs past something the label would cover
-      if (g.dataset.lab) {
-        const [x, y, anchor] = g.dataset.lab.split(',')
-        label.setAttribute('x', x)
-        label.setAttribute('y', y)
-        if (anchor) label.style.textAnchor = anchor
-      }
-      g.append(label)
-    }
-    if (g.dataset.flow) {
-      const pulse = mk('path', 'mp mp--flow', { d: roundedPath(pts, 12), pathLength: '1' })
-      pulse.dataset.pulse = g.dataset.flow
-      g.append(pulse)
-    }
-  }
-}
-
 class Film {
   constructor(root, { order, mode = 'hero', onScene } = {}) {
     this.root = root
     this.view = root.querySelector('.film__view')
     this.win = root.querySelector('.win')
-    this.body = root.querySelector('.win__body')
     this.cursor = root.querySelector('.cursor')
     this.order = order
     this.mode = mode
@@ -264,13 +159,8 @@ class Film {
       text: '',
     }))
 
-    // The map's lines, and the little Cinders that ride on its live-session chips.
-    buildEdges(root)
-    this.minis = [...root.querySelectorAll('canvas[data-cinder]')].map((c) => c.getContext('2d'))
     // The places row at the top of the sidebar: which one is on stage, and two badges.
     this.places = [...root.querySelectorAll('.place[data-place]')].map((el) => ({ el, name: el.dataset.place, badge: el.querySelector('.place__badge'), n: null, on: null }))
-    this.mworld = root.querySelector('.mworld')
-
     // Timed elements, grouped by the scene that owns them.
     this.parts = {}
     this.items = {}
@@ -328,7 +218,7 @@ class Film {
 
     this.layout()
     this.activate(this.order[0], true)
-    ;(document.fonts?.ready || Promise.resolve()).then(() => { this.layoutWires(); this.frame() })
+    ;(document.fonts?.ready || Promise.resolve()).then(() => this.frame())
   }
 
   // ---- sizing -----------------------------------------------------------------
@@ -337,21 +227,6 @@ class Film {
     this.root.classList.toggle('is-small', this.small)
     this.vw = this.view.clientWidth
     this.vh = this.view.clientHeight
-  }
-
-  layoutWires() {
-    const orch = this.root.querySelector('.orch')
-    if (!orch) return
-    const o = offsetIn(orch, this.body)
-    const sx = o.x + o.w - 14
-    const sy = o.y + 22
-    for (const p of this.root.querySelectorAll('[data-wire]')) {
-      const card = this.root.querySelector(`.scard[data-card="${p.dataset.wire}"]`)
-      const c = offsetIn(card, this.body)
-      const ex = c.x + c.w - 6
-      const ey = c.y + c.h / 2
-      p.setAttribute('d', `M${sx} ${sy} C ${sx + 120} ${sy}, ${ex + 110} ${ey}, ${ex} ${ey}`)
-    }
   }
 
   // ---- playback -----------------------------------------------------------------
@@ -526,7 +401,6 @@ class Film {
   drawCards() {
     const time = this.static ? 1.3 : this.clock
     for (const c of this.cards) drawMascot(c.ctx, 76, c.mood, time, SEEDS[c.name] || 0)
-    if (this.order[this.idx] === 'map') for (const ctx of this.minis) drawMascot(ctx, 76, MINI, time, SEEDS.api)
   }
 
   point(target) {
@@ -571,8 +445,8 @@ class Film {
 
   updateCamera(sc, t) {
     // How close the camera gets: the whole window in the hero on a wide screen, a
-    // fixed 960x680 crop in the desktop demos (the main area, or the sidebar plus the
-    // left pane for the orchestrator), and the scene's full camera move on a phone.
+    // fixed 960x680 crop of the main area in the desktop demos, and the scene's full
+    // camera move on a phone.
     let c = this.camAt(sc, t)
     if (this.small) c = { cx: c.cx, cy: c.cy, z: c.z * 1.15 }
     else if (this.mode === 'demo') c = { cx: sc.demo ?? 720, cy: 380, z: 1.25 }
@@ -590,17 +464,6 @@ class Film {
     const tx = this.vw / 2 - cx * s
     const ty = this.vh / 2 - cy * s
     this.win.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})`
-
-    // The map zooms and pans inside its own canvas, the way the app's map does; a phone
-    // gets a closer camera that follows the action.
-    if (sc.mcam && this.mworld) {
-      let m
-      if (this.static && sc.mstill) m = { cx: sc.mstill[0], cy: sc.mstill[1], z: sc.mstill[2] }
-      else m = this.camAt(sc, t, this.small && sc.mcamS ? sc.mcamS : sc.mcam)
-      const mx = MAP_CX - m.cx * m.z
-      const my = MAP_CY - m.cy * m.z
-      this.mworld.style.transform = `translate(${mx.toFixed(2)}px, ${my.toFixed(2)}px) scale(${m.z.toFixed(4)})`
-    }
   }
 
   updateTheme(sc, t) {
@@ -619,10 +482,8 @@ class Film {
 const CAPS = {
   panel: ['The agent draws its answer. Buttons type back into the terminal.', ['Ctrl', 'Shift', 'J']],
   overview: ['Every session on one page: the numbers, a question you answer in place, a quiet log of every edit.', ['Ctrl', 'Shift', 'S']],
-  orch: ['Say what you want done. It hands the work to your sessions.', ['Ctrl', 'Shift', 'M']],
-  todo: ['AI fills the list from your sources, and clears what is done.', ['Ctrl', 'Shift', 'D']],
+  todo: ['Your list, beside your sessions. Agents add to it and tick what gets done.', ['Ctrl', 'Shift', 'D']],
   notes: ['Plain .md files you and your agent both write. They open over the tab; the shell keeps running.', 'notes · note'],
-  map: ['Your whole project, kept current. Sessions glow where they work.', ['Ctrl', 'Shift', 'G']],
   cli: ['Runs the CLI you already use. Never asks for an API key.', 'no API key'],
   splits: ['Split any pane. 51 themes re-tint the whole window.', ['Alt', 'Shift', '+']],
   palette: ['Every action is one command away. Agents can run them too.', ['Ctrl', 'K']],
@@ -630,7 +491,7 @@ const CAPS = {
 
 // ---- the hero ------------------------------------------------------------------
 const heroRoot = document.querySelector('[data-film="hero"]')
-const BEATS = ['panel', 'overview', 'orch', 'todo', 'notes', 'map', 'cli', 'splits', 'palette']
+const BEATS = ['panel', 'overview', 'todo', 'notes', 'cli', 'splits', 'palette']
 /** Playback rate of the hero film. Below 1 is slower; every beat stretches with it. */
 const HERO_SPEED = 0.7
 let hero = null

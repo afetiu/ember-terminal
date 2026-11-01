@@ -54,7 +54,7 @@ interface Section {
 }
 
 /** The panel's tabs, in order. Theme is part of Look; the rest are the sections below. */
-export const SETTINGS_TABS = ['Look', 'Motion', 'Agent', 'Todo', 'Behaviour', 'Labs'] as const
+export const SETTINGS_TABS = ['Look', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 
@@ -187,17 +187,6 @@ export class Settings {
         { path: 'effects.scanlines', label: 'Scanlines', kind: 'range', min: 0, max: 0.4, step: 0.01 },
         { path: 'effects.outputMotion', label: 'Output rises into place', kind: 'toggle' },
         { path: 'effects.adaptive', label: 'Shed effects when slow', kind: 'toggle' },
-      ],
-    },
-    {
-      title: 'Todo',
-      tab: 'Todo',
-      fields: [
-        { path: 'todo.gmail', label: 'Check Gmail', kind: 'toggle', hint: 'needs the Gmail connector in Claude' },
-        { path: 'todo.outlook', label: 'Check Outlook', kind: 'toggle', hint: 'needs a Microsoft 365 tool in Claude' },
-        { path: 'todo.slack', label: 'Check Slack', kind: 'toggle', hint: 'needs a Slack tool in Claude' },
-        { path: 'todo.jira', label: 'Check Jira', kind: 'toggle', hint: 'needs the Atlassian connector in Claude' },
-        { path: 'todo.github', label: 'Check GitHub', kind: 'toggle', hint: 'uses the gh CLI, signed in on this machine' },
       ],
     },
     {

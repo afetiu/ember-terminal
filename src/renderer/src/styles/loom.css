@@ -5459,3 +5459,25 @@ body.is-light .loom-ask .loom-caret::before {
 .loom-rawpill .loom-view-switch {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 10%, transparent);
 }
+
+/* ---------------------------------------------------------------- sticky notes */
+
+/* Your own note on the canvas: warm, so it reads as yours, not the agent's. */
+.loom-piece.is-sticky {
+  background: color-mix(in srgb, #f2c46d 16%, var(--c-bg, #16120f));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #f2c46d 34%, transparent),
+    0 18px 40px -18px rgba(0, 0, 0, 0.6);
+}
+.loom-piece.is-sticky .loom-piece-head {
+  background: color-mix(in srgb, #f2c46d 22%, transparent);
+}
+body.is-light .loom-piece.is-sticky {
+  background: #fff6d8;
+  box-shadow:
+    inset 0 0 0 1px rgba(180, 130, 20, 0.28),
+    0 14px 32px -16px rgba(80, 50, 0, 0.3);
+}
+body.is-light .loom-piece.is-sticky .loom-piece-head {
+  background: #fde9a8;
+}

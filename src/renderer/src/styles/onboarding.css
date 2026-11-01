@@ -1,11 +1,3 @@
-/* ---------- Labs off ----------
-   The voice call is Labs (it needs keys). Off, its button leaves the orchestrator rather
-   than sitting there dead; the orchestrator itself runs on the agent CLI. */
-
-body.labs-off .ember-orch-call {
-  display: none !important;
-}
-
 /* ---------- the agent picker (Settings › Agent and the onboarding) ---------- */
 
 .ember-agents-nokeys {

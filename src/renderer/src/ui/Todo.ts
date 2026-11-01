@@ -1,22 +1,10 @@
 import { TaskList } from './Tasks'
 
-/** "just now", "14m ago", "yesterday" — the same clock the notes list uses. */
-function ago(ms: number): string {
-  const s = Math.max(0, (Date.now() - ms) / 1000)
-  if (s < 45) return 'just now'
-  if (s < 3600) return `${Math.round(s / 60)}m ago`
-  if (s < 86400) return `${Math.round(s / 3600)}h ago`
-  if (s < 172800) return 'yesterday'
-  return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-}
-
 export interface TodoHooks {
   /** The tab's title follows the count of open items. */
   onTitle: (title: string) => void
   /** Leave the list — back to the shell underneath, when there is one. */
   onClose?: () => void
-  /** Open Settings at the Todo tab: which sources this machine checks. */
-  onSources?: () => void
   /** Hand one item to a new Claude session. */
   onClaude?: (text: string) => void
   /** Open an item's source outside Ember. */
@@ -26,9 +14,8 @@ export interface TodoHooks {
 /**
  * The todo list, as its own surface.
  *
- * Not a note. It has one job and one shape: a list of things to do, every line an item,
- * with the checker that fills it from mail and Slack and the time it last ran. It is
- * stored as `Todo.md` beside the notes — a plain file, `- [ ] item` per line, so `todo add`
+ * Not a note. It has one job and one shape: a list of things to do, every line an item.
+ * It is stored as `Todo.md` beside the notes — a plain file, `- [ ] item` per line, so `todo add`
  * from any shell, a Claude session and any editor all write the same thing — but it is
  * kept out of the notes list and opened by its own command, shortcut and badge.
  *
@@ -41,9 +28,7 @@ export class TodoView {
   private readonly list: TaskList
   private readonly countEl: HTMLElement
   private readonly status: HTMLElement
-  private readonly checkBtn: HTMLButtonElement
   private readonly clearBtn: HTMLButtonElement
-  private readonly report: HTMLElement
   /** Under the list: the archive's count as a quiet toggle, and the archive itself. */
   private readonly foot: HTMLElement
   private readonly archiveToggle: HTMLButtonElement
@@ -53,8 +38,11 @@ export class TodoView {
   private archive = ''
   private archiveOpen = false
   private saveTimer: number | null = null
-  private checking = false
   private disposed = false
+  /** The daily check: once a day, the open items one at a time. */
+  private readonly review: HTMLElement
+  private reviewAt = -1
+  private reviewKeys: ((e: KeyboardEvent) => void) | null = null
 
   constructor(private readonly hooks: TodoHooks) {
     this.el = document.createElement('div')
@@ -63,7 +51,6 @@ export class TodoView {
     const head = document.createElement('header')
     head.className = 'ember-todo-head'
 
-
     const h = document.createElement('h2')
     h.textContent = 'Todo'
     this.countEl = document.createElement('span')
@@ -71,19 +58,6 @@ export class TodoView {
 
     this.status = document.createElement('span')
     this.status.className = 'ember-todo-status'
-
-    this.checkBtn = document.createElement('button')
-    this.checkBtn.className = 'ember-notes-check'
-    this.checkBtn.textContent = 'Check todos'
-    this.checkBtn.title = 'Go through your sources with Claude: add what needs doing, tick what is done  (todo check)'
-    this.checkBtn.addEventListener('click', () => void this.checkTodos())
-
-    const sources = document.createElement('button')
-    sources.className = 'ember-notes-leave ember-todo-sources'
-    sources.textContent = 'Manage sources'
-    sources.title = 'Where Check todos looks on this machine  (todo sources)'
-    sources.hidden = !hooks.onSources
-    sources.addEventListener('click', () => hooks.onSources?.())
 
     // Only there when there is something ticked to clear. It archives rather than
     // deletes: a done thing is still a record of a done thing.
@@ -94,13 +68,7 @@ export class TodoView {
     this.clearBtn.hidden = true
     this.clearBtn.addEventListener('click', () => this.clearDone())
 
-    head.append(h, this.countEl, this.status, this.clearBtn, sources, this.checkBtn)
-
-    this.report = document.createElement('div')
-    this.report.className = 'ember-notes-report'
-    this.report.hidden = true
-    this.report.title = 'Click to dismiss'
-    this.report.addEventListener('click', () => (this.report.hidden = true))
+    head.append(h, this.countEl, this.status, this.clearBtn)
 
     this.foot = document.createElement('div')
     this.foot.className = 'ember-todo-foot'
@@ -125,7 +93,114 @@ export class TodoView {
       onLeave: () => hooks.onClose?.(),
     })
 
-    this.el.append(head, this.report, this.list.el, this.foot)
+    this.review = document.createElement('section')
+    this.review.className = 'ember-todo-review'
+    this.review.hidden = true
+
+    this.el.append(head, this.review, this.list.el, this.foot)
+  }
+
+  // ---------------------------------------------------------------- the daily check
+
+  private static readonly REVIEWED = 'ember.todo.reviewed'
+
+  private openItems(): string[] {
+    return this.text
+      .split('\n')
+      .filter((l) => /^\s*- \[ \] \S/.test(l))
+      .map((l) => l.replace(/^\s*- \[ \] /, ''))
+  }
+
+  /** The first visit of the day: what is open, what got done since the last check. */
+  private offerReview(): void {
+    let last = ''
+    try {
+      last = localStorage.getItem(TodoView.REVIEWED) ?? ''
+    } catch {
+      /* no storage: offer every time, which is harmless */
+    }
+    const today = TodoView.today()
+    const open = this.openItems()
+    if (last === today || !open.length) {
+      this.review.hidden = true
+      return
+    }
+    const done = TodoView.archived(this.archive)
+      .filter((d) => !last || d.day > last)
+      .reduce((n, d) => n + d.items.length, 0)
+    this.review.hidden = false
+    this.review.innerHTML =
+      `<div class="ember-todo-review-head"><strong>Today</strong><span>${open.length} open${done ? ` · ${done} done since your last check` : ''}</span></div>` +
+      `<div class="ember-todo-review-acts"><button type="button" class="is-primary" data-r="go">Go through them</button><button type="button" data-r="skip">Not now</button></div>`
+    this.review.querySelector('[data-r="go"]')?.addEventListener('click', () => this.reviewStep(0))
+    this.review.querySelector('[data-r="skip"]')?.addEventListener('click', () => this.reviewEnd(false))
+  }
+
+  /** One item, large, with single keys: D done, K keep, L later, Del drop, Esc stop. */
+  private reviewStep(i: number): void {
+    const open = this.openItems()
+    if (i >= open.length) return this.reviewEnd(true)
+    this.reviewAt = i
+    const item = open[i]!
+    this.review.innerHTML =
+      `<div class="ember-todo-review-head"><strong>Today</strong><span>${i + 1} of ${open.length}</span></div>` +
+      `<div class="ember-todo-review-item"></div>` +
+      `<div class="ember-todo-review-acts">` +
+      `<button type="button" data-r="done"><b>D</b> Done</button><button type="button" data-r="keep"><b>K</b> Keep</button>` +
+      `<button type="button" data-r="later"><b>L</b> Later</button><button type="button" data-r="drop"><b>Del</b> Drop</button>` +
+      `<button type="button" data-r="stop"><b>Esc</b> Stop</button></div>`
+    this.review.querySelector<HTMLElement>('.ember-todo-review-item')!.textContent = item
+    const act = (what: string) => {
+      if (what === 'stop') return this.reviewEnd(false)
+      if (what === 'keep') return this.reviewStep(i + 1)
+      const lines = this.text.split('\n')
+      const at = lines.findIndex((l) => /^\s*- \[ \] /.test(l) && l.replace(/^\s*- \[ \] /, '') === item)
+      if (at < 0) return this.reviewStep(i + 1)
+      if (what === 'done') lines[at] = lines[at]!.replace('- [ ] ', '- [x] ')
+      else if (what === 'drop') lines.splice(at, 1)
+      else if (what === 'later') {
+        const [line] = lines.splice(at, 1)
+        let last = lines.length - 1
+        while (last > 0 && !lines[last]!.trim()) last--
+        lines.splice(last + 1, 0, line!)
+      }
+      this.text = lines.join('\n')
+      this.list.setText(this.text)
+      this.countItems()
+      this.queueSave()
+      // Done, dropped or moved: the next item is now at the same place.
+      this.reviewStep(what === 'later' && i < this.openItems().length - 1 ? i : what === 'later' ? i + 1 : i)
+    }
+    this.review.querySelectorAll<HTMLElement>('[data-r]').forEach((b) => b.addEventListener('click', () => act(b.dataset['r']!)))
+    if (!this.reviewKeys) {
+      this.reviewKeys = (e: KeyboardEvent) => {
+        if (this.review.hidden || this.reviewAt < 0 || this.el.offsetParent === null) return
+        const k = e.key.toLowerCase()
+        const map: Record<string, string> = { d: 'done', k: 'keep', l: 'later', delete: 'drop', escape: 'stop' }
+        const what = map[k]
+        if (!what || (e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]')) return
+        e.preventDefault()
+        e.stopPropagation()
+        const btn = this.review.querySelector<HTMLElement>(`[data-r="${what}"]`)
+        btn?.click()
+      }
+      window.addEventListener('keydown', this.reviewKeys, true)
+    }
+  }
+
+  private reviewEnd(finished: boolean): void {
+    this.reviewAt = -1
+    try {
+      localStorage.setItem(TodoView.REVIEWED, TodoView.today())
+    } catch {
+      /* fine */
+    }
+    if (!finished) {
+      this.review.hidden = true
+      return
+    }
+    this.review.innerHTML = `<div class="ember-todo-review-head"><strong>Today</strong><span>All gone through. See you tomorrow.</span></div>`
+    window.setTimeout(() => (this.review.hidden = true), 2200)
   }
 
   /** Read the file and show it. */
@@ -135,15 +210,11 @@ export class TodoView {
     this.lastSaved = body
     this.list.setText(body)
     this.countItems()
-    void this.loadArchive()
-    void window.ember.notes.todoState().then((st) => {
-      if (this.disposed || this.checking) return
-      const at = st.lastCheckedAt ? Date.parse(st.lastCheckedAt) : NaN
-      this.status.textContent = Number.isFinite(at) ? `checked ${ago(at)}` : 'never checked'
-    })
+    await this.loadArchive()
+    this.offerReview()
   }
 
-  /** The file changed under us — `todo add` from a shell, the checker, another editor. */
+  /** The file changed under us — `todo add` from a shell, an agent, another editor. */
   async external(): Promise<void> {
     if (this.disposed) return
     // `todo clear done` from a shell writes the archive too; whichever file changed,
@@ -186,27 +257,6 @@ export class TodoView {
     if (ok) this.lastSaved = body
   }
 
-  /** Run `/check-todos` in the local Claude and show what it said; items arrive (and get ticked) by themselves. */
-  async checkTodos(): Promise<void> {
-    if (this.checking) return
-    this.checking = true
-    this.checkBtn.disabled = true
-    this.checkBtn.textContent = 'Checking…'
-    this.status.textContent = 'going through your sources with Claude, a minute or two'
-    this.report.hidden = true
-    try {
-      const r = await window.ember.notes.checkTodos()
-      this.report.textContent = r.ok ? r.output || 'Nothing new to do.' : `Could not run the check: ${r.error ?? 'unknown error'}`
-      this.report.classList.toggle('is-error', !r.ok)
-      this.report.hidden = false
-      this.status.textContent = r.ok ? 'checked just now' : ''
-    } finally {
-      this.checking = false
-      this.checkBtn.disabled = false
-      this.checkBtn.textContent = 'Check todos'
-    }
-  }
-
   /** `add <text>`: one more open item at the end. */
   add(text: string): string {
     const t = text.trim()
@@ -236,8 +286,7 @@ export class TodoView {
 
   /**
    * `clear done`: the ticked items leave the list for the archive, under today's date.
-   * Archived rather than deleted — a done thing is still a record, and the checker reads
-   * the archive so it never adds one back.
+   * Archived rather than deleted — a done thing is still a record.
    */
   clearDone(): string {
     const lines = this.text.split('\n')
@@ -422,6 +471,7 @@ export class TodoView {
   }
 
   dispose(): void {
+    if (this.reviewKeys) window.removeEventListener('keydown', this.reviewKeys, true)
     void this.flush()
     this.disposed = true
     this.el.remove()

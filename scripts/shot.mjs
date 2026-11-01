@@ -4,8 +4,8 @@
  *   node scripts/shot.mjs [outdir]
  *
  * Launches an isolated Ember (its own EMBER_HOME, the user's config copied in), opens
- * the surfaces worth seeing — a shell, a notes tab with the list and a note, the
- * orchestrator column — and captures each through the DevTools protocol. Captures are of
+ * the surfaces worth seeing — a shell, a notes tab with the list and a note, the todo
+ * list — and captures each through the DevTools protocol. Captures are of
  * the page only: the acrylic behind a transparent window is not composited by Chromium,
  * so the backdrop reads as black here even though it is glass on the desk.
  */
@@ -26,7 +26,7 @@ writeFileSync(join(NOTES, 'Release checklist.md'), '# Release checklist\n\n- bum
 writeFileSync(join(NOTES, 'Ideas.md'), 'Ideas\n\nA notes command instead of an MCP tool. Park background tabs.\n')
 writeFileSync(
   join(NOTES, 'Todo.md'),
-  '# Todo\n\n- [ ] Reply to Alex about the mockups [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in radix-platform#551 (EN-19669 Intelligence scatter plot and map), rebase onto #550, make the four conflicting files agree on the module union, and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Move the orchestrator under the list [GitHub](https://github.com/afetiu/ember/issues/12)\n- [ ] Answer Noah on DE-862 [Jira](https://org.atlassian.net/browse/DE-862)\n- [ ] Send Kabashi the sizes [Slack](https://kabashi.slack.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Slack and mail triage routine\n',
+  '# Todo\n\n- [ ] Reply to Alex about the mockups [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in radix-platform#551 (EN-19669 Intelligence scatter plot and map), rebase onto #550, make the four conflicting files agree on the module union, and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Park background tabs sooner [GitHub](https://github.com/afetiu/ember/issues/12)\n- [ ] Answer Noah on DE-862 [Jira](https://org.atlassian.net/browse/DE-862)\n- [ ] Send Kabashi the sizes [Slack](https://kabashi.slack.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Slack and mail triage routine\n',
 )
 
 const userCfg = join(homedir(), '.ember', 'config.json')
@@ -102,34 +102,21 @@ await sleep(2500)
 await ev(`window.__ember.openTodo()`)
 await sleep(1200)
 await shot('07-todo')
-try {
-  await ev(`window.__ember.orchestrator()`)
-} catch (err) {
-  console.log(`orchestrator toggle threw: ${err.message}`)
-}
-await sleep(1200)
-console.log(
-  'orchestrator state:',
-  JSON.stringify(
-    await ev(`(() => { const o = document.querySelector('.ember-orch'); const sb = document.querySelector('.ember-sidebar'); const cs = getComputedStyle(o); return { open: o.classList.contains('is-open'), display: cs.display, opacity: cs.opacity, h: o.offsetHeight, w: o.offsetWidth, parent: o.parentElement.className, sidebar: sb.className, col: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), cards: document.querySelector('.ember-cards').offsetHeight } })()`),
-  ),
-)
-await shot('04-orchestrator')
 await ev(`window.__ember.openPalette('')`)
 await sleep(600)
 await shot('05-palette')
 await ev(`window.__ember.openPalette('s')`)
 await sleep(500)
 await shot('05b-palette-s')
-await ev(`window.__ember.openPalette('o run the tests in tab 2')`)
+await ev(`window.__ember.openPalette('t')`)
 await sleep(500)
-await shot('05c-palette-orch')
+await shot('05c-palette-t')
 await ev(`window.__ember.openSettings()`)
 await sleep(800)
 await shot('06-settings')
-await ev(`document.querySelector('.ember-settings-tab[data-tab="Todo"]').click()`)
+await ev(`document.querySelector('.ember-settings-tab[data-tab="Agent"]').click()`)
 await sleep(400)
-await shot('08-settings-todo')
+await shot('08-settings-agent')
 await ev(`window.__ember.openSettings()`)
 await sleep(400)
 await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })

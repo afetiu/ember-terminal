@@ -5,10 +5,9 @@
  * Every action Ember's chrome offers is a row in one table in the renderer (App.ts,
  * `commandTable`): the palette lists that table, and this command runs it. A button is
  * a way to find the command; the command is the thing. So `ember split right`,
- * `ember rename api`, `ember panel hide`, `ember orch "run the tests in tab 2"` do
- * exactly what the click would, from the tab that typed them — and from a Claude
- * session in that tab, which is the point: the model reaches the app with the same
- * words you do.
+ * `ember rename api`, `ember panel hide`, `ember focus 2` do exactly what the click
+ * would, from the tab that typed them — and from a Claude session in that tab, which is
+ * the point: the model reaches the app with the same words you do.
  *
  * The words go to the running Ember over the bridge the tab already has
  * (EMBER_BRIDGE_URL, the token, the tab id). Outside an Ember tab only `ember set` and
@@ -38,9 +37,8 @@ const STATIC_HELP = `ember <command> [args]         Ember, from the shell
   ember list                   the open tabs
   ember panel [show|hide]      the visualisation panel
   ember visualize              ask the Claude in this tab to draw what it just said
-  ember orch [text]            open the orchestrator, or hand it something
   ember theme [name]           apply a theme
-  ember settings [tab]         open Settings (look, motion, todo, claude, behaviour)
+  ember settings [tab]         open Settings (look, motion, agent, behaviour, labs)
   ember set <path> <value>     write one setting, e.g. ember set window.opacity 60
   ember get <path>             read one setting
   ember diag                   the watchdog log (~/.ember/diag.log), newest last

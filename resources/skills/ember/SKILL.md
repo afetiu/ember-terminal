@@ -1,6 +1,6 @@
 ---
 name: ember
-description: How to work inside Ember, the user's terminal — its panel, notes, todo list, commands and orchestrator. Use whenever the session runs in an Ember tab (EMBER_TAB_ID is set), or when the user mentions Ember, the panel, their notes, the todo list, or the orchestrator.
+description: How to work inside Ember, the user's terminal — its panel, notes, todo list and commands. Use whenever the session runs in an Ember tab (EMBER_TAB_ID is set), or when the user mentions Ember, the panel, their notes, or the todo list.
 ---
 
 <!-- installed by Ember; edit freely, Ember will not overwrite a file that has lost this line -->
@@ -48,7 +48,7 @@ Do not describe a panel after pushing it; they are looking at it.
 ## `ember`: the app from the shell
 
 Every action the app has is a command. The user types them at Ctrl+K without the word
-`ember` (`o run the tests`, `split`, `t`, `del`); in a shell, and therefore in you, the
+`ember` (`split`, `t`, `del`); in a shell, and therefore in you, the
 same words follow `ember`. Prefer them to describing clicks:
 
 ```
@@ -60,19 +60,16 @@ ember split right|down       split this tab
 ember rename <name>          name this tab
 ember focus <n|name>         switch tab      ember list   the open tabs
 ember panel show|hide        the visualisation panel
-ember map [project]          the architecture map: projects Claude keeps a living model of
-                             (Ctrl+Shift+G); ~/.ember/maps/<id>/model.json is the model
 ember visualize              ask the Claude in this tab to draw what it just said
-ember orch "<text>"          hand something to the orchestrator; prints its answer
 ember theme <name>           apply a theme
-ember settings [tab]         open Settings (look, motion, todo, claude, behaviour)
+ember settings [tab]         open Settings (look, motion, agent, behaviour, labs)
 ember set <path> <value>     one setting, e.g. ember set window.opacity 60
 ```
 
-Short forms exist for most (`o` orch, `n` new, `s`/`sd` split right/down, `t` todo, `p`
+Short forms exist for most (`n` new, `s`/`sd` split right/down, `t` todo, `p`
 panel, `v` visualize, `th` theme, `x` close, `r` rename, `f` focus). Inside a note the
 words `del [name]`, `open <name>`, `new [text]`, `list`, `back` act on the notes; on the
-todo list `add <text>`, `done <words>`, `clear done`, `check`, `back`. A command acts on
+todo list `add <text>`, `done <words>`, `clear done`, `back`. A command acts on
 the tab it was typed in. `ember set` and `ember get` also work outside an Ember tab
 (they edit `~/.ember/config.json`; the running app applies it).
 
@@ -112,7 +109,6 @@ todo done <words>            tick the first open item containing the words
 todo list [--all]            print the open items (--all: ticked and archived too)
 todo clear done              move the ticked items to the archive, dated today
 todo archive                 print the archive, newest day first
-todo check                   run /check-todos: mail, Slack, Jira, GitHub -> the list
 ```
 
 Ticked items are never deleted, only cleared into `Todo.archive.md` beside the list (the
@@ -123,20 +119,9 @@ Keep it fed without being asked: when the user says they need to do something la
 a turn of yours ends with something only they can do (a decision, a manual step, a thing
 to check tomorrow), add it, once, phrased as an action they can tick off. And keep it
 honest: when something on the list gets done in front of you, because you did it in this
-session or the user says it is handled, `todo done` it. `/check-todos` is the skill that
-reads recent mail, Slack, Jira and GitHub for things they must act on, and ticks the
-items those sources show as handled.
+session or the user says it is handled, `todo done` it.
 
 Outside an Ember shell, `notes` and `todo` are not on PATH; the files still are.
-
-## The orchestrator
-
-An app-level agent that runs across all sessions: the user can write to it in the left
-column or talk to it on a call. It can read files, list directories, search, run
-read-only git and gh, read the notes, see every session and hand work to one. It is not
-you and you cannot call it; if the user mentions "the orchestrator", that is what they
-mean. A session it has handed work to should simply do the work and finish; it watches
-for the turn to end.
 
 ## Things to know
 
@@ -145,8 +130,8 @@ for the turn to end.
 - Each tab's shell reports its working directory and exit codes to Ember through the
   prompt; the sidebar card shows the git branch, dirty count and any dev-server URL.
 - `Ctrl+K` is the command palette (`>` runs a command, `@` opens a project, `#` picks a
-  theme), `Ctrl+Shift+J` the panel, `Ctrl+Shift+M` the orchestrator, `Ctrl+Shift+T` a new
-  tab, `F2` renames one, `F1` the cheatsheet.
+  theme), `Ctrl+Shift+J` the panel, `Ctrl+Shift+T` a new tab,
+  `F2` renames one, `F1` the cheatsheet.
 
 ## Computer use: `desk`
 

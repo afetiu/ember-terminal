@@ -10,8 +10,8 @@ import { cleanEnv } from './pty/ConPtyHost.js'
 /**
  * The agent CLIs on this machine, and one way to ask any of them a question.
  *
- * Everything Ember does with a model goes through here: the map, check-todos, any
- * headless question. Which CLI answers is the person's choice (Settings › Agent), and
+ * Everything Ember does with a model goes through here: the canvas's side questions, the
+ * agent check, any headless question. Which CLI answers is the person's choice (Settings › Agent), and
  * whichever it is runs as them, on their own sign-in — Ember holds no key and never
  * sees one.
  */
@@ -107,91 +107,6 @@ export interface RunOptions {
   timeoutMs: number
   /** A line of progress: a tool being used, or the first line of something it said. */
   onLine?: (line: string) => void
-  /**
-   * Per-agent flags that replace the agent's read-only defaults — the map gives Claude
-   * its own list of allowed tools, for example. Absent, a run is read-only where the
-   * CLI can be told so.
-   */
-  args?: Partial<Record<AgentId, string[]>>
-  /** Extra environment for the child. */
-  env?: Record<string, string>
-  /**
-   * An MCP server to attach for this one run, in whichever way the CLI takes one. It
-   * inherits the child's environment, so anything it needs goes in `env`, listed in
-   * `forward` for the CLIs (Codex) that pass MCP servers a filtered environment.
-   */
-  mcp?: {
-    name: string
-    /** The server script, run by Ember's own binary as node. */
-    script: string
-    /** A .cmd that does the same, for CLIs that can only be given a bare command. */
-    launcher: string
-    forward: string[]
-  }
-}
-
-/**
- * The flags, environment and working folder that give one headless run an MCP server.
- *
- * Every CLI takes one differently, and none of the ways may put a double quote on the
- * command line (cmd.exe parses a .cmd shim's arguments a second time). JSON goes in a
- * file; Codex's `-c` values are TOML literal strings, which are single-quoted.
- */
-function attachMcp(spec: AgentSpec, m: NonNullable<RunOptions['mcp']>, dir: string): { args: string[]; env: Record<string, string>; cwd?: string } {
-  const server = { command: process.execPath, args: [m.script], env: { ELECTRON_RUN_AS_NODE: '1' } }
-  const file = (name: string, body: unknown) => {
-    const p = join(dir, name)
-    writeFileSync(p, JSON.stringify(body, null, 2), 'utf8')
-    return p
-  }
-  switch (spec.id) {
-    case 'claude':
-      return { args: ['--mcp-config', file('mcp.json', { mcpServers: { [m.name]: server } })], env: {} }
-    case 'codex':
-      return {
-        args: [
-          '-c',
-          `mcp_servers.${m.name}.command='${m.launcher}'`,
-          '-c',
-          `mcp_servers.${m.name}.env_vars=[${m.forward.map((v) => `'${v}'`).join(',')}]`,
-        ],
-        env: {},
-      }
-    case 'gemini': {
-      // Gemini skips a system settings file the user could have written, and it will not
-      // set ELECTRON_RUN_AS_NODE for a server or hand one any variable named like a
-      // secret. So: a workspace of its own, the launcher, and the variables named as
-      // `$VAR`, which Gemini fills in from its own environment. The workspace is trusted
-      // by the variable, not by --skip-trust: the flag is read after settings are loaded,
-      // so with it alone the workspace's servers are dropped as untrusted.
-      const ws = join(dir, 'workspace')
-      mkdirSync(join(ws, '.gemini'), { recursive: true })
-      const env = Object.fromEntries(m.forward.map((v) => [v, `$${v}`]))
-      writeFileSync(join(ws, '.gemini', 'settings.json'), JSON.stringify({ mcpServers: { [m.name]: { command: m.launcher, args: [], env, trust: true } } }, null, 2), 'utf8')
-      return { args: [], env: { GEMINI_CLI_TRUST_WORKSPACE: 'true' }, cwd: ws }
-    }
-    case 'opencode':
-      return {
-        args: [],
-        env: { OPENCODE_CONFIG: file('opencode.json', { mcp: { [m.name]: { type: 'local', command: [server.command, ...server.args], environment: server.env, enabled: true } } }) },
-      }
-    case 'copilot':
-      return {
-        args: ['--additional-mcp-config', `@${file('copilot.json', { mcpServers: { [m.name]: { type: 'local', ...server, tools: ['*'] } } })}`, '--allow-tool', m.name],
-        env: {},
-      }
-    case 'cursor': {
-      // Cursor reads servers only from ~/.cursor or the workspace's .cursor folder, so the
-      // run gets a workspace of its own holding just this one.
-      const ws = join(dir, 'workspace')
-      mkdirSync(join(ws, '.cursor'), { recursive: true })
-      writeFileSync(join(ws, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: { [m.name]: server } }, null, 2), 'utf8')
-      return { args: ['--approve-mcps', '--workspace', ws], env: {}, cwd: ws }
-    }
-    default:
-      // No per-run way to hand these an MCP server: the run goes without the tools.
-      return { args: [], env: {} }
-  }
 }
 
 function quoteArg(a: string): string {
@@ -293,26 +208,10 @@ function reader(spec: AgentSpec, onLine?: (line: string) => void) {
  */
 export function runAgent(prompt: string, opts: RunOptions): AgentRun {
   const spec = agentSpec(opts.agent ?? defaultAgent())
-  let cwd = opts.cwd && existsSync(opts.cwd) ? opts.cwd : HOME
-  const flags = [...(opts.args?.[spec.id] ?? spec.readOnly)]
+  const cwd = opts.cwd && existsSync(opts.cwd) ? opts.cwd : HOME
   const runDir = join(tmpdir(), 'ember-agent', randomUUID())
   mkdirSync(runDir, { recursive: true })
-  let mcpEnv: Record<string, string> = {}
-  let mcpArgs: string[] = []
-  if (opts.mcp) {
-    const a = attachMcp(spec, opts.mcp, runDir)
-    mcpArgs = a.args
-    mcpEnv = a.env
-    if (a.cwd) cwd = a.cwd
-    // Claude Code asks before an MCP tool in -p mode unless it is allowed by name.
-    if (spec.id === 'claude') {
-      const at = flags.indexOf('--allowedTools')
-      if (at >= 0 && at + 1 < flags.length) flags[at + 1] = `${flags[at + 1]},mcp__${opts.mcp.name}`
-      else flags.push('--allowedTools', `mcp__${opts.mcp.name}`)
-    }
-  }
-  // Codex's -c must come before `exec`; everyone else takes flags anywhere.
-  const args = spec.id === 'codex' ? [...mcpArgs, ...spec.headless, ...flags] : [...spec.headless, ...flags, ...mcpArgs]
+  const args = [...spec.headless, ...spec.readOnly]
 
   let promptFile = ''
   if (spec.promptArg) {
@@ -330,7 +229,7 @@ export function runAgent(prompt: string, opts: RunOptions): AgentRun {
   const child = spawn([exe, ...args.map(quoteArg)].join(' '), {
     shell: true,
     cwd,
-    env: { ...cleanEnv(), EMBER_MAP_RUN: '1', ...opts.env, ...mcpEnv },
+    env: cleanEnv(),
     windowsHide: true,
   })
 

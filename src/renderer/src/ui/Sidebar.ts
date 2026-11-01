@@ -5,35 +5,12 @@ import { Spring } from '../motion/spring'
 import type { Reaction } from './Mascot'
 import { Odometer } from './Odometer'
 
-/**
- * The orchestrator's mark: a hub with three things wired to it.
- *
- * Drawn rather than borrowed from the icon font. Every glyph that was close enough to
- * reach for described the wrong thing — a speech bubble says "chat", a phone says
- * "call", and both are front ends to this rather than what it is. What it *is* is one
- * thing coordinating several others, which is a shape, so it is drawn as one.
- *
- * `currentColor` throughout, so it inherits every state the button already has, and the
- * hub is a separate element so a live call can pulse the centre without touching the
- * spokes.
- */
-const ORCH_TITLE = 'Orchestrator  —  hands your sessions work, through your agent CLI  (Ctrl+Shift+M · ember orch)'
-
-const ORCH_MARK = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
-  <path d="M8 5.5 L8 3.6 M5.77 9.85 L4.47 10.93 M10.23 9.85 L11.53 10.93"
-        stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity="0.7"/>
-  <circle cx="8" cy="1.9" r="1.5" fill="currentColor" opacity="0.8"/>
-  <circle cx="2.7" cy="12.4" r="1.5" fill="currentColor" opacity="0.8"/>
-  <circle cx="13.3" cy="12.4" r="1.5" fill="currentColor" opacity="0.8"/>
-  <circle class="ember-orch-hub" cx="8" cy="8" r="2.3" fill="currentColor"/>
-</svg>`
-
-/** The three things that are places rather than sessions. */
-export type Place = 'todo' | 'notes' | 'map'
+/** The things that are places rather than sessions. */
+export type Place = 'todo' | 'notes'
 
 /**
- * The places' marks. Drawn, 16px, `currentColor`, the same stroke as the orchestrator's,
- * so the row reads as one set and follows every state the button has.
+ * The places' marks. Drawn, 16px, `currentColor`, one stroke, so the row reads as one set
+ * and follows every state the button has.
  */
 const PLACES: Array<{ id: Place; label: string; title: string; svg: string }> = [
   {
@@ -48,12 +25,6 @@ const PLACES: Array<{ id: Place; label: string; title: string; svg: string }> = 
     title: 'Notes  (ember notes)',
     svg: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
   },
-  {
-    id: 'map',
-    label: 'Map',
-    title: 'Architecture map  (Ctrl+Shift+G · ember map)',
-    svg: '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.2 8.2l3.6 7.6M16.8 8.2l-3.6 7.6"/>',
-  },
 ]
 
 export interface CardModel {
@@ -62,7 +33,7 @@ export interface CardModel {
   subtitle: string
   accent: string
   /** What the tab holds. A Claude session is a shell that a Claude took over; a note or the todo list is neither. */
-  kind: 'shell' | 'note' | 'todo' | 'map'
+  kind: 'shell' | 'note' | 'todo'
   activity: ActivitySnapshot
   /** >1 when the card holds a split. */
   paneCount: number
@@ -79,8 +50,6 @@ export interface CardModel {
 }
 
 export interface SidebarHandlers {
-  /** Open the orchestrator. It lives beside the sessions because it is the thing that runs them. */
-  onOrchestrator(): void
   /** The provider chip: which agent a new session starts with. */
   onProvider(anchor: HTMLElement): void
   onSelect(id: string): void
@@ -127,7 +96,6 @@ export class Sidebar {
 
   readonly el: HTMLElement
   private readonly list: HTMLElement
-  private readonly orchBtn: HTMLButtonElement
   private readonly providerBtn: HTMLButtonElement
   private readonly navBtns = new Map<Place, { btn: HTMLButtonElement; badge: HTMLElement }>()
   private navSig = ''
@@ -171,17 +139,6 @@ export class Sidebar {
     add.textContent = '+'
     add.addEventListener('click', () => this.handlers.onNew())
 
-    // The orchestrator opens from here, next to the sessions it works with, rather than
-    // from the title bar: it is a column that slides out beside this one, and the thing
-    // that opens a column should sit on the edge it comes out of.
-    this.orchBtn = document.createElement('button')
-    this.orchBtn.className = 'ember-voicetoggle is-orch ember-sidebar-orch'
-    this.orchBtn.title = ORCH_TITLE
-    this.orchBtn.setAttribute('aria-label', 'Orchestrator')
-    this.orchBtn.setAttribute('aria-pressed', 'false')
-    this.orchBtn.innerHTML = ORCH_MARK
-    this.orchBtn.addEventListener('click', () => this.handlers.onOrchestrator())
-
     add.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
     // Which agent a new session starts with — the + beside it opens Loom running it.
     this.providerBtn = document.createElement('button')
@@ -189,12 +146,9 @@ export class Sidebar {
     this.providerBtn.className = 'ember-provider'
     this.providerBtn.title = 'The agent new sessions start with. Click to choose, or add more.'
     this.providerBtn.addEventListener('click', () => this.handlers.onProvider(this.providerBtn))
-    // Where the orchestrator was: the council, your agents debating one question.
-    this.orchBtn.title = 'Council — have your agents debate a question'
-    this.orchBtn.setAttribute('aria-label', 'Council')
-    head.append(label, this.providerBtn, this.orchBtn, add)
+    head.append(label, this.providerBtn, add)
 
-    // The places — todo, notes, map — as one quiet row of icons at the foot of the column.
+    // The places — todo and notes — as one quiet row of icons at the foot of the column.
     // The column is the session list; the places are a click away, never in its way.
     const nav = document.createElement('div')
     nav.className = 'ember-places'
@@ -310,17 +264,6 @@ export class Sidebar {
    */
   syncPlateNow(): void {
     this.aimPlate(this.activeId)
-  }
-
-  /**
-   * Put the orchestrator's element under the session list.
-   *
-   * It lives in this column because it runs these sessions, and under the list rather
-   * than in its place because handing work to a session means looking at the sessions
-   * while you do it. The list gives up height for it (see .ember-sidebar.has-orch).
-   */
-  mountBelowCards(el: HTMLElement): void {
-    this.list.insertAdjacentElement('afterend', el)
   }
 
   /**
@@ -526,18 +469,11 @@ export class Sidebar {
     }
   }
 
-  /** The orchestrator's button: whether the column is open, and whether it is working. */
   /** Show which agent new sessions start with. */
   setProvider(name: string): void {
     this.providerBtn.innerHTML = `<span class="dot" aria-hidden="true"></span><span class="n"></span><span class="c" aria-hidden="true">▾</span>`
     ;(this.providerBtn.querySelector('.n') as HTMLElement).textContent = name
     this.providerBtn.setAttribute('aria-label', `New sessions start ${name}. Choose another agent.`)
-  }
-
-  setOrchestrator(state: { available: boolean; open: boolean; thinking: boolean }): void {
-    // The button opens the council now; the orchestrator's state no longer shows on it.
-    void state
-    void ORCH_TITLE
   }
 
   /**

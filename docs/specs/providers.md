@@ -1,4 +1,4 @@
-# Providers: any agent in Loom, one-tap switch, and the council
+# Providers: any agent in Loom, and a one-tap switch
 
 Status: building (2026-11-01).
 
@@ -7,8 +7,7 @@ Status: building (2026-11-01).
 Ember already hosts several agent CLIs (`src/shared/agents.ts`: detection, install,
 headless runs, giving each the canvas tools). Loom, though, only *reads* Claude Code: it
 tails Claude's transcript and recognises Claude's screen. This makes every provider a
-first-class Loom citizen, adds a one-tap switch between them, and adds a council where
-several of them debate one question.
+first-class Loom citizen and adds a one-tap switch between them.
 
 Ember still holds no keys. Every agent runs as the person, on its own sign-in.
 OpenRouter is reached through an agent that supports it (OpenCode), with the key in
@@ -53,19 +52,7 @@ A provider chip in the Loom bar. Tap → the installed agents. Picking one:
 3. sends the brief as its first message.
 Same tab, same canvas, same objects. Labelled honestly: a handoff, not shared memory.
 
-## 4. Council
-
-Ctrl+K → Council. Pick members (any installed agents), rounds (0–3), a chair, ask.
-- Round 0: each member answers alone, in parallel, read-only, in the tab's folder.
-- Rounds 1..n: each sees everyone's last answer and replies once (agree, push back, refine).
-- The chair writes the conclusion: agreement, disagreement, recommendation.
-- The person can add a note between rounds; everyone reads it next round.
-One card per member, the conclusion at the end; it can be put on the canvas.
-
-`src/main/council.ts` runs it (headless runs through `agents.ts`); `src/renderer/src/ui/Council.ts`
-shows it. IPC: `ember:council:start|stop`, events on `ember:council:event`.
-
-## 5. More providers
+## 4. More providers
 
 Registry additions, detection and headless only where the CLI's flags are known:
 Qwen Code, Amp, Aider, Goose, Crush; OpenRouter documented as "via OpenCode".

@@ -16,8 +16,6 @@
   /* The one line weight used to separate surfaces. Faint on purpose: the material does
      most of the separating, the line only finishes the edge. */
   --hairline: color-mix(in srgb, var(--c-fg) 9%, transparent);
-  /* Driven by a spring in App, like --sidebar-w. 0 when the orchestrator is closed. */
-  --orch-w: 0px;
   --c-working: #4ce0b3;
   --c-attention: #ffc857;
   /* Something wrong: a failed command, a destructive button, an error line. */
@@ -74,10 +72,6 @@ body.is-light {
     .ember-notes-back,
     .ember-notes-delete,
     .ember-notes-search,
-    .ember-orch-send,
-    .ember-orch-call,
-    .ember-orch-x,
-    .ember-orch-box,
     .ember-winbtn
   ):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
@@ -99,13 +93,6 @@ body.is-light {
   width: 12px;
   height: 12px;
   background: transparent;
-}
-
-/* With the orchestrator open beneath it, the list keeps only the height its cards need,
-   up to a share of the column; the conversation takes the rest. */
-.ember-sidebar.has-orch .ember-cards {
-  flex: 0 1 auto;
-  max-height: 44%;
 }
 
 ::-webkit-scrollbar-track,
@@ -162,8 +149,7 @@ body {
 .ember-root {
   position: relative;
   display: grid;
-  /* The left column and the stage. The left column has two faces — the sessions, or the
-     orchestrator that runs them — in the same cell; see App.toggleOrchestrator. */
+  /* The left column and the stage. */
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   grid-template-rows: var(--titlebar-h) 1fr;
   height: 100%;
@@ -230,8 +216,8 @@ body.is-glass.is-maximized .ember-root {
 /* ---------- sidebar ---------- */
 
 .ember-sidebar {
-  /* Row given explicitly: the orchestrator shares this cell, and with two items claiming
-     one column the auto-placer otherwise walks the stage down into a row of its own. */
+  /* Row given explicitly, so the auto-placer never walks the stage down into a row of
+     its own. */
   grid-column: 1;
   grid-row: 2;
   position: relative;
@@ -1882,10 +1868,6 @@ body.is-zen .ember-fx {
   color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
 }
 
-.ember-todo-sources {
-  margin-right: 0;
-}
-
 /* Under the list: the archive. A count that reads as a footnote until it is opened,
    then the cleared items by day, dim, each with a way back. */
 .ember-todo-foot {
@@ -2207,48 +2189,6 @@ body.is-zen .ember-fx {
 }
 
 /* ---------- tasks: a note as a list ---------- */
-
-.ember-notes-check {
-  flex: none;
-  padding: 5px 12px;
-  border-radius: var(--r-sm);
-  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
-  color: var(--c-fg);
-  font-family: var(--ui-font);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.ember-notes-check:hover {
-  background: color-mix(in srgb, var(--c-accent) 24%, transparent);
-}
-
-.ember-notes-check:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-/* What the check said. Click to dismiss; the items themselves are already in the list. */
-.ember-notes-report {
-  flex: none;
-  max-height: 32%;
-  overflow-y: auto;
-  margin: 10px 16px 0;
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--c-accent) 8%, transparent);
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 18% * var(--fade)), transparent);
-  font-family: var(--ui-font);
-  font-size: 12px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  cursor: pointer;
-}
-
-.ember-notes-report.is-error {
-  background: color-mix(in srgb, #ff3b6b 10%, transparent);
-}
 
 .ember-notes-edit[data-view='tasks'] .ember-notes-area {
   display: none;
@@ -3189,8 +3129,8 @@ body.is-zen .ember-fx {
     color 140ms var(--ease-move);
 }
 
-/* Inline SVG is baseline-aligned by default, which put the orchestrator's mark a couple
-   of pixels below the panel button's glyph even though the buttons themselves were level.
+/* Inline SVG is baseline-aligned by default, which put a drawn mark a couple of pixels
+   below the panel button's glyph even though the buttons themselves were level.
    Blocking it takes it off the baseline so the grid centring is the only thing deciding
    where it sits. */
 .ember-voicetoggle svg {
@@ -3215,48 +3155,6 @@ body.is-zen .ember-fx {
   animation: ember-breathe 1.4s var(--ease-move) infinite;
 }
 
-/* ---------- the orchestrator ----------
-   A drawer over the right of the window rather than a per-tab panel: the agent is
-   app-level, it can see and act on every session, and pinning it to whichever tab
-   happens to be in front would misrepresent what it is. */
-
-.ember-orch {
-  /* A column, not an overlay. As a drawer it buried the visualisation panel whenever
-     both were open; as a column the stage narrows and the two share what is left. Width
-     comes from the --orch-w spring, so nothing here transitions size — a CSS transition
-     fighting the spring would give the edge two opinions about where it is. */
-  /* Under the session list, inside the left column: a card of its own that takes the
-     height the list does not need. Absent from layout when closed; on opening it is laid
-     out once and then arrives with a compositor-only rise. */
-  position: relative;
-  display: none;
-  flex: 1 1 0;
-  min-height: 0;
-  min-width: 0;
-  flex-direction: column;
-  overflow: hidden;
-  margin: 4px 8px 8px 8px;
-  border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--c-bg) 32%, transparent);
-  font-family: var(--ui-font);
-}
-
-.ember-orch.is-open {
-  display: flex;
-  animation: ember-orch-in 260ms var(--ease-snap) both;
-}
-
-@keyframes ember-orch-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* Sliding after a column change: transforms only, and a promise to the compositor that
    is withdrawn the moment the slide lands. The sidebar rides above the stage while its
    width eases past the edge of its track (see App.setColumn). */
@@ -3269,207 +3167,9 @@ body.is-zen .ember-fx {
   z-index: 4;
 }
 
-/* Everything inside keeps its own width while the column animates, so the conversation
-   reflows once on arrival rather than on every frame of the slide. */
-.ember-orch > * {
-  min-width: 320px;
-}
-
-/* The orchestrator's switch, in the sidebar head between the label and "+". Same
-   element class as the title-bar toggles so every call state it already had still
-   applies; only the size is the sidebar's. */
-.ember-sidebar-orch {
-  width: 26px;
-  height: 24px;
-  border-radius: 7px;
-}
-
-body.sidebar-mini .ember-sidebar-orch {
-  width: 100%;
-}
-
 /* Vitals sit inside the rounded sidebar now, so their own top rule is enough. */
 .ember-vitals {
   background: transparent;
-}
-
-.ember-orch-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: none;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.ember-orch-title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--c-fg);
-  letter-spacing: 0.02em;
-}
-
-.ember-orch-pill {
-  flex: 1;
-  min-width: 0;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-dim);
-}
-
-.ember-orch-call {
-  flex: none;
-  padding: 5px 13px;
-  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
-  color: var(--c-fg);
-  font-family: inherit;
-  font-size: 11.5px;
-  cursor: pointer;
-  transition: background 140ms var(--ease-move);
-}
-
-.ember-orch-call:hover {
-  background: color-mix(in srgb, var(--c-accent) 30%, transparent);
-}
-
-.ember-orch-call.is-live {
-  border-color: color-mix(in srgb, #ff6b8a 60%, transparent);
-  background: color-mix(in srgb, #ff6b8a 20%, transparent);
-}
-
-.ember-orch-x {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.ember-orch-x:hover {
-  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-  color: var(--c-fg);
-}
-
-.ember-orch-log {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.ember-orch-empty {
-  margin: auto;
-  max-width: 30ch;
-  text-align: center;
-  font-size: 12px;
-  line-height: 1.6;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 66% * var(--fade)), transparent);
-}
-
-.ember-orch-turn {
-  font-size: 12.5px;
-  line-height: 1.62;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.ember-orch-turn.is-you {
-  align-self: flex-end;
-  max-width: 88%;
-  padding: 8px 12px;
-  border-radius: 12px 12px 3px 12px;
-  background: color-mix(in srgb, var(--c-accent) 17%, transparent);
-  color: var(--c-fg);
-}
-
-.ember-orch-turn.is-agent {
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 12% * var(--fade)), transparent);
-}
-
-.ember-orch-turn.is-system {
-  font-size: 11.5px;
-  color: var(--c-attention);
-  border-left: 2px solid color-mix(in srgb, var(--c-attention) 50%, transparent);
-  padding-left: 10px;
-}
-
-/* What it did to answer. The tools are most of the value, so hiding them would make a
-   dispatch look identical to a guess. */
-.ember-orch-did {
-  margin-bottom: 5px;
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 25% * var(--fade)), transparent);
-}
-
-.ember-orch-turn.is-thinking {
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 60% * var(--fade)), transparent);
-  font-style: italic;
-  animation: ember-breathe 1.4s var(--ease-move) infinite;
-}
-
-.ember-orch-foot {
-  flex: none;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  padding: 12px 14px;
-  border-top: 1px solid var(--hairline);
-}
-
-.ember-orch-box {
-  flex: 1;
-  min-width: 0;
-  min-height: 34px;
-  max-height: 160px;
-  resize: none;
-  padding: 8px 11px;
-  border: 1px solid color-mix(in srgb, var(--c-dim) 30%, transparent);
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--c-bg) 45%, transparent);
-  color: var(--c-fg);
-  font-family: inherit;
-  font-size: 12.5px;
-  line-height: 1.5;
-  outline: none;
-  user-select: text;
-}
-
-.ember-orch-box:focus {
-  border-color: color-mix(in srgb, var(--c-accent) 60%, transparent);
-}
-
-.ember-orch-send {
-  flex: none;
-  padding: 8px 15px;
-  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
-  color: var(--c-fg);
-  font-family: inherit;
-  font-size: 11.5px;
-  cursor: pointer;
-}
-
-.ember-orch-send:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--c-accent) 32%, transparent);
-}
-
-.ember-orch-send:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ---------- the call ----------
@@ -3484,19 +3184,6 @@ body.sidebar-mini .ember-sidebar-orch {
   border: 0;
   opacity: 0;
   pointer-events: none;
-}
-
-/* The orchestrator mark is drawn rather than set in the icon font, so it needs the
-   button's colour rather than its font. */
-.ember-voicetoggle.is-orch svg {
-  display: block;
-}
-
-/* A question is out with Claude — the gap the holding line covers, and the one state
-   that most needs to look like something rather than nothing. */
-.ember-voicetoggle.is-orch.is-thinking {
-  color: var(--c-attention);
-  background: color-mix(in srgb, var(--c-attention) 16%, transparent);
 }
 
 /* The panel switch. */
@@ -3536,7 +3223,7 @@ body.sidebar-mini .ember-sidebar-orch {
   min-width: 0;
   overflow: hidden;
   /* Its own rounded surface beside the terminals rather than a hard split of the stage,
-     so it matches the sidebar and the orchestrator. The gutter is on the left only; the
+     so it matches the sidebar. The gutter is on the left only; the
      stage already provides the right and vertical edges. */
   margin: 8px 8px 8px 0;
   border-radius: var(--r-md);
@@ -4260,8 +3947,7 @@ body.is-light {
   text-transform: uppercase;
   color: var(--ui-faint);
 }
-.ember-newtab,
-.ember-sidebar-orch {
+.ember-newtab {
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -4278,13 +3964,9 @@ body.is-light {
     background-color 150ms var(--ui-ease),
     color 150ms var(--ui-ease);
 }
-.ember-newtab:hover,
-.ember-sidebar-orch:hover {
+.ember-newtab:hover {
   background: var(--ui-hover);
   color: var(--ui-ink);
-}
-.ember-sidebar-orch.is-on {
-  color: var(--c-accent);
 }
 
 .ember-card {
@@ -4562,7 +4244,7 @@ body.sidebar-mini .ember-places {
   border-radius: 999px;
   background: var(--ui-fill, rgba(255, 255, 255, 0.05));
   box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.08));
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
   font: 500 12px/1.4 var(--ui-font);
   cursor: pointer;
   transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -4603,7 +4285,7 @@ body.sidebar-mini .ember-places {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
   font: 500 13px var(--ui-font);
   text-align: left;
   cursor: pointer;
@@ -4641,7 +4323,7 @@ body.sidebar-mini .ember-places {
   border-radius: 10px;
   background: color-mix(in srgb, var(--c-accent) 12%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 30%, transparent);
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -4732,7 +4414,7 @@ body.sidebar-mini .ember-places {
 }
 .ember-firstrun h1 {
   margin: 0 0 10px;
-  color: var(--ui-fg, var(--c-fg));
+  color: var(--ui-ink, var(--c-fg));
   font: 600 22px/1.3 var(--ui-font);
   letter-spacing: -0.01em;
 }
@@ -4762,7 +4444,7 @@ body.sidebar-mini .ember-places {
 }
 .ember-firstrun-steps li.is-run,
 .ember-firstrun-steps li.is-ok {
-  color: var(--ui-fg, var(--c-fg));
+  color: var(--ui-ink, var(--c-fg));
 }
 .ember-firstrun-steps li.is-skip {
   opacity: 0.45;
@@ -4809,7 +4491,7 @@ body.sidebar-mini .ember-places {
   border-radius: 999px;
   background: var(--ui-fill, rgba(255, 255, 255, 0.05));
   box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.08));
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
   font: 500 13px var(--ui-font);
   cursor: pointer;
 }
@@ -4829,7 +4511,7 @@ body.sidebar-mini .ember-places {
   border-radius: 10px;
   background: var(--ui-fill, rgba(255, 255, 255, 0.06));
   box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.1));
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
   font: 600 14px var(--ui-font);
   cursor: pointer;
   transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -4856,7 +4538,7 @@ body.sidebar-mini .ember-places {
   cursor: pointer;
 }
 .ember-firstrun-foot button:hover {
-  color: var(--ui-fg, inherit);
+  color: var(--ui-ink);
 }
 @media (prefers-reduced-motion: reduce) {
   .ember-firstrun-card,
@@ -4892,4 +4574,71 @@ body.sidebar-mini .ember-places {
 .ember-palette-panel {
   display: flex;
   flex-direction: column-reverse;
+}
+
+/* ---------------------------------------------------------------- the daily check */
+
+.ember-todo-review {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 32%, transparent);
+  color: var(--c-fg);
+  font: 14px/1.5 var(--ui-font);
+}
+.ember-todo-review[hidden] {
+  display: none;
+}
+.ember-todo-review-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.ember-todo-review-head span {
+  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+}
+.ember-todo-review-item {
+  margin: 14px 0 4px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+.ember-todo-review-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ember-todo-review-acts button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+  color: var(--c-fg);
+  font: 500 13px var(--ui-font);
+  cursor: pointer;
+}
+.ember-todo-review-acts button b {
+  margin-right: 4px;
+  color: var(--c-accent);
+  font-weight: 700;
+}
+.ember-todo-review-acts button.is-primary {
+  background: var(--c-accent);
+  box-shadow: none;
+  color: #1a1206;
+}
+
+/* Light themes: secondary text a step stronger — 44% ink on paper all but vanished. */
+body.is-light {
+  --ui-faint: color-mix(in srgb, var(--ui-ink) 58%, transparent);
+  --ui-dim: color-mix(in srgb, var(--ui-ink) 74%, transparent);
+}
+/* The daily check sits with the list, not across the whole page. */
+.ember-todo-review {
+  max-width: 980px;
+  margin-left: auto;
+  margin-right: auto;
+  width: calc(100% - 48px);
 }

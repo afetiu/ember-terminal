@@ -76,12 +76,11 @@ export class Cheatsheet {
       ],
     },
     {
-      title: 'Panel & orchestrator',
+      title: 'Panel',
       items: [
         { keys: 'Ctrl Shift J', what: 'Show / hide the panel' },
         { keys: 'Ctrl Shift E', what: 'Point at something on the panel' },
         { keys: 'click a button', what: 'Sends it to this session' },
-        { keys: 'Ctrl Shift M', what: 'Orchestrator — write to it' },
       ],
     },
   ]

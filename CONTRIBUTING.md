@@ -19,18 +19,14 @@ To verify a row:
 1. **Flags.** Check every flag in `headless`, `readOnly`, `unattended` and `promptFlag`
    against `<cli> --help` for your installed version.
 2. **Headless answer.** Pick the CLI in Settings › Agent and press **Test**. It should
-   come back with `ready`. Then run the map on a small repo. The run must not be able to
-   change files.
-3. **Orchestrator.** Ask the orchestrator something that makes it use its tools, for
-   example "what is each tab doing?". This is the headless run with an MCP server
-   attached (`attachMcp` in [`src/main/agents.ts`](src/main/agents.ts)).
-4. **Panel and status.** Start the CLI in a tab. The card should show it, and asking it
+   come back with `ready`. The run must not be able to change files.
+3. **Panel and status.** Start the CLI in a tab. The card should show it, and asking it
    to draw something should reach the side panel. The PowerShell shims that announce
    each CLI and hand it the panel are `otherAgentShims` in
    [`src/main/pty/ConPtyHost.ts`](src/main/pty/ConPtyHost.ts).
 
-In the PR, say which CLI version you tested against and which of the four steps you
-ran. "Verified 1–3; the panel needs a login I don't have" is a fine PR.
+In the PR, say which CLI version you tested against and which of the three steps you
+ran. "Verified 1–2; the panel needs a login I don't have" is a fine PR.
 
 Adding a CLI Ember doesn't know yet is the same work. Add a row and a case in
 `attachMcp`. If the CLI has no per-session way to take an MCP server, use

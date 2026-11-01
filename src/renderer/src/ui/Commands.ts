@@ -14,7 +14,7 @@ export interface CommandSpec {
   hint?: string
   /** Shell form, e.g. `split right`, `rename <name>`, `panel [show|hide]`. */
   cli?: string
-  /** Shorter ways to type the same row: `o` for `orch`, `sd` for `split down`. */
+  /** Shorter ways to type the same row: `t` for `todo`, `sd` for `split down`. */
   aliases?: string[]
   /** Shell only: not offered in the palette (it needs an argument to mean anything). */
   hidden?: boolean

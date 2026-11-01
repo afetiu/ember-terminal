@@ -15,7 +15,7 @@
  *      into one line.
  *
  * It used to also cover dictation routing into panel fields. That went out with the
- * Azure speech subsystem the orchestrator replaced.
+ * Azure speech subsystem.
  *
  * The guest is its own DevTools target, so most of this is done through a second CDP
  * connection into the panel's page — the same isolation that keeps model HTML away from

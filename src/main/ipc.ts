@@ -1,12 +1,11 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { TODO_SOURCES } from '../shared/types.js'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { monitorEventLoopDelay } from 'node:perf_hooks'
 import { activeGpu } from './gpu.js'
 import { CONFIG_DIR, DEFAULT_CONFIG, loadConfig, resolveHome, saveConfig, watchConfig } from './config.js'
 import { join } from 'node:path'
 import { listProjects } from './projects.js'
-import { checkTodos, createNote, deleteNote, installNotesCli, installSkills, listNotes, readNote, readTodo, readTodoArchive, saveNote, todoState, watchNotes, writeTodo, writeTodoArchive, NOTES_DIR } from './notes.js'
+import { createNote, deleteNote, installNotesCli, installSkills, listNotes, readNote, readTodo, readTodoArchive, saveNote, watchNotes, writeTodo, writeTodoArchive, NOTES_DIR } from './notes.js'
 import { THEMES } from './themes.js'
 import { listFonts } from './fonts.js'
 import { gitStatus, killPort, listTasks } from './project.js'
@@ -19,15 +18,7 @@ import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
 import { renderPanelDocument } from './panelDoc.js'
-import { watchState } from './transcript.js'
-import { cliTurn } from './orchestrator.js'
-import { orchEnv, resolveOrchTool } from './bridge.js'
-import { randomUUID as orchRunId } from 'node:crypto'
-import { askClaude, canAsk, cancelAsk } from './converse.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
-import * as maps from './systemMap.js'
-import { startLive } from './mapLive.js'
-import { dispatch, drain, follow, forgetAll as forgetCrew, forget as forgetTabCrew, onCrewNote, report } from './crew.js'
 import type { PtyHost } from './pty/PtyHost.js'
 import type {
   EmberConfig,
@@ -129,14 +120,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   const notesBin = installNotesCli()
   installSkills()
   const unwatchNotes = watchNotes((id) => broadcast('ember:notes:changed', { id }))
-  // The Check todos button: the person's own Claude, run once, headless.
-  ipcMain.handle('ember:todo:check', () => {
-    const t = loadConfig().todo
-    const sources = TODO_SOURCES.filter((s) => t[s])
-    return checkTodos(notesBin, sources)
-  })
   ipcMain.on('ember:cmd:reply', (_e, reqId: string, r: { result: string; error?: string }) => resolveCmd(reqId, r))
-  ipcMain.handle('ember:todo:state', () => todoState())
   ipcMain.handle('ember:todo:read', () => readTodo())
   ipcMain.handle('ember:todo:write', (_e, body: string) => writeTodo(body))
   ipcMain.handle('ember:todo:archive:read', () => readTodoArchive())
@@ -185,29 +169,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     else void shell.openPath(NOTES_DIR)
   })
 
-  // The orchestrator's ask_claude. It types into the tab's focused pane and reads the answer back
-  // off Claude Code's transcript — see `converse.ts` for why that beats calling the API.
-  ipcMain.handle('ember:converse:ask', (_e, tabId: string, sessionId: string, question: string) =>
-    askClaude(host, tabId, sessionId, question)
-  )
-  ipcMain.on('ember:converse:cancel', (_e, tabId: string) => cancelAsk(tabId))
-  ipcMain.handle('ember:converse:ready', (_e, tabId: string) => canAsk(tabId))
-  // What the tab's transcript watcher is looking at — the only window into a
-  // pipeline whose every failure mode is silence.
-  ipcMain.handle('ember:converse:watch', (_e, tabId: string) => watchState(tabId))
-
-  // The orchestrator's written half. One turn per call: main makes the request because
-  // it holds the key, the renderer runs the tools because it holds the sessions.
-  // The same agent on the person's own CLI: one headless turn with ember-orch attached.
-  // Its tool calls come back through the bridge to the renderer (ember:orch:tool).
-  ipcMain.handle('ember:orch:cli', (_e, text: string, recap: string) =>
-    cliTurn(text, recap, orchEnv(orchRunId()), (line) => broadcast('ember:orch:progress', line))
-  )
-  ipcMain.on('ember:orch:toolResult', (_e, reqId: string, result: string) => resolveOrchTool(reqId, String(result ?? '')))
-
-  // This machine's membership of the Ember account. Main owns the file; the renderer owns
-  // the link, because the link's whole job is to reach the orchestrator and its tools,
-  // which live there.
   // Render a panel document for the phone. Done here because this is where the renderer
   // lives, so the phone shows exactly what the desk shows rather than a second renderer
   // built over there to drift away from it.
@@ -223,57 +184,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     saveAccount(null)
     return true
   })
-
-  // The crew: work handed to a session and left running. Distinct from `ask` above,
-  // which waits until the turn completes.
-  ipcMain.handle('ember:crew:dispatch', (_e, tabId: string, sessionId: string, task: string) =>
-    dispatch(host, tabId, sessionId, task)
-  )
-  ipcMain.handle('ember:crew:report', (_e, tabId: string) => report(tabId))
-  ipcMain.handle('ember:crew:drain', (_e, tabId: string) => drain(tabId))
-  ipcMain.on('ember:crew:follow', (_e, tabId: string) => follow(tabId))
-  ipcMain.on('ember:crew:forget', (_e, tabId: string) => forgetTabCrew(tabId))
-  // A session going quiet is the one thing the orchestrator cannot find out by asking.
-  onCrewNote((note) => broadcast('ember:crew:note', note))
-  app.on('before-quit', () => forgetCrew())
-
-  // The map: projects, their living models, and questions about any part of one.
-  const stopMaps = maps.startMaps(broadcast)
-  app.on('before-quit', () => stopMaps())
-  ipcMain.handle('ember:map:list', () => maps.listProjects())
-  ipcMain.handle('ember:map:load', (_e, id: string) => maps.load(id))
-  ipcMain.handle('ember:map:create', (_e, input: { name: string; brief: string; pollMinutes?: number }) => {
-    const p = maps.createProject(input)
-    void maps.build(p.id)
-    return p
-  })
-  ipcMain.handle('ember:map:edit', (_e, id: string, patch: { name?: string; brief?: string; pollMinutes?: number }) => maps.updateProject(id, patch))
-  ipcMain.handle('ember:map:remove', (_e, id: string) => maps.deleteProject(id))
-  ipcMain.on('ember:map:build', (_e, id: string, rebuild?: boolean) => void maps.build(id, !!rebuild))
-  ipcMain.on('ember:map:check', (_e, id: string, force?: boolean) => void maps.check(id, !!force))
-  ipcMain.on('ember:map:cancel', (_e, id: string) => maps.cancelJob(id))
-  ipcMain.on('ember:map:viewed', (_e, id: string) => maps.markViewed(id))
-  ipcMain.on('ember:map:ask', (_e, projectId: string, nodeId: string | null, question: string, askId: string) => maps.ask(projectId, nodeId, question, askId))
-  ipcMain.on('ember:map:askCancel', (_e, askId: string) => maps.cancelAsk(askId))
-  // A source on the map that is a file: shown in Explorer, never opened or run.
-  ipcMain.handle('ember:map:history', (_e, id: string) => maps.listHistory(id))
-  ipcMain.handle('ember:map:version', (_e, id: string, v: number) => maps.loadVersion(id, v))
-  // Live activity: every Claude session's transcript, read only while a map is open.
-  let liveWatchers = 0
-  let stopLive: (() => void) | null = null
-  ipcMain.on('ember:map:live:watch', (_e, on: boolean) => {
-    liveWatchers = Math.max(0, liveWatchers + (on ? 1 : -1))
-    if (liveWatchers && !stopLive) stopLive = startLive((s) => broadcast('ember:map:live', s))
-    else if (!liveWatchers && stopLive) {
-      stopLive()
-      stopLive = null
-    }
-  })
-  app.on('before-quit', () => stopLive?.())
-  ipcMain.on('ember:map:reveal', (_e, path: string) => {
-    if (typeof path === 'string' && existsSync(path)) shell.showItemInFolder(path)
-  })
-
 
   // Main's own responsiveness, for scripts/probe-latency.mjs. Every keystroke and every
   // echo crosses this process, so a stall here is felt in every tab at once and looks,

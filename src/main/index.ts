@@ -6,7 +6,6 @@ import { registerIpc } from './ipc.js'
 import { ConPtyHost } from './pty/ConPtyHost.js'
 import { applyGlass, createWindow } from './window.js'
 import { registerPermissions } from './permissions.js'
-import { registerCouncil } from './council.js'
 import { registerBrain } from './brain.js'
 import { startBridge, stopBridge } from './bridge.js'
 import { preferFastGpu, relaunchForGpu } from './gpu.js'
@@ -80,9 +79,6 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
     })
     registerPermissions()
     registerBrain()
-    registerCouncil((channel, payload) => {
-      for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
-    })
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow(loadConfig())

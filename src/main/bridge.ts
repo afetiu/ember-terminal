@@ -226,19 +226,6 @@ export function pushFromMain(body: Record<string, unknown>): { ok: boolean; id?:
  * `ember <words>` in flight: the shell is waiting on the HTTP response, the renderer is
  * running the command; its reply (over IPC, by request id) releases the response.
  */
-const orchWaiters = new Map<string, (result: string) => void>()
-
-export function resolveOrchTool(reqId: string, result: string): void {
-  const done = orchWaiters.get(reqId)
-  orchWaiters.delete(reqId)
-  done?.(result)
-}
-
-/** What a headless orchestrator run needs to reach the bridge: it is spawned by main, not a shell. */
-export function orchEnv(run: string): Record<string, string> {
-  return port ? { EMBER_BRIDGE_URL: `http://127.0.0.1:${port}`, EMBER_BRIDGE_TOKEN: token, EMBER_ORCH_RUN: run } : {}
-}
-
 const cmdWaiters = new Map<string, (r: { result: string; error?: string }) => void>()
 
 export function resolveCmd(reqId: string, r: { result: string; error?: string }): void {
@@ -984,6 +971,30 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           return send(res, 200, JSON.stringify(showFile(tabId, join(NOTES_DIR, note.id), note.title)))
         }
         if (op === 'list') return send(res, 200, JSON.stringify({ ok: true, notes: listNotes().map((x) => x.title) }))
+        if (op === 'read') {
+          const note = find(name)
+          if (!note) throw new Error(`No note matches "${name}". Notes: ${listNotes().slice(0, 30).map((x) => x.title).join(', ')}`)
+          return send(res, 200, JSON.stringify({ ok: true, title: note.title, text: readNote(note.id) ?? '' }))
+        }
+        if (op === 'search') {
+          const q = text.toLowerCase().trim()
+          if (!q) throw new Error('text is required')
+          const hits = listNotes()
+            .map((x) => ({ x, body: readNote(x.id) ?? '' }))
+            .filter(({ x, body }) => x.title.toLowerCase().includes(q) || body.toLowerCase().includes(q))
+            .slice(0, 12)
+            .map(({ x, body }) => {
+              const at = body.toLowerCase().indexOf(q)
+              const snip = at >= 0 ? body.slice(Math.max(0, at - 80), at + 160).replace(/\s+/g, ' ').trim() : body.slice(0, 160)
+              return { title: x.title, snip }
+            })
+          return send(res, 200, JSON.stringify({ ok: true, hits }))
+        }
+        if (op === 'todo_list') {
+          const lines = readTodo().split('\n')
+          const open = lines.filter((l) => /^\s*[-*]\s*\[ \]\s*\S/.test(l)).map((l) => l.replace(/^\s*[-*]\s*\[ \]\s*/, ''))
+          return send(res, 200, JSON.stringify({ ok: true, open }))
+        }
         if (op === 'todo_add') {
           if (!text.trim()) throw new Error('text is required')
           const cur = readTodo()
@@ -1209,7 +1220,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
   // same renderer, over the connection the pty already has.
   // The `ember` command. The words go to the renderer as typed; it owns the table of
   // what they mean (the same table the palette shows) and answers with what to print.
-  // Long enough for the orchestrator to think when the words were for it.
+  // Long enough for a command that opens and waits on a tab.
   if (req.method === 'POST' && url.pathname === '/cmd') {
     void readJson(req)
       .then((body) => {
@@ -1225,28 +1236,6 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           send(res, 200, JSON.stringify(r.error ? { error: r.error } : { ok: true, result: r.result }))
         })
         broadcast('ember:cmd', { reqId, words, tabId })
-      })
-      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
-    return
-  }
-
-  // The orchestrator's tools, called by resources/mcp-orch.mjs from inside a headless
-  // agent run. The renderer owns the tabs, so it runs the tool and answers by request id.
-  // Long, because ask_session waits for a whole turn of another session.
-  if (req.method === 'POST' && url.pathname === '/orch/tool') {
-    void readJson(req)
-      .then((body) => {
-        const reqId = randomUUID()
-        const timer = setTimeout(() => {
-          orchWaiters.delete(reqId)
-          send(res, 504, JSON.stringify({ error: 'Ember did not answer in time' }))
-        }, 10 * 60_000)
-        orchWaiters.set(reqId, (result) => {
-          clearTimeout(timer)
-          send(res, 200, JSON.stringify({ ok: true, result }))
-        })
-        const args = body['args'] && typeof body['args'] === 'object' ? body['args'] : {}
-        broadcast('ember:orch:tool', { reqId, run: String(body['run'] ?? ''), name: String(body['name'] ?? ''), args })
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return

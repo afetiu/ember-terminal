@@ -1,6 +1,6 @@
 # Ember on the phone — Loom, mobile-first
 
-Status: building (2026-10-31). Replaces the voice/orchestrator phone app of Aug 2026.
+Status: building (2026-10-31). Replaces the voice phone app of Aug 2026.
 
 ## What it is
 

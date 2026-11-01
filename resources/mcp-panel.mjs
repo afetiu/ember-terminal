@@ -165,6 +165,36 @@ const CANVAS_INSTRUCTIONS = [
  * Ember Brain: the memory and skills every agent shares (src/main/brain.ts). Offered on
  * every surface, so Codex, Claude and the rest recall and save into the same place.
  */
+/**
+ * The user's notes and todo list: theirs first, the agent's second. On every surface, so
+ * any session can find what the person wrote in a meeting or has left to do.
+ */
+const NOTES_TOOLS = [
+  {
+    name: 'notes',
+    description:
+      "The user's own notes (meeting notes, thoughts, sticky notes from sessions). search: notes containing text. " +
+      'read: one note by name. list: note titles. append: add text to a note, create: a new note — only when the user ' +
+      'asks. show (in a canvas tab): put a note on the canvas, live.',
+    inputSchema: {
+      type: 'object',
+      properties: { op: { type: 'string', enum: ['search', 'read', 'list', 'append', 'create', 'show'] }, name: { type: 'string' }, text: { type: 'string' } },
+      required: ['op'],
+    },
+  },
+  {
+    name: 'todo',
+    description:
+      "The user's todo list. list: what is open. add: a new item — when something in the conversation is the user's to do. " +
+      'done: tick the open item containing text — when you finish something that is on it. show (in a canvas tab): the live list.',
+    inputSchema: {
+      type: 'object',
+      properties: { op: { type: 'string', enum: ['list', 'add', 'done', 'show'] }, text: { type: 'string' } },
+      required: ['op'],
+    },
+  },
+]
+
 const BRAIN_TOOLS = [
   {
     name: 'recall',
@@ -383,28 +413,6 @@ const CANVAS_TOOLS = [
       type: 'object',
       properties: { name: { type: 'string', description: 'a-z, 0-9, -' }, html: { type: 'string' } },
       required: ['name', 'html'],
-    },
-  },
-  {
-    name: 'notes',
-    description:
-      "The user's notes. show: put a note on the canvas by name, live (cheap; content is not sent). list: note titles. " +
-      'append: add text to a note. create: a new note.',
-    inputSchema: {
-      type: 'object',
-      properties: { op: { type: 'string', enum: ['show', 'list', 'append', 'create'] }, name: { type: 'string' }, text: { type: 'string' } },
-      required: ['op'],
-    },
-  },
-  {
-    name: 'todo',
-    description:
-      "The user's todo list. show: the live checklist on the canvas. add: a new item. done: tick the open item containing text — " +
-      'do this yourself when you finish something that is on the list.',
-    inputSchema: {
-      type: 'object',
-      properties: { op: { type: 'string', enum: ['show', 'add', 'done'] }, text: { type: 'string' } },
-      required: ['op'],
     },
   },
   {
@@ -699,18 +707,25 @@ async function call(name, args) {
       return r.text
     }
     case 'notes': {
-      if (!CANVAS) throw new Error('notes is only available in an Ember canvas tab')
-      const r = await post('/canvas/notes', { op: String(args.op ?? ''), name: String(args.name ?? ''), text: String(args.text ?? '') })
-      if (args.op === 'list') return (r.notes ?? []).join('\n') || 'No notes.'
-      if (args.op === 'show') return `Showing "${r.title}" on the canvas, live.`
+      const op = String(args.op ?? '')
+      if (op === 'show' && !CANVAS) throw new Error('show works in an Ember canvas tab; use read to see a note')
+      const r = await post('/canvas/notes', { op, name: String(args.name ?? ''), text: String(args.text ?? '') })
+      if (op === 'list') return (r.notes ?? []).join('\n') || 'No notes.'
+      if (op === 'read') return `# ${r.title}\n\n${r.text}`
+      if (op === 'search') return (r.hits ?? []).map((h) => `- ${h.title}: …${h.snip}…`).join('\n') || 'No note mentions that.'
+      if (op === 'show') return `Showing "${r.title}" on the canvas, live.`
       return r.created ? `Created the note "${r.title}".` : `Added to "${r.title}".`
     }
     case 'todo': {
-      if (!CANVAS) throw new Error('todo is only available in an Ember canvas tab')
       const op = String(args.op ?? '')
       if (op === 'show') {
+        if (!CANVAS) throw new Error('show works in an Ember canvas tab; use list')
         await post('/canvas/notes', { op: 'show', name: 'todo' })
         return 'The todo list is on the canvas.'
+      }
+      if (op === 'list') {
+        const r = await post('/canvas/notes', { op: 'todo_list' })
+        return (r.open ?? []).map((t) => `- [ ] ${t}`).join('\n') || 'Nothing open.'
       }
       const r = await post('/canvas/notes', { op: op === 'add' ? 'todo_add' : 'todo_done', text: String(args.text ?? '') })
       return op === 'add' ? 'Added to the todo list.' : `Ticked: ${r.done}`
@@ -828,7 +843,7 @@ async function handle(msg) {
     case 'ping':
       return reply(id, {})
     case 'tools/list':
-      return reply(id, { tools: [...(CANVAS ? CANVAS_TOOLS : TOOLS), ...BRAIN_TOOLS] })
+      return reply(id, { tools: [...(CANVAS ? CANVAS_TOOLS : TOOLS), ...NOTES_TOOLS, ...BRAIN_TOOLS] })
     case 'tools/call':
       try {
         const text = await call(params?.name, params?.arguments ?? {})

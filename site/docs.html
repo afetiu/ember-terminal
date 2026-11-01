@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ember docs — install, sessions, panel, orchestrator, notes, map, settings</title>
-<meta name="description" content="How to use Ember, the Windows terminal for AI coding CLIs: install, picking a CLI, sessions and splits, the panel, the orchestrator, notes, the todo list, the overview, the map, every setting, the skills, and computer use.">
+<title>Ember docs — install, sessions, panel, notes, todo, settings</title>
+<meta name="description" content="How to use Ember, the Windows terminal for AI coding CLIs: install, picking a CLI, sessions and splits, the panel, notes, the todo list, the overview, every setting, the skills, and computer use.">
 <meta name="theme-color" content="#120d1c">
 <link rel="canonical" href="https://ember.deepanswerlabs.com/docs">
 <link rel="icon" type="image/png" href="/assets/icon-256.png">
@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://ember.deepanswerlabs.com/docs">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
 <meta property="og:title" content="Ember documentation">
-<meta property="og:description" content="Every feature of Ember, the Windows terminal for AI coding CLIs, explained: sessions, the panel, the orchestrator, notes, todos, the map, settings, skills and computer use.">
+<meta property="og:description" content="Every feature of Ember, the Windows terminal for AI coding CLIs, explained: sessions, the panel, notes, todos, settings, skills and computer use.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 
@@ -50,7 +50,7 @@
   <div class="wrap">
     <p class="eyebrow"><span class="dot" aria-hidden="true"></span> <span>Documentation for Ember <span data-version></span> on Windows</span></p>
     <h1>Ember docs</h1>
-    <p>How Ember works, feature by feature: installing it, choosing an agent CLI, sessions and splits, the panel, the orchestrator, notes, the todo list, the overview, the map, every setting, the skills Ember installs, and computer use.</p>
+    <p>How Ember works, feature by feature: installing it, choosing an agent CLI, sessions and splits, the panel, notes, the todo list, the overview, every setting, the skills Ember installs, and computer use.</p>
   </div>
 </div>
 
@@ -81,9 +81,7 @@
       <li><span class="toc__group">Working with agents</span>
         <ol>
           <li><a href="#panel">The panel</a></li>
-          <li><a href="#orchestrator">The orchestrator</a></li>
           <li><a href="#overview">The overview</a></li>
-          <li><a href="#map">The map</a></li>
         </ol>
       </li>
       <li><span class="toc__group">Notes</span>
@@ -95,7 +93,6 @@
       <li><span class="toc__group">Todo</span>
         <ol>
           <li><a href="#todo">The todo list</a></li>
-          <li><a href="#check-todos">Check todos</a></li>
         </ol>
       </li>
       <li><span class="toc__group">Setup</span>
@@ -143,9 +140,9 @@
   <p>The first time Ember opens it shows a short welcome in four steps. You can skip it and come back any time with <code>welcome</code> in the command line (<kbd>Ctrl</kbd><kbd>K</kbd>).</p>
   <ol>
     <li><strong>Welcome.</strong> What Ember adds on top of your shell.</li>
-    <li><strong>Which agent do you work with?</strong> Ember lists the six supported CLIs and marks the ones it found on your PATH. Missing ones have an <b>Install</b> button that runs the install command in a tab. The one you pick is also the one Ember uses for the orchestrator and the map.</li>
+    <li><strong>Which agent do you work with?</strong> Ember lists the six supported CLIs and marks the ones it found on your PATH. Missing ones have an <b>Install</b> button that runs the install command in a tab. The one you pick is also the one Ember uses for its own headless questions.</li>
     <li><strong>Make it yours.</strong> The house pair, Ember Night and Ember Day, then a few of the other 49 colour palettes, and a switch between full motion and a lighter setting for older laptops.</li>
-    <li><strong>Six keys.</strong> <kbd>Ctrl</kbd><kbd>K</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd> and <kbd>F1</kbd>, plus an option to start your agent in the first tab when you finish.</li>
+    <li><strong>Five keys.</strong> <kbd>Ctrl</kbd><kbd>K</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd> and <kbd>F1</kbd>, plus an option to start your agent in the first tab when you finish.</li>
   </ol>
   <p>On first launch Ember also writes <code>~/.ember/config.json</code> with the defaults, puts its commands (<code>ember</code>, <code>notes</code>, <code>todo</code>, <code>desk</code>) in <code>~/.ember/bin</code> on the PATH of every shell it opens, and installs its <a href="#skills">skills</a>.</p>
   <p>Every launch starts with one fresh shell. Ember does not restore tabs or old scrollback from the last run.</p>
@@ -154,7 +151,7 @@
 <!-- ======================================================================= -->
 <section aria-labelledby="clis">
   <h2 id="clis">Choosing a CLI <a class="anchor" href="#clis" aria-label="Link to this section">#</a></h2>
-  <p>Ember hosts the agent CLI you already use. You can run any of them in any tab. The one chosen in <a href="#settings-agent">Settings › Agent</a> is the one Ember itself calls for the orchestrator and the map.</p>
+  <p>Ember hosts the agent CLI you already use. You can run any of them in any tab. The one chosen in <a href="#settings-agent">Settings › Agent</a> is the one Ember itself calls for its own headless questions.</p>
   <div class="tbl"><table>
     <thead><tr><th>CLI</th><th>Install</th><th>Sign in</th><th>Panel</th></tr></thead>
     <tbody>
@@ -167,7 +164,7 @@
     </tbody>
   </table></div>
   <p>"Automatic" means that when you start the CLI by its usual name in an Ember tab, Ember attaches its panel server for that session only. Nothing is added to the CLI's global config. Cursor Agent has no flag for this, so to use the panel with it you would add the server to <code>~/.cursor/mcp.json</code> yourself; Ember writes the launcher for it to <code>~/.ember/bin/ember-mcp.cmd</code>.</p>
-  <p>Claude Code gets the most: live transcripts (used by the overview and the orchestrator's reports), the status line under each session, and optional plan usage in the sidebar. Claude Code and Codex are tested end to end; the others follow their documented flags.</p>
+  <p>Claude Code gets the most: live transcripts (used by the overview and the canvas), the status line under each session, and optional plan usage in the sidebar. Claude Code and Codex are tested end to end; the others follow their documented flags.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -175,8 +172,7 @@
   <h2 id="no-keys">Your agents and sign-in <a class="anchor" href="#no-keys" aria-label="Link to this section">#</a></h2>
   <p>Ember never talks to a model itself. Every AI feature runs through an agent CLI on your machine, signed in the way that CLI signs in — your Claude, ChatGPT, Google or Copilot plan, or, for agents that take one (OpenCode, Aider, Crush), a provider key such as OpenRouter, kept in that agent's own settings:</p>
   <ul>
-    <li>The <strong>orchestrator</strong> and the <strong>map</strong> run a headless turn of the CLI chosen in Settings › Agent.</li>
-    <li><strong>Check todos</strong> runs your local Claude Code with the <code>/check-todos</code> skill.</li>
+    <li>Ember's own questions (asking about an object on the canvas) run a headless turn of the CLI chosen in Settings › Agent.</li>
     <li>The <strong>panel</strong> is drawn by whatever agent is running in that tab.</li>
   </ul>
   <p>Usage counts against that CLI's plan or key, the same as when you use it anywhere else. Ember itself stores no credentials.</p>
@@ -186,7 +182,7 @@
 <section aria-labelledby="sessions">
   <h2 id="sessions">Sessions and the sidebar <a class="anchor" href="#sessions" aria-label="Link to this section">#</a></h2>
   <p>Each session is a card in the left sidebar rather than a tab in a strip, because each one carries state. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd> or the <b>+</b> next to "Sessions" opens a new one; <kbd>Ctrl</kbd><kbd>B</kbd> hides the sidebar.</p>
-  <p>Above the sessions are four buttons that are always there: <b>Overview</b>, <b>Todo</b>, <b>Notes</b> and <b>Map</b>. Each is a place of its own, not a session card. The one you are on is tinted with the accent. Overview carries an amber count of the sessions waiting on you, and Todo the number of open items. Their shortcuts (<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd>) go there, and pressed again take you back to the session you came from.</p>
+  <p>Above the sessions are three buttons that are always there: <b>Overview</b>, <b>Todo</b> and <b>Notes</b>. Each is a place of its own, not a session card. The one you are on is tinted with the accent. Overview carries an amber count of the sessions waiting on you, and Todo the number of open items. Their shortcuts (<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd>) go there, and pressed again take you back to the session you came from.</p>
 
   <h3 id="session-status">What a card shows</h3>
   <ul>
@@ -246,10 +242,10 @@
       <tr><td><code>#</code></td><td>Pick a theme. The whole window re-tints as you move through the list.</td></tr>
     </tbody>
   </table></div>
-  <p>Inside a note, the todo list or the map, the line also knows that surface's own words (see those sections).</p>
+  <p>Inside a note or the todo list, the line also knows that surface's own words (see those sections).</p>
 
   <h3 id="ember-cli">The <code>ember</code> command</h3>
-  <p>The same actions work from any Ember shell as <code>ember &lt;words&gt;</code>. A command acts on the tab that typed it, which means an agent running in that tab can split a pane, open the panel or hand the orchestrator a task with the same words you would.</p>
+  <p>The same actions work from any Ember shell as <code>ember &lt;words&gt;</code>. A command acts on the tab that typed it, which means an agent running in that tab can split a pane or open the panel with the same words you would.</p>
 <pre><code>ember                        <span class="c">the full list, from the running app</span>
 ember new [dir]              <span class="c">new session (short: n)</span>
 ember split right|down       <span class="c">split this tab (s / sd)</span>
@@ -259,9 +255,7 @@ ember focus &lt;n|name&gt;         <span class="c">switch tab (f)</span>
 ember list                   <span class="c">the open tabs</span>
 ember panel show|hide        <span class="c">the panel (p)</span>
 ember visualize              <span class="c">ask the Claude in this tab to draw what it just said (v)</span>
-ember orch "&lt;text&gt;"          <span class="c">hand something to the orchestrator; prints its answer (o)</span>
 ember overview               <span class="c">every session on one screen (ov)</span>
-ember map [project]          <span class="c">the architecture map</span>
 ember todo                   <span class="c">the todo list (t)</span>
 ember theme &lt;name&gt;           <span class="c">apply a theme (th)</span>
 ember settings [tab]         <span class="c">open Settings</span>
@@ -320,11 +314,9 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
     <tbody>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>J</kbd></td><td>Show or hide the panel</td></tr>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd></td><td>Point at something on the panel</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd></td><td>Orchestrator</td></tr>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td>The overview, and back to your session</td></tr>
-      <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd></td><td>The map, and back to your session</td></tr>
       <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd></td><td>The todo list, and back to your session</td></tr>
-      <tr><td class="keys"><kbd>Esc</kbd></td><td>Leave a note, the todo list, the overview or the map</td></tr>
+      <tr><td class="keys"><kbd>Esc</kbd></td><td>Leave a note, the todo list or the overview</td></tr>
     </tbody>
   </table></div>
   <p><kbd>Ctrl</kbd><kbd>K</kbd> is readline's kill-line in some shells; Ember takes it for the command line. <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd> does the same thing without taking anything from the shell.</p>
@@ -376,63 +368,17 @@ ember diag [n]               <span class="c">the last lines of Ember's diagnosti
 </section>
 
 <!-- ======================================================================= -->
-<section aria-labelledby="orchestrator">
-  <h2 id="orchestrator">The orchestrator <a class="anchor" href="#orchestrator" aria-label="Link to this section">#</a></h2>
-  <p>One agent that can see every session and give them work. Open it with <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd> or the orchestrator button in the sidebar; it opens under the session cards and you type to it. From a shell, <code>ember orch "…"</code> sends it a message and prints the answer.</p>
-  <p>Examples of what to say: "ship the login fix and update the docs", "what is the api session doing?", "start a session in ~/web and make the header sticky".</p>
-  <h3 id="orch-how">How it routes work</h3>
-  <p>The orchestrator is not a model Ember calls. Each turn is one headless run of the CLI chosen in Settings › Agent, with a small set of tools that act on Ember's tabs:</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Tool</th><th>Does</th></tr></thead>
-    <tbody>
-      <tr><td><code>list_sessions</code></td><td>Every open session, its folder and whether it is busy.</td></tr>
-      <tr><td><code>send_work</code></td><td>Types a brief into an idle session's prompt.</td></tr>
-      <tr><td><code>ask_session</code></td><td>Asks a session a question and waits for the answer.</td></tr>
-      <tr><td><code>start_session</code></td><td>Opens a new tab in a folder, starts your CLI, waits until it's ready, then gives it the brief.</td></tr>
-      <tr><td><code>check_work</code></td><td>How a handed-off task is going.</td></tr>
-      <tr><td><code>list_projects</code></td><td>Project folders it could start work in.</td></tr>
-      <tr><td><code>show_session</code></td><td>Switches you to a session.</td></tr>
-      <tr><td><code>close_session</code></td><td>Closes a session.</td></tr>
-    </tbody>
-  </table></div>
-  <p>It answers questions itself by reading files, and never edits files or runs commands itself: changes always go to a session, where you can see them. It prefers an idle session and opens a new one when all are busy or the work belongs in another folder.</p>
-  <p>When a session finishes a task you get a toast and the orchestrator reports what it said. For Claude Code the end of the turn is read from its transcript; for other CLIs, from the card going from working to quiet. If a newly started CLI stops on its own prompt (folder trust, sign-in), Ember tells you rather than typing into it.</p>
-  <p>The conversation is kept in the window, so it lasts until you close Ember.</p>
-</section>
-
-<!-- ======================================================================= -->
 <section aria-labelledby="overview">
   <h2 id="overview">The overview <a class="anchor" href="#overview" aria-label="Link to this section">#</a></h2>
-  <p>Every session on one screen, built to work from. <b>Overview</b>, <b>Todo</b>, <b>Notes</b> and <b>Map</b> are four buttons at the top of the sidebar, always there. Open the overview with one of them, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, or <code>ember overview</code> (<code>ov</code>); the shortcut again takes you back to the session you came from.</p>
+  <p>Every session on one screen, built to work from. <b>Overview</b>, <b>Todo</b> and <b>Notes</b> are buttons at the top of the sidebar, always there. Open the overview with one of them, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd>, or <code>ember overview</code> (<code>ov</code>); the shortcut again takes you back to the session you came from.</p>
   <ul>
     <li><b>The numbers</b> along the top: sessions working and waiting, tokens (and how much came from cache), spend, lines added and removed, the fullest context window, your plan's usage, and a sparkline of the last hour.</li>
     <li><b>A card per session</b>, in tab order: state, folder, what its Claude last said, the tool it is on, and a line of facts (branch, model, tokens, +/− lines, cost, context).</li>
     <li>When a session asks permission, its card shows the question as the terminal draws it, with the options as buttons. Click <b>1</b>, <b>2</b>, <b>3</b>, Enter or Esc to answer without leaving the page.</li>
     <li>A reply you have not seen stays open in full on its card. <b>⤢</b> or <kbd>Space</kbd> opens any card in place with its whole last reply and recent actions. Arrows move between cards, <kbd>Enter</kbd> goes to one, and typing starts an answer.</li>
     <li><b>The rail</b>: your todo list (tick or add items), your recent notes, and a quiet activity log of every edit, command and finished turn across all sessions.</li>
-    <li>Along the bottom, the orchestrator's last reply and a line to answer it.</li>
   </ul>
   <p>Tokens, changes and replies come from Claude Code's own transcripts, read in full when a session announces itself, so the totals cover the whole session.</p>
-</section>
-
-<!-- ======================================================================= -->
-<section aria-labelledby="map">
-  <h2 id="map">The map <a class="anchor" href="#map" aria-label="Link to this section">#</a></h2>
-  <p>A zoomable architecture picture of a project that your agent keeps up to date. Open it with the <b>Map</b> button at the top of the sidebar, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>G</kbd> or <code>map</code>; it starts with the list of your mapped projects.</p>
-  <h3 id="map-new">Setting up a project</h3>
-  <p><b>New project</b> asks for a name and a sentence or two about what belongs to it: folders, repos, a Heroku app, a domain, or just "everything about the checkout service". Your chosen CLI surveys it once, read-only, which takes a few minutes, and draws the map: areas, then repos, apps, services, datastores and external services, then the parts inside them, with the connections between them.</p>
-  <h3 id="map-use">Using it</h3>
-  <ul>
-    <li>Scroll to zoom. A box opens into its parts once it is big enough on screen. Drag to move, double-click to dive in, <kbd>F</kbd> to fit, <kbd>/</kbd> to find.</li>
-    <li>Hover a part to dim everything except its connections. Click a part or a line for a card with its health, where it runs, what changed, risks, open PRs, connections and the flows through it.</li>
-    <li><b>Flows</b> traces a journey (a checkout, a deploy) step by step. From any part, <b>if it goes down</b> shows everything that depends on it.</li>
-    <li><b>Changes</b> lists the map's history; <b>Timeline</b> scrubs back to earlier versions; <b>Replay</b> plays everything since you last looked. New parts are marked NEW and changed ones show a count.</li>
-    <li>Parts an agent is editing right now get a ring in that session's colour and a chip naming the tab.</li>
-    <li>Right-click anything to ask about it. The answer comes from your agent with read-only tools in that part's folder. The <b>Change it</b> button opens a normal session in the part's folder, briefed with your request.</li>
-  </ul>
-  <h3 id="map-updates">How it stays current</h3>
-  <p>Every few minutes Ember runs a cheap check, with no AI, of what the project watches: local git commits, GitHub pushes, Heroku releases, live URLs. Only when something moved does your agent run, and it updates the existing map rather than redrawing it, so parts stay where you learned them. Each project lives in <code>~/.ember/maps/&lt;project&gt;/</code> with every version kept.</p>
-  <p>The map itself is read-only; changes to your code always happen in a session you can see.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -475,41 +421,14 @@ notes dir                    <span class="c">print the folder</span></code></pre
     </tbody>
   </table></div>
   <p>Ticked items are never deleted, only cleared: <b>Clear done</b> moves them to an archive under a heading for the day. The archive shows below the list as <code>archive · n</code>, and each archived item has a ↩ to bring it back.</p>
-  <p>In the command line on the list: <code>add &lt;text&gt;</code>, <code>done &lt;words&gt;</code>, <code>dismiss &lt;words&gt;</code> (remove without ticking), <code>open &lt;words&gt;</code> (open where an item came from, such as a Jira ticket or a PR), <code>claude &lt;words&gt;</code> (hand an item to a new Claude session), <code>clear done</code>, <code>archive</code>, <code>check</code>, <code>sources</code>.</p>
+  <p>In the command line on the list: <code>add &lt;text&gt;</code>, <code>done &lt;words&gt;</code>, <code>dismiss &lt;words&gt;</code> (remove without ticking), <code>open &lt;words&gt;</code> (open where an item came from, such as a Jira ticket or a PR), <code>claude &lt;words&gt;</code> (hand an item to a new Claude session), <code>clear done</code>, <code>archive</code>.</p>
   <p>From any shell, and from any agent:</p>
 <pre><code>todo add "&lt;text&gt;"            <span class="c">add an item</span>
 todo done &lt;words&gt;            <span class="c">tick the first open item containing the words</span>
 todo list [--all]            <span class="c">open items (--all adds ticked and archived)</span>
 todo clear done              <span class="c">archive the ticked items</span>
-todo archive                 <span class="c">print the archive</span>
-todo check                   <span class="c">run Check todos</span></code></pre>
+todo archive                 <span class="c">print the archive</span></code></pre>
   <p>The list is a plain file, <code>Todo.md</code>, next to your notes, one <code>- [ ] item</code> per line; the archive is <code>Todo.archive.md</code>. With the <a href="#skills">ember skill</a> installed, Claude adds to it when you mention something for later, or when a turn leaves a step only you can take, and ticks items it sees get done.</p>
-</section>
-
-<!-- ======================================================================= -->
-<section aria-labelledby="check-todos">
-  <h2 id="check-todos">Check todos <a class="anchor" href="#check-todos" aria-label="Link to this section">#</a></h2>
-  <p>The <b>Check todos</b> button on the list, <code>todo check</code>, or <code>/check-todos</code> in a Claude Code session goes through what arrived since the last check in your mail, Slack, Jira and GitHub and:</p>
-  <ul>
-    <li>adds what you have to act on, and</li>
-    <li>ticks open items those sources show as handled: a thread you replied to, a PR that merged, a ticket that closed.</li>
-  </ul>
-  <p>It runs your local <strong>Claude Code</strong> once, with the tools that Claude already has. There's nothing to set up in Ember; the sources work if your Claude can reach them:</p>
-  <div class="tbl"><table>
-    <thead><tr><th>Source</th><th>Needs, in Claude Code</th></tr></thead>
-    <tbody>
-      <tr><td>Gmail</td><td>The Gmail connector</td></tr>
-      <tr><td>Outlook</td><td>A Microsoft 365 / Outlook tool</td></tr>
-      <tr><td>Slack</td><td>A Slack tool</td></tr>
-      <tr><td>Jira</td><td>The Atlassian connector</td></tr>
-      <tr><td>GitHub</td><td>The <code>gh</code> CLI, signed in on this machine</td></tr>
-    </tbody>
-  </table></div>
-  <p>Choose which sources this machine checks in <a href="#settings-todo">Settings › Todo</a> (the list's <b>Manage sources</b> button goes there). <code>todo check gmail</code> checks one source for a single run. The first run looks back three days; later runs read only what is newer than the previous check.</p>
-  <div class="note note--warn">
-    <p><strong>What it's allowed to do.</strong> The skill tells Claude to read, add and tick only: never send, reply, mark as read, archive, move or transition anything. The run is headless, so Claude's permission prompts are skipped for it; if you edit the skill, keep those rules.</p>
-  </div>
-  <p>There's no schedule and no cloud service: it runs when you press the button.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -592,7 +511,7 @@ todo check                   <span class="c">run Check todos</span></code></pre>
   </table></div>
 
   <h3 id="settings-agent">Agent</h3>
-  <p><strong>Your agent</strong> lists the six supported CLIs, shows which are installed (Ember checks again every time you open this tab), and has <b>Install</b> and sign-in buttons that run in a new tab. The one you select is used for the orchestrator and the map. Default: Claude Code.</p>
+  <p><strong>Your agent</strong> lists the six supported CLIs, shows which are installed (Ember checks again every time you open this tab), and has <b>Install</b> and sign-in buttons that run in a new tab. The one you select is used for Ember's own headless questions. Default: Claude Code.</p>
   <div class="tbl"><table>
     <caption>Panel</caption>
     <thead><tr><th>Setting</th><th>What it does</th><th>Default</th></tr></thead>
@@ -603,9 +522,6 @@ todo check                   <span class="c">run Check todos</span></code></pre>
       <tr><td>Status line on Claude sessions</td><td>Model, context and cost under each Claude Code session and on its card. If you already have your own status line in <code>~/.claude/settings.json</code>, yours is kept. Applies to new sessions.</td><td>On</td></tr>
     </tbody>
   </table></div>
-
-  <h3 id="settings-todo">Todo</h3>
-  <p>Which sources <a href="#check-todos">Check todos</a> reads on this machine: <b>Check Gmail</b>, <b>Check Outlook</b>, <b>Check Slack</b>, <b>Check Jira</b>, <b>Check GitHub</b>. All are on by default. A work laptop might have Outlook, Slack and Jira; a personal one Gmail and GitHub.</p>
 
   <h3 id="settings-behaviour">Behaviour</h3>
   <div class="tbl"><table>
@@ -638,20 +554,18 @@ todo check                   <span class="c">run Check todos</span></code></pre>
 <!-- ======================================================================= -->
 <section aria-labelledby="skills">
   <h2 id="skills">Skills <a class="anchor" href="#skills" aria-label="Link to this section">#</a></h2>
-  <p>Ember ships three Claude Code skills. <strong>You don't need to install them by hand:</strong> Ember copies them into <code>~/.claude/skills/</code> every time it starts, and also into <code>~/.codex/skills/</code> if Codex is on the machine. Because they live in your own skills folder, they work in any Claude Code session on the machine, not only inside Ember.</p>
+  <p>Ember ships two Claude Code skills. <strong>You don't need to install them by hand:</strong> Ember copies them into <code>~/.claude/skills/</code> every time it starts, and also into <code>~/.codex/skills/</code> if Codex is on the machine. Because they live in your own skills folder, they work in any Claude Code session on the machine, not only inside Ember.</p>
   <div class="tbl"><table>
     <thead><tr><th>Skill</th><th>What it teaches the agent</th></tr></thead>
     <tbody>
-      <tr><td><code>ember</code></td><td>How Ember works: the panel and its tools, the <code>ember</code>, <code>notes</code> and <code>todo</code> commands, the orchestrator, the shortcuts, computer use with <code>desk</code>, and not to stop Ember's own process. It also tells Claude to keep your todo list up to date.</td></tr>
+      <tr><td><code>ember</code></td><td>How Ember works: the panel and its tools, the <code>ember</code>, <code>notes</code> and <code>todo</code> commands, the shortcuts, computer use with <code>desk</code>, and not to stop Ember's own process. It also tells Claude to keep your todo list up to date.</td></tr>
       <tr><td><code>visualize</code></td><td>When and how to draw on the panel: which format suits what (diagram, table, checklist, mockup, chart), and how to write a complete HTML panel. Also runs as <code>/visualize</code>.</td></tr>
-      <tr><td><code>check-todos</code></td><td>The <a href="#check-todos">Check todos</a> job: read mail, Slack, Jira and GitHub since the last check, add what needs doing, tick what's done, and change nothing at the source. Also runs as <code>/check-todos</code>.</td></tr>
     </tbody>
   </table></div>
   <h3 id="skills-editing">Editing them</h3>
   <p>Each installed <code>SKILL.md</code> starts with a comment line saying it was installed by Ember. While that line is there, Ember keeps the file up to date with the version it ships. Delete that line and the file is yours: Ember won't overwrite it again.</p>
   <h3 id="skills-manual">Installing them by hand</h3>
   <p>To use the skills on a machine without Ember, copy the folders from <a href="https://github.com/afetiu/ember-terminal/tree/main/resources/skills"><code>resources/skills</code></a> in the repository into <code>~/.claude/skills/</code>, so you end up with <code>~/.claude/skills/ember/SKILL.md</code> and so on. The panel, <code>notes</code>, <code>todo</code> and <code>desk</code> only exist inside Ember, and the skills say so to the agent when they're missing.</p>
-  <p>For Check todos, also connect the sources you want in Claude Code itself (the Gmail or Atlassian connectors, a Slack or Microsoft 365 tool, a signed-in <code>gh</code>). Ember doesn't install those.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -697,7 +611,7 @@ desk halt | desk resume | desk status          <span class="c">the STOP switch</
 <!-- ======================================================================= -->
 <section aria-labelledby="labs">
   <h2 id="labs">Labs: the phone link <a class="anchor" href="#labs" aria-label="Link to this section">#</a></h2>
-  <p>Off by default, and experimental. With <b>Labs</b> on in Settings, the command line gets <b>Connect your phone</b> (<code>devices</code>). It puts this machine on an Ember account with a QR code, so a phone companion, or another machine, can reach the orchestrator here. Traffic goes through a relay Deep Answer Labs runs; the relay routes by a hash of the account key and never sees the key. The account key is stored in <code>~/.ember/account.json</code>; treat the QR like a house key.</p>
+  <p>Off by default, and experimental. With <b>Labs</b> on in Settings, the command line gets <b>Connect your phone</b> (<code>devices</code>). It puts this machine on an Ember account with a QR code, so a phone companion can reach the sessions here. Traffic goes through a relay Deep Answer Labs runs; the relay routes by a hash of the account key and never sees the key. The account key is stored in <code>~/.ember/account.json</code>; treat the QR like a house key.</p>
   <p>The phone app itself isn't published yet (its source is in <code>mobile/</code> in the repository). Unless you're testing it, leave Labs off.</p>
 </section>
 
@@ -709,16 +623,14 @@ desk halt | desk resume | desk status          <span class="c">the STOP switch</
     <tbody>
       <tr><td><code>~/.ember/config.json</code></td><td>All settings.</td></tr>
       <tr><td><code>~/.ember/bin/</code></td><td>The <code>ember</code>, <code>notes</code>, <code>todo</code> and <code>desk</code> launchers, rewritten at every start.</td></tr>
-      <tr><td><code>~/.ember/maps/</code></td><td>One folder per mapped project, with every version.</td></tr>
-      <tr><td><code>~/.ember/todo-check.json</code></td><td>When Check todos last ran on this machine.</td></tr>
       <tr><td><code>~/.ember/desk.log</code>, <code>desk.halt</code></td><td>Computer-use log; the halt marker while STOP is on.</td></tr>
       <tr><td><code>~/.ember/diag.log</code></td><td>Diagnostics; read the end with <code>ember diag</code>.</td></tr>
       <tr><td><code>Documents\Ember Notes\</code></td><td>Notes, <code>Todo.md</code> and <code>Todo.archive.md</code>.</td></tr>
-      <tr><td><code>~/.claude/skills/</code></td><td>The three skills.</td></tr>
+      <tr><td><code>~/.claude/skills/</code></td><td>The two skills.</td></tr>
     </tbody>
   </table></div>
   <p>Set <code>EMBER_HOME</code> to keep Ember's files somewhere other than <code>~/.ember</code>, and <code>EMBER_NOTES_DIR</code> for the notes.</p>
-  <p>Ember has no account and no telemetry. Your work goes wherever your CLI already sends it. The calls Ember makes on its own belong to features you can see: the plan-usage poll (off by default), the map's change checks against your repos and hosts, and the phone relay (Labs, off by default). The uninstaller leaves <code>~/.ember</code> and your notes in place; delete them by hand if you want them gone.</p>
+  <p>Ember has no account and no telemetry. Your work goes wherever your CLI already sends it. The calls Ember makes on its own belong to features you can see: the plan-usage poll (off by default) and the phone relay (Labs, off by default). The uninstaller leaves <code>~/.ember</code> and your notes in place; delete them by hand if you want them gone.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -748,9 +660,6 @@ desk halt | desk resume | desk status          <span class="c">the STOP switch</
 
     <dt><code>desk</code> says it's unavailable.</dt>
     <dd>Install Python 3 from python.org and try again. If pip couldn't install the libraries, run the <code>python -m pip install …</code> line the COMPUTER row shows. <code>HALTED</code> means STOP is on: <code>desk resume</code>. <code>desk</code> only works in a shell Ember started.</dd>
-
-    <dt>Check todos says no sources are ticked, or finds nothing.</dt>
-    <dd>Tick sources in Settings › Todo, and make sure Claude Code itself has the matching connector or tool; run <code>/check-todos</code> in a Claude session to see its full answer.</dd>
 
     <dt>My git badge, red failure marks or task runner are missing.</dt>
     <dd>They need shell integration (Settings › Behaviour) and a PowerShell profile. Command Prompt reports no working directory.</dd>

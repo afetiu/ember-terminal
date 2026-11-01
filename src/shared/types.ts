@@ -300,10 +300,6 @@ export interface RemoteDevice {
   self: boolean
 }
 
-/** Where Check todos can look. The order is the order the toggles show in. */
-export const TODO_SOURCES = ['gmail', 'outlook', 'slack', 'jira', 'github'] as const
-export type TodoSource = (typeof TODO_SOURCES)[number]
-
 export interface EmberConfig {
   /**
    * Ember Hands — Ember's own pointer on the desktop. 'show' (the default): Claude may
@@ -356,17 +352,6 @@ export interface EmberConfig {
    * Your existing prompt is preserved — it is wrapped, not replaced.
    */
   shellIntegration: boolean
-  /**
-   * Where Check todos looks, on this machine. A work laptop has Outlook and Slack and no
-   * Gmail; a personal one the other way round. The skill is told exactly these.
-   */
-  todo: {
-    gmail: boolean
-    outlook: boolean
-    slack: boolean
-    jira: boolean
-    github: boolean
-  }
   scrollback: number
   panel: PanelConfig
   claude: ClaudeConfig
@@ -391,7 +376,7 @@ export interface EmberConfig {
 }
 
 export interface AgentConfig {
-  /** The CLI the map, check-todos and every headless run use. */
+  /** The CLI every headless run uses. */
   default: AgentId
   /** Onboarding has been seen (finished or skipped). */
   onboarded: boolean
@@ -428,47 +413,6 @@ export interface RealtimeAuth {
   callsUrl?: string
   expiresAt?: number
   error?: string
-}
-
-/** A question put to the Claude session in a tab, and what came back. */
-export interface AskResult {
-  ok: boolean
-  text?: string
-  /** The turn ran out of time; what's here is real but unfinished. */
-  partial?: boolean
-  error?: string
-}
-
-/** One message in the orchestrator's shared conversation, in OpenAI's chat shape. */
-export interface TurnMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool'
-  content?: string | null
-  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>
-  tool_call_id?: string
-}
-
-export interface TurnResult {
-  ok: boolean
-  message?: TurnMessage
-  error?: string
-}
-
-/** A session the orchestrator handed work to has gone quiet. */
-export interface CrewNote {
-  tabId: string
-  kind: 'progress' | 'done'
-  text: string
-}
-
-/** What one session has been doing since work was handed to it. */
-export interface CrewReport {
-  tabId: string
-  task: string
-  forMinutes: number
-  finished: boolean
-  said: string
-  /** How many transcript events of each kind reached this journal. Diagnostic. */
-  seen: Record<string, number>
 }
 
 /** One thing a narrated session did, already phrased for speech. */
@@ -633,32 +577,6 @@ export interface SpawnResult {
 
 /** Exposed on `window.ember` by the preload script. */
 export interface EmberBridge {
-  /** The map: living architecture models of projects, kept by Claude. */
-  map: {
-    list(): Promise<MapSummary[]>
-    load(id: string): Promise<MapBundle | null>
-    /** Creates the project and starts the first build. */
-    create(input: { name: string; brief: string; pollMinutes?: number }): Promise<MapProject>
-    edit(id: string, patch: { name?: string; brief?: string; pollMinutes?: number }): Promise<MapProject | null>
-    remove(id: string): Promise<boolean>
-    build(id: string, rebuild?: boolean): void
-    /** The cheap check; `force` runs Claude even when nothing moved. */
-    check(id: string, force?: boolean): void
-    cancel(id: string): void
-    viewed(id: string): void
-    ask(projectId: string, nodeId: string | null, question: string, askId: string): void
-    cancelAsk(askId: string): void
-    /** Show a file from the map in Explorer. */
-    reveal(path: string): void
-    history(id: string): Promise<MapHistoryEntry[]>
-    version(id: string, version: number): Promise<MapModel | null>
-    /** Start (true) or stop (false) receiving live session activity. */
-    watchLive(on: boolean): void
-    onLive(cb: (sessions: MapLiveSession[]) => void): () => void
-    onChanged(cb: (e: { id: string; deleted?: boolean }) => void): () => void
-    onJob(cb: (e: { id: string; job: MapJob | null }) => void): () => void
-    onAsk(cb: (e: MapAskEvent) => void): () => void
-  }
   getConfig(): Promise<EmberConfig>
   spawn(req: SpawnRequest): Promise<SpawnResult>
   write(sessionId: string, data: string): void
@@ -771,29 +689,6 @@ export interface EmberBridge {
     onOpen(cb: (e: { mode?: 'list' | 'new' | 'open' | 'todo'; text?: string; id?: string; tabId?: string }) => void): () => void
     /** A note was written or removed by something other than this window — a Claude session, usually. */
     onChanged(cb: (e: { id: string; was?: string; deleted?: boolean }) => void): () => void
-    /** Run `/check-todos` in the local Claude Code and return its report. Minutes, not seconds. */
-    checkTodos(): Promise<{ ok: boolean; output: string; error?: string; lastCheckedAt?: string }>
-    /** When this machine last checked, if ever. */
-    todoState(): Promise<{ lastCheckedAt?: string; sources?: string[] }>
-  }
-  converse: {
-    /** Put a question to the Claude session in a tab and wait for the whole turn. */
-    ask(tabId: string, sessionId: string, question: string): Promise<AskResult>
-    /** Abandon whatever question is in flight for a tab — the tab closed, or it was cancelled. */
-    cancel(tabId: string): void
-    /** Is there a Claude session in this tab for a question to reach? */
-    ready(tabId: string): Promise<boolean>
-    /** What the tab's transcript watcher is tailing. Diagnostic. */
-    watch(tabId: string): Promise<unknown>
-  }
-  orch: {
-    /** One orchestrator turn through the chosen agent CLI. No key. */
-    cli(text: string, recap: string): Promise<{ ok: boolean; text: string; error?: string }>
-    /** A tool call from that turn, for the renderer to run and answer with toolResult. */
-    onTool(cb: (call: { reqId: string; run: string; name: string; args: Record<string, unknown> }) => void): () => void
-    toolResult(reqId: string, result: string): void
-    /** What the running turn is doing, a line at a time. */
-    onProgress(cb: (line: string) => void): () => void
   }
   /**
    * This machine's membership of the Ember account, and the devices on it.
@@ -807,33 +702,12 @@ export interface EmberBridge {
     status(): Promise<BrainStatus>
     sync(): Promise<BrainStatus>
   }
-  /** The council: several agents debate one question (docs/specs/providers.md). */
-  council: {
-    start(req: CouncilRequest): void
-    stop(id: string): void
-    onEvent(cb: (e: CouncilEvent) => void): () => void
-  }
   remote: {
     account(): Promise<Account | null>
     create(): Promise<Account>
     join(relay: string, key: string): Promise<Account>
     rename(name: string): Promise<Account | null>
     leave(): Promise<boolean>
-  }
-  /**
-   * Work handed to a session and left running. `converse.ask` waits for the whole turn;
-   * this returns at once and reports back when the session goes quiet.
-   */
-  crew: {
-    dispatch(tabId: string, sessionId: string, task: string): Promise<{ ok: boolean; error?: string }>
-    report(tabId: string): Promise<CrewReport | null>
-    /** Take what a session has said since the last drain. */
-    drain(tabId: string): Promise<string>
-    /** Watch a session without giving it work. */
-    follow(tabId: string): void
-    forget(tabId: string): void
-    /** A followed session finished a turn. */
-    onNote(cb: (note: CrewNote) => void): () => void
   }
   /** CPU and memory load of this machine. */
   vitals: {
@@ -904,216 +778,6 @@ export interface EmberBridge {
     /** The adapter Chromium is drawing with. */
     gpu(): Promise<string>
   }
-}
-
-// ---------------------------------------------------------------------------
-// The map: a living architecture model of a project, kept by Claude, read by the user.
-// ---------------------------------------------------------------------------
-
-/** What a project on the map is, as it was set up. The model is what Claude found. */
-export interface MapProject {
-  id: string
-  name: string
-  /** In the user's words: what it is, what belongs to it, where to look. */
-  brief: string
-  /** Minutes between cheap checks of the watched sources. 0 = only by hand. */
-  pollMinutes: number
-  createdAt: string
-}
-
-export type MapNodeKind =
-  | 'system'
-  | 'group'
-  | 'repo'
-  | 'app'
-  | 'service'
-  | 'component'
-  | 'module'
-  | 'datastore'
-  | 'queue'
-  | 'infra'
-  | 'external'
-  | 'job'
-  | 'doc'
-
-export type MapStatus = 'ok' | 'warn' | 'down' | 'unknown'
-
-export interface MapRef {
-  label: string
-  url?: string
-  path?: string
-}
-
-export interface MapNode {
-  /** Stable forever. Updates refer to it; the layout and the change history hang off it. */
-  id: string
-  name: string
-  kind: MapNodeKind
-  parent?: string
-  summary: string
-  /** Markdown: how it works, key files, config, how it is deployed. */
-  details?: string
-  tech?: string[]
-  status?: MapStatus
-  statusNote?: string
-  /** A local folder, when the thing lives in one — where a change session opens. */
-  path?: string
-  sources?: MapRef[]
-  /** Where it runs: "Heroku deepanswerlabs", "Cloudflare Pages", "local only". */
-  deploy?: string
-  /** The rest of the project's world, pinned to this part: risks, open PRs, costs, people… */
-  notes?: MapNote[]
-}
-
-export type MapNoteType = 'risk' | 'question' | 'decision' | 'pr' | 'issue' | 'todo' | 'cost' | 'date' | 'person' | 'note'
-
-export interface MapNote {
-  type: MapNoteType
-  text: string
-  url?: string
-}
-
-export interface MapEdge {
-  id: string
-  from: string
-  to: string
-  label?: string
-  /** What travels along it and how: a sentence or two. */
-  detail?: string
-  /** HTTPS, SQL, webhook, git push, DNS… */
-  protocol?: string
-  sources?: MapRef[]
-}
-
-/** A named path through the system: "Buyer downloads a zip". */
-export interface MapFlow {
-  id: string
-  name: string
-  summary: string
-  steps: Array<{ node: string; text?: string }>
-}
-
-/** Something cheap to poll for movement. A moved watch is what wakes Claude. */
-export interface MapWatch {
-  kind: 'git' | 'github' | 'heroku' | 'url'
-  target: string
-  label?: string
-}
-
-export interface MapModel {
-  version: number
-  updatedAt: string
-  overview: string
-  nodes: MapNode[]
-  edges: MapEdge[]
-  watches: MapWatch[]
-  flows: MapFlow[]
-}
-
-export interface MapChangeItem {
-  node?: string
-  text: string
-  impact?: 'minor' | 'notable' | 'major'
-}
-
-/** One entry in a project's history: what moved, in architecture terms. */
-export interface MapChange {
-  id: string
-  at: string
-  kind: 'build' | 'update' | 'rebuild'
-  /** The watches that woke it, or "by hand". */
-  trigger: string[]
-  summary: string
-  items: MapChangeItem[]
-  /** Every node the change touched — added, updated or removed. */
-  touched: string[]
-  version: number
-  /** Parts that appeared in this change. */
-  added?: string[]
-  /** Parts that went, as they were — so the map can show where they used to be. */
-  removed?: MapNode[]
-}
-
-export interface MapJob {
-  kind: 'build' | 'update' | 'rebuild' | 'check'
-  startedAt: string
-  /** The last thing Claude said it was doing. */
-  line: string
-}
-
-export interface MapState {
-  fingerprints: Record<string, string>
-  watchErrors: Record<string, string>
-  lastCheckAt?: string
-  lastViewedAt?: string
-  lastError?: string
-  job?: MapJob | null
-}
-
-export interface MapBundle {
-  project: MapProject
-  model: MapModel | null
-  changes: MapChange[]
-  state: MapState
-}
-
-export interface MapSummary {
-  project: MapProject
-  nodes: number
-  version: number
-  updatedAt?: string
-  unseen: number
-  job?: MapJob | null
-  lastError?: string
-}
-
-/** A Claude session seen working somewhere on the machine, and the files it touched. */
-export interface MapLiveSession {
-  sessionId: string
-  /** The Ember tab it runs in, when it runs in one. */
-  tabId?: string
-  cwd: string
-  /** ms since epoch of its last transcript line. */
-  lastAt: number
-  lastText: string
-  touches: Array<{ path: string; mode: 'edit' | 'read' | 'commit'; at: number }>
-}
-
-export interface MapHistoryEntry {
-  version: number
-  at: string
-}
-
-export interface MapAskEvent {
-  askId: string
-  kind: 'progress' | 'done' | 'error'
-  text: string
-}
-
-/** A council: several agent CLIs answer one question, read each other, and a chair concludes. */
-export interface CouncilRequest {
-  id: string
-  question: string
-  /** Agent ids (src/shared/agents.ts), in speaking order. */
-  members: string[]
-  /** Rounds of debate after the opening positions. 0 = openings only. */
-  rounds: number
-  /** Who writes the conclusion. */
-  chair: string
-  /** The folder the agents may read, for questions about a project. */
-  cwd: string
-  /** Something the person said between rounds, read by everyone in the next round. */
-  interject?: string
-}
-
-export interface CouncilEvent {
-  id: string
-  kind: 'status' | 'speak' | 'conclusion' | 'error' | 'done'
-  member?: string
-  /** 0 = openings; 1.. = debate rounds; -1 = the conclusion. */
-  round?: number
-  text?: string
-  at: number
 }
 
 /** What every agent can see of the shared brain. */

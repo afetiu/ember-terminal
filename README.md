@@ -13,14 +13,10 @@ The clip above is also an [MP4](docs/media/ember-demo.mp4).
 - **Sidebar cards that know which agent needs you.** Every session is a card that reads
   its state off the terminal: working, stopped on a question for you, or done and handing
   back. Look at a session only when its card asks.
-- **An orchestrator.** One agent that sees every session, hands them work, opens new ones
-  and tells you when each is done.
 - **A panel beside each terminal.** The agent draws diagrams, tables and pages on it, and
   the panel's buttons type back into the session.
 - **Notes and a todo list** in the same window, kept as plain Markdown files that your
   agents can read and write from the shell.
-- **A map** of a project's architecture that the agent keeps up to date as the code
-  changes.
 - **Your CLI, your login.** Claude Code, Codex CLI, Gemini CLI, Cursor Agent, OpenCode and
   Copilot CLI run as they are, on the plan you already pay for.
 
@@ -36,14 +32,11 @@ for admin rights.
 
 Ember hosts the agent CLIs you already use — **Claude Code, Codex CLI, Gemini CLI, Cursor
 Agent, OpenCode and Copilot CLI** — and **never asks for an LLM API key**. Every AI feature
-(the map, check-todos, the panel) runs through the CLI you pick in Settings › Agent, signed
-in with your own plan. The first launch walks through picking one, with Install buttons for
-the ones that are missing. The orchestrator — the agent that sees every session and hands
-them work — is a headless turn of that same CLI with a small MCP server attached
-(`resources/mcp-orch.mjs`), whose tools reach the tabs through Ember's local bridge.  Ember
-stores no credentials of any kind; Settings › Labs holds only the experimental phone link.
+(the panel, the canvas's side questions) runs through the CLI you pick in Settings › Agent,
+signed in with your own plan. The first launch walks through picking one, with Install
+buttons for the ones that are missing. Ember stores no credentials of any kind; Settings › Labs holds only the experimental phone link.
 
-| CLI | Panel (MCP) | Status on the card | Map / headless |
+| CLI | Panel (MCP) | Status on the card | Headless |
 | --- | --- | --- | --- |
 | Claude Code | `--mcp-config` | title + screen | `-p --output-format stream-json` |
 | Codex CLI | `-c mcp_servers.…` + `env_vars` | shim title + screen | `exec --json --sandbox read-only` |
@@ -54,8 +47,7 @@ stores no credentials of any kind; Settings › Labs holds only the experimental
 
 The table lives in `src/shared/agents.ts`; `src/main/agents.ts` detects, runs and parses.
 Claude Code, Codex, Copilot CLI (1.0.91) and OpenCode (1.18.34) are verified end to end:
-headless answer, read-only map and orchestrator tool calls. Gemini CLI (0.62) is verified up
-to the model call, and its orchestrator gets the MCP server through a workspace of its own; a
+headless, read-only answers. Gemini CLI (0.62) is verified up to the model call; a
 signed-in run has not been done here yet.
 
 ## The shell
@@ -386,29 +378,6 @@ tab's prompt, and a browsed website — cross-origin, and never handed one — h
 option whose value is a command that writes a file, and only a working chain of guest →
 bridge → renderer → pty → pwsh makes that file exist.
 
-## The orchestrator
-
-One agent that sees every session and hands them work. `Ctrl+Shift+M` (or the hub button
-in the sidebar) opens it under the session cards, and you type to it.
-
-It is not a model Ember calls: each turn is one headless run of the agent CLI you chose in
-Settings › Agent, with a small MCP server attached (`resources/mcp-orch.mjs`). Its tools —
-`list_sessions`, `send_work`, `ask_session`, `start_session`, `check_work`, `list_projects`,
-`show_session`, `close_session` — come back through Ember's local bridge (`/orch/tool`) and
-run in the window, which is where the tabs are. The conversation lives in the window and
-goes to each turn as a recap, so no CLI session state is needed. No API key is involved.
-
-- **Handing out work.** `send_work` types the brief into a session's prompt. For Claude
-  Code the finish is read off its transcript (`stop_reason: end_turn`); for every other
-  CLI it is read off the card — seen working, then quiet — and the screen's last lines are
-  the report. You get a toast either way.
-- **Starting sessions.** `start_session` opens a tab, starts your chosen CLI, and waits
-  until it is up before typing the brief. If the CLI stops on a prompt of its own (a
-  folder trust question, a login), Ember waits and tells you rather than typing into it.
-- **Headless approvals.** The tools carry MCP annotations; everything except
-  `close_session` is marked non-destructive, which is what lets headless Codex run them
-  without an approval prompt nobody is there to answer.
-
 ## Command palette
 
 `Ctrl+Shift+P`. Matching is subsequence-based, not substring — `spd` finds *S*plit *p*ane
@@ -526,9 +495,9 @@ badge in the sidebar, a page with a folded corner, so it is never mistaken for a
 
 ### Places
 
-Todo, Notes and Map are permanent buttons at the top of the sidebar — places, not cards in
-the session list. Ctrl+Shift+D and Ctrl+Shift+G go to the list and the map; the same key
-again goes back to the session you came from. The Todo button carries a badge for open
+Todo and Notes are permanent buttons at the top of the sidebar — places, not cards in
+the session list. Ctrl+Shift+D goes to the list; the same key again goes back to the
+session you came from. The Todo button carries a badge for open
 items.
 
 ### The todo list
@@ -545,121 +514,48 @@ something is ticked), `clear done` on the list's command line, or `todo clear do
 shell move them to `Todo.archive.md` beside the list, under a `## date` heading for the
 day, newest day first. The archive shows under the list as a quiet `archive · n` toggle,
 by day, each line with a ↩ to bring it back open; `todo archive` prints it, and
-`todo list --all` includes it so the checker never re-adds a thing already done.
+`todo list --all` includes it so an agent never re-adds a thing already done.
 
 `todo add "…"`, `todo done <words>` and `todo list` work from any shell, and Claude is
 told to add to it, once and phrased as an action, whenever you mention something for
 later or a turn leaves a step only you can take. (Notes can still hold checklists of
 their own: `/todo` on a line in a note turns what follows into items.)
 
-**Check todos**, the button on the list, `todo check` in a shell, or `/check-todos` in
-any Claude Code session, runs your own local Claude once through what arrived since the
-last check in mail, Slack, Jira and GitHub, with whatever tools that Claude already has
-(the Gmail and Atlassian connectors, a Microsoft 365 or Slack tool, the `gh` CLI), and
-adds what you have to act on. It also ticks the open items those sources show as handled:
-a thread you replied to, a PR that merged, a ticket that closed. It reads, adds and
-ticks; it never sends, marks read, archives or transitions anything. No cron, no cloud:
-a button, a skill, your `claude`. Ember installs the skill into
-`~/.claude/skills/check-todos` on first launch (and leaves it alone once you edit it),
-so it is the same on every machine Ember is on.
-
-Which sources it reads is a setting of the machine, Settings > Todo (the **Manage
-sources** button on the list takes you there): Gmail, Outlook, Slack, Jira, GitHub, each
-a checkbox, because a work laptop has Outlook, Slack and Jira and no Gmail, and a
-personal one the other way round. The button and `todo check` pass exactly those to the
-skill; `todo check gmail` overrides for one run.
-
-### The map
-
-A project's architecture as one zoomable picture, kept up to date by Claude. `map` (or
-Ctrl+Shift+G) opens a list of projects, the way `notes` opens the notes; **New project**
-takes a name and a sentence or two about what belongs to it — folders, repos, a Heroku
-app, a domain, or just "everything about acme-shop". Claude surveys it once (a few
-minutes, read-only) and draws the map: areas, then repos, apps, services, datastores,
-infrastructure and external services, then the parts inside them, with the connections
-between. Scroll to zoom — a box opens into its parts once it is big enough on screen,
-and lines attach to whatever is visible — drag to move, double-click to dive in, `F` to
-fit, `/` to find.
-
-The point is that the model is **kept, not redrawn**. It lives in
-`~/.ember/maps/<project>/model.json` with ids that never change; layout is computed
-here from the tree, never by the model, so the picture stays where you learned it.
-Every few minutes a cheap check — no AI — fingerprints what the project watches (local
-git HEADs, GitHub pushes, Heroku releases and dynos, live URLs). Only when one moved
-does Claude run, handed the model and the git log of what changed, and it answers with
-*operations* (add, update, remove a part or a connection), which are applied and
-validated here and written to the history as one entry. The **Changes** tab is that
-history in architecture terms; parts changed since you last looked glow, and hovering
-an entry lights up everything it touched. Every version is kept in `history/`.
-
-Nothing else is on screen but the map. Parts are shapes by kind (apps, services,
-cylinders for data, pipes for queues, dashed clouds for external services, folded pages
-for docs), areas are soft zones of their own colour, and lines are routed by ELK through
-the gaps between boxes and drawn above them, so they are never lost behind a shape.
-Hover a part and everything else dims to its connections, labelled; click a part or a
-line and a card opens beside it with a leader line: health, where it runs, what changed,
-risks, open PRs, questions waiting on you, costs, connections, the flows through it.
-
-What is *happening* is drawn as light on the map:
-
-- **Claude at work.** Every Claude Code session on the machine — Ember tabs, phone
-  sessions, other terminals — writes a transcript; the map tails the recent ones and
-  matches the files each session reads, edits and commits to parts. A part being edited
-  gets a pulsing ring in that session's colour and a chip naming the tab (click it to go
-  there); reading is a dashed ring; a commit newer than the map shows "update pending".
-- **News.** Parts added since you last looked carry NEW and glow gold, changed ones a
-  Δ count; removed parts stay a day as struck-through outlines. An update landing while
-  you watch animates in and is announced; **Replay** flies through everything since you
-  last looked.
-- **Flows.** The survey names the journeys that matter (a buyer downloading a kit, a
-  deploy); **Flows** traces one step by step, numbered, with the path lit.
-- **If it goes down.** From any part's card: everything that depends on it, in rings.
-- **Timeline.** Every version is kept; scrub back to see the map as it was.
-
-The map is read-only. Right-click anything to ask about it — what it does, what
-changed, what depends on it, whether it is healthy — and the answer comes back in the
-popup, from Claude with read-only tools in that part's folder. **Change it with
-Claude…** is the one way out: it opens an ordinary Claude session in the part's folder,
-briefed with the request and what the map knows about it.
-
 ### `ember`: the app from the shell
 
 Every action the chrome has is a row in one table in the renderer. **Ctrl+K** is a
-command line over that table: type the words without `ember` (`new`, `o run the tests`,
-`split`, `t`, `theme nord`, `rename api`) and Enter runs them; while you type, the rows
+command line over that table: type the words without `ember` (`new`, `split`, `t`, `theme nord`, `rename api`) and Enter runs them; while you type, the rows
 that match are listed with their short forms. Each button runs one row of it (its
 tooltip shows the command), and `ember <words>` in any Ember shell runs one row of it
 too, so the three cannot drift apart. Inside a note the line knows `del`, `open <name>`,
 `new`, `list`, `back`; on the todo list `add <text>`, `done <words>`, `clear done`,
-`archive`, `check`.
+`archive`.
 
 ```
 ember                        the full list, from the running app
 ember new [dir]              ember split right|down       ember close
 ember rename <name>          ember focus <n|name>         ember list
-ember panel show|hide        ember visualize              ember orch "<text>"
+ember panel show|hide        ember visualize
 ember theme <name>           ember settings [tab]         ember zen
 ember set <path> <value>     ember get <path>
 ```
 
 A command acts on the tab that typed it, which is what makes it useful from a Claude
-session: the model splits a pane, opens the panel or hands the orchestrator a task
-with the same words you would. `ember set` edits `~/.ember/config.json` directly and the
+session: the model splits a pane or opens the panel with the same words you would. `ember set` edits `~/.ember/config.json` directly and the
 file watcher applies it, so it works outside Ember too. The `ember` skill teaches Claude
 the list.
 
 ### Skills
 
-Ember ships three Claude Code skills in `resources/skills` and installs them into
+Ember ships two Claude Code skills in `resources/skills` and installs them into
 `~/.claude/skills` on launch (a file you have edited is left alone), so they are the same
 on every machine Ember is on and work in any Claude Code session, not only inside a tab:
 
 - **`ember`** — how the terminal works: the panel and its tools, where the notes and the
-  todo list live and their commands, what the orchestrator is, the shortcuts, and what
-  not to do (never stop Ember by process name).
+  todo list live and their commands, the shortcuts, and what not to do (never stop
+  Ember by process name).
 - **`/visualize`** — put the thing being discussed on the panel, in the right format,
   answering back with buttons.
-- **`/check-todos`** — mail and Slack, three days back, into the todo list.
 
 ### The `notes` command
 
@@ -762,7 +658,7 @@ so routine `cd`s stay silent.
 `Ctrl+Shift+Z` zoom pane · `Ctrl+Shift+A` broadcast · `Ctrl+Shift+O` copy last output ·
 `Ctrl+Tab` / `Ctrl+Shift+Tab` cycle sessions · `Ctrl+Alt+1..9` jump to session ·
 `Ctrl+↑`/`Ctrl+↓` prev/next command · `Ctrl+B` toggle sidebar · `Ctrl+Shift+J` toggle panel ·
-`Ctrl+Shift+D` dictate · `Ctrl+Shift+N` narrate · `Ctrl+Shift+M` voice tab ·
+`Ctrl+Shift+D` dictate · `Ctrl+Shift+N` narrate ·
 `Ctrl+Shift+C/V` copy/paste
 
 ## Performance
@@ -817,15 +713,14 @@ at its final width and moves with a transform; layout happens exactly once, unde
 (opening, the terminals shrink behind the landed panel; closing, they widen at the first
 frame behind the panel that still covers them). The caret layer, which was a pane-sized
 canvas cleared thirty times a second for the breathing pulse, is a small canvas that
-rides along with the caret. The sidebar and the orchestrator's column, which animated
-grid tracks and so laid the window out on every frame, now lay out once — the tracks
-jump to their final widths and the three columns slide from where they were with
-transforms. Nothing refits while anything is moving; the refit lands a frame after the
+rides along with the caret. The sidebar's column, which animated a grid track and so
+laid the window out on every frame, now lays out once — the track jumps to its final
+width and the columns slide from where they were with transforms. Nothing refits while anything is moving; the refit lands a frame after the
 motion does. And a new tab is an attach rather than a build: a spare terminal (WebGL
 context, glyph atlas) is prepared in idle time, and the tab's panel webview — a guest
 process — is created after the entrance has settled instead of inside its first frame.
 `node scripts/probe-frames.mjs` records frame gaps during every motion the app has and
-reports the late frames per motion; the sidebar and orchestrator slides went from 8–12
+reports the late frames per motion; the sidebar slides went from 8–12
 late frames to 1–3, the palette from 100ms hitches to none over 30ms.
 
 **The GPU.** On a laptop with two GPUs Windows hands a windowed app the integrated one
@@ -893,7 +788,7 @@ All found empirically, all load-bearing:
 - `scripts/probe-latency.mjs` — keystroke-to-echo, on a real pty, under load
 - `scripts/probe-frames.mjs` — frame pacing of every animation (late frames, worst gap, p95)
 - `scripts/probe-notes-cli.mjs` — the `notes` command from inside a real Ember shell, PowerShell and Git Bash
-- `scripts/shot.mjs` — screenshots of the chrome (shell, notes, orchestrator, palette, settings)
+- `scripts/shot.mjs` — screenshots of the chrome (shell, notes, todo, palette, settings)
 - `scripts/demo/record-demo.mjs` — records `docs/media/ember-demo.gif` and `.mp4` from four stand-in Claude Code sessions (`scripts/demo/fake-agent.mjs`); needs `ffmpeg` on PATH
 - `scripts/icon/` — `cutout.ps1` lifts the logo off its plate and crops it; `from-png.mjs` makes every icon size and the `.ico` (`pnpm icon`)
 

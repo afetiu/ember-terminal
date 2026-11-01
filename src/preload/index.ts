@@ -1,10 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { homedir } from 'node:os'
-import type { CouncilEvent,
-  AskResult,
-  CrewNote,
+import type {
   NoteMeta,
-  CrewReport,
   PtyDataEvent,
   PtyExitEvent,
   SpawnRequest,
@@ -23,14 +20,6 @@ import type { CouncilEvent,
   DeskState,
   ClaudeStatus,
   ClaudeUsage,
-  MapAskEvent,
-  MapBundle,
-  MapJob,
-  MapProject,
-  MapSummary,
-  MapHistoryEntry,
-  MapLiveSession,
-  MapModel,
   CanvasFeed,
   CanvasMedia,
   CanvasAnnotate,
@@ -107,72 +96,19 @@ const bridge: EmberBridge = {
     dir: () => ipcRenderer.invoke('ember:notes:dir') as Promise<string>,
     onOpen: (cb) => on<{ mode?: 'list' | 'new' | 'open' | 'todo'; text?: string; id?: string; tabId?: string }>('ember:notes:open', cb),
     onChanged: (cb) => on<{ id: string; was?: string; deleted?: boolean }>('ember:notes:changed', cb),
-    checkTodos: () =>
-      ipcRenderer.invoke('ember:todo:check') as Promise<{ ok: boolean; output: string; error?: string; lastCheckedAt?: string }>,
-    todoState: () => ipcRenderer.invoke('ember:todo:state') as Promise<{ lastCheckedAt?: string; sources?: string[] }>,
   },
-  map: {
-    list: () => ipcRenderer.invoke('ember:map:list') as Promise<MapSummary[]>,
-    load: (id: string) => ipcRenderer.invoke('ember:map:load', id) as Promise<MapBundle | null>,
-    create: (input: { name: string; brief: string; pollMinutes?: number }) => ipcRenderer.invoke('ember:map:create', input) as Promise<MapProject>,
-    edit: (id: string, patch: { name?: string; brief?: string; pollMinutes?: number }) =>
-      ipcRenderer.invoke('ember:map:edit', id, patch) as Promise<MapProject | null>,
-    remove: (id: string) => ipcRenderer.invoke('ember:map:remove', id) as Promise<boolean>,
-    build: (id: string, rebuild?: boolean) => ipcRenderer.send('ember:map:build', id, rebuild),
-    check: (id: string, force?: boolean) => ipcRenderer.send('ember:map:check', id, force),
-    cancel: (id: string) => ipcRenderer.send('ember:map:cancel', id),
-    viewed: (id: string) => ipcRenderer.send('ember:map:viewed', id),
-    ask: (projectId: string, nodeId: string | null, question: string, askId: string) =>
-      ipcRenderer.send('ember:map:ask', projectId, nodeId, question, askId),
-    cancelAsk: (askId: string) => ipcRenderer.send('ember:map:askCancel', askId),
-    reveal: (path: string) => ipcRenderer.send('ember:map:reveal', path),
-    history: (id: string) => ipcRenderer.invoke('ember:map:history', id) as Promise<MapHistoryEntry[]>,
-    version: (id: string, version: number) => ipcRenderer.invoke('ember:map:version', id, version) as Promise<MapModel | null>,
-    watchLive: (on: boolean) => ipcRenderer.send('ember:map:live:watch', on),
-    onLive: (cb) => on<MapLiveSession[]>('ember:map:live', cb),
-    onChanged: (cb) => on<{ id: string; deleted?: boolean }>('ember:map:changed', cb),
-    onJob: (cb) => on<{ id: string; job: MapJob | null }>('ember:map:job', cb),
-    onAsk: (cb) => on<MapAskEvent>('ember:map:ask', cb),
-  },
-  converse: {
-    ask: (tabId: string, sessionId: string, question: string) =>
-      ipcRenderer.invoke('ember:converse:ask', tabId, sessionId, question) as Promise<AskResult>,
-    cancel: (tabId: string) => ipcRenderer.send('ember:converse:cancel', tabId),
-    ready: (tabId: string) => ipcRenderer.invoke('ember:converse:ready', tabId) as Promise<boolean>,
-    watch: (tabId: string) => ipcRenderer.invoke('ember:converse:watch', tabId) as Promise<unknown>,
-  },
-  orch: {
-    cli: (text: string, recap: string) => ipcRenderer.invoke('ember:orch:cli', text, recap),
-    onTool: (cb) => on<{ reqId: string; run: string; name: string; args: Record<string, unknown> }>('ember:orch:tool', cb),
-    toolResult: (reqId: string, result: string) => ipcRenderer.send('ember:orch:toolResult', reqId, result),
-    onProgress: (cb) => on<string>('ember:orch:progress', cb),
-  },
-  // This machine's place in the Ember account. The key crosses into the renderer because
-  // the link lives there, next to the orchestrator it exists to reach.
   brain: {
     status: () => ipcRenderer.invoke('ember:brain:status'),
     sync: () => ipcRenderer.invoke('ember:brain:sync'),
   },
-  council: {
-    start: (req) => ipcRenderer.send('ember:council:start', req),
-    stop: (id) => ipcRenderer.send('ember:council:stop', id),
-    onEvent: (cb) => on<CouncilEvent>('ember:council:event', cb),
-  },
+  // This machine's place in the Ember account. The key crosses into the renderer because
+  // the link lives there, next to the phone host it exists to reach.
   remote: {
     account: () => ipcRenderer.invoke('ember:remote:account') as Promise<Account | null>,
     create: () => ipcRenderer.invoke('ember:remote:create') as Promise<Account>,
     join: (relay: string, key: string) => ipcRenderer.invoke('ember:remote:join', relay, key) as Promise<Account>,
     rename: (name: string) => ipcRenderer.invoke('ember:remote:rename', name) as Promise<Account | null>,
     leave: () => ipcRenderer.invoke('ember:remote:leave') as Promise<boolean>,
-  },
-  crew: {
-    dispatch: (tabId: string, sessionId: string, task: string) =>
-      ipcRenderer.invoke('ember:crew:dispatch', tabId, sessionId, task) as Promise<{ ok: boolean; error?: string }>,
-    report: (tabId: string) => ipcRenderer.invoke('ember:crew:report', tabId) as Promise<CrewReport | null>,
-    drain: (tabId: string) => ipcRenderer.invoke('ember:crew:drain', tabId) as Promise<string>,
-    follow: (tabId: string) => ipcRenderer.send('ember:crew:follow', tabId),
-    forget: (tabId: string) => ipcRenderer.send('ember:crew:forget', tabId),
-    onNote: (cb) => on<CrewNote>('ember:crew:note', cb),
   },
   vitals: {
     state: () => ipcRenderer.invoke('ember:vitals:state') as Promise<VitalsState>,

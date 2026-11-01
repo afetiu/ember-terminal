@@ -111,7 +111,7 @@ for (const file of files) {
 
 if (!process.argv.slice(2).length) {
   const all = walk(root)
-  // The newest interactive session: headless `codex exec` runs (the council's) are never a tab's.
+  // The newest interactive session: headless `codex exec` runs (Ember's own questions) are never a tab's.
   const interactive = (f) => {
     const p = JSON.parse(readFileSync(f, 'utf8').split('\n')[0]).payload ?? {}
     return p.originator !== 'codex_exec' && p.source !== 'exec'

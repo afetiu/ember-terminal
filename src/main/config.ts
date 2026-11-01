@@ -125,13 +125,6 @@ export const DEFAULT_CONFIG: EmberConfig = {
     speed: 3,
   },
   shellIntegration: true,
-  todo: {
-    gmail: true,
-    outlook: true,
-    slack: true,
-    jira: true,
-    github: true,
-  },
   panel: {
     width: 0.42,
     autoOpen: true,

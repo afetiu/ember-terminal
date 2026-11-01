@@ -6,8 +6,6 @@
  *
  * Like shot.mjs, but with its own port and EMBER_HOME so it can run beside the user's
  * Ember and beside the other probes, and with the theme forced from src/main/themes.ts.
- * The map needs a surveyed project; a small made-up one is written into the probe's home,
- * so the map's every state — status, notes, flows, a change — has something to draw.
  *
  *   ONBOARD=1  start with the welcome sheet and shoot its first three steps
  *   NOEMU=1    keep the window's own size and pixel ratio. The fixed 1600x960 viewport
@@ -45,53 +43,8 @@ writeFileSync(join(NOTES, 'Release checklist.md'), '# Release checklist\n\n- bum
 writeFileSync(join(NOTES, 'Ideas.md'), 'Ideas\n\nA notes command instead of an MCP tool. Park background tabs.\n')
 writeFileSync(
   join(NOTES, 'Todo.md'),
-  '# Todo\n\n- [ ] Reply to Alex about the mockups [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in radix-platform#551, rebase onto #550 and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Move the orchestrator under the list [GitHub](https://github.com/afetiu/ember/issues/12)\n- [ ] Answer Noah on DE-862 [Jira](https://org.atlassian.net/browse/DE-862)\n- [ ] Send Kabashi the sizes [Slack](https://kabashi.slack.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Slack and mail triage routine\n',
+  '# Todo\n\n- [ ] Reply to Alex about the mockups [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in radix-platform#551, rebase onto #550 and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Park background tabs sooner [GitHub](https://github.com/afetiu/ember/issues/12)\n- [ ] Answer Noah on DE-862 [Jira](https://org.atlassian.net/browse/DE-862)\n- [ ] Send Kabashi the sizes [Slack](https://kabashi.slack.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Slack and mail triage routine\n',
 )
-
-// A small surveyed project for the map.
-const MAP = join(EMBER_HOME, 'maps', 'shop')
-mkdirSync(MAP, { recursive: true })
-const now = new Date().toISOString()
-const node = (id, name, kind, parent, summary, extra = {}) => ({ id, name, kind, ...(parent ? { parent } : {}), summary, ...extra })
-writeFileSync(join(MAP, 'project.json'), JSON.stringify({ id: 'shop', name: 'Shop', brief: 'The shop and its hosting', pollMinutes: 0, createdAt: now }))
-writeFileSync(
-  join(MAP, 'model.json'),
-  JSON.stringify({
-    version: 3,
-    updatedAt: now,
-    overview: 'A storefront, its API and the jobs around them.',
-    watches: [],
-    nodes: [
-      node('web', 'Web', 'group', null, 'What the buyer sees'),
-      node('site', 'Storefront', 'app', 'web', 'Next.js storefront', { tech: ['Next.js', 'React'], status: 'ok', deploy: 'Cloudflare Pages', notes: [{ type: 'pr', text: 'Checkout redesign #41' }] }),
-      node('admin', 'Admin', 'app', 'web', 'Back office for orders', { status: 'warn', statusNote: 'Build is slow', tech: ['Vite'] }),
-      node('cloud', 'Heroku', 'group', null, 'Where the API runs'),
-      node('api', 'API server', 'service', 'cloud', 'Express API for carts and orders', { tech: ['Node', 'Express'], status: 'ok', deploy: 'Heroku shop-api', notes: [{ type: 'risk', text: 'No rate limiting on /login' }, { type: 'todo', text: 'Move sessions to Redis' }] }),
-      node('worker', 'Mail worker', 'job', 'cloud', 'Sends receipts', { status: 'down', statusNote: 'Crashed at 09:12' }),
-      node('db', 'Postgres', 'datastore', 'cloud', 'Orders, users', { status: 'ok' }),
-      node('queue', 'Jobs queue', 'queue', 'cloud', 'Bull on Redis', { status: 'unknown' }),
-      node('stripe', 'Stripe', 'external', null, 'Payments', { status: 'ok' }),
-      node('docs', 'Runbook', 'doc', null, 'How to deploy'),
-    ],
-    edges: [
-      { id: 'e1', from: 'site', to: 'api', label: 'REST', protocol: 'HTTPS' },
-      { id: 'e2', from: 'admin', to: 'api', label: 'REST', protocol: 'HTTPS' },
-      { id: 'e3', from: 'api', to: 'db', label: 'SQL' },
-      { id: 'e4', from: 'api', to: 'queue', label: 'enqueue' },
-      { id: 'e5', from: 'queue', to: 'worker', label: 'jobs' },
-      { id: 'e6', from: 'api', to: 'stripe', label: 'charges', protocol: 'HTTPS' },
-    ],
-    flows: [{ id: 'f1', name: 'Buyer checks out', summary: 'Cart to receipt', steps: [{ node: 'site', text: 'Cart' }, { node: 'api', text: 'Order' }, { node: 'stripe', text: 'Charge' }, { node: 'queue' }, { node: 'worker', text: 'Receipt' }] }],
-  }),
-)
-writeFileSync(
-  join(MAP, 'changes.json'),
-  JSON.stringify([
-    { id: 'c1', at: new Date(Date.now() - 86400e3).toISOString(), kind: 'build', trigger: ['by hand'], summary: 'First survey.', items: [], touched: [], version: 1 },
-    { id: 'c2', at: now, kind: 'update', trigger: ['git'], summary: 'The mail worker was added.', items: [{ node: 'worker', text: 'New mail worker', impact: 'notable' }], touched: ['worker', 'queue'], version: 3, added: ['worker'] },
-  ]),
-)
-writeFileSync(join(MAP, 'state.json'), JSON.stringify({ fingerprints: {}, watchErrors: {} }))
 
 const userCfg = join(homedir(), '.ember', 'config.json')
 const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
@@ -215,13 +168,6 @@ try {
     await sleep(1500)
     await shot('05-panel')
   })
-  await step('orchestrator', async () => {
-    await ev(`window.__ember.orchestrator()`)
-    await sleep(1200)
-    await shot('06-orchestrator')
-    await ev(`window.__ember.orchestrator()`)
-    await sleep(600)
-  })
   await step('palette', async () => {
     await ev(`window.__ember.openPalette('')`)
     await sleep(600)
@@ -236,9 +182,6 @@ try {
     await ev(`window.__ember.openSettings()`)
     await sleep(800)
     await shot('08-settings')
-    await ev(`document.querySelector('.ember-settings-tab[data-tab="Todo"]')?.click()`)
-    await sleep(400)
-    await shot('08b-settings-todo')
     await ev(`document.querySelector('.ember-settings-tab[data-tab="Agent"]')?.click()`)
     await sleep(400)
     await shot('08c-settings-agent')
@@ -258,33 +201,6 @@ try {
     await ev(`window.__ember.openSearch()`)
     await sleep(500)
     await shot('11-search')
-    await esc()
-    await sleep(300)
-  })
-  await step('map', async () => {
-    await key('G', 'KeyG', 2 | 8, 71)
-    await sleep(1200)
-    await shot('10-map-list')
-    await ev(`document.querySelector('.ember-map-row').click()`)
-    await sleep(2800)
-    await shot('10b-map')
-    await ev(`(() => { const all = [...document.querySelectorAll('.mnode:not(.is-hidden)')].filter(x => x.querySelector('.mnode-body')); const n = all.find(x => /API server/.test(x.innerText)) ?? all.find(x => x.classList.contains('is-leaf')) ?? all[0]; const b = n.querySelector('.mnode-body'); b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 })); b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 })) })()`)
-    await sleep(800)
-    await shot('10c-map-card')
-    await esc()
-    await sleep(300)
-    await key('l', 'KeyL', 0, 76)
-    await ev(`document.querySelectorAll('.mhud-tr .mbtn')[1]?.click()`)
-    await sleep(700)
-    await shot('10d-map-legend-timeline')
-    await key('l', 'KeyL', 0, 76)
-    await ev(`document.querySelectorAll('.mhud-tr .mbtn')[1]?.click()`)
-    await sleep(300)
-    await ev(`document.querySelectorAll('.mhud-tr .mbtn')[0].click()`)
-    await sleep(400)
-    await ev(`[...document.querySelectorAll('.mmenu-item')][0].click()`)
-    await sleep(3000)
-    await shot('10e-map-flow')
     await esc()
     await sleep(300)
   })

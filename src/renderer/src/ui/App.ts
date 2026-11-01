@@ -1,4 +1,4 @@
-import type { ClaudeStatus, EmberConfig, GitStatus, ThemeConfig, TurnMessage } from '@shared/types'
+import type { ClaudeStatus, EmberConfig, GitStatus, ThemeConfig } from '@shared/types'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
 import { Session } from '../core/Session'
@@ -14,12 +14,10 @@ import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
 import { PhoneHost } from '../phone/PhoneHost'
-import { Council } from './Council'
 import { FirstRun } from './FirstRun'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
 import { parseAccountUrl } from '../../../../resources/relay/protocol.js'
-import { Orchestrator, type Turn } from './Orchestrator'
 import type { PanelHooks } from './Panel'
 import { Vitals } from './Vitals'
 import { TitleBar } from './TitleBar'
@@ -53,10 +51,8 @@ export class App {
   private readonly sidebar: Sidebar
   private readonly vitals: Vitals
   private readonly titleBar: TitleBar
-  private readonly orchestrator: Orchestrator
   private readonly remote: Remote
   private phone: PhoneHost | null = null
-  private readonly council = new Council()
   /** The first run, in the empty desk, until setup is done. */
   private firstRun: FirstRun | null = null
   private readonly pairSheet: PairSheet
@@ -93,17 +89,6 @@ export class App {
    */
   private readonly sidebarWidth = new Spring(0, { stiffness: 460, damping: 1.0, epsilon: 0.3 })
   private shifting = false
-  /** The left column's width while it shows the orchestrator: a conversation needs more than a list. */
-  private static readonly ORCH_COLUMN_PX = 372
-  /**
-   * The orchestrator's width, as a real grid column rather than an overlay.
-   *
-   * It started as a drawer floating over everything, which read fine until a tab had its
-   * visualisation panel open too — then the two occupied the same strip of screen and the
-   * panel was simply buried. Giving it a column makes the stage narrower instead, so the
-   * terminal and the panel share what is left. Same spring as the sidebar, so both edges
-   * of the window move with the same weight.
-   */
   private readonly ambient = new Spring(0, { stiffness: 90, damping: 1, epsilon: 0.002 })
 
   /**
@@ -138,7 +123,7 @@ export class App {
   /** Open items on the todo list, for the sidebar's Todo button. */
   private todoOpen = 0
   /**
-   * The session tab you were last in before going to a place (todo, notes, map). The shortcut that took you there takes you back to it.
+   * The session tab you were last in before going to a place (todo, notes). The shortcut that took you there takes you back to it.
    */
   private lastSessionId: string | null = null
   /** What each tab's Claude session last said and is doing, from its transcript, by tab id. */
@@ -155,12 +140,12 @@ export class App {
       onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
-      onOrchestrator: () => void this.openCouncilTab(),
       onProvider: (anchor) => void this.providerMenu(anchor),
       onSelect: (id) => void this.activate(id),
       onClose: (id) => this.closeGroup(id),
-      // A new session is a terminal: type an agent's name, notes, todo, council, ember…
-      onNew: () => void this.newGroup(),
+      // A new session is a terminal: type an agent's name, notes, todo, ember…
+      // + is a session: the canvas, running the agent chosen in the chip beside it.
+      onNew: () => void this.newAgentSession(),
       onRename: (id, title) => this.renameGroup(id, title),
       onReorder: (ids) => this.reorderGroups(ids),
       onPlace: (place) => void this.goPlace(place),
@@ -217,27 +202,16 @@ export class App {
     )
     this.cheatsheet = new Cheatsheet()
 
-    // The orchestrator, written to. Same agent and conversation as a connected phone.
-    this.orchestrator = new Orchestrator({
-      onSend: async (text) => void (await this.sendToOrchestrator(text)),
-      onClose: () => this.toggleOrchestrator(),
-    })
-    this.sidebar.mountBelowCards(this.orchestrator.el)
-
-    // The phone. What it types is routed into the same method the panel uses, which is
-    // what keeps it one agent rather than two.
+    // The phone: the account link it talks over, and the tabs it drives (PhoneHost).
     this.remote = new Remote({
-      onText: (text) => this.sendToOrchestrator(text),
       onPanelAct: (text, submit) => {
         // Routed to the tab the phone is acting on, which is the active one — the same
         // place the desk's own panel buttons land.
         const group = this.activeGroup
         if (group) this.sendToSession(group, text, submit)
       },
-      recap: () => this.recentConversation(),
       onPhone: (m, from) => this.phone?.handle(m, from) ?? false,
       onChange: () => {
-        this.syncOrchChrome()
         this.pairSheet.tick()
       },
     })
@@ -295,25 +269,6 @@ export class App {
       }),
     })
     this.root.appendChild(this.pairSheet.el)
-    // The council's conclusion, handed back to the session that asked: written to a file
-    // and named in one short message, the way a handoff brief is.
-    window.addEventListener('ember:council:handback', (e) => {
-      const { tabId, markdown } = (e as CustomEvent<{ tabId: string; title: string; markdown: string }>).detail
-      const g = this.groups.find((x) => x.id === tabId)
-      if (!g) return this.flashToast('That session is closed')
-      void window.ember.canvas.handoff(markdown).then((path) => {
-        void this.activate(g.id)
-        this.sendToSession(g, `The council weighed in on this. Read its conclusion at ${path} and take it into account.`, true)
-      })
-    })
-    // The council's conclusion, put on the canvas of the tab you are in.
-    window.addEventListener('ember:council:canvas', (e) => {
-      const { title, markdown } = (e as CustomEvent<{ title: string; markdown: string }>).detail
-      const tab = this.activeGroup
-      if (!tab) return
-      void window.ember.canvas.handoff(markdown).then((path) => window.ember.canvas.showFile(tab.id, path, title))
-    })
-
     this.root.append(this.titleBar.el, this.sidebar.el, this.stack)
     document.body.appendChild(this.root)
 
@@ -339,8 +294,6 @@ export class App {
 
     // Coming back to the window should put the caret back in the terminal, not
     // wherever the browser last parked focus — unless an input is deliberately open.
-    // The orchestrator's width is a share of the window, so a resize has to re-aim it.
-
     window.addEventListener('focus', () => {
       if (this.palette.isOpen || this.search.isOpen) return
       if (document.querySelector('.ember-card-rename')) return
@@ -430,41 +383,6 @@ export class App {
         await this.remote.start(fresh)
         return fresh
       },
-      /**
-       * Drive the written half without opening the panel.
-       *
-       * The claim worth checking is not that a chat box exists — it is that typing runs
-       * the same tools and lands in the same conversation as talking, which is only
-       * observable from outside the panel.
-       */
-      write: async (text: string) => {
-        await this.sendToOrchestrator(text)
-        return this.turns.slice(-4).map((t) => `${t.who}: ${t.text}`)
-      },
-      /** The shared conversation — the thing both channels read and write. */
-      thread: () => ({
-        turns: this.turns.map((t) => ({ who: t.who, text: t.text.slice(0, 200) })),
-        history: this.history.length,
-        open: this.orchestrator.isOpen,
-      }),
-      orchestrator: () => this.toggleOrchestrator(),
-      /**
-       * Run one `ask_claude` round trip directly.
-       *
-       * This is the join between the two loops, and it is the part that cannot be
-       * checked by looking: it types into a real Claude session and reads the answer back
-       * off the transcript. A probe can drive it; from inside a conversation a working
-       * bridge and a lucky one look the same.
-       */
-      ask: (question: string) => this.askClaude(this.activeId ?? '', question),
-      /**
-       * Call one of the orchestrator's tools directly.
-       *
-       * That `send_work` returns in milliseconds rather than blocking, and that the
-       * hand-off reports back by itself, are both invisible from inside a conversation.
-       */
-      tool: (name: string, args: Record<string, unknown>) =>
-        this.runOrchTool(this.activeId ?? '', name, args ?? {}),
       /** Drive the active card's status line, for watching the digits roll on demand. */
       setCardStatus: (text: string) => this.sidebar.pinStatus(this.activeId ?? '', text),
       /**
@@ -649,7 +567,7 @@ export class App {
       this.startFirstRun()
       return
     }
-    await this.newGroup()
+    await this.newAgentSession()
     this.scheduleSpare()
   }
 
@@ -816,16 +734,16 @@ export class App {
    * The + button: a Loom tab already running the chosen agent, not a bare shell. Falls
    * back to the shell when that agent is not installed, and says why.
    */
-  private async newAgentSession(): Promise<void> {
+  private async newAgentSession(cwd?: string): Promise<void> {
     const id = this.config.agent?.default ?? 'claude'
     const spec = agentSpec(id)
     const installed = (await window.ember.agents.detect(false).catch(() => [])).find((a) => a.id === spec.id)?.installed
     if (!installed) {
-      await this.newGroup()
+      await this.newGroup(undefined, cwd)
       this.flashToast(`${spec.name} is not installed — Settings › Agent`)
       return
     }
-    await this.newGroup(undefined, undefined, { agent: spec.id })
+    await this.newGroup(undefined, cwd, { agent: spec.id })
   }
 
   /**
@@ -935,7 +853,6 @@ export class App {
         isActive: () => this.activeId === group.id,
         toast: (text) => this.flashToast(text),
         openPlace: (place) => void this.goPlace(place),
-        askCouncil: () => void this.askCouncil(group),
         saveView: (view) => {
           if (this.config.agentView === view || (view === 'canvas' && !this.config.agentView)) return
           this.config = { ...this.config, agentView: view }
@@ -1001,7 +918,6 @@ export class App {
     const target = g
     const hosted = target.panes.length > 0
     const todo = target.ensureTodo({
-      onSources: () => void this.settings.show(this.config, 'Todo'),
       onClaude: (text) => void this.claudeFor(text),
       onOpen: (url) => window.open(url, '_blank'),
       onTitle: (title) => {
@@ -1028,7 +944,7 @@ export class App {
   }
 
   /**
-   * The tab that is a place: the list, the notes or the map as a tab of
+   * The tab that is a place: the list or the notes as a tab of
    * its own, with no shell under it. There is at most one of each — the sidebar's
    * buttons go to it rather than making another.
    */
@@ -1037,7 +953,7 @@ export class App {
       this.groups.find(
         (g) =>
           g.panes.length === 0 &&
-          (place === 'todo' ? g.isTodo : place === 'notes' ? g.isNote : g.isMap)
+          (place === 'todo' ? g.isTodo : g.isNote)
       ) ?? null
     )
   }
@@ -1046,7 +962,7 @@ export class App {
   private activePlace(): Place | null {
     const g = this.activeGroup
     if (!g || g.panes.length > 0) return null
-    return g.isTodo ? 'todo' : g.isNote ? 'notes' : g.isMap ? 'map' : null
+    return g.isTodo ? 'todo' : g.isNote ? 'notes' : null
   }
 
   /**
@@ -1058,60 +974,12 @@ export class App {
     if (toggle && this.activePlace() === place) return this.leavePlace()
     const g = this.placeGroup(place)
     if (place === 'todo') return this.openTodoIn(g)
-    if (place === 'map') {
-      await this.openMapIn(g)
-      return
-    }
     if (g) {
       await this.activate(g.id)
       g.note?.focus()
       return
     }
     await this.newNoteGroup()
-  }
-
-  /**
-   * The council, as a tab: the one already open, or a new tab. A council keeps running
-   * while you are on other tabs, and is there to come back to.
-   */
-  private async openCouncilTab(): Promise<void> {
-    const cwd = this.activeGroup?.focused?.cwd || ''
-    let g = this.groups.find((x) => x.isCouncil) ?? null
-    if (!g) {
-      g = new Group(() => this.syncTabs())
-      this.tuneGroup(g)
-      g.pop.set(0)
-      g.pop.to(1)
-      g.slide.set(0)
-      this.stack.appendChild(g.el)
-      this.groups.push(g)
-      g.customTitle = 'Council'
-      g.ensureCouncil(this.council.el)
-      this.council.el.classList.add('is-tab')
-      sound.play('open')
-      this.applyPaneStyles()
-    }
-    await this.activate(g.id, true)
-    this.council.open(cwd)
-    this.syncTabs()
-  }
-
-  /**
-   * The council, invited from a session: the turn on screen becomes the question, the
-   * session's agent is the host, and the conclusion can be sent back to it.
-   */
-  private async askCouncil(group: Group | null = this.activeGroup): Promise<void> {
-    const ex = group?.loom?.exchange()
-    if (!group || !ex) {
-      this.flashToast('Nothing on this turn to ask the council about yet')
-      return
-    }
-    const host = agentSpec(group.focused?.announcedAgent ?? 'claude').name
-    const clip = (t: string, n: number) => (t.length > n ? `${t.slice(0, n)}…` : t)
-    const question = [ex.question || 'Weigh in on the answer below.', ex.answer ? `\n\nWhat ${host} answered:\n${clip(ex.answer, 3000)}` : ''].join('')
-    const cwd = group.focused?.cwd || group.focused?.initialCwd || ''
-    await this.openCouncilTab()
-    this.council.startWith(question, cwd, { tabId: group.id, name: host })
   }
 
   /** Back from a place to the session you were last in. */
@@ -1141,81 +1009,6 @@ export class App {
       return
     }
     void this.goPlace('todo', true)
-  }
-
-  /**
-   * The architecture map, in a tab: over its terminals if it has any, as the tab itself
-   * if not; with no tab at all, a tab of its own. `project` opens one map directly.
-   */
-  async openMapIn(group: Group | null, project?: string): Promise<string> {
-    let g = group
-    if (!g) {
-      g = this.groups.find((x) => x.isMap && x.panes.length === 0) ?? null
-      if (g && g.id !== this.activeId) await this.activate(g.id)
-    }
-    if (!g) {
-      g = new Group(() => this.syncTabs())
-      this.tuneGroup(g)
-      g.pop.set(0)
-      g.pop.to(1)
-      g.slide.set(0)
-      this.stack.appendChild(g.el)
-      this.groups.push(g)
-      g.customTitle = 'Map'
-      sound.play('open')
-      this.applyPaneStyles()
-      await this.activate(g.id, true)
-    } else if (g.id !== this.activeId) {
-      await this.activate(g.id)
-    }
-    const target = g
-    const hosted = target.panes.length > 0
-    const fresh = !target.map
-    const view = target.ensureMap({
-      onTitle: (title) => {
-        target.customTitle = title
-        this.syncTabs()
-      },
-      onChange: (brief, cwd, title) => {
-        void this.startCrewSession(brief, cwd, title)
-        this.flashToast(`${(AGENTS[this.config.agent.default] ?? AGENTS.claude).name} is starting on: ${title}`)
-      },
-      onShell: (cwd) => void this.newGroup(undefined, cwd),
-      onOpenUrl: (url) => window.open(url, '_blank'),
-      onRevealPath: (path) => window.ember.map.reveal(path),
-      onFocusTab: (tabId) => {
-        if (this.groups.some((x) => x.id === tabId)) void this.activate(tabId)
-      },
-      tabTitle: (tabId) => this.groups.find((x) => x.id === tabId)?.displayTitle,
-      ...(hosted
-        ? {
-            onClose: () => {
-              target.hideMap()
-              target.focusFirst()
-              this.syncTabs()
-            },
-          }
-        : {}),
-    })
-    let result = 'Map'
-    if (project) result = await view.openNamed(project)
-    else if (fresh) await view.showList()
-    view.focus()
-    this.startPaneMotion()
-    this.syncTabs()
-    return result
-  }
-
-  /** Ctrl+Shift+G: the map over the tab you are in, or the shell back if it is up. */
-  private toggleMap(): void {
-    const g = this.activeGroup
-    if (g?.isMap && g.panes.length > 0) {
-      g.hideMap()
-      g.focusFirst()
-      this.syncTabs()
-      return
-    }
-    void this.goPlace('map', true)
   }
 
   /**
@@ -1393,9 +1186,7 @@ export class App {
     this.groups.splice(idx, 1)
     group.dispose()
     window.ember.panel.forget(id)
-    window.ember.crew.forget(id)
     this.claudeByTab.delete(id)
-    this.crewTasks.delete(id)
 
     if (this.groups.length === 0) {
       // Nothing left to show: the window stays, with the empty state and the sidebar's
@@ -1715,7 +1506,7 @@ export class App {
 
   /**
    * The links that arrive from outside the window: the phone, `ember` and `notes` typed in
-   * a shell, notes changed on disk, and sessions the orchestrator handed work to.
+   * a shell, and notes changed on disk.
    */
   private wireLinks(): void {
     // The phone link comes up at boot and stays up. It is not started on demand because
@@ -1752,338 +1543,12 @@ export class App {
         if (e.id.toLowerCase() === 'todo.md') void g.todo?.external()
       }
     })
-
-
-
-    // A session the orchestrator handed work to has gone quiet. This is the whole difference
-    // between dispatching work and forgetting about it.
-    this.wireOrchestratorTools()
-    window.ember.crew.onNote((note) => {
-      const group = this.groups.find((g) => g.id === note.tabId)
-      const title = group?.displayTitle ?? note.tabId
-      this.crewNotes++
-      const said = `Session "${title}" (${note.tabId}) has finished. It said: ${note.text}`
-      this.notice(said)
-      // The other half of handing work out while driving. The phone decides whether to
-      // say it aloud — that needs to know if anyone is mid-sentence, which only it sees.
-      void this.remote.note(said)
-      this.flashToast(`"${title}" finished`)
-    })
   }
 
-
-
-
-
-  // ---------------------------------------------------------------- the orchestrator
-
-  /**
-   * One agent, two ways in.
-   *
-   * `history` is the whole point of this section. Both channels append to it and both
-   * read from it, so a thread started on the phone continues at the desk without re-explaining
-   * anything — which is the thing that was actually asked for, not "a chat box as well".
-   * A call is a front end; the conversation outlives it.
-   */
-  private readonly history: TurnMessage[] = []
-  /** The same conversation as `history`, shaped for reading rather than for the model. */
-  private readonly turns: Turn[] = []
-  private orchBusy = false
-
-  /**
-   * How much of the window the orchestrator takes when open.
-   *
-   * A share rather than a fixed width, floored so it stays readable and capped so it
-   * cannot dominate. At 46% it was taking 460px of an 1180px window and leaving the
-   * visualisation panel 200 — technically not overlapping, which was the bug being
-   * fixed, and still unusable, which was not the point.
-   */
   /** What the left column should be, given everything that can claim it. */
   private columnWidth(): number {
     if (document.body.classList.contains('is-zen')) return 0
-    if (this.orchestrator.isOpen) return App.ORCH_COLUMN_PX
     return document.body.classList.contains('sidebar-mini') ? App.MINI_SIDEBAR_PX : this.config.window.sidebarWidth
-  }
-
-  /**
-   * The orchestrator opens under the session list, in the same column.
-   *
-   * It was a third column to the left of the sessions, which never sat right; then it
-   * took the sessions' place, which hid the very things it hands work to. It is the thing
-   * that runs the sessions, so it sits beneath them: the list shrinks to its content, the
-   * conversation takes the rest of the column with its composer at the bottom, and the
-   * column widens a little because a conversation needs more room than a list. The tabs
-   * stay in view and clickable the whole time.
-   */
-  /** The last few turns as plain prose, for the phone as it connects. */
-  private recentConversation(): string {
-    return this.turns
-      .slice(-8)
-      .map((t) => `${t.who === 'you' ? 'The user' : t.who === 'agent' ? 'You' : 'Note'}: ${t.text}`)
-      .join(' — ')
-      .slice(0, 2000)
-  }
-
-  /** Something the orchestrator should know happened: shown in its thread. */
-  private notice(line: string): void {
-    this.turns.push({ who: 'system', text: line })
-    this.trimHistory()
-    this.paintOrchestrator()
-  }
-
-  private toggleOrchestrator(): void {
-    this.orchestrator.toggle()
-    this.sidebar.el.classList.toggle('has-orch', this.orchestrator.isOpen)
-    this.setColumn(this.columnWidth())
-    this.syncOrchChrome()
-    if (this.orchestrator.isOpen) this.orchestrator.render(this.turns, this.orchBusy)
-    else this.activeGroup?.focused?.focus()
-  }
-
-  private paintOrchestrator(): void {
-    if (this.orchestrator.isOpen) this.orchestrator.render(this.turns, this.orchBusy)
-  }
-
-  /**
-   * Run a typed turn to completion, tools and all.
-   *
-   * The loop lives here rather than in main because the tools are *here* — they open
-   * tabs, read session state, dispatch work. Main does the one part only main can do,
-   * which is hold the key and make the request.
-   */
-  private async sendToOrchestrator(text: string): Promise<{ text: string; did: string[] }> {
-    if (this.orchBusy) return { text: 'I am still working on the last thing. Give me a moment.', did: [] }
-    if (!text.trim()) return { text: '', did: [] }
-
-    // The conversation so far, as prose: the CLI turn is stateless, so this is its memory.
-    const recap = this.turns
-      .filter((t) => t.who !== 'system' && t.text)
-      .slice(-12)
-      .map((t) => `${t.who === 'you' ? 'User' : 'You'}: ${t.text}`)
-      .join('\n')
-
-    this.history.push({ role: 'user', content: text })
-    this.turns.push({ who: 'you', text })
-    this.orchBusy = true
-    this.orchUsed = []
-    this.paintOrchestrator()
-
-    let answer = ''
-    const used = this.orchUsed
-    try {
-      // One turn of the person's own agent CLI with ember-orch attached. Its tool calls
-      // arrive through wireOrchestratorTools while this waits; no key is involved.
-      const result = await window.ember.orch.cli(text, recap)
-      answer = result.ok ? result.text.trim() : `The orchestrator did not answer: ${result.error ?? 'unknown error'}`
-      if (result.ok && answer) {
-        this.history.push({ role: 'assistant', content: answer })
-        this.turns.push({ who: 'agent', text: answer, ...(used.length ? { did: [...used] } : {}) })
-      } else {
-        this.turns.push({ who: 'system', text: answer || 'No answer came back.' })
-      }
-    } catch (err) {
-      answer = `That went wrong: ${(err as Error).message}`
-      this.turns.push({ who: 'system', text: answer })
-    }
-
-    this.orchBusy = false
-    this.trimHistory()
-    this.paintOrchestrator()
-    return { text: answer, did: [...used] }
-  }
-
-  /** The tools the current orchestrator turn has called, shown as it works. */
-  private orchUsed: string[] = []
-
-  /**
-   * Answer the orchestrator's tool calls. They come from a headless agent run through
-   * resources/mcp-orch.mjs and the bridge; the tabs are here, so they are run here.
-   */
-  private wireOrchestratorTools(): void {
-    window.ember.orch.onTool(({ reqId, name, args }) => {
-      this.orchUsed.push(name === 'ask_claude' ? 'ask_session' : name)
-      if (this.orchBusy) this.orchestrator.render([...this.turns, { who: 'agent', text: '', did: [...this.orchUsed] }], true)
-      void this.runOrchTool(this.activeId ?? '', name, args)
-        .catch((err: Error) => `That failed: ${err.message}`)
-        .then((out) => window.ember.orch.toolResult(reqId, out))
-    })
-  }
-
-  /**
-   * Keep the conversation from growing without limit.
-   *
-   * Trimmed from the front and never in the middle of a tool exchange: an assistant
-   * message with `tool_calls` whose `tool` replies have been dropped is rejected by the
-   * API, so the cut has to land on a clean user turn.
-   */
-  private trimHistory(): void {
-    const MAX = 60
-    while (this.history.length > MAX) {
-      const cut = this.history.findIndex((m, i) => i > 0 && m.role === 'user')
-      if (cut < 1) break
-      this.history.splice(0, cut)
-    }
-    while (this.turns.length > 80) this.turns.shift()
-  }
-
-  /**
-   * Everything the orchestrator can do, dispatched by name.
-   *
-   * Every branch returns a *sentence*, including the failures: the agent is waiting on
-   * this string, and "there is no session in that tab" is something it can act on where
-   * an exception would leave it with nothing to recover from.
-   */
-  private async runOrchTool(tabId: string, name: string, args: Record<string, unknown>): Promise<string> {
-    const arg = (k: string): string => String(args[k] ?? '').trim()
-
-    switch (name) {
-      case 'ask_claude':
-        return this.askClaude(this.resolveTab(arg('session')) ?? tabId, arg('question'))
-
-      case 'list_sessions':
-        return this.describeCrew()
-
-      case 'send_work': {
-        const target = this.resolveTab(arg('session'))
-        if (!target) return `There is no session called "${arg('session')}". Read the list again.`
-        return this.sendWork(target, arg('task'))
-      }
-
-      case 'start_session':
-        return this.startCrewSession(arg('task'), arg('directory'), arg('name'))
-
-      case 'check_work': {
-        const target = this.resolveTab(arg('session'))
-        if (!target) return `There is no session called "${arg('session')}".`
-        return this.checkWork(target)
-      }
-
-      case 'list_projects': {
-        const projects = await window.ember.listProjects()
-        if (!projects.length) return 'No project directories found under his home folder.'
-        return projects.map((p) => p.name).join(', ')
-      }
-
-      case 'show_session': {
-        const target = this.resolveTab(arg('session'))
-        if (!target) return `There is no session called "${arg('session')}".`
-        void this.activate(target)
-        return 'It is on screen now.'
-      }
-
-      /**
-       * The one tool that destroys something.
-       *
-       * Two refusals rather than one, and both matter more here than they would at the
-       * keyboard, because the agent calling this cannot see what it is about to throw away.
-       *
-       * The last-session guard stays even though closing the last tab no longer quits
-       * Ember: an agent should not be the one that clears the desk, and the
-       * session it is talking through may be that last one.
-       */
-      case 'close_session': {
-        const target = this.resolveTab(arg('session'))
-        if (!target) return `There is no session called "${arg('session')}". Read the list again.`
-        const group = this.groups.find((g) => g.id === target)
-        if (!group) return 'That session is already gone.'
-
-        if (this.groups.length <= 1) {
-          return 'That is the only session open. Open another one first if it really has to go.'
-        }
-
-        const title = group.displayTitle
-        const busy = group.aggregate(performance.now()).state === 'working'
-        if (busy && args['force'] !== true) {
-          return `"${title}" is still working. Tell the user what it is doing and ask, then call this again with force if he says to.`
-        }
-
-        this.closeGroup(target)
-        return busy ? `Closed "${title}", interrupting what it was doing.` : `Closed "${title}".`
-      }
-
-      default:
-        return `There is no tool called ${name}.`
-    }
-  }
-
-  /**
-   * Turn whatever the orchestrator called a session into a real tab id.
-   *
-   * It has only ever seen what `describeCrew` said, and it will say "the ember one" or
-   * "two" as readily as an id. Matching on the id, the position and the title covers all
-   * three without making the model be precise.
-   */
-  private resolveTab(said: string): string | null {
-    if (!said) return null
-    const want = said.trim().toLowerCase()
-    const byId = this.groups.find((g) => g.id.toLowerCase() === want)
-    if (byId) return byId.id
-
-    const n = Number(want.replace(/[^0-9]/g, ''))
-    if (Number.isFinite(n) && n >= 1 && n <= this.groups.length) return this.groups[n - 1]!.id
-
-    const byTitle = this.groups.find((g) => g.displayTitle.toLowerCase().includes(want))
-    return byTitle?.id ?? null
-  }
-
-  /** Every session and what it is doing, as one line each for the orchestrator to read. */
-  private describeCrew(): string {
-    if (!this.groups.length) return 'There are no sessions open.'
-    const now = performance.now()
-    const lines = this.groups.map((g, i) => {
-      const a = g.aggregate(now)
-      const where = g.focused?.cwd?.split(/[/\\]/).pop() ?? ''
-      const state = a.state === 'attention' ? 'waiting for the user' : a.state
-      const detail = a.detail ? `, ${a.detail}` : ''
-      const agent = g.focused?.activity.current.agent
-      const claude = agent ? ` (${AGENTS[agent].name})` : ' (a plain shell, no agent running)'
-      return `${i + 1}. id ${g.id}, "${g.displayTitle}"${where ? ` in ${where}` : ''} — ${state}${detail}${claude}`
-    })
-    return lines.join('; ')
-  }
-
-  /**
-   * The synchronous half: ask, and wait until the turn completes.
-   *
-   * Only for things the user is actually waiting to hear. Work goes through `sendWork`.
-   */
-  private async askClaude(tabId: string, question: string): Promise<string> {
-    const group = this.groups.find((g) => g.id === tabId)
-    const session = group?.focused
-    if (!session) return 'That terminal tab is gone. Tell the user the session closed.'
-    const agent = session.activity.current.agent
-    if (agent && agent !== 'claude') {
-      this.typeTask(session.id, question)
-      return this.watchTurn(tabId, 5 * 60_000)
-    }
-
-    const result = await window.ember.converse.ask(tabId, session.id, question)
-    if (!result.ok) return result.error ?? 'Claude could not answer that.'
-    if (result.partial) {
-      return `${result.text ?? ''} — that is as far as it got; it is still working.`
-    }
-    return result.text ?? ''
-  }
-
-  /** The asynchronous half: hand it over and get straight back to the conversation. */
-  private async sendWork(tabId: string, task: string): Promise<string> {
-    const group = this.groups.find((g) => g.id === tabId)
-    const session = group?.focused
-    if (!session) return 'That terminal tab is gone.'
-    if (!task) return 'There was no task in that — say what it should do.'
-
-    const agent = session.activity.current.agent
-    if (agent && agent !== 'claude') {
-      // No transcript to follow for this CLI: type the brief in, and watch the card.
-      this.typeTask(session.id, task)
-      this.crewTasks.set(tabId, task)
-      void this.watchTurn(tabId).then((said) => this.crewDone(tabId, said))
-      return `Sent to "${group!.displayTitle}". It is on it — you will be told when it finishes, so carry on.`
-    }
-    const result = await window.ember.crew.dispatch(tabId, session.id, task)
-    if (!result.ok) return result.error ?? 'That session would not take the work.'
-    this.crewTasks.set(tabId, task)
-    return `Sent to "${group!.displayTitle}". It is on it — you will be told when it finishes, so carry on.`
   }
 
   /** A brief typed into an agent's prompt: one line, then Enter on its own, as a person would. */
@@ -2093,82 +1558,23 @@ export class App {
   }
 
   /**
-   * Wait for a session's turn to finish, read off its card: it has to be seen working
-   * first, then stop. Resolves with the tail of its screen — for CLIs Ember cannot read
-   * a transcript of, the screen is what it said.
+   * Open a tab, start the default agent in it, and give it the brief — without waiting for
+   * it. Coming up takes several seconds; the brief goes in when the agent is on screen.
    */
-  private async watchTurn(tabId: string, limitMs = 30 * 60_000): Promise<string> {
-    const t0 = performance.now()
-    let worked = false
-    let quietSince = 0
-    while (performance.now() - t0 < limitMs) {
-      await new Promise((r) => window.setTimeout(r, 1000))
-      const group = this.groups.find((g) => g.id === tabId)
-      if (!group) return ''
-      const state = group.aggregate(performance.now()).state
-      if (state === 'working') {
-        worked = true
-        quietSince = 0
-      } else if (worked || performance.now() - t0 > 20_000) {
-        // Two quiet seconds in a row, so a pause between tool calls does not count.
-        quietSince ||= performance.now()
-        if (performance.now() - quietSince > 2000) break
-      }
-    }
-    return this.screenTail(tabId)
-  }
-
-  /** The last lines on a session's screen, without the box-drawing and the prompt chrome. */
-  private screenTail(tabId: string, max = 900): string {
-    const text = this.groups.find((g) => g.id === tabId)?.focused?.visibleText() ?? ''
-    const lines = text
-      .split('\n')
-      .map((l) => l.replace(/[│╭╮╰╯─━┃┏┓┗┛]/g, '').trim())
-      .filter((l) => l && !/^[>›❯]\s*$/.test(l))
-    return lines.slice(-14).join(' ').slice(-max)
-  }
-
-  /** A session finished work it was handed: say so wherever the orchestrator is being heard. */
-  private crewDone(tabId: string, said: string): void {
-    const group = this.groups.find((g) => g.id === tabId)
-    const title = group?.displayTitle ?? tabId
-    const task = this.crewTasks.get(tabId)
-    this.crewNotes++
-    const line = `Session "${title}" (${tabId}) has finished${task ? ` "${task.slice(0, 120)}"` : ''}. Its screen ends: ${said}`
-    this.notice(line)
-    void this.remote.note(line)
-    this.flashToast(`"${title}" finished`)
-  }
-
-  /**
-   * Open a tab, start Claude in it, and give it the brief — without waiting for it.
-   *
-   * Coming up takes several seconds, which is far too long to hold the floor for. So the
-   * id comes back immediately and the rest happens behind the conversation: the task is
-   * sent when the session announces itself, and a note arrives if it never does.
-   */
-  private async startCrewSession(task: string, directory: string, name: string): Promise<string> {
-    const cwd = directory ? await this.resolveDirectory(directory) : undefined
-    const group = await this.newGroup(undefined, cwd)
+  private async startSession(task: string, cwd: string, name: string): Promise<void> {
+    const group = await this.newGroup(undefined, cwd || undefined)
     if (name) group.customTitle = name.slice(0, 40)
-
     const session = group.focused
-    if (!session) return 'The tab opened but has no shell in it.'
-
+    if (!session) return
     // Start the chosen agent, then wait for it to come up before briefing it. Typing the
     // brief at a shell prompt would run it as a command.
     const agent = AGENTS[this.config.agent.default] ?? AGENTS.claude
     window.ember.write(session.id, `${[agent.bin, ...(agent.unattended ?? [])].join(' ')}\r`)
-    if (agent.id === 'claude') void this.briefWhenReady(group.id, session.id, task)
-    else void this.briefWhenOnScreen(group.id, session.id, task)
-
-    return task
-      ? `Opening a session${cwd ? ` in ${cwd.split(/[/\\]/).pop()}` : ''} as ${group.id}. It takes a few seconds to come up; the brief goes in the moment it does, and you will be told.`
-      : `Opened ${group.id}${cwd ? ` in ${cwd.split(/[/\\]/).pop()}` : ''}. It is starting up.`
+    void this.briefWhenOnScreen(group.id, session.id, task)
   }
 
   /**
-   * A todo item becomes a Claude session: a new tab in this tab's folder, briefed with
+   * A todo item becomes an agent session: a new tab in this tab's folder, briefed with
    * the item and told how to tick it when it is done.
    */
   private async claudeFor(item: string): Promise<void> {
@@ -2180,13 +1586,12 @@ export class App {
       `Take care of this item from my todo list: "${text}". ` +
       'Work it through to done. If it needs a decision or something only I can do, stop and tell me exactly what. ' +
       `When it is done, run: todo done "${key}"`
-    await this.startCrewSession(brief, cwd, text.slice(0, 40))
-    this.flashToast(`Claude is starting on: ${text.slice(0, 70)}`)
+    await this.startSession(brief, cwd, text.slice(0, 40))
+    this.flashToast(`${(AGENTS[this.config.agent.default] ?? AGENTS.claude).name} is starting on: ${text.slice(0, 70)}`)
   }
 
-  /** Poll until the new session has a Claude in it, then hand over the brief. */
   /**
-   * The same for an agent with no transcript: it is up once its card says so (the shim
+   * Hand a new session its brief once the agent is up: its card says so (the shim
    * announces it in the title) and it has sat still for a moment — a TUI that is still
    * drawing its first screen swallows typed input.
    */
@@ -2206,9 +1611,7 @@ export class App {
       if (a.agent && a.attention === 'question') {
         if (!asked) {
           asked = true
-          const line = `"${group.displayTitle}" is asking you something before it can start — answer it and the brief goes in.`
-          this.flashToast(line)
-          this.notice(line)
+          this.flashToast(`"${group.displayTitle}" is asking you something before it can start — answer it and the brief goes in.`)
         }
         upSince = 0
         continue
@@ -2220,82 +1623,29 @@ export class App {
       }
       upSince ||= performance.now()
       if (performance.now() - upSince < 2500) continue
-      if (!task) return
-      this.typeTask(sessionId, task)
-      this.crewTasks.set(tabId, task)
-      void this.watchTurn(tabId).then((said) => this.crewDone(tabId, said))
+      if (task) this.typeTask(sessionId, task)
       return
     }
-    this.notice(`Session ${tabId} never finished starting. Ask the user to look at it.`)
+    this.flashToast('The new session never finished starting — have a look at it.')
   }
 
-  private async briefWhenReady(tabId: string, sessionId: string, task: string): Promise<void> {
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => window.setTimeout(r, 1000))
-      if (!this.groups.some((g) => g.id === tabId)) return
-      if (!(await window.ember.converse.ready(tabId))) continue
-
-      if (!task) {
-        window.ember.crew.follow(tabId)
-        this.notice(`Session ${tabId} is up and idle.`)
-        return
-      }
-      const result = await window.ember.crew.dispatch(tabId, sessionId, task)
-      this.crewTasks.set(tabId, task)
-      this.notice(
-        result.ok
-          ? `Session ${tabId} is up and has started on: ${task}`
-          : `Session ${tabId} came up but would not take the work: ${result.error}`
-      )
-      return
-    }
-    this.notice(`Session ${tabId} never finished starting. Tell the user to look at it.`)
-  }
-
-  /** Match a folder name as said against the real project directories. */
-  private async resolveDirectory(said: string): Promise<string | undefined> {
-    if (/[/\\]/.test(said)) return said
+  /**
+   * Turn what was said about a tab — its id, its position or part of its title — into a
+   * real tab id.
+   */
+  private resolveTab(said: string): string | null {
+    if (!said) return null
     const want = said.trim().toLowerCase()
-    const projects = await window.ember.listProjects()
-    const hit =
-      projects.find((p) => p.name.toLowerCase() === want) ??
-      projects.find((p) => p.name.toLowerCase().includes(want))
-    return hit?.path
+    const byId = this.groups.find((g) => g.id.toLowerCase() === want)
+    if (byId) return byId.id
+
+    const n = Number(want.replace(/[^0-9]/g, ''))
+    if (Number.isFinite(n) && n >= 1 && n <= this.groups.length) return this.groups[n - 1]!.id
+
+    const byTitle = this.groups.find((g) => g.displayTitle.toLowerCase().includes(want))
+    return byTitle?.id ?? null
   }
 
-  private async checkWork(tabId: string): Promise<string> {
-    const group = this.groups.find((g) => g.id === tabId)
-    const report = await window.ember.crew.report(tabId)
-    const title = group?.displayTitle ?? tabId
-    if (!report) {
-      const a = group ? group.aggregate(performance.now()) : null
-      if (!a) return `Nothing known about ${tabId}.`
-      const task = this.crewTasks.get(tabId)
-      // An agent Ember reads off the screen rather than from a transcript.
-      if (task) return `"${title}" is ${a.state}. Task was: ${task}. Its screen ends: ${this.screenTail(tabId, 600)}`
-      return `Nothing has been handed to "${title}". It is ${a.state}.`
-    }
-    const how = report.finished ? 'has finished' : `has been going for ${report.forMinutes} minutes`
-    return `"${title}" ${how}. Task was: ${report.task}. It said: ${report.said || 'nothing yet'}`
-  }
-
-  /** What each tab was last asked to do, so a report can name the work. */
-  private readonly crewTasks = new Map<string, string>()
-
-  /** Hand-offs that have reported finishing. Counted whether or not a call heard them. */
-  private crewNotes = 0
-
-
-  private syncOrchChrome(): void {
-    this.orchestrator.setAgent(`via ${(AGENTS[this.config.agent.default] ?? AGENTS.claude).name}`)
-    this.sidebar.setOrchestrator({
-      available: !!this.activeGroup,
-      open: this.orchestrator.isOpen,
-      thinking: this.orchBusy,
-    })
-  }
-
-  /** Show or hide the active tab's panel by hand. */
   /**
    * Change the width of the left column.
    *
@@ -2372,7 +1722,6 @@ export class App {
     if (!group) return
     group.ensurePanel(this.panelHooks(group)).toggle()
     this.startPaneMotion()
-    this.syncOrchChrome()
   }
 
   /** Arm "point at something on the panel and talk about it". */
@@ -2599,7 +1948,7 @@ export class App {
     // were sitting in front of went on claiming it needed you indefinitely.
     if (document.hasFocus()) this.activeGroup?.acknowledge()
 
-    // Every tab is a card — sessions, and the todo list, notes, map and council as tabs
+    // Every tab is a card — sessions, and the todo list and notes as tabs
     // of their own — so all of them are switched between the same way.
     const models: CardModel[] = this.groups.map((g) => {
       const activity = g.aggregate(now)
@@ -2611,16 +1960,12 @@ export class App {
         subtitle: g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
-        accent: g.isCouncil
-          ? this.config.theme.magenta
-          : g.isTodo
+        accent: g.isTodo
           ? this.config.theme.cyan
-          : g.isMap
-            ? this.config.theme.green
           : g.isNote
-              ? this.config.theme.yellow
-              : (focused?.profile.accent ?? this.config.theme.cursor),
-        kind: g.isTodo ? 'todo' : g.isMap ? 'map' : g.isNote ? 'note' : 'shell',
+            ? this.config.theme.yellow
+            : (focused?.profile.accent ?? this.config.theme.cursor),
+        kind: g.isTodo ? 'todo' : g.isNote ? 'note' : 'shell',
         activity,
         paneCount: g.panes.length,
         reaction: this.reactionFor(g, now),
@@ -2636,7 +1981,6 @@ export class App {
     // Narration is only audible for the tab on screen, so the speech layer has to know
     // which that is — checked on the activity tick rather than only on switch, so it
     // cannot drift out of step with what is actually being shown.
-    this.syncOrchChrome()
 
     this.updateFocusRing()
 
@@ -2751,7 +2095,8 @@ export class App {
   private commandTable(): CommandSpec[] {
     return [
       ...this.contextRows(),
-      { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'loom', 'canvas'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
+      { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'canvas'], run: (a) => void this.newAgentSession(a.join(' ') || undefined) },
+      { id: 'terminal', group: 'Session', title: 'New terminal', cli: 'terminal [dir]', aliases: ['shell'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
       {
         id: 'project',
         group: 'Session',
@@ -2878,19 +2223,6 @@ export class App {
       { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.goPlace('notes') },
       { id: 'note-new', group: 'Notes', title: 'New note', cli: 'note [text]', run: (a) => void this.openNotesIn(this.activeGroup, 'new', a.join(' ') || undefined) },
       { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.goPlace('todo') },
-      { id: 'map', group: 'Map', title: 'Architecture map of a project', hint: 'Ctrl+Shift+G', cli: 'map [project]', aliases: ['arch'], run: (a) => this.openMapIn(this.placeGroup('map'), a.join(' ') || undefined) },
-      {
-        id: 'todo-check',
-        group: 'Todo',
-        title: 'Check todos',
-        hint: 'mail, Slack, Jira, GitHub',
-        cli: 'check',
-        aliases: ['tc'],
-        run: async () => {
-          await this.openTodoIn(this.activeGroup)
-          void this.activeGroup?.todo?.checkTodos()
-        },
-      },
       { id: 'keys', group: 'View', title: 'Keyboard shortcuts', hint: 'F1', cli: 'keys', aliases: ['h'], run: () => this.cheatsheet.toggle() },
       {
         id: 'panel',
@@ -2924,33 +2256,6 @@ export class App {
         run: () => {
           if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
           void this.pairSheet.show()
-        },
-      },
-      {
-        id: 'council-ask',
-        group: 'Agents',
-        title: 'Ask the council about this turn',
-        cli: 'council-ask',
-        run: () => void this.askCouncil(),
-      },
-      {
-        id: 'council',
-        group: 'Agents',
-        title: 'Council — have your agents debate a question',
-        cli: 'council',
-        run: () => void this.openCouncilTab(),
-      },
-      {
-        id: 'orchestrator',
-        group: 'Orchestrator',
-        title: this.orchestrator.isOpen ? 'Hand the orchestrator something, or close it' : 'Hand the orchestrator something, or open it',
-        hint: 'Ctrl+Shift+M',
-        cli: 'orch [text]',
-        aliases: ['o'],
-        run: async (a) => {
-          if (!a.length) return this.toggleOrchestrator()
-          const r = await this.sendToOrchestrator(a.join(' '))
-          return r.text
         },
       },
       { id: 'zen', group: 'View', title: 'Zen mode', hint: 'Ctrl+Shift+Enter', cli: 'zen', run: () => this.toggleZen() },
@@ -3036,15 +2341,6 @@ export class App {
         { id: 'note-folder', group: 'Note', title: 'Show in the folder', cli: 'folder', run: () => note.reveal() },
       ]
     }
-    const map = g?.map
-    if (map) {
-      return [
-        { id: 'map-back', group: 'Map', title: 'Back', hint: 'Esc', cli: 'back', aliases: ['b'], run: () => map.leave() },
-        { id: 'map-open', group: 'Map', title: 'Open a project map', cli: 'open <project>', aliases: ['o'], run: (a) => map.openNamed(a.join(' ')) },
-        { id: 'map-new', group: 'Map', title: 'Set up a new project', cli: 'new', run: () => map.showForm(null) },
-        { id: 'map-fit', group: 'Map', title: 'Fit the whole map', hint: 'F', cli: 'fit', run: () => map.fit(true) },
-      ]
-    }
     const todo = g?.todo
     if (todo) {
       return [
@@ -3056,7 +2352,6 @@ export class App {
         { id: 'todo-claude', group: 'Todo', title: 'Hand an item to a new Claude session', cli: 'claude <words>', aliases: ['cl'], run: (a) => todo.handOff(a.join(' ')) },
         { id: 'todo-dismiss', group: 'Todo', title: 'Take an item off the list without ticking it', cli: 'dismiss <words>', aliases: ['x', 'rm'], run: (a) => todo.dismiss(a.join(' ')) },
         { id: 'todo-open', group: 'Todo', title: 'Open where an item came from', cli: 'open <words>', aliases: ['o'], run: (a) => todo.openSource(a.join(' ')) },
-        { id: 'todo-sources', group: 'Todo', title: 'Where Check todos looks', cli: 'sources', run: () => void this.settings.show(this.config, 'Todo') },
       ]
     }
     return []
@@ -3325,11 +2620,6 @@ export class App {
           this.toggleTodo()
           return
         }
-        if (ctrl && e.shiftKey && e.code === 'KeyG') {
-          e.preventDefault()
-          this.toggleMap()
-          return
-        }
         if (this.settings.isOpen || this.cheatsheet.isOpen) {
           if (e.code === 'Escape') {
             // An open font menu is the innermost surface, so it eats the first
@@ -3358,7 +2648,7 @@ export class App {
 
         if (ctrl && e.shiftKey && e.code === 'KeyT') {
           e.preventDefault()
-          void this.newGroup()
+          void this.newAgentSession()
           return
         }
         // Ctrl+Shift+L was "new Loom session"; every session is one now, so it opens one
@@ -3386,11 +2676,6 @@ export class App {
         if (ctrl && e.shiftKey && e.code === 'KeyA') {
           e.preventDefault()
           this.toggleBroadcast()
-          return
-        }
-        if (ctrl && e.shiftKey && e.code === 'KeyM') {
-          e.preventDefault()
-          this.toggleOrchestrator()
           return
         }
         if (ctrl && e.shiftKey && e.code === 'KeyE') {
