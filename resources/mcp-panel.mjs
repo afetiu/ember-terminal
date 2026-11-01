@@ -132,7 +132,7 @@ const CANVAS_INSTRUCTIONS = [
   // Every word here is in context on every call of every session, so it is short, and it
   // steers to what is cheap: what renders by itself costs nothing extra, an html page is
   // written once and then re-read on every later call while it stays in the conversation.
-  'This session runs in an Ember Loom tab: your replies are drawn on a canvas, not read as terminal text.\n',
+  'This session runs in an Ember canvas tab: your replies are drawn on a canvas, not read as terminal text.\n',
   'Free (no tool): markdown in your reply renders rich; a ```mermaid fence becomes a live diagram; a markdown ',
   'table becomes a table; `![caption](C:\\abs\\path.png)` shows an image; `[label](ember:text)` is a button ',
   'that sends text. Prefer these — they are the cheapest way to show something.\n',
@@ -160,6 +160,41 @@ const CANVAS_INSTRUCTIONS = [
   'Never described afterwards. open_url + annotate to point at a live page; show_media for images and video.\n',
   "The user's notes and todo list: the notes and todo tools (show them on the canvas, add, tick). When a turn leaves something only they can do, add a todo once; when you finish something on their list, tick it.",
 ].join('')
+
+/**
+ * Ember Brain: the memory and skills every agent shares (src/main/brain.ts). Offered on
+ * every surface, so Codex, Claude and the rest recall and save into the same place.
+ */
+const BRAIN_TOOLS = [
+  {
+    name: 'recall',
+    description:
+      "The user's shared long-term memory (shared with their other agents). Call it at the start of a task with the topic; " +
+      'with no query it returns the index.',
+    inputSchema: { type: 'object', properties: { query: { type: 'string' } } },
+  },
+  {
+    name: 'remember',
+    description:
+      'Save one durable fact to the shared memory: about the user, a project, a decision or a preference. ' +
+      'name = short-kebab-slug (same name replaces), description = one line, body = the fact and why it matters.',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string' }, description: { type: 'string' }, body: { type: 'string' }, type: { type: 'string', enum: ['user', 'feedback', 'project', 'reference'] } },
+      required: ['name', 'description', 'body'],
+    },
+  },
+  {
+    name: 'forget',
+    description: 'Remove a fact from the shared memory by name, when it turned out wrong or no longer holds.',
+    inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+  },
+  {
+    name: 'skills',
+    description: "The user's shared skills (step-by-step playbooks). No name: the list. With a name: that skill's full text, to follow.",
+    inputSchema: { type: 'object', properties: { name: { type: 'string' } } },
+  },
+]
 
 const TOOLS = [
   {
@@ -623,7 +658,7 @@ async function call(name, args) {
       return CANVAS ? 'The pieces on the canvas are folded away.' : 'The panel is empty and collapsed.'
     }
     case 'show_media': {
-      if (!CANVAS) throw new Error('show_media is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('show_media is only available in an Ember canvas tab')
       const items = Array.isArray(args.items) ? args.items : []
       if (!items.length) throw new Error('items is required')
       const r = await post('/canvas/media', { title: args.title ?? '', items })
@@ -631,7 +666,7 @@ async function call(name, args) {
       return `Showing ${r.shown} item${r.shown === 1 ? '' : 's'} on the canvas. The user can see them — do not describe them.${errs}`
     }
     case 'show_file': {
-      if (!CANVAS) throw new Error('show_file is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('show_file is only available in an Ember canvas tab')
       const path = String(args.path ?? '')
       if (/\.(png|jpe?g|gif|webp|bmp|svg|mp4|webm|mov|m4v|mp3|wav|ogg|m4a)$/i.test(path)) {
         const r = await post('/canvas/media', { title: args.title ?? '', items: [{ path }] })
@@ -642,7 +677,7 @@ async function call(name, args) {
       return `Shown as "${r.title}"; it updates when the file is saved.`
     }
     case 'show_view': {
-      if (!CANVAS) throw new Error('show_view is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('show_view is only available in an Ember canvas tab')
       await post('/panel', {
         title: String(args.title ?? 'View'),
         format: 'view',
@@ -651,19 +686,27 @@ async function call(name, args) {
       return `Shown "${args.title}".`
     }
     case 'define_view': {
-      if (!CANVAS) throw new Error('define_view is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('define_view is only available in an Ember canvas tab')
       const r = await post('/canvas/view', { name: String(args.name ?? ''), html: String(args.html ?? '') })
       return `Saved view "${r.name}". Use show_view with view "${r.name}" and data.`
     }
+    case 'recall':
+    case 'remember':
+    case 'forget':
+    case 'skills': {
+      const r = await post(`/brain/${name}`, args ?? {})
+      if (!r.ok) throw new Error(r.error || 'the shared memory did not answer')
+      return r.text
+    }
     case 'notes': {
-      if (!CANVAS) throw new Error('notes is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('notes is only available in an Ember canvas tab')
       const r = await post('/canvas/notes', { op: String(args.op ?? ''), name: String(args.name ?? ''), text: String(args.text ?? '') })
       if (args.op === 'list') return (r.notes ?? []).join('\n') || 'No notes.'
       if (args.op === 'show') return `Showing "${r.title}" on the canvas, live.`
       return r.created ? `Created the note "${r.title}".` : `Added to "${r.title}".`
     }
     case 'todo': {
-      if (!CANVAS) throw new Error('todo is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('todo is only available in an Ember canvas tab')
       const op = String(args.op ?? '')
       if (op === 'show') {
         await post('/canvas/notes', { op: 'show', name: 'todo' })
@@ -697,13 +740,13 @@ async function call(name, args) {
       return `Done in ${r.ms}ms.${r.output ? `\n${String(r.output).slice(0, 2000)}` : ''}`
     }
     case 'edit_panel': {
-      if (!CANVAS) throw new Error('edit_panel is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('edit_panel is only available in an Ember canvas tab')
       const r = await post('/panel/edit', { title: String(args.title ?? ''), edits: Array.isArray(args.edits) ? args.edits : [] })
       if (r.render && !r.render.ok) return `Updated "${args.title}", but its diagram still does not render: ${r.render.error}. Fix it with another edit_panel.`
       return `Updated "${args.title}" in place (${r.edits} edit${r.edits === 1 ? '' : 's'}).`
     }
     case 'on_screen': {
-      if (!CANVAS) throw new Error('on_screen is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('on_screen is only available in an Ember canvas tab')
       const r = await post('/canvas/screen', {})
       const items = Array.isArray(r.items) ? r.items : []
       if (!items.length) return 'Nothing is placed on the canvas right now.'
@@ -716,14 +759,14 @@ async function call(name, args) {
         .join('\n\n') + '\n\nTo change one, call show_panel with its exact title and format.'
     }
     case 'show_steps': {
-      if (!CANVAS) throw new Error('show_steps is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('show_steps is only available in an Ember canvas tab')
       const steps = Array.isArray(args.steps) ? args.steps : []
       await post('/canvas/steps', { title: args.title ?? '', steps })
       const done = steps.filter((x) => x && x.status === 'done').length
       return steps.length ? `The steps card shows ${done}/${steps.length} done.` : 'The steps card is gone.'
     }
     case 'annotate': {
-      if (!CANVAS) throw new Error('annotate is only available in an Ember Loom tab')
+      if (!CANVAS) throw new Error('annotate is only available in an Ember canvas tab')
       if (args.url && !/^https?:\/\//i.test(String(args.url))) throw new Error('url must be http or https')
       const r = await post('/canvas/annotate', {
         marks: Array.isArray(args.marks) ? args.marks : [],
@@ -785,7 +828,7 @@ async function handle(msg) {
     case 'ping':
       return reply(id, {})
     case 'tools/list':
-      return reply(id, { tools: CANVAS ? CANVAS_TOOLS : TOOLS })
+      return reply(id, { tools: [...(CANVAS ? CANVAS_TOOLS : TOOLS), ...BRAIN_TOOLS] })
     case 'tools/call':
       try {
         const text = await call(params?.name, params?.arguments ?? {})

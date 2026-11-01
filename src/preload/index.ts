@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { homedir } from 'node:os'
-import type {
+import type { CouncilEvent,
   AskResult,
   CrewNote,
   NoteMeta,
@@ -83,6 +83,8 @@ const bridge: EmberBridge = {
     annotated: (reqId: string, result: CanvasAnnotateResult) => ipcRenderer.send('ember:canvas:annotated', reqId, result),
     onSteps: (cb) => on<CanvasSteps>('ember:canvas:steps', cb),
     onCost: (cb) => on<EmberCost>('ember:canvas:cost', cb),
+    tabAgent: (tabId, agent, cwd, since) => ipcRenderer.send('ember:canvas:tabAgent', tabId, agent, cwd, since),
+    handoff: (text) => ipcRenderer.invoke('ember:canvas:handoff', text) as Promise<string>,
     onAgent: (cb) => on<{ tabId: string; agentId: string; action: string; at: number }>('ember:canvas:agent', cb),
     screen: (tabId, items) => ipcRenderer.send('ember:canvas:screen', tabId, items),
   },
@@ -147,6 +149,15 @@ const bridge: EmberBridge = {
   },
   // This machine's place in the Ember account. The key crosses into the renderer because
   // the link lives there, next to the orchestrator it exists to reach.
+  brain: {
+    status: () => ipcRenderer.invoke('ember:brain:status'),
+    sync: () => ipcRenderer.invoke('ember:brain:sync'),
+  },
+  council: {
+    start: (req) => ipcRenderer.send('ember:council:start', req),
+    stop: (id) => ipcRenderer.send('ember:council:stop', id),
+    onEvent: (cb) => on<CouncilEvent>('ember:council:event', cb),
+  },
   remote: {
     account: () => ipcRenderer.invoke('ember:remote:account') as Promise<Account | null>,
     create: () => ipcRenderer.invoke('ember:remote:create') as Promise<Account>,

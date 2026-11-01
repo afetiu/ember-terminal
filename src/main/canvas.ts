@@ -1,12 +1,13 @@
 import { ipcMain, type WebContents } from 'electron'
 import { existsSync, readdirSync, statSync, createReadStream } from 'node:fs'
-import { open } from 'node:fs/promises'
+import { open, readFile } from 'node:fs/promises'
 import { extname, basename, isAbsolute, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { CanvasAnnotateResult, CanvasFeed, ScreenItem } from '../shared/types.js'
 import { transcriptPath } from './transcript.js'
 import { CostMeter } from './emberCost.js'
+import { AGENT_LOGS, type AgentLog } from './providers/logs.js'
 
 /**
  * The main-process half of a Loom tab: the session's transcript as a feed, local media
@@ -242,6 +243,8 @@ class Tail {
   private meter = new CostMeter()
   /** The session's subagents' own logs, and how far each has been read. */
   private agentOffsets = new Map<string, number>()
+  /** Another agent's log, when the tab runs one with an adapter (providers/logs.ts). */
+  private log: { agent: string; since: number; adapter: AgentLog; state: Record<string, unknown>; locatedAt: number; stamp: string } | null = null
 
   constructor(
     private readonly tabId: string,
@@ -321,7 +324,18 @@ class Tail {
     return this.reading
   }
 
+  /** The log this tail is on, so other tabs' tails keep off it. */
+  get following(): string {
+    return this.file
+  }
+
   private async read(): Promise<void> {
+    // A tab that says it runs another agent is read through that agent's log, even if a
+    // Claude session once bound to it: the binding outlives `claude`, the agent mark does not.
+    const agent = tabAgents.get(this.tabId)
+    const adapter = agent && agent.agent !== 'claude' ? AGENT_LOGS[agent.agent] : undefined
+    if (agent && adapter) return this.readLog(agent, adapter)
+    this.log = null
     const file = transcriptPath(this.tabId)
     if (!file) return
     if (file !== this.file) {
@@ -376,7 +390,135 @@ class Tail {
     if (costed && !this.to.isDestroyed()) this.to.send('ember:canvas:cost', this.meter.summary(this.tabId))
     await this.readAgents(file)
   }
+
+  /**
+   * Follow a non-Claude agent's own session log. Nothing binds a tab to its file the way
+   * the panel server binds Claude's, so it is looked for — the newest log for the tab's
+   * folder written since the agent started — every couple of seconds until found, and
+   * after that in case a newer session starts in the same tab (`/new`, the agent run
+   * again). Lines go through the adapter into Claude's shape and on the same way.
+   *
+   * The cost meter and subagent steps stay Claude's: they read Claude's own fields.
+   */
+  private async readLog(agent: TabAgent, adapter: AgentLog): Promise<void> {
+    if (!this.log || this.log.agent !== agent.agent || this.log.since !== agent.since || this.log.adapter !== adapter) {
+      this.log = { agent: agent.agent, since: agent.since, adapter, state: {}, locatedAt: 0, stamp: '' }
+    }
+    const log = this.log
+    // Looked for even before the folder is known: an agent started with the shell runs
+    // before any prompt has said where it is, and the adapter then takes the newest session.
+    if (Date.now() - log.locatedAt >= RELOCATE_MS) {
+      log.locatedAt = Date.now()
+      const taken = new Set<string>()
+      for (const [id, t] of tails) if (id !== this.tabId && t.following) taken.add(t.following)
+      const found = adapter.locate(agent.cwd, agent.since, taken)
+      // Only a session that started after the one on screen replaces it; one that merely
+      // wrote more recently is another tab's, or an old one resumed elsewhere.
+      if (found && found !== this.file && (!this.isMine() || born(found) >= born(this.file))) {
+        const first = !this.file
+        this.file = found
+        this.offset = 0
+        this.carry = ''
+        log.state = {}
+        log.stamp = ''
+        this.emit({ tabId: this.tabId, kind: 'switch', file: found, first })
+      }
+    }
+    if (!this.isMine()) return
+    const file = this.file
+    let size = 0
+    let mtime = 0
+    try {
+      const st = statSync(file)
+      size = st.size
+      mtime = st.mtimeMs
+    } catch {
+      return
+    }
+    const lines: Json[] = []
+    const take = (records: Json[]): void => {
+      for (const raw of adapter.convert(records, log.state)) {
+        const slim = slimLine(raw)
+        if (slim) lines.push(slim)
+      }
+    }
+    if (adapter.kind === 'doc') {
+      // Rewritten whole: read all of it again and send everything; Feed drops uuids it has.
+      const stamp = `${size}:${mtime}`
+      if (stamp === log.stamp) return
+      let doc: unknown
+      try {
+        doc = JSON.parse(await readFile(file, 'utf8'))
+      } catch {
+        return // caught mid-write; the next poll sees it whole
+      }
+      log.stamp = stamp
+      log.state = {}
+      if (doc && typeof doc === 'object' && !Array.isArray(doc)) take([doc as Json])
+    } else {
+      if (size < this.offset) {
+        // Truncated or replaced: start over.
+        this.offset = 0
+        this.carry = ''
+        log.state = {}
+      }
+      if (size === this.offset) return
+      const handle = await open(file, 'r')
+      try {
+        const length = size - this.offset
+        const buf = Buffer.alloc(length)
+        await handle.read(buf, 0, length, this.offset)
+        this.offset = size
+        this.carry += buf.toString('utf8')
+      } finally {
+        await handle.close()
+      }
+      const records: Json[] = []
+      let cut = this.carry.indexOf('\n')
+      while (cut !== -1) {
+        const raw = this.carry.slice(0, cut).trim()
+        this.carry = this.carry.slice(cut + 1)
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as unknown
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) records.push(parsed as Json)
+          } catch {
+            /* half a line; the rest arrives with the next append */
+          }
+        }
+        cut = this.carry.indexOf('\n')
+      }
+      if (records.length) take(records)
+    }
+    if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
+  }
+
+  /** Whether the file on screen is the agent's log (and not a Claude transcript from before). */
+  private isMine(): boolean {
+    return !!this.log && !!this.file && this.file !== transcriptPath(this.tabId)
+  }
 }
+
+/** How often a tab following another agent looks for its log, or a newer one. */
+const RELOCATE_MS = 2000
+
+/** When a file was created: a newer session's log is a newer file. */
+function born(path: string): number {
+  try {
+    const st = statSync(path)
+    return st.birthtimeMs || st.ctimeMs
+  } catch {
+    return 0
+  }
+}
+
+/** Which agent each Loom tab runs, as the renderer last said (from the shim's `ember-agent=` mark). */
+interface TabAgent {
+  agent: string
+  cwd: string
+  since: number
+}
+const tabAgents = new Map<string, TabAgent>()
 
 /** A step of a subagent, said short: the tool and what it was given, or the first words it said. */
 function agentStep(line: Json): string {
@@ -417,7 +559,7 @@ export function requestAnnotate(
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       annotateWaiters.delete(reqId)
-      resolve({ ok: false, error: 'the canvas did not answer — is this a Loom tab with a page open?' })
+      resolve({ ok: false, error: 'the canvas did not answer — is this a canvas tab with a page open?' })
     }, 8000)
     annotateWaiters.set(reqId, (r) => {
       clearTimeout(timer)
@@ -439,7 +581,7 @@ export function requestCanvasPoint(
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pointWaiters.delete(reqId)
-      resolve({ ok: false, error: 'the canvas did not answer — is this a Loom tab with that object on it?' })
+      resolve({ ok: false, error: 'the canvas did not answer — is this a canvas tab with that object on it?' })
     }, 6000)
     pointWaiters.set(reqId, (r) => {
       clearTimeout(timer)
@@ -469,6 +611,20 @@ export function screenOf(tabId: string): ScreenItem[] {
 }
 
 export function registerCanvas(deps: CanvasDeps): void {
+  ipcMain.on('ember:canvas:tabAgent', (_e, tabId: unknown, agent: unknown, cwd: unknown, since: unknown) => {
+    if (typeof tabId !== 'string' || !tabId) return
+    if (typeof agent !== 'string' || !agent) {
+      // The agent has gone: stop following its log. A Claude binding, if any, takes over.
+      tabAgents.delete(tabId)
+      return
+    }
+    tabAgents.set(tabId, {
+      agent: agent.slice(0, 40),
+      cwd: typeof cwd === 'string' ? cwd : '',
+      since: typeof since === 'number' && Number.isFinite(since) ? since : Date.now(),
+    })
+    void tails.get(tabId)?.drain()
+  })
   ipcMain.on('ember:canvas:screen', (_e, tabId: string, items: ScreenItem[]) => {
     if (typeof tabId === 'string' && Array.isArray(items)) screens.set(tabId, items.slice(0, 40))
   })

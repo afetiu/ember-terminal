@@ -11,7 +11,7 @@
  * onboarding, status detection), so it holds data only.
  */
 
-export type AgentId = 'claude' | 'codex' | 'gemini' | 'cursor' | 'opencode' | 'copilot'
+export type AgentId = 'claude' | 'codex' | 'gemini' | 'cursor' | 'opencode' | 'copilot' | 'qwen' | 'amp' | 'aider' | 'crush'
 
 /** How a headless run's stdout is read. */
 export type AgentOutput =
@@ -54,6 +54,8 @@ export interface AgentSpec {
   blurb: string
   /** Where to read about it and sign in. */
   homepage: string
+  /** How to get it signed in, said plainly, for Settings and onboarding. */
+  setup?: string
   install: AgentInstall
   /** First run after install: how the person signs in (a command, or just the bin). */
   login: string
@@ -86,6 +88,7 @@ export interface AgentSpec {
 export const AGENTS: Record<AgentId, AgentSpec> = {
   claude: {
     id: 'claude',
+    setup: 'Run claude once in a tab and sign in with your Claude account (Pro, Max, Team or Console).',
     name: 'Claude Code',
     vendor: 'Anthropic',
     bin: 'claude',
@@ -103,6 +106,7 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
   },
   codex: {
     id: 'codex',
+    setup: 'Sign in runs codex login: choose Sign in with ChatGPT to use your ChatGPT plan.',
     name: 'Codex CLI',
     vendor: 'OpenAI',
     bin: 'codex',
@@ -121,6 +125,7 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
   },
   gemini: {
     id: 'gemini',
+    setup: 'Run gemini once and choose Login with Google — the free tier needs nothing else.',
     name: 'Gemini CLI',
     vendor: 'Google',
     bin: 'gemini',
@@ -143,6 +148,7 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
   },
   cursor: {
     id: 'cursor',
+    setup: 'Sign in runs cursor-agent login with your Cursor account.',
     name: 'Cursor Agent',
     vendor: 'Cursor',
     bin: 'cursor-agent',
@@ -162,10 +168,11 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
   },
   opencode: {
     id: 'opencode',
+    setup: 'Sign in runs opencode auth login: pick a provider. For OpenRouter, choose it and paste your OpenRouter key — the key stays in OpenCode, not Ember.',
     name: 'OpenCode',
     vendor: 'SST',
     bin: 'opencode',
-    blurb: 'Open-source, provider-agnostic agent. Sign in with any provider it supports, or start on its free models.',
+    blurb: 'Open-source, provider-agnostic agent. Sign in with any provider it supports — OpenRouter included, which reaches most models with one key — or start on its free models.',
     homepage: 'https://opencode.ai',
     install: { command: 'npm install -g opencode-ai', needs: 'Node.js 18+' },
     login: 'opencode auth login',
@@ -181,6 +188,7 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
   },
   copilot: {
     id: 'copilot',
+    setup: 'Sign in runs copilot login with the GitHub account that has your Copilot subscription.',
     name: 'Copilot CLI',
     vendor: 'GitHub',
     bin: 'copilot',
@@ -197,6 +205,78 @@ export const AGENTS: Record<AgentId, AgentSpec> = {
     output: 'text',
     panel: 'copilot-flag',
     title: /(^|\s)(github\s+)?copilot(\s+cli)?(\s|$)/i,
+  },
+  qwen: {
+    id: 'qwen',
+    setup: 'Run qwen once and sign in with Qwen OAuth — or point it at any OpenAI-compatible endpoint (OpenRouter included) with its own settings.',
+    name: 'Qwen Code',
+    vendor: 'Alibaba',
+    bin: 'qwen',
+    blurb: 'Qwen’s coding agent, built on Gemini CLI. Sign in with a Qwen account, or point it at any OpenAI-compatible endpoint.',
+    homepage: 'https://github.com/QwenLM/qwen-code',
+    install: { command: 'npm install -g @qwen-code/qwen-code', needs: 'Node.js 20+' },
+    login: 'qwen',
+    headless: [],
+    readOnly: ['--approval-mode', 'default'],
+    promptArg: true,
+    promptFlag: '-p',
+    output: 'text',
+    panel: 'none',
+    title: /(^|\s)qwen(\s|$)/i,
+  },
+  amp: {
+    id: 'amp',
+    setup: 'Sign in runs amp login with your Amp account.',
+    name: 'Amp',
+    vendor: 'Sourcegraph',
+    bin: 'amp',
+    blurb: 'Sourcegraph’s agent, on your Amp account.',
+    homepage: 'https://ampcode.com',
+    install: { command: 'npm install -g @sourcegraph/amp', needs: 'Node.js 20+' },
+    login: 'amp login',
+    // Execute mode: one prompt, the answer on stdout, then exit.
+    headless: [],
+    readOnly: [],
+    promptArg: true,
+    promptFlag: '-x',
+    output: 'text',
+    panel: 'none',
+    title: /(^|\s)amp(\s|$)/i,
+  },
+  aider: {
+    id: 'aider',
+    setup: 'Aider reads API keys from your environment: set OPENROUTER_API_KEY (or ANTHROPIC_API_KEY / OPENAI_API_KEY) for your user, then pick a model with --model, e.g. openrouter/anthropic/claude-sonnet-5.',
+    name: 'Aider',
+    vendor: 'Aider',
+    bin: 'aider',
+    blurb: 'The open-source pair programmer. Works with most model providers, OpenRouter included, through their own API keys.',
+    homepage: 'https://aider.chat',
+    install: { command: 'python -m pip install aider-install && aider-install', needs: 'Python 3.10+' },
+    login: 'aider',
+    headless: ['--yes-always', '--no-auto-commits', '--no-pretty', '--no-stream'],
+    readOnly: ['--dry-run'],
+    promptArg: true,
+    promptFlag: '--message',
+    output: 'text',
+    panel: 'none',
+    title: /(^|\s)aider(\s|$)/i,
+  },
+  crush: {
+    id: 'crush',
+    setup: 'Run crush once and choose a provider; for OpenRouter paste your key when it asks. The key stays in Crush.',
+    name: 'Crush',
+    vendor: 'Charm',
+    bin: 'crush',
+    blurb: 'Charm’s terminal agent. Bring any provider: OpenAI, Anthropic, Gemini, OpenRouter and more.',
+    homepage: 'https://github.com/charmbracelet/crush',
+    install: { command: 'npm install -g @charmland/crush', needs: 'Node.js 18+' },
+    login: 'crush',
+    headless: ['run'],
+    readOnly: [],
+    promptArg: true,
+    output: 'text',
+    panel: 'none',
+    title: /(^|\s)crush(\s|$)/i,
   },
 }
 

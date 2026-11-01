@@ -86,6 +86,10 @@ export class Session implements ActivitySource {
   rawTitle = ''
   /** The agent CLI the shell said it started, until the prompt returns. */
   announcedAgent: string | null = null
+  /** An agent the shell starts as soon as it is up (an agent tab opened from +). */
+  startAgent: string | null = null
+  /** How many prompts the shell has drawn: anything typed for it waits for the first. */
+  prompts = 0
   lastOutputAt = 0
   /** When the person last typed, so an echo is never held back by the frame budget. */
   private lastInputAt = 0
@@ -311,7 +315,10 @@ export class Session implements ActivitySource {
     })
     this.term.parser.registerOscHandler(9, (data) => {
       const m = /^9;(.+)$/.exec(data)
-      if (m?.[1]) this.cwd = m[1].replace(/^"|"$/g, '')
+      if (m?.[1]) {
+        this.cwd = m[1].replace(/^"|"$/g, '')
+        this.prompts++
+      }
       return false
     })
 
@@ -385,6 +392,7 @@ export class Session implements ActivitySource {
       ...(this.initialCwd ? { cwd: this.initialCwd } : {}),
       ...(this.tabId ? { tabId: this.tabId } : {}),
       ...(this.surface ? { surface: this.surface } : {}),
+      ...(this.startAgent ? { agent: this.startAgent } : {}),
     })
     if (this.initialCwd) this.cwd = this.initialCwd
     this.pid = result.pid

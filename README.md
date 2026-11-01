@@ -2,7 +2,7 @@
 
 <h1 align="center">Ember</h1>
 
-<p align="center">A Windows terminal for running your coding agents side by side. Bring your CLI, no API keys.</p>
+<p align="center">A Windows terminal for running your coding agents side by side. Bring the CLI you already use.</p>
 
 ![Four Claude Code sessions in Ember's sidebar. One stops on a permission prompt and its card asks for you; the prompt is answered and the session goes back to work.](docs/media/ember-demo.gif)
 
@@ -81,7 +81,7 @@ download, the team roles and the privacy policy.
   carries real state that doesn't fit in a 200px tab.
 - **Every card knows what it's doing** — derived live from the terminal, and said
   without words: the sprite is the status.
-- **Agent sessions get Cinder**, a small ember spirit whose flame burns high while the
+- **Agent sessions get a small ember spirit**, whose flame burns high while the
   agent works, dims to a dozing coal while it waits, flares with a raised hand when it's
   blocked on you, and waves when it just has an answer for you.
 - **Switching is a real transition** — directional slide, crossfade and a blur on the
@@ -157,7 +157,7 @@ Nothing latches. Attention is re-derived from the screen every tick, so answerin
 prompt clears it — you no longer have to visit the tab to stop it claiming you — and
 the card you are looking at is acknowledged continuously while the window has focus.
 
-The mascot, Cinder, is original art drawn from canvas primitives
+The mascot is original art drawn from canvas primitives
 (`src/renderer/src/ui/Mascot.ts`).
 
 ## Settings

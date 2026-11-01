@@ -4548,3 +4548,337 @@ body.sidebar-mini .ember-places {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---------------------------------------------------------------- the provider chip */
+
+/* Which agent a new session starts with: beside the +, which opens Loom running it. */
+.ember-provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 3px 8px 3px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ui-fill, rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.08));
+  color: var(--ui-fg, inherit);
+  font: 500 12px/1.4 var(--ui-font);
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ember-provider:hover {
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+}
+.ember-provider .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+.ember-provider .c {
+  color: var(--ui-faint);
+  font-size: 10px;
+}
+.ember-provider-menu {
+  position: fixed;
+  z-index: 4000;
+  display: grid;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-bg, #16120f) 94%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.08)),
+    0 18px 44px -14px rgba(0, 0, 0, 0.6);
+}
+.ember-provider-menu button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ui-fg, inherit);
+  font: 500 13px var(--ui-font);
+  text-align: left;
+  cursor: pointer;
+}
+.ember-provider-menu button:hover {
+  background: var(--ui-fill, rgba(255, 255, 255, 0.06));
+}
+.ember-provider-menu button.is-on .n::before {
+  content: '✓ ';
+  color: var(--c-accent);
+}
+.ember-provider-menu .v {
+  color: var(--ui-faint);
+  font-size: 11px;
+}
+.ember-provider-menu .is-more {
+  margin-top: 4px;
+  border-top: 1px solid var(--hairline, rgba(255, 255, 255, 0.08));
+  border-radius: 0 0 8px 8px;
+  color: var(--c-accent);
+}
+
+/* How to sign an agent in, under its blurb. */
+.ember-agent-setup {
+  margin-top: 4px;
+  color: var(--ui-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Agents already on this machine, said first and plainly. */
+.ember-agents-found {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 30%, transparent);
+  color: var(--ui-fg, inherit);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ember-agents-group {
+  margin: 14px 0 6px;
+  color: var(--ui-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Settings › Agent: shared knowledge. */
+.ember-brain {
+  margin-top: 18px;
+}
+.ember-brain-lead {
+  margin: 0 0 10px;
+  color: var(--ui-faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.ember-brain-on {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.ember-brain-list {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+}
+.ember-brain-list .sum {
+  color: var(--ui-faint);
+}
+.ember-brain-list .r {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ember-brain-list .ok {
+  color: var(--c-accent);
+}
+
+/* ---------------------------------------------------------------- the first run */
+
+/* Inside the app: the empty desk, setting itself up in plain view. */
+.ember-firstrun {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: color-mix(in srgb, var(--c-bg, #16120f) 72%, transparent);
+}
+.ember-firstrun[hidden] {
+  display: none;
+}
+.ember-firstrun-card {
+  width: min(520px, 100%);
+  text-align: center;
+  animation: ember-firstrun-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ember-firstrun-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.ember-firstrun-mark {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+}
+.ember-firstrun-mark.is-pulse {
+  animation: ember-firstrun-breathe 2.4s ease-in-out infinite;
+}
+@keyframes ember-firstrun-breathe {
+  50% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+}
+.ember-firstrun h1 {
+  margin: 0 0 10px;
+  color: var(--ui-fg, var(--c-fg));
+  font: 600 22px/1.3 var(--ui-font);
+  letter-spacing: -0.01em;
+}
+.ember-firstrun-lead {
+  margin: 0 auto 22px;
+  max-width: 440px;
+  color: var(--ui-faint);
+  font: 14px/1.6 var(--ui-font);
+}
+.ember-firstrun-steps {
+  display: grid;
+  gap: 12px;
+  margin: 22px auto 0;
+  padding: 0;
+  max-width: 400px;
+  list-style: none;
+  text-align: left;
+}
+.ember-firstrun-steps li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 12px;
+  align-items: center;
+  color: var(--ui-faint);
+  font: 14px/1.45 var(--ui-font);
+  transition: color 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ember-firstrun-steps li.is-run,
+.ember-firstrun-steps li.is-ok {
+  color: var(--ui-fg, var(--c-fg));
+}
+.ember-firstrun-steps li.is-skip {
+  opacity: 0.45;
+}
+.ember-firstrun-steps .i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ui-faint);
+}
+.ember-firstrun-steps .is-run .i {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-accent) 30%, transparent);
+  border-top: 1.5px solid var(--c-accent);
+  animation: ember-firstrun-spin 800ms linear infinite;
+}
+.ember-firstrun-steps .is-ok .i {
+  background: var(--c-accent);
+  box-shadow: none;
+  -webkit-mask: radial-gradient(circle, #000 64%, transparent 66%);
+}
+@keyframes ember-firstrun-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ember-firstrun-steps .n {
+  grid-column: 2;
+  color: var(--ui-faint);
+  font-size: 12.5px;
+}
+.ember-firstrun-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  color: var(--ui-faint);
+  font: 13px var(--ui-font);
+}
+.ember-firstrun-pick button {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ui-fill, rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.08));
+  color: var(--ui-fg, inherit);
+  font: 500 13px var(--ui-font);
+  cursor: pointer;
+}
+.ember-firstrun-pick button.is-on {
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+.ember-firstrun-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.ember-firstrun-btn {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ui-fill, rgba(255, 255, 255, 0.06));
+  box-shadow: inset 0 0 0 1px var(--hairline, rgba(255, 255, 255, 0.1));
+  color: var(--ui-fg, inherit);
+  font: 600 14px var(--ui-font);
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ember-firstrun-btn.is-primary {
+  background: var(--c-accent);
+  box-shadow: none;
+  color: #1a1206;
+}
+.ember-firstrun-btn:hover {
+  transform: translateY(-1px);
+}
+.ember-firstrun-foot {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 22px;
+}
+.ember-firstrun-foot button {
+  border: 0;
+  background: none;
+  color: var(--ui-faint);
+  font: 13px var(--ui-font);
+  cursor: pointer;
+}
+.ember-firstrun-foot button:hover {
+  color: var(--ui-fg, inherit);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ember-firstrun-card,
+  .ember-firstrun-mark.is-pulse,
+  .ember-firstrun-steps .is-run .i {
+    animation: none;
+  }
+}
+.ember-firstrun-also {
+  margin: 18px 0 0;
+  color: var(--ui-faint);
+  font: 13px/1.5 var(--ui-font);
+}
+.ember-firstrun-also button {
+  margin-left: 4px;
+  border: 0;
+  background: none;
+  color: var(--c-accent);
+  font: inherit;
+  cursor: pointer;
+}
+/* The provider chip says what the column is; the word "Sessions" only crowded it. */
+.ember-sidebar-head .ember-sidebar-title {
+  display: none;
+}

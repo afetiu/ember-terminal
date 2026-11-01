@@ -188,6 +188,9 @@ function attachMcp(spec: AgentSpec, m: NonNullable<RunOptions['mcp']>, dir: stri
       writeFileSync(join(ws, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: { [m.name]: server } }, null, 2), 'utf8')
       return { args: ['--approve-mcps', '--workspace', ws], env: {}, cwd: ws }
     }
+    default:
+      // No per-run way to hand these an MCP server: the run goes without the tools.
+      return { args: [], env: {} }
   }
 }
 

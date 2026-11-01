@@ -1,6 +1,6 @@
-import type { EmberConfig, FontOption, ThemeConfig } from '@shared/types'
+import type { BrainStatus, EmberConfig, FontOption, ThemeConfig } from '@shared/types'
 import { FontPicker } from './FontPicker'
-import { AgentPicker, noKeysNote } from './AgentPicker'
+import { AgentPicker } from './AgentPicker'
 
 type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | 'font' | 'preset'
 
@@ -583,8 +583,60 @@ export class Settings {
         },
       })
     }
-    wrap.append(h, noKeysNote(), this.agents.el)
+    wrap.append(h, this.agents.el, this.buildBrain())
     return wrap
+  }
+
+  /**
+   * Shared knowledge: one memory, instructions and skills for every agent, so switching
+   * agents does not mean switching what the agent knows.
+   */
+  private buildBrain(): HTMLElement {
+    const box = document.createElement('div')
+    box.className = 'ember-brain'
+    const h = document.createElement('h3')
+    h.textContent = 'Shared knowledge'
+    const lead = document.createElement('p')
+    lead.className = 'ember-brain-lead'
+    lead.textContent =
+      'Every agent works from the same memory, instructions and skills, so switching agents does not switch what it knows. Ember keeps them in its own folder and writes only a marked section into each agent’s file, after a backup.'
+    const on = document.createElement('label')
+    on.className = 'ember-brain-on'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'
+    cb.checked = this.draft?.brain?.sync !== false
+    cb.addEventListener('change', () => {
+      if (!this.draft) return
+      this.draft.brain = { sync: cb.checked }
+      this.queueSave()
+    })
+    on.append(cb, document.createTextNode(' Keep my agents on the same knowledge'))
+    const list = document.createElement('div')
+    list.className = 'ember-brain-list'
+    const sync = document.createElement('button')
+    sync.className = 'ember-agents-btn'
+    sync.textContent = 'Sync now'
+    const NAMES: Record<string, string> = { claude: 'Claude Code', codex: 'Codex CLI', gemini: 'Gemini CLI', qwen: 'Qwen Code', opencode: 'OpenCode' }
+    const paint = (st: BrainStatus) => {
+      const rows = st.agents
+        .filter((a) => a.present)
+        .map((a) => `<div class="r"><span>${NAMES[a.agent] ?? a.agent}</span><span class="${a.synced ? 'ok' : ''}">${a.synced ? 'instructions ✓ · memory ✓' : 'not synced yet'}${a.skills !== null ? ` · skills ${a.skills}/${st.skills}` : ''}</span></div>`)
+      list.innerHTML =
+        `<div class="sum">${st.facts} facts in memory · ${st.skills} skills${st.syncedAt ? ` · synced ${new Date(st.syncedAt).toLocaleString()}` : ''}</div>` +
+        (rows.join('') || '<div class="r">No agent folders found yet.</div>')
+    }
+    sync.addEventListener('click', () => {
+      sync.disabled = true
+      sync.textContent = 'Syncing…'
+      void window.ember.brain.sync().then((st) => {
+        paint(st)
+        sync.disabled = false
+        sync.textContent = 'Sync now'
+      })
+    })
+    void window.ember.brain.status().then(paint)
+    box.append(h, lead, on, list, sync)
+    return box
   }
 
   private buildSection(section: Section): HTMLElement {

@@ -5212,3 +5212,198 @@ body.is-light .loom-ask .loom-caret::before {
     transform var(--t1) var(--ease),
     box-shadow var(--t1) var(--ease);
 }
+
+/* ---------------------------------------------------------------- the agent in this tab */
+
+.loom-sign-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--l-ink);
+  font: 500 var(--fs-12) var(--l-prose);
+  cursor: pointer;
+}
+.loom-sign-agent .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+.loom-sign-agent .c {
+  color: var(--l-dim);
+  font-size: 10px;
+}
+.loom-sign-agent:hover {
+  background: var(--fill-2);
+}
+.loom-switch {
+  position: absolute;
+  z-index: 40;
+  width: 260px;
+}
+.loom-switch-head {
+  padding: 6px 10px 4px;
+  color: var(--l-dim);
+  font: 600 var(--fs-12) var(--l-prose);
+}
+.loom-switch button[data-agent] {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.loom-switch .v,
+.loom-switch-none {
+  color: var(--l-dim);
+  font-size: var(--fs-12);
+}
+.loom-switch-none {
+  padding: 6px 10px;
+}
+.loom-switch-note {
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+  border-top: 1px solid var(--l-line, rgba(255, 255, 255, 0.08));
+  color: var(--l-dim);
+  font: var(--fs-12) / 1.45 var(--l-prose);
+}
+
+/* An agent tab while its agent starts: a calm cover over the shell. */
+.loom-starting {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--c-bg, #16120f);
+  color: var(--l-dim, #a99f92);
+  font: 500 var(--fs-14, 14px) var(--l-prose, system-ui);
+}
+.loom-starting .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  animation: loom-starting 1.2s ease-in-out infinite;
+}
+@keyframes loom-starting {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loom-starting .dot {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- the canvas from the keyboard */
+
+.loom:focus {
+  outline: none;
+}
+.loom-piece.is-kbd {
+  box-shadow:
+    var(--rim),
+    0 0 0 2px var(--c-accent),
+    0 0 0 6px color-mix(in srgb, var(--c-accent) 18%, transparent),
+    0 18px 50px -20px rgba(0, 0, 0, 0.6);
+}
+.loom-kbd-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 45;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  max-width: calc(100% - 48px);
+  padding: 7px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-bg, #16120f) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--rim), 0 12px 32px -14px rgba(0, 0, 0, 0.6);
+  color: var(--l-dim);
+  font: var(--fs-12) / 1.5 var(--l-prose);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity var(--t2) var(--ease),
+    transform var(--t2) var(--ease);
+}
+.loom-kbd-legend.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.loom-kbd-legend b {
+  color: var(--l-ink);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- inline objects, at par with placed ones */
+
+/* "Drag out" on the inline handle, on hover, like a placed object's bar. */
+.loom-lift .loom-lift-hint {
+  margin-left: auto;
+}
+.loom-liftable:hover .loom-lift .loom-lift-hint {
+  opacity: 1;
+  transform: none;
+}
+/* Sized where it sits: a corner grip, shown on hover. */
+.loom-inline-rz {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+}
+.loom-inline-rz::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--l-dim);
+  border-bottom: 2px solid var(--l-dim);
+  border-bottom-right-radius: 3px;
+  opacity: 0;
+  transition: opacity var(--t1) var(--ease);
+}
+.loom-liftable:hover > .loom-inline-rz::after,
+.loom-liftable.is-resizing > .loom-inline-rz::after {
+  opacity: 0.7;
+}
+.loom-liftable.is-sized > iframe {
+  max-height: none;
+}
+.loom-liftable.is-peeling {
+  transform: translateY(-3px) scale(1.006);
+  box-shadow:
+    0 22px 50px -18px rgba(0, 0, 0, 0.65),
+    0 0 0 1px color-mix(in srgb, var(--c-accent) 35%, transparent);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+/* The keyboard's ring, inline too. */
+.loom-liftable.is-kbd {
+  border-radius: var(--r-obj, 16px);
+  box-shadow:
+    0 0 0 2px var(--c-accent),
+    0 0 0 6px color-mix(in srgb, var(--c-accent) 18%, transparent);
+}
+.loom-liftable.is-kbd .loom-lift {
+  opacity: 1;
+}

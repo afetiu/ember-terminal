@@ -14,6 +14,8 @@ export interface AgentPickerOptions {
   onChoose(id: AgentId): void
   /** Run a command in a fresh tab, titled. */
   runInTab(command: string, title: string): void
+  /** Check every agent found on this machine at once (one short headless question each). */
+  autoTest?: boolean
 }
 
 export class AgentPicker {
@@ -38,6 +40,17 @@ export class AgentPicker {
     this.statuses = await window.ember.agents.detect(true).catch(() => [])
     this.loading = false
     this.render()
+    if (this.opts.autoTest) for (const s of this.statuses) if (s.installed && !this.tests.has(s.id)) this.test(s.id)
+  }
+
+  /** One short headless question: proves it is installed and signed in, the way Ember will use it. */
+  private test(id: AgentId): void {
+    this.tests.set(id, 'Checking it answers…')
+    this.render()
+    void window.ember.agents.ping(id).then((r) => {
+      this.tests.set(id, r.ok ? `Connected — answered in ${(r.ms / 1000).toFixed(1)}s. Ready to use.` : `Found, but it did not answer: ${(r.error ?? 'unknown error').slice(0, 140)}. Sign in, then Test.`)
+      this.render()
+    })
   }
 
   get installedCount(): number {
@@ -65,7 +78,24 @@ export class AgentPicker {
   private render(): void {
     const list = document.createElement('div')
     list.className = 'ember-agents-list'
-    for (const id of AGENT_IDS) list.appendChild(this.row(id))
+    // What is already on this machine comes first, said plainly: Ember uses it directly,
+    // with the sign-in it already has. The rest are there to add.
+    const found = this.loading ? [] : AGENT_IDS.filter((id) => this.status(id)?.installed)
+    const rest = AGENT_IDS.filter((id) => !found.includes(id))
+    if (found.length) {
+      const names = found.map((id) => AGENTS[id].name)
+      const said = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0]
+      const head = document.createElement('div')
+      head.className = 'ember-agents-found'
+      head.innerHTML = `<strong>On this computer: ${said}.</strong> Ember connects to ${names.length > 1 ? 'them' : 'it'} directly, with the sign-in you already have — nothing to install.`
+      list.appendChild(head)
+      for (const id of found) list.appendChild(this.row(id))
+      const more = document.createElement('div')
+      more.className = 'ember-agents-group'
+      more.textContent = 'More agents you can add'
+      list.appendChild(more)
+    }
+    for (const id of rest) list.appendChild(this.row(id))
 
     const foot = document.createElement('div')
     foot.className = 'ember-agents-foot'
@@ -93,7 +123,7 @@ export class AgentPicker {
     pick.className = 'ember-agent-pick'
     pick.setAttribute('role', 'radio')
     pick.setAttribute('aria-checked', String(id === this.chosen))
-    pick.title = `Use ${spec.name}`
+    pick.title = `Start new sessions with ${spec.name}`
     pick.addEventListener('click', () => {
       this.chosen = id
       this.opts.onChoose(id)
@@ -120,6 +150,13 @@ export class AgentPicker {
     blurb.className = 'ember-agent-blurb'
     blurb.textContent = this.tests.get(id) ?? spec.blurb
     text.append(name, blurb)
+    // How to get it signed in — most useful exactly when it is installed and not yet working.
+    if (spec.setup) {
+      const how = document.createElement('div')
+      how.className = 'ember-agent-setup'
+      how.textContent = spec.setup
+      text.appendChild(how)
+    }
 
     const actions = document.createElement('div')
     actions.className = 'ember-agent-actions'
@@ -142,17 +179,7 @@ export class AgentPicker {
       )
     } else if (st?.installed) {
       btn('Sign in', `Runs ${spec.login} in a new tab`, () => this.opts.runInTab(spec.login, spec.name), true)
-      const test = btn('Test', 'Ask it one short question, headless, the way Ember will', () => {
-        test.disabled = true
-        test.textContent = 'Testing…'
-        void window.ember.agents.ping(id).then((r) => {
-          this.tests.set(
-            id,
-            r.ok ? `Answered in ${(r.ms / 1000).toFixed(1)}s — ready.` : `Did not answer: ${(r.error ?? 'unknown error').slice(0, 160)}`
-          )
-          this.render()
-        })
-      })
+      btn('Test', 'Ask it one short question, headless, the way Ember will', () => this.test(id))
     }
     const docs = document.createElement('a')
     docs.className = 'ember-agents-link'
@@ -166,13 +193,4 @@ export class AgentPicker {
     row.append(pick, text, actions)
     return row
   }
-}
-
-/** The promise Ember makes, said the same way everywhere it is said. */
-export function noKeysNote(): HTMLElement {
-  const p = document.createElement('p')
-  p.className = 'ember-agents-nokeys'
-  p.innerHTML =
-    '<strong>No API keys.</strong> Ember never talks to a model itself. Every AI feature runs through the CLI you choose here, signed in with your own plan — the same way you already use it.'
-  return p
 }

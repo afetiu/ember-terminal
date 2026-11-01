@@ -8,6 +8,7 @@ import { renderPanelDocument, setViewLoader } from './panelDoc.js'
 import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, rebindFromStatus, unbindSession } from './transcript.js'
+import { forget, recall, remember, skills } from './brain.js'
 import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedia } from './canvas.js'
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
@@ -932,6 +933,29 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         mkdirSync(VIEWS_DIR, { recursive: true })
         writeFileSync(join(VIEWS_DIR, `${name}.html`), html, 'utf8')
         send(res, 200, JSON.stringify({ ok: true, name }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // Ember Brain: the memory and skills every agent shares (src/main/brain.ts).
+  if (req.method === 'POST' && url.pathname.startsWith('/brain/')) {
+    void readJson(req)
+      .then((body) => {
+        const str = (k: string) => String(body[k] ?? '')
+        const op = url.pathname.slice('/brain/'.length)
+        const text =
+          op === 'recall'
+            ? recall(str('query'))
+            : op === 'remember'
+              ? remember(str('name'), str('description'), str('body'), str('type'))
+              : op === 'forget'
+                ? forget(str('name'))
+                : op === 'skills'
+                  ? skills(str('name') || undefined)
+                  : null
+        if (text === null) return send(res, 404, JSON.stringify({ error: 'unknown brain op' }))
+        send(res, 200, JSON.stringify({ ok: true, text }))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return

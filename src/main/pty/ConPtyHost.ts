@@ -200,6 +200,11 @@ export function otherAgentShims(): string[] {
     "  __emberRun copilot $pre $args @{ EMBER_SESSION_AGENT = 'copilot' }",
     '}',
     "function global:cursor-agent { __emberRun cursor-agent @() $args @{ EMBER_SESSION_AGENT = 'cursor' } }",
+    // Announcement only: no per-session way to add a server to these.
+    "function global:qwen { __emberRun qwen @() $args @{ EMBER_SESSION_AGENT = 'qwen' } }",
+    "function global:amp { __emberRun amp @() $args @{ EMBER_SESSION_AGENT = 'amp' } }",
+    "function global:aider { __emberRun aider @() $args @{ EMBER_SESSION_AGENT = 'aider' } }",
+    "function global:crush { __emberRun crush @() $args @{ EMBER_SESSION_AGENT = 'crush' } }",
   ]
 }
 
@@ -224,6 +229,23 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     '  & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args',
     '}',
     ...otherAgentShims(),
+    // Ember's own commands, as words you type, beside notes / note / todo on PATH.
+    'function global:council { ember council @args }',
+    // What this terminal answers to, once, quietly, above the first prompt. A tab that
+    // starts an agent by itself never shows it: the agent takes the screen first.
+    // A small card, one command per line: the word bright, what it does dim. The agents
+    // listed are the ones actually installed.
+    'if (-not $env:EMBER_STARTUP_AGENT) {',
+    "  $ag = @('claude','codex','gemini','cursor-agent','opencode','copilot','qwen','amp','aider','crush') | Where-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue }",
+    "  $agents = ($ag | Select-Object -First 3) -join ', '",
+    "  $w = [Math]::Max(16, $agents.Length + 4)",
+    "  $row = { param($cmd, $what) Write-Host ('  ' + $cmd.PadRight($w)) -NoNewline -ForegroundColor Gray; Write-Host $what -ForegroundColor DarkGray }",
+    "  if ($ag) { & $row $agents 'start an AI agent' }",
+    "  & $row 'notes, todo' 'your notes and todo list'",
+    "  & $row 'council' 'ask your agents to debate a question'",
+    "  & $row 'ember --help' 'everything else Ember can do'",
+    "  Write-Host ''",
+    '}',
   ].join('\n')
 
   // Fold into an existing -Command rather than adding a second one: powershell.exe
@@ -295,10 +317,22 @@ export class ConPtyHost implements PtyHost {
 
     let args = opts.shellIntegration ? withShellIntegration(resolved, profile.args) : profile.args
     if (opts.panel) args = withPanelShim(resolved, args)
+    // An agent tab: the agent runs as part of the shell's own startup, after the shims are
+    // defined and before the first prompt — nothing typed, no prompt seen first. When it
+    // exits, the shell's prompt comes up as usual.
+    if (opts.startup && /pwsh\.exe$|powershell\.exe$/i.test(resolved)) {
+      const at = args.findIndex((a) => /^-(?:c|command)$/i.test(a))
+      if (at !== -1 && at + 1 < args.length) {
+        args = [...args]
+        args[at + 1] = `${args[at + 1]}
+${opts.startup}`
+      } else args = [...args, '-NoExit', '-Command', opts.startup]
+    }
 
     const env: NodeJS.ProcessEnv = {
       ...cleanEnv(),
       ...profile.env,
+      ...(opts.startup ? { EMBER_STARTUP_AGENT: opts.startup } : {}),
       ...(opts.env ?? {}),
       ...(opts.panel ?? {}),
       TERM_PROGRAM: 'Ember',

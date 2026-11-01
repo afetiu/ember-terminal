@@ -14,6 +14,8 @@ import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
 import { PhoneHost } from '../phone/PhoneHost'
+import { Council } from './Council'
+import { FirstRun } from './FirstRun'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
 import { parseAccountUrl } from '../../../../resources/relay/protocol.js'
@@ -25,8 +27,7 @@ import { quality } from '../motion/quality'
 import { sound } from '../motion/sound'
 import { drawMascot, setBadgeSurface } from './Mascot'
 import { isLightBackground, legible } from './tone'
-import { Onboarding } from './Onboarding'
-import { AGENTS } from '@shared/agents'
+import { AGENTS, agentSpec, type AgentId } from '@shared/agents'
 import type { ActivityState, AttentionKind } from '../core/Activity'
 import { LoomView } from '../canvas/LoomView'
 
@@ -55,6 +56,9 @@ export class App {
   private readonly orchestrator: Orchestrator
   private readonly remote: Remote
   private phone: PhoneHost | null = null
+  private readonly council = new Council()
+  /** The first run, in the empty desk, until setup is done. */
+  private firstRun: FirstRun | null = null
   private readonly pairSheet: PairSheet
   private readonly palette: Palette
   private readonly search: Search
@@ -151,14 +155,17 @@ export class App {
       onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
-      onOrchestrator: () => this.toggleOrchestrator(),
+      onOrchestrator: () => this.council.open(this.activeGroup?.focused?.cwd || ''),
+      onProvider: (anchor) => void this.providerMenu(anchor),
       onSelect: (id) => void this.activate(id),
       onClose: (id) => this.closeGroup(id),
+      // A new session is a terminal: type an agent's name, notes, todo, council, ember…
       onNew: () => void this.newGroup(),
       onRename: (id, title) => this.renameGroup(id, title),
       onReorder: (ids) => this.reorderGroups(ids),
       onPlace: (place) => void this.goPlace(place),
     })
+    this.sidebar.setProvider(agentSpec(this.config.agent?.default).name)
 
     // The vitals line, pinned at the very bottom of the sidebar.
     this.vitals = new Vitals()
@@ -288,6 +295,14 @@ export class App {
       }),
     })
     this.root.appendChild(this.pairSheet.el)
+    this.root.appendChild(this.council.el)
+    // The council's conclusion, put on the canvas of the tab you are in.
+    window.addEventListener('ember:council:canvas', (e) => {
+      const { title, markdown } = (e as CustomEvent<{ title: string; markdown: string }>).detail
+      const tab = this.activeGroup
+      if (!tab) return
+      void window.ember.canvas.handoff(markdown).then((path) => window.ember.canvas.showFile(tab.id, path, title))
+    })
 
     this.root.append(this.titleBar.el, this.sidebar.el, this.stack)
     document.body.appendChild(this.root)
@@ -583,6 +598,7 @@ export class App {
       const fontChanged = config.font.family !== this.config.font.family
       const wasLight = document.body.classList.contains('is-light')
       this.config = config
+      this.sidebar.setProvider(agentSpec(config.agent?.default).name)
       sound.configure(config.sound)
       quality.setEnabled(config.effects.adaptive)
       this.applyCssVars()
@@ -618,29 +634,41 @@ export class App {
    * was not.
    */
   async boot(): Promise<void> {
+    if (!this.config.agent.onboarded) {
+      // A new install opens to an empty desk that sets itself up in plain view.
+      this.startFirstRun()
+      return
+    }
     await this.newGroup()
     this.scheduleSpare()
-    if (!this.config.agent.onboarded) window.setTimeout(() => this.showOnboarding(), 600)
   }
 
-  /** The welcome: which agent CLI, how it looks, the keys worth knowing. */
-  private showOnboarding(): void {
-    new Onboarding({
-      config: () => this.config,
-      save: (next) => {
-        // Applied here as well as on disk, so the next step reads what this one chose
-        // without waiting for the watcher's round trip.
-        this.config = next
-        window.ember.saveConfig(next)
-      },
-      themes: () => this.loadThemes(),
+  private startFirstRun(): void {
+    this.firstRun?.el.remove()
+    const done = (agent: AgentId | null) => {
+      this.config = { ...this.config, agent: { ...this.config.agent, onboarded: true, ...(agent ? { default: agent } : {}) } }
+      window.ember.saveConfig(this.config)
+      this.sidebar.setProvider(agentSpec(this.config.agent.default).name)
+      this.firstRun?.el.remove()
+      this.firstRun = null
+    }
+    this.firstRun = new FirstRun({
+      start: () => void this.newAgentSession(),
       runInTab: (command, title) => void this.runInNewTab(command, title),
-      onDone: (launch) => {
-        const s = this.activeGroup?.focused
-        if (launch && s) window.ember.write(s.id, `${AGENTS[launch].bin}\r`)
-        this.flashToast('Ctrl+K for everything · F1 for the keys')
+      openAgents: () => void this.settings.show(this.config, 'Agent'),
+      finish: (agent) => {
+        const plain = !this.groups.length
+        done(agent)
+        // "Just open a terminal": a plain session, the way Ember opened before.
+        if (plain) window.setTimeout(() => void (this.groups.length ? null : this.newGroup()), 0)
       },
-    }).show()
+    })
+    this.firstRun?.el.remove()
+    this.stack.appendChild(this.firstRun.el)
+    this.firstRun.el.hidden = false
+    this.emptyEl.hidden = true
+    void this.firstRun.run()
+    this.scheduleSpare()
   }
 
   /** Open a tab and run one command in it, in the open — installs and sign-ins. */
@@ -651,7 +679,7 @@ export class App {
     const s = group.focused
     // Give the shell its prompt first; typed-ahead input survives, but a profile that
     // clears the screen on start would wipe the command from view.
-    if (s) window.setTimeout(() => window.ember.write(s.id, `${command}\r`), 700)
+    if (s) await this.typeCommand(s, command)
   }
 
   /**
@@ -774,7 +802,89 @@ export class App {
   /** Wall-clock of each step of the last newGroup, for scripts/probe-entrance.mjs. */
   private lastEntrance: Record<string, number> = {}
 
-  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean }): Promise<Group> {
+  /**
+   * The + button: a Loom tab already running the chosen agent, not a bare shell. Falls
+   * back to the shell when that agent is not installed, and says why.
+   */
+  private async newAgentSession(): Promise<void> {
+    const id = this.config.agent?.default ?? 'claude'
+    const spec = agentSpec(id)
+    const installed = (await window.ember.agents.detect(false).catch(() => [])).find((a) => a.id === spec.id)?.installed
+    if (!installed) {
+      await this.newGroup()
+      this.flashToast(`${spec.name} is not installed — Settings › Agent`)
+      return
+    }
+    await this.newGroup(undefined, undefined, { agent: spec.id })
+  }
+
+  /**
+   * Run a command in a shell as if typed: once its prompt is up, the words, then Enter as
+   * a separate keystroke. A burst ending in Enter, or one typed before the prompt, is read
+   * by PSReadLine as a paste and left on a `>>` continuation line instead of running.
+   */
+  private async typeCommand(s: Session, command: string): Promise<void> {
+    const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms))
+    for (let i = 0; i < 60 && s.prompts === 0; i++) await wait(150)
+    await wait(200)
+    window.ember.write(s.id, command)
+    await wait(120)
+    window.ember.write(s.id, '\r')
+  }
+
+  /** The provider chip's menu: installed agents, the chosen one ticked, and a way to add more. */
+  private async providerMenu(anchor: HTMLElement): Promise<void> {
+    document.querySelector('.ember-provider-menu')?.remove()
+    const statuses = await window.ember.agents.detect(false).catch(() => [])
+    const current = this.config.agent?.default ?? 'claude'
+    const menu = document.createElement('div')
+    menu.className = 'ember-provider-menu'
+    menu.setAttribute('role', 'menu')
+    const r = anchor.getBoundingClientRect()
+    menu.style.left = `${Math.round(r.left)}px`
+    menu.style.top = `${Math.round(r.bottom + 6)}px`
+    for (const st of statuses.filter((x) => x.installed)) {
+      const spec = AGENTS[st.id]
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.setAttribute('role', 'menuitemradio')
+      b.setAttribute('aria-checked', String(st.id === current))
+      b.className = st.id === current ? 'is-on' : ''
+      b.innerHTML = `<span class="n"></span><span class="v"></span>`
+      ;(b.querySelector('.n') as HTMLElement).textContent = spec.name
+      ;(b.querySelector('.v') as HTMLElement).textContent = spec.vendor
+      b.addEventListener('click', () => {
+        this.setProvider(st.id)
+        menu.remove()
+      })
+      menu.appendChild(b)
+    }
+    const more = document.createElement('button')
+    more.type = 'button'
+    more.className = 'is-more'
+    more.textContent = 'Add more agents…'
+    more.addEventListener('click', () => {
+      menu.remove()
+      void this.settings.show(this.config, 'Agent')
+    })
+    menu.appendChild(more)
+    document.body.appendChild(menu)
+    const close = (e: Event) => {
+      if (menu.contains(e.target as Node) || e.target === anchor) return
+      menu.remove()
+      window.removeEventListener('pointerdown', close, true)
+    }
+    window.addEventListener('pointerdown', close, true)
+  }
+
+  /** Choose the agent new sessions (and Ember's own questions) run on. */
+  private setProvider(id: AgentId): void {
+    this.config = { ...this.config, agent: { ...this.config.agent, default: id } }
+    window.ember.saveConfig(this.config)
+    this.sidebar.setProvider(AGENTS[id].name)
+  }
+
+  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId }): Promise<Group> {
     const marks: Record<string, number> = {}
     let last = performance.now()
     const lap = (k: string) => {
@@ -782,7 +892,8 @@ export class App {
       marks[k] = Math.round((now - last) * 10) / 10
       last = now
     }
-    const warm = this.takeSpare(profileId)
+    // An agent tab needs its agent in the shell's startup, so it is never the pre-warmed one.
+    const warm = opts?.agent ? null : this.takeSpare(profileId)
     const group =
       warm?.group ??
       new Group((g) => {
@@ -801,6 +912,7 @@ export class App {
 
     const session = warm?.session ?? this.makeSession(profileId)
     if (cwd) session.initialCwd = cwd
+    if (opts?.agent) session.startAgent = opts.agent
     session.tabId = group.id
     if (!warm) group.add(session)
     // Every tab is a Loom tab: the shell, with a canvas over its output space for when an
@@ -1366,6 +1478,11 @@ export class App {
 
   /** The empty state, shown when the last tab goes; its button takes focus so Enter opens one. */
   private showEmpty(on: boolean): void {
+    // The first run takes the empty desk's place until setup is done.
+    if (this.firstRun) {
+      this.firstRun.el.hidden = !on
+      on = false
+    }
     if (this.emptyEl.hidden === !on) return
     this.emptyEl.hidden = !on
     if (on) this.emptyEl.querySelector<HTMLButtonElement>('.ember-empty-new')?.focus()
@@ -1373,10 +1490,12 @@ export class App {
 
   /** Apply a new card order to the underlying group list. */
   private reorderGroups(ids: string[]): void {
+    // The dragged order for the tabs the sidebar shows; any tab it does not list keeps its
+    // place after them. Refusing a partial list here made a dropped card snap back.
     const next = ids.map((id) => this.groups.find((g) => g.id === id)).filter((g): g is Group => !!g)
-    if (next.length !== this.groups.length) return
+    const rest = this.groups.filter((g) => !next.includes(g))
     this.groups.length = 0
-    this.groups.push(...next)
+    this.groups.push(...next, ...rest)
   }
 
   /** Push the configured slide feel onto a group's springs. */
@@ -2684,7 +2803,7 @@ export class App {
           this.settings.toggle(this.config, tab as SettingsTab | undefined)
         },
       },
-      { id: 'welcome', group: 'Help', title: 'Welcome & setup', hint: 'pick your agent CLI', cli: 'welcome', aliases: ['onboarding', 'setup'], run: () => this.showOnboarding() },
+      { id: 'welcome', group: 'Help', title: 'Welcome & setup', hint: 'pick your agent CLI', cli: 'welcome', aliases: ['onboarding', 'setup'], run: () => this.startFirstRun() },
       {
         id: 'agent',
         group: 'Agent',
@@ -2749,6 +2868,13 @@ export class App {
           if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
           void this.pairSheet.show()
         },
+      },
+      {
+        id: 'council',
+        group: 'Agents',
+        title: 'Council — have your agents debate a question',
+        cli: 'council',
+        run: () => this.council.open(this.activeGroup?.focused?.cwd || ''),
       },
       {
         id: 'orchestrator',
@@ -3152,8 +3278,9 @@ export class App {
         }
         if (this.palette.isOpen) return
 
-        // Ctrl+Up/Down navigates by command instead of by line.
-        if (ctrl && !e.shiftKey && (e.code === 'ArrowUp' || e.code === 'ArrowDown')) {
+        // Ctrl+Up/Down navigates by command instead of by line — except where an agent's
+        // canvas is up, where Ctrl+Up takes the keyboard into the results instead.
+        if (ctrl && !e.shiftKey && (e.code === 'ArrowUp' || e.code === 'ArrowDown') && !this.activeGroup?.loom?.onCanvas) {
           e.preventDefault()
           this.jumpCommand(e.code === 'ArrowUp' ? -1 : 1)
           return

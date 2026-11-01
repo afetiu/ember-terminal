@@ -81,6 +81,8 @@ export interface CardModel {
 export interface SidebarHandlers {
   /** Open the orchestrator. It lives beside the sessions because it is the thing that runs them. */
   onOrchestrator(): void
+  /** The provider chip: which agent a new session starts with. */
+  onProvider(anchor: HTMLElement): void
   onSelect(id: string): void
   onClose(id: string): void
   onNew(): void
@@ -126,6 +128,7 @@ export class Sidebar {
   readonly el: HTMLElement
   private readonly list: HTMLElement
   private readonly orchBtn: HTMLButtonElement
+  private readonly providerBtn: HTMLButtonElement
   private readonly navBtns = new Map<Place, { btn: HTMLButtonElement; badge: HTMLElement }>()
   private navSig = ''
   private readonly nodes = new Map<string, CardNode>()
@@ -180,7 +183,16 @@ export class Sidebar {
     this.orchBtn.addEventListener('click', () => this.handlers.onOrchestrator())
 
     add.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
-    head.append(label, this.orchBtn, add)
+    // Which agent a new session starts with — the + beside it opens Loom running it.
+    this.providerBtn = document.createElement('button')
+    this.providerBtn.type = 'button'
+    this.providerBtn.className = 'ember-provider'
+    this.providerBtn.title = 'The agent new sessions start with. Click to choose, or add more.'
+    this.providerBtn.addEventListener('click', () => this.handlers.onProvider(this.providerBtn))
+    // Where the orchestrator was: the council, your agents debating one question.
+    this.orchBtn.title = 'Council — have your agents debate a question'
+    this.orchBtn.setAttribute('aria-label', 'Council')
+    head.append(label, this.providerBtn, this.orchBtn, add)
 
     // The places — todo, notes, map — as one quiet row of icons at the foot of the column.
     // The column is the session list; the places are a click away, never in its way.
@@ -515,13 +527,17 @@ export class Sidebar {
   }
 
   /** The orchestrator's button: whether the column is open, and whether it is working. */
+  /** Show which agent new sessions start with. */
+  setProvider(name: string): void {
+    this.providerBtn.innerHTML = `<span class="dot" aria-hidden="true"></span><span class="n"></span><span class="c" aria-hidden="true">▾</span>`
+    ;(this.providerBtn.querySelector('.n') as HTMLElement).textContent = name
+    this.providerBtn.setAttribute('aria-label', `New sessions start ${name}. Choose another agent.`)
+  }
+
   setOrchestrator(state: { available: boolean; open: boolean; thinking: boolean }): void {
-    const b = this.orchBtn
-    b.classList.toggle('is-hidden', !state.available)
-    b.classList.toggle('is-on', state.open)
-    b.classList.toggle('is-thinking', state.thinking)
-    b.setAttribute('aria-pressed', String(state.open))
-    b.title = ORCH_TITLE
+    // The button opens the council now; the orchestrator's state no longer shows on it.
+    void state
+    void ORCH_TITLE
   }
 
   /**
@@ -581,15 +597,13 @@ export class Sidebar {
       }
     }
 
-    const onUp = (e: PointerEvent) => {
-      root.removeEventListener('pointermove', onMove)
-      root.removeEventListener('pointerup', onUp)
-      root.removeEventListener('pointercancel', onUp)
-      try {
-        root.releasePointerCapture(e.pointerId)
-      } catch {
-        /* synthetic pointers have no capture */
-      }
+    // Window-level: the card can be redrawn under the pointer (its status ticks while an
+    // agent works), and a drag that lost its element's capture would never end.
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove, true)
+      window.removeEventListener('pointerup', onUp, true)
+      window.removeEventListener('pointercancel', onUp, true)
+      window.removeEventListener('blur', onUp)
       if (dragging) {
         dragging = false
         root.classList.remove('is-dragging')
@@ -601,15 +615,12 @@ export class Sidebar {
 
     root.addEventListener('pointerdown', (e) => {
       if ((e.target as HTMLElement).closest('.ember-card-close, .ember-card-rename')) return
+      if (e.button !== 0) return
       startY = e.clientY
-      try {
-        root.setPointerCapture(e.pointerId)
-      } catch {
-        /* synthetic pointers have no capture */
-      }
-      root.addEventListener('pointermove', onMove)
-      root.addEventListener('pointerup', onUp)
-      root.addEventListener('pointercancel', onUp)
+      window.addEventListener('pointermove', onMove, true)
+      window.addEventListener('pointerup', onUp, true)
+      window.addEventListener('pointercancel', onUp, true)
+      window.addEventListener('blur', onUp)
     })
   }
 

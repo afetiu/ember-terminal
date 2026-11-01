@@ -54,7 +54,7 @@ same words follow `ember`. Prefer them to describing clicks:
 ```
 ember                        the full list, from the running app
 ember new [dir]              a new session
-ember loom [dir]             a Loom session: a shell whose output space is a canvas;
+ember new [dir]              a new session: a shell whose output space becomes a canvas;
                              `claude` in it draws the conversation there (Ctrl+Shift+L)
 ember split right|down       split this tab
 ember rename <name>          name this tab
@@ -173,7 +173,7 @@ desk read T [NAME] | desk clip [TEXT]          text out of a window; the clipboa
 the next step does not depend on looking. Take a `shot` only when a `tree` or `read`
 cannot tell you.
 
-**Showing the user something on their screen: point, never screenshot.** In a Loom tab
+**Showing the user something on their screen: point, never screenshot.** In an Ember tab
 use the `look` tool (the screen as text) and then `point` (Ember's pointer glides to the
 control on their real screen with a short note beside it; `step`/`steps` for a
 walkthrough). From a shell: `desk tree T` then `desk point T NAME --say "..."`. A

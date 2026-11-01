@@ -3,6 +3,7 @@ import type { Session } from '../core/Session'
 import { Feed, type Todo } from './Feed'
 import { escapeHtml, renderMarkdown } from './markdown'
 import { docTone } from '../core/docTone'
+import { agentSpec } from '@shared/agents'
 
 /**
  * A Loom tab: a real shell whose output space is a canvas.
@@ -33,7 +34,7 @@ export interface LoomHooks {
   toast(text: string): void
 }
 
-type Mode = 'shell' | 'claude' | 'app' | 'raw'
+type Mode = 'shell' | 'claude' | 'agent' | 'app' | 'raw'
 
 interface Dock {
   /** First and last viewport rows that stay visible. */
@@ -46,6 +47,8 @@ interface Dock {
   /** The rules that open and close the box, -1 when not on screen. */
   open: number
   close: number
+  /** First row of the status lines under the box, when there is no closing rule (Codex). */
+  foot?: number
 }
 
 interface Piece {
@@ -138,6 +141,8 @@ const BAR_H = 26
 const FRAME_PAD = 10
 /** The input is at least this many rows tall, prompt at the top, like a text area. */
 const INPUT_ROWS = 2
+/** How much of another agent's own screen stays visible under the canvas: its input and status. */
+const AGENT_ROWS = 10
 
 /** What in a reply can be picked up and placed: diagrams, tables, code, pictures. */
 const LIFTABLE = '.loom-diagram, .loom-table, .loom-code, .loom-say img.loom-img, .loom-shelf .loom-figure, .loom-tool-peek .loom-figure'
@@ -183,6 +188,13 @@ export class LoomView {
   private readonly rawPill: HTMLElement
 
   private mode: Mode = 'shell'
+  /** "Starting Claude Code…", over the shell until the agent's own screen is up. */
+  private readonly starting = div('loom-starting')
+  private agentUp = false
+  /** The agent last reported to main for this tab, so it is told once per change. */
+  private tabAgentSent: string | null = null
+  /** When the tab's current agent started, for finding its session log. */
+  private tabAgentSince = Date.now()
   private raw = false
   private claudeSeen = false
   private dock: Dock | null = null
@@ -232,7 +244,7 @@ export class LoomView {
     this.plan = div('loom-plan')
     this.scroller.append(this.plan, this.feed.el)
 
-    this.hint = div('loom-hint', `<span class="loom-hint-glyph">✻</span><span>Claude is here. Ask below — what it says and shows appears on this canvas.</span>`)
+    this.hint = div('loom-hint', `<span class="loom-hint-glyph">✻</span><span class="loom-hint-text">Ask below — what your agent says and shows appears on this canvas.</span>`)
     this.sign = div('loom-sign')
     this.rail = div('loom-rail')
     this.steps = div('loom-steps')
@@ -255,6 +267,8 @@ export class LoomView {
     this.lightbox = div('loom-lightbox')
     this.rawPill = div('loom-rawpill', `${ICON.sparkle}<span>Back to Loom</span><kbd>Ctrl+\`</kbd>`)
 
+    // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
+    this.el.tabIndex = -1
     this.el.append(this.scroller, this.rail, this.pinLayer, this.hint, this.sign, this.steps, this.jump, this.chip, this.pop, this.ctxMenu, this.drawer, this.lightbox)
     panes.append(this.el, this.frame, this.bar, this.rawPill)
     panes.classList.add('has-loom')
@@ -416,7 +430,7 @@ export class LoomView {
       for (const f of this.frames) {
         if (f.contentWindow !== e.source) continue
         // Sized by hand: the frame fills what it was given and scrolls inside.
-        if (f.closest('.loom-piece.is-sized')) continue
+        if (f.closest('.loom-piece.is-sized, .loom-liftable.is-sized')) continue
         const max = Number(f.dataset['max'] ?? 2400)
         const stick = this.atBottom()
         f.style.height = `${Math.max(36, Math.min(max, Math.ceil(h)))}px`
@@ -614,6 +628,55 @@ export class LoomView {
   }
 
   /**
+   * Codex's input, as its TUI draws it (scripts/probe-agent-screens.mjs): the `›` line and
+   * any continuation lines, a blank line, then its status lines ("GPT-6-Astra high · ~",
+   * "? for shortcuts"). The slash and @ menus sit just above the prompt; an approval
+   * prompt replaces the status lines with numbered choices, and is shown whole.
+   */
+  private findCodexDock(rows: string[]): Dock | null {
+    let last = rows.length - 1
+    while (last > 0 && !rows[last]!.trim()) last--
+    let p = -1
+    for (let y = last; y >= Math.max(0, last - 8); y--) {
+      if (/^›\s/.test(rows[y]!) || rows[y] === '›') {
+        p = y
+        break
+      }
+    }
+    if (p < 0) return null
+    let q = p
+    while (q + 1 <= last && rows[q + 1]!.trim() && /^\s{2}\S/.test(rows[q + 1]!) && !this.isCodexFooter([rows[q + 1]!])) q++
+    const under = rows.slice(q + 1, last + 1)
+    const dialog = under.some((r) => /^\s*›?\s*\d+\.\s/.test(r)) || !this.isCodexFooter(under)
+    if (dialog) {
+      // Something we do not frame (an approval, a picker): the block it sits in, whole.
+      let top = p
+      while (top - 1 > 3 && rows[top - 1]!.trim() && p - top < 18) top--
+      return { top, bottom: last, dialog: true, box: null, open: -1, close: -1 }
+    }
+    // A menu attached above the prompt: a run of `/command` or `@file` lines, then one blank.
+    let top = p
+    let y = p - 1
+    if (y > 3 && !rows[y]!.trim()) y--
+    if (y > 3 && /^[›\s]\s?[/@]\S/.test(rows[y]!)) {
+      let n = 0
+      while (y > 3 && rows[y]!.trim() && n < 18) {
+        y--
+        n++
+      }
+      top = y + 1
+    }
+    return { top, bottom: last, dialog: false, box: [p, q], open: -1, close: -1, foot: q + 1 }
+  }
+
+  /** Codex's status lines: the model and folder, the shortcuts hint, a working line. */
+  private isCodexFooter(below: string[]): boolean {
+    const lines = below.filter((r) => r.trim())
+    if (lines.length > 4) return false
+    return lines.every((r) => /·|for shortcuts|esc to interrupt|context left|⚠|working|tab to queue/i.test(r) || r.trim().length < 3)
+  }
+
+  /**
    * The lines under the input box: the mode line ("⏵⏵ bypass permissions on (shift+tab
    * to cycle)", "? for shortcuts") and the status line. A dialog has choices there instead.
    */
@@ -638,16 +701,47 @@ export class LoomView {
     const screenTop = sr.top - pr.top
     const rows = this.rowsText()
 
+    // Which agent the shell said it started. Claude Code is read precisely below; any
+    // other agent gets the canvas with the bottom of its own screen under it.
+    const agent = this.session.announcedAgent
+    // Told again once the folder is known: an agent started with the shell runs before
+    // the first prompt has said where the shell is.
+    const told = `${agent ?? ''}|${this.session.cwd}`
+    if (told !== this.tabAgentSent) {
+      const fresh = (this.tabAgentSent ?? '').split('|')[0] !== (agent ?? '')
+      this.tabAgentSent = told
+      if (fresh) this.tabAgentSince = Date.now()
+      window.ember.canvas.tabAgent(this.tabId, agent && agent !== 'claude' ? agent : null, this.session.cwd || this.session.initialCwd || '', this.tabAgentSince)
+    }
+    const who = agentSpec(agent ?? 'claude').name.replace(/ (CLI|Code)$/, '')
+    const hintText = this.hint.querySelector('.loom-hint-text')
+    if (hintText && !hintText.textContent?.startsWith(who)) hintText.textContent = `${who} is here. Ask below — what it says and shows appears on this canvas.`
     let mode: Mode
-    if (buf.type === 'alternate') {
+    if (agent && agent !== 'claude') {
+      mode = 'agent'
+    } else if (buf.type === 'alternate') {
       if (!this.claudeSeen && this.looksLikeClaude(rows)) this.claudeSeen = true
       mode = this.claudeSeen ? 'claude' : 'app'
     } else {
       this.claudeSeen = false
       mode = 'shell'
     }
-    if (this.raw && mode === 'claude') mode = 'raw'
-    if (mode !== 'raw' && this.raw && mode !== 'claude') this.raw = false
+    // An agent tab opened from +: the shell is covered until the agent's screen is up, or
+    // until the shell's prompt shows (the agent exited or could not start: show why).
+    if (this.session.startAgent && !this.agentUp) {
+      if (mode === 'claude' || mode === 'agent' || this.session.prompts > 0) this.agentUp = true
+      if (!this.starting.isConnected) {
+        this.starting.innerHTML = `<span class="dot"></span><span>Starting ${escapeHtml(agentSpec(this.session.startAgent).name)}…</span>`
+        this.panes.appendChild(this.starting)
+        window.setTimeout(() => {
+          this.agentUp = true
+          this.starting.remove()
+        }, 25_000)
+      }
+      if (this.agentUp) this.starting.remove()
+    }
+    if (this.raw && (mode === 'claude' || mode === 'agent')) mode = 'raw'
+    if (mode !== 'raw' && this.raw && mode !== 'claude' && mode !== 'agent') this.raw = false
 
     let ty = 0
     let clip = 0
@@ -658,11 +752,15 @@ export class LoomView {
     let foot: string[] | null = null
     const gap = 4
 
+    // An agent with a screen profile is framed the same way as Claude: its own input,
+    // cut out of its screen, in Ember's frame, its status lines said again in the bar.
+    const codex = mode === 'agent' && agent === 'codex' ? this.findCodexDock(rows) : null
     // The shell is left exactly as PowerShell draws it: prompt at the top, output below.
-    if (mode === 'claude') {
-      dock = this.findDock(rows)
-      const under = dock && dock.close >= 0 ? rows.slice(dock.close + 1) : null
-      if (dock && !dock.dialog && dock.box && under && this.isFooter(under)) {
+    if (mode === 'claude' || codex) {
+      dock = codex ?? this.findDock(rows)
+      const under = !dock ? null : dock.close >= 0 ? rows.slice(dock.close + 1) : dock.foot !== undefined ? rows.slice(dock.foot, dock.bottom + 1) : null
+      const footOk = !!under && (codex ? this.isCodexFooter(under) : this.isFooter(under))
+      if (dock && !dock.dialog && dock.box && under && footOk) {
         // The input box, framed: its rules and the mode and status lines under it are
         // masked away and said again, tidily, in the bar under the frame. The prompt
         // itself is the real one, keys and all.
@@ -679,7 +777,7 @@ export class LoomView {
         canvasH = Math.max(0, clip + ty - 4)
         frame = { top: boxTopPx + ty - FRAME_PAD, height: frameH }
         // An empty prompt gets a quiet placeholder, set where the caret is.
-        const typed = (rows[b0] ?? '').replace(/^\s*❯\s?/, '').trim()
+        const typed = (rows[b0] ?? '').replace(/^\s*[❯›]\s?/, '').trim()
         const empty = b0 === b1 && !typed
         this.frame.classList.toggle('is-empty', empty)
         if (empty) {
@@ -706,9 +804,20 @@ export class LoomView {
         // Not a screen we know: show all of it. Nothing of the CLI is ever hidden by guessing.
         mode = 'app'
       }
+    } else if (mode === 'agent' && !codex) {
+      // Another agent's screen is not guessed at: the last rows it drew — its input and
+      // status, whatever they look like — are shown whole under the canvas.
+      let last = rows.length - 1
+      while (last > 0 && !(rows[last] ?? '').trim()) last--
+      const first = Math.max(0, last - AGENT_ROWS + 1)
+      const topPx = screenTop + first * cellH
+      const bottomPx = screenTop + (last + 1) * cellH
+      ty = Math.max(0, paneH - gap - bottomPx)
+      clip = Math.max(0, topPx - 3)
+      canvasH = Math.max(0, clip + ty)
     }
 
-    const showCanvas = mode === 'claude'
+    const showCanvas = mode === 'claude' || mode === 'agent'
     if (mode !== this.mode) {
       this.mode = mode
       this.el.classList.toggle('is-on', showCanvas)
@@ -756,7 +865,7 @@ export class LoomView {
       })
       this.renderBar(foot)
     }
-    if (showCanvas) this.readLive(rows, dock)
+    if (mode === 'claude') this.readLive(rows, dock)
   }
 
   /**
@@ -992,18 +1101,31 @@ export class LoomView {
 
   private key(e: KeyboardEvent): void {
     if (this.disposed || !this.hooks.isActive()) return
+    if (this.kbd || this.kbdInline) {
+      this.kbdKey(e)
+      return
+    }
+    // Ctrl+↑ from the input: into the results, onto the newest object.
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'ArrowUp' && (this.mode === 'claude' || this.mode === 'agent')) {
+      e.preventDefault()
+      e.stopPropagation()
+      const list = this.kbdList()
+      if (list.length) this.kbdSelect(list[list.length - 1]!)
+      else this.hooks.toast('Nothing on this turn to select yet')
+      return
+    }
     const tgt = e.target as HTMLElement | null
     const inLoomInput =
       tgt?.closest?.('.loom-pop, .loom-note-edit, .loom-picker, .loom-menu, .loom-drawer') != null ||
       (!!tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable) && !tgt.closest('.xterm'))
-    if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (this.mode === 'claude' || this.mode === 'shell')) {
+    if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (this.mode === 'claude' || this.mode === 'agent' || this.mode === 'shell')) {
       e.preventDefault()
       e.stopPropagation()
       this.toggleDrawer('notes')
       return
     }
     if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
-      if (this.mode === 'claude' || this.mode === 'raw') {
+      if (this.mode === 'claude' || this.mode === 'agent' || this.mode === 'raw') {
         e.preventDefault()
         e.stopPropagation()
         this.setRaw(!this.raw)
@@ -1023,7 +1145,7 @@ export class LoomView {
         return
       }
     }
-    if (this.mode !== 'claude') return
+    if (this.mode !== 'claude' && this.mode !== 'agent') return
     if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault()
       e.stopPropagation()
@@ -1441,13 +1563,29 @@ export class LoomView {
       d.dataset['pin'] = '1'
       d.classList.add('loom-liftable')
       const name = this.nameObject(d)
-      const lift = div('loom-lift', `<span class="loom-grip">${ICON.grip}</span><span class="loom-lift-name">${escapeHtml(name)}</span>`)
-      lift.title = 'Drag to place it on the screen, or to an edge to snap it — right-click for more'
+      const lift = div('loom-lift', `<span class="loom-grip">${ICON.grip}</span><span class="loom-lift-name">${escapeHtml(name)}</span><span class="loom-lift-hint">${ICON.grip}Drag out</span>`)
+      lift.title = 'Drag it out of the reply — place it anywhere, or at an edge to snap it. Right-click for more'
       lift.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return
+        d.classList.add('is-peeling')
+        const off = () => {
+          d.classList.remove('is-peeling')
+          window.removeEventListener('pointerup', off, true)
+        }
+        window.addEventListener('pointerup', off, true)
         this.drag(() => this.liftObject(d), lift, e)
       })
       d.appendChild(lift)
+      // Sized where it sits, without taking it out: the corner grip.
+      const grip = div('loom-inline-rz')
+      grip.title = 'Drag to resize'
+      grip.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return
+        e.preventDefault()
+        e.stopPropagation()
+        this.resizeInlineHost(d, e)
+      })
+      d.appendChild(grip)
     })
     const says = live.querySelectorAll<HTMLElement>(':scope > .loom-say')
     says.forEach((el, i) => el.classList.toggle('is-current', i === says.length - 1))
@@ -1838,6 +1976,11 @@ export class LoomView {
   private z = 10
 
   /** Whether the session is working right now, for Ember on the phone. */
+  /** An agent's canvas is showing (not the plain shell): its keys are the canvas's. */
+  get onCanvas(): boolean {
+    return this.mode === 'claude' || this.mode === 'agent' || !!this.kbd || !!this.kbdInline
+  }
+
   get busy(): boolean {
     return this.working
   }
@@ -1997,6 +2140,34 @@ export class LoomView {
    * pull; a snapped one only from its inner edge, which sets how deep its whole edge is.
    * The words are laid out again when you let go.
    */
+  /** Size an inline object (a diagram, a table, code) where it sits in the reply. */
+  private resizeInlineHost(host: HTMLElement, e: PointerEvent): void {
+    const col = host.parentElement?.clientWidth || this.scroller.clientWidth || 800
+    const frame = host.querySelector<HTMLIFrameElement>('iframe')
+    const w0 = host.offsetWidth
+    const h0 = frame ? frame.offsetHeight : host.offsetHeight
+    const sx = e.clientX
+    const sy = e.clientY
+    host.classList.add('is-sized', 'is-resizing')
+    this.track(
+      e,
+      'nwse-resize',
+      (ev) => {
+        host.style.width = `${Math.round(Math.max(240, Math.min(col, w0 + ev.clientX - sx)))}px`
+        const h = `${Math.round(Math.max(80, Math.min(2400, h0 + ev.clientY - sy)))}px`
+        if (frame) frame.style.height = h
+        else {
+          host.style.height = h
+          host.style.overflow = 'auto'
+        }
+      },
+      () => {
+        host.classList.remove('is-resizing')
+        this.grew()
+      }
+    )
+  }
+
   /** Size an object where it sits in the reply: its width in the column, its height. */
   private resizeInline(piece: Piece, dir: string, e: PointerEvent): void {
     const el = piece.el
@@ -2436,6 +2607,191 @@ export class LoomView {
   /** The objects a plan step carries, newest first. */
   private stepPieces(key: string): Piece[] {
     return [...this.pieces.values()].filter((p) => p.step === key && p.el.isConnected && !this.pinned.has(p)).reverse()
+  }
+
+  // ================================================================ the canvas from the keyboard
+
+  /** The object the keyboard is on, or null when the keys go to the input. */
+  private kbd: Piece | null = null
+  /** An object still inline in the reply that the keyboard is on (lifted out when acted on). */
+  private kbdInline: HTMLElement | null = null
+  private readonly kbdLegend = div('loom-kbd-legend')
+
+  /**
+   * The objects the keyboard can reach, in reading order: objects on the canvas and the
+   * diagrams, tables and code inline in the turn on screen.
+   */
+  private kbdList(): HTMLElement[] {
+    const pieces = [...this.pieces.values()].map((p) => p.el)
+    const inline = this.shown ? [...this.shown.querySelectorAll<HTMLElement>('.loom-liftable')].filter((d) => !d.closest('.loom-piece')) : []
+    return [...pieces, ...inline]
+      .filter((el) => el.isConnected && el.offsetParent !== null)
+      .sort((a, b) => {
+        const ra = a.getBoundingClientRect()
+        const rb = b.getBoundingClientRect()
+        return ra.top - rb.top || ra.left - rb.left
+      })
+  }
+
+  private pieceOf(el: HTMLElement): Piece | null {
+    for (const p of this.pieces.values()) if (p.el === el) return p
+    return null
+  }
+
+  /** The object under the keyboard as a canvas object, lifting an inline one out if need be. */
+  private kbdPiece(): Piece | null {
+    if (this.kbd) return this.kbd
+    const d = this.kbdInline
+    if (!d) return null
+    const piece = this.liftObject(d)
+    if (piece) this.kbdSelect(piece.el)
+    return piece
+  }
+
+  private kbdSelect(el: HTMLElement): void {
+    this.kbd?.el.classList.remove('is-kbd')
+    this.kbdInline?.classList.remove('is-kbd')
+    const piece = this.pieceOf(el)
+    this.kbd = piece
+    this.kbdInline = piece ? null : el
+    el.classList.add('is-kbd')
+    if (piece) this.raise(piece)
+    el.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' })
+    // Off the terminal, so the keys come here and nothing is typed into the agent.
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    this.el.focus({ preventScroll: true })
+    this.kbdLegend.innerHTML =
+      `<span><b>↑↓</b> choose</span><span><b>Enter</b> full screen</span><span><b>P</b> ${piece && this.pinned.has(piece) ? 'put back' : 'place on screen'}</span>` +
+      `<span><b>Shift+arrows</b> snap</span><span><b>Alt+arrows</b> move</span><span><b>Alt+Shift+arrows</b> size</span>` +
+      `<span><b>M</b> minimize</span><span><b>Del</b> remove</span><span><b>Space</b> menu</span><span><b>Esc</b> back to typing</span>`
+    if (!this.kbdLegend.isConnected) this.el.appendChild(this.kbdLegend)
+    this.kbdLegend.classList.add('is-on')
+  }
+
+  /** Back to the input: the ring goes, the legend goes, the keys go to the agent again. */
+  private kbdLeave(): void {
+    this.kbd?.el.classList.remove('is-kbd')
+    this.kbdInline?.classList.remove('is-kbd')
+    this.kbd = null
+    this.kbdInline = null
+    this.kbdLegend.classList.remove('is-on')
+    this.session.focus()
+  }
+
+  private kbdKey(e: KeyboardEvent): void {
+    const cur = this.kbd?.el ?? this.kbdInline
+    if (!cur || !cur.isConnected) return this.kbdLeave()
+    const stop = () => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const list = this.kbdList()
+    const at = list.indexOf(cur)
+    // Moving between objects needs no canvas object; everything else acts on one.
+    const k0 = e.key
+    if ((k0 === 'ArrowUp' || k0 === 'ArrowDown' || k0 === 'Tab') && !e.altKey && !e.shiftKey) {
+      stop()
+      const next = list[(at + (k0 === 'ArrowUp' ? -1 : 1) + list.length) % list.length]
+      if (next) this.kbdSelect(next)
+      return
+    }
+    if (k0 === 'Tab' && e.shiftKey) {
+      stop()
+      const next = list[(at - 1 + list.length) % list.length]
+      if (next) this.kbdSelect(next)
+      return
+    }
+    if (k0 === 'Escape' && !this.kbd) {
+      stop()
+      this.kbdLeave()
+      return
+    }
+    if (k0 === ' ' || k0 === '.') {
+      stop()
+      this.menu(cur.getBoundingClientRect(), cur)
+      return
+    }
+    if (k0.length === 1 && !e.ctrlKey && !e.metaKey && !/^[pPmM]$/.test(k0)) {
+      this.kbdLeave()
+      return
+    }
+    const acts = ['Enter', 'Delete', 'Backspace', 'p', 'P', 'm', 'M', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+    if (!acts.includes(k0)) return
+    if (this.kbdInline && (k0 === 'Delete' || k0 === 'Backspace')) {
+      // Part of the reply itself: nothing to take away.
+      stop()
+      return
+    }
+    const piece = this.kbdPiece()
+    if (!piece) return this.kbdLeave()
+    const k = e.key
+    const arrow = k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight'
+    if (k === 'Escape') {
+      stop()
+      if (this.full?.piece === piece) this.fullscreen(piece, false)
+      else this.kbdLeave()
+      return
+    }
+    if (this.full?.piece === piece && k !== 'Enter') return
+    if (arrow && e.altKey) {
+      stop()
+      if (!this.pinned.has(piece)) {
+        this.pin(piece, false)
+        this.settlePin(piece)
+      }
+      const dx = k === 'ArrowLeft' ? -1 : k === 'ArrowRight' ? 1 : 0
+      const dy = k === 'ArrowUp' ? -1 : k === 'ArrowDown' ? 1 : 0
+      if (piece.snap) this.unsnap(piece)
+      if (e.shiftKey) {
+        const w = Math.max(240, piece.el.offsetWidth + dx * 40)
+        const h = Math.max(90, piece.el.offsetHeight + dy * 40)
+        piece.el.style.width = `${w}px`
+        piece.el.style.height = `${h}px`
+        piece.free = { w, h }
+      } else this.place2(piece, piece.el.offsetLeft + dx * 32, piece.el.offsetTop + dy * 32)
+      this.reflow()
+      this.kbdSelect(piece.el)
+      return
+    }
+    if (arrow && e.shiftKey) {
+      stop()
+      const side: Side = k === 'ArrowLeft' ? 'left' : k === 'ArrowRight' ? 'right' : k === 'ArrowUp' ? 'top' : 'bottom'
+      if (!this.pinned.has(piece)) this.pin(piece, false)
+      if (piece.snap) this.unsnap(piece)
+      this.snapTo(piece, side)
+      this.kbdSelect(piece.el)
+      return
+    }
+    if (k === 'Enter') {
+      stop()
+      this.fullscreen(piece, this.full?.piece !== piece)
+      return
+    }
+    if (k === 'p' || k === 'P') {
+      stop()
+      if (this.pinned.has(piece)) this.unpin(piece)
+      else {
+        this.pin(piece)
+        this.settlePin(piece)
+      }
+      window.setTimeout(() => this.kbdSelect(piece.el), 260)
+      return
+    }
+    if (k === 'm' || k === 'M') {
+      stop()
+      this.minimize(piece)
+      return
+    }
+    if (k === 'Delete' || k === 'Backspace') {
+      stop()
+      const rest = list.filter((x) => x !== piece.el)
+      if (this.pinned.has(piece)) this.unpin(piece)
+      else this.dismiss(piece)
+      const next = rest[Math.min(at, rest.length - 1)]
+      if (next) this.kbdSelect(next)
+      else this.kbdLeave()
+      return
+    }
   }
 
   // ================================================================ pointing inside the canvas
@@ -3353,6 +3709,14 @@ export class LoomView {
       .join(' · ')
 
     const parts: string[] = []
+    // Another agent's bar: its own status text, without Claude's permission modes.
+    const other = !!this.session.announcedAgent && this.session.announcedAgent !== 'claude'
+    if (other) {
+      const said = lines.filter((r) => !/for shortcuts|^⚠\s*\d*$/.test(r)).map((r) => r.replace(/\s+⚠\s*\d+\s*$/, ''))
+      const name = agentSpec(this.session.announcedAgent ?? '').name
+      this.bar.innerHTML = `<span class="loom-bar-model">${escapeHtml(name)}</span>${said.length ? `<span class="loom-bar-rest">${escapeHtml(said.join(' · '))}</span>` : ''}`
+      return
+    }
     parts.push(`<button type="button" class="loom-bar-mode ${hit?.[2] ?? 'is-default'}" title="Permission mode — click or Shift+Tab to cycle"><i></i>${escapeHtml(hit?.[1] ?? 'default')}</button>`)
     const st = this.status
     if (st) {
@@ -3387,8 +3751,10 @@ export class LoomView {
   }
 
   /** What this view believes, for probes and for support: `window.__ember.loom()`. */
-  debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number } {
+  debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number; rows: string[]; sessionId: string } {
     return {
+      rows: this.rowsText(),
+      sessionId: this.session.id,
       mode: this.mode,
       working: this.working,
       says: this.feed.el.querySelectorAll('.loom-say').length,

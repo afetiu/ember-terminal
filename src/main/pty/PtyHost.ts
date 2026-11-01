@@ -8,6 +8,8 @@ export interface PtySpawnOptions {
   cwd: string
   /** Wrap the prompt so it reports cwd via OSC 9;9. */
   shellIntegration: boolean
+  /** A command the shell runs first thing (an agent's bin), before its first prompt. */
+  startup?: string
   /**
    * Bridge coordinates for the tab's visualisation panel, or undefined in the classic
    * experience. Present means two things happen: the shell inherits these variables,

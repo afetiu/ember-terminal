@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { TODO_SOURCES } from '../shared/types.js'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { monitorEventLoopDelay } from 'node:perf_hooks'
@@ -13,7 +13,7 @@ import { gitStatus, killPort, listTasks } from './project.js'
 import { VitalsWatcher } from './vitals.js'
 import { UsageWatcher } from './usage.js'
 import { detectAgents, pingAgent } from './agents.js'
-import { agentSpec } from '../shared/agents.js'
+import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
 import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
@@ -54,6 +54,15 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     return runAgent(prompt, { timeoutMs: 120_000, ...(cwd ? { cwd } : {}) }).done
   })
   ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
+  // A handoff brief for switching a tab to another agent: written where the new agent can
+  // read it, and named in the one short message it is given.
+  ipcMain.handle('ember:canvas:handoff', (_e, text: string) => {
+    const dir = join(CONFIG_DIR, 'handoff')
+    mkdirSync(dir, { recursive: true })
+    const file = join(dir, `handoff-${new Date().toISOString().replace(/[:.]/g, '-')}.md`)
+    writeFileSync(file, String(text).slice(0, 200_000), 'utf8')
+    return file
+  })
   ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {
     try {
       return showFile(tabId, path, title)
@@ -148,6 +157,8 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
       rows: req.rows,
       cwd: resolveHome(req.cwd ?? profile.cwd),
       shellIntegration: config.shellIntegration,
+      // Only a known agent's own command, never free text from the renderer.
+      ...(req.agent && req.agent in AGENTS ? { startup: AGENTS[req.agent as AgentId].bin } : {}),
       bin: [notesBin],
       // A Loom tab says so to everything it starts: the panel MCP server reads it and
       // describes a canvas instead of a side panel.

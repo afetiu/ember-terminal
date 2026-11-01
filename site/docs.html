@@ -66,7 +66,7 @@
           <li><a href="#install">Install</a></li>
           <li><a href="#first-launch">First launch</a></li>
           <li><a href="#clis">Choosing a CLI</a></li>
-          <li><a href="#no-keys">No API keys</a></li>
+          <li><a href="#no-keys">Your agents and sign-in</a></li>
         </ol>
       </li>
       <li><span class="toc__group">Everyday use</span>
@@ -172,14 +172,14 @@
 
 <!-- ======================================================================= -->
 <section aria-labelledby="no-keys">
-  <h2 id="no-keys">No API keys <a class="anchor" href="#no-keys" aria-label="Link to this section">#</a></h2>
-  <p>Ember never talks to a model itself and has no field for an API key anywhere. Every AI feature runs through a CLI on your machine, signed in with your own plan:</p>
+  <h2 id="no-keys">Your agents and sign-in <a class="anchor" href="#no-keys" aria-label="Link to this section">#</a></h2>
+  <p>Ember never talks to a model itself. Every AI feature runs through an agent CLI on your machine, signed in the way that CLI signs in — your Claude, ChatGPT, Google or Copilot plan, or, for agents that take one (OpenCode, Aider, Crush), a provider key such as OpenRouter, kept in that agent's own settings:</p>
   <ul>
     <li>The <strong>orchestrator</strong> and the <strong>map</strong> run a headless turn of the CLI chosen in Settings › Agent.</li>
     <li><strong>Check todos</strong> runs your local Claude Code with the <code>/check-todos</code> skill.</li>
     <li>The <strong>panel</strong> is drawn by whatever agent is running in that tab.</li>
   </ul>
-  <p>Usage counts against that CLI's plan, the same as when you use it anywhere else. Ember stores no credentials.</p>
+  <p>Usage counts against that CLI's plan or key, the same as when you use it anywhere else. Ember itself stores no credentials.</p>
 </section>
 
 <!-- ======================================================================= -->
@@ -190,7 +190,7 @@
 
   <h3 id="session-status">What a card shows</h3>
   <ul>
-    <li><strong>Status.</strong> Working, waiting on you, idle or exited, read from the screen of the program in that tab. When an agent CLI is running, the card shows Cinder, a small ember sprite: burning while the agent works, dozing while it waits, raising a hand when it needs you, waving when it has just finished.</li>
+    <li><strong>Status.</strong> Working, waiting on you, idle or exited, read from the screen of the program in that tab. When an agent CLI is running, the card shows a small ember sprite: burning while the agent works, dozing while it waits, raising a hand when it needs you, waving when it has just finished.</li>
     <li><strong>Attention.</strong> When a session needs you (a question, a permission prompt, a finished answer), its card tints amber and a short chime plays. Nothing goes to the Windows notification centre.</li>
     <li><strong>Project.</strong> Git branch and dirty-file count for the session's folder, and a chip for any <code>localhost</code> URL a dev server printed (click to open).</li>
     <li><strong>Claude status.</strong> For Claude Code sessions: model, context used and session cost, e.g. <code>Fable · 8% · $0.01</code>.</li>

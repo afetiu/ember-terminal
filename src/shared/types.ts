@@ -372,6 +372,8 @@ export interface EmberConfig {
   claude: ClaudeConfig
   /** Which coding-agent CLI Ember's own AI features run through. Never an API key. */
   agent: AgentConfig
+  /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
+  brain?: { sync: boolean }
   /**
    * Features that need an API key of their own or reach into one person's
    * accounts. Off in a fresh install: Ember's
@@ -566,6 +568,8 @@ export interface SpawnRequest {
    * MCP server, which then describes a canvas instead of a side panel.
    */
   surface?: 'canvas'
+  /** An agent id (src/shared/agents.ts) the shell starts as soon as it is up, before any prompt. */
+  agent?: string
 }
 
 /** What a Loom tab's transcript tail sends: lines as they are written, or a new session. */
@@ -715,6 +719,13 @@ export interface EmberBridge {
     onAgent(cb: (a: { tabId: string; agentId: string; action: string; at: number }) => void): () => void
     /** What Ember's own tools have cost this tab's session so far. */
     onCost(cb: (c: EmberCost) => void): () => void
+    /**
+     * Which agent CLI a tab is running now (null when it exits), for tabs whose agent is not
+     * Claude Code: main then follows that agent's own session log (docs/specs/providers.md).
+     */
+    tabAgent(tabId: string, agent: string | null, cwd: string, since: number): void
+    /** Write a handoff brief (switching a tab to another agent); returns its path. */
+    handoff(text: string): Promise<string>
   }
   panel: {
     /** Base URL of the local bridge, for the panel webview to load documents from. */
@@ -789,6 +800,17 @@ export interface EmberBridge {
    * code. Every device holds the same key, which is what lets the phone show a list of
    * laptops rather than being paired to one of them.
    */
+  /** Ember Brain: one memory, instructions and skills for every agent (src/main/brain.ts). */
+  brain: {
+    status(): Promise<BrainStatus>
+    sync(): Promise<BrainStatus>
+  }
+  /** The council: several agents debate one question (docs/specs/providers.md). */
+  council: {
+    start(req: CouncilRequest): void
+    stop(id: string): void
+    onEvent(cb: (e: CouncilEvent) => void): () => void
+  }
   remote: {
     account(): Promise<Account | null>
     create(): Promise<Account>
@@ -1064,4 +1086,40 @@ export interface MapAskEvent {
   askId: string
   kind: 'progress' | 'done' | 'error'
   text: string
+}
+
+/** A council: several agent CLIs answer one question, read each other, and a chair concludes. */
+export interface CouncilRequest {
+  id: string
+  question: string
+  /** Agent ids (src/shared/agents.ts), in speaking order. */
+  members: string[]
+  /** Rounds of debate after the opening positions. 0 = openings only. */
+  rounds: number
+  /** Who writes the conclusion. */
+  chair: string
+  /** The folder the agents may read, for questions about a project. */
+  cwd: string
+  /** Something the person said between rounds, read by everyone in the next round. */
+  interject?: string
+}
+
+export interface CouncilEvent {
+  id: string
+  kind: 'status' | 'speak' | 'conclusion' | 'error' | 'done'
+  member?: string
+  /** 0 = openings; 1.. = debate rounds; -1 = the conclusion. */
+  round?: number
+  text?: string
+  at: number
+}
+
+/** What every agent can see of the shared brain. */
+export interface BrainStatus {
+  dir: string
+  facts: number
+  skills: number
+  instructionsFrom: string | null
+  syncedAt: string | null
+  agents: Array<{ agent: string; file: string; present: boolean; synced: boolean; skills: number | null }>
 }

@@ -122,7 +122,12 @@ export function createWindow(config: EmberConfig): BrowserWindow {
   // measures the person's typing instead of its own, and they lose the keystrokes.
   win.once('ready-to-show', () => {
     if (process.env['EMBER_PROBE_INACTIVE']) win.showInactive()
-    else win.show()
+    else {
+      // Ember opens maximized, the way an app you work in all day should; a probe keeps
+      // the fixed size it asked for.
+      if (!bounds) win.maximize()
+      win.show()
+    }
   })
 
   applyGlass(win, config)
