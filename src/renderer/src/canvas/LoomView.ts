@@ -32,6 +32,18 @@ export interface LoomHooks {
   isActive(): boolean
   /** Toast-level feedback. */
   toast(text: string): void
+  /** Remember the view the person chose (canvas or the agent's own screen). */
+  saveView?(view: 'canvas' | 'cli'): void
+}
+
+/** Canvas | CLI: the two ways to see an agent tab, as one switch. */
+function viewSwitch(cli: boolean): string {
+  return (
+    `<span class="loom-view-switch" role="group" aria-label="View">` +
+    `<button type="button" data-view="canvas" class="${cli ? '' : 'is-on'}" aria-pressed="${!cli}" title="Ember's canvas (Ctrl+\`)">Canvas</button>` +
+    `<button type="button" data-view="cli" class="${cli ? 'is-on' : ''}" aria-pressed="${cli}" title="The agent's own screen (Ctrl+\`)">CLI</button>` +
+    `</span>`
+  )
 }
 
 type Mode = 'shell' | 'claude' | 'agent' | 'app' | 'raw'
@@ -195,7 +207,7 @@ export class LoomView {
   private tabAgentSent: string | null = null
   /** When the tab's current agent started, for finding its session log. */
   private tabAgentSince = Date.now()
-  private raw = false
+  private raw: boolean
   private claudeSeen = false
   private dock: Dock | null = null
   private frameReq = 0
@@ -221,6 +233,8 @@ export class LoomView {
     this.el.className = 'loom'
     this.el.dataset['tabId'] = tabId
     this.applyTheme(config)
+    // The view the person last chose: the canvas unless they picked the agent's own screen.
+    this.raw = config.agentView === 'cli'
 
     this.scroller = document.createElement('div')
     this.scroller.className = 'loom-scroll'
@@ -265,7 +279,7 @@ export class LoomView {
     this.ctxMenu = div('loom-menu')
     this.chip = div('loom-chip', '? ask')
     this.lightbox = div('loom-lightbox')
-    this.rawPill = div('loom-rawpill', `${ICON.sparkle}<span>Back to Loom</span><kbd>Ctrl+\`</kbd>`)
+    this.rawPill = div('loom-rawpill', viewSwitch(true))
 
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
@@ -333,6 +347,7 @@ export class LoomView {
         this.restage()
       } else if (b?.dataset['s'] === 'clear') this.clearScreen()
       else if (b?.dataset['s'] === 'raw') this.setRaw(true)
+      else if ((e.target as HTMLElement).closest('[data-view="cli"]')) this.setRaw(true)
     })
     this.bar.addEventListener('click', (e) => {
       // The mode chip cycles the permission mode, as Shift+Tab does.
@@ -472,7 +487,9 @@ export class LoomView {
       this.chip.classList.remove('is-on')
     })
     this.jump.addEventListener('click', () => this.toBottom(true))
-    this.rawPill.addEventListener('click', () => this.setRaw(false))
+    this.rawPill.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-view="canvas"]')) this.setRaw(false)
+    })
 
     this.el.addEventListener('click', (e) => this.click(e))
     this.el.addEventListener('contextmenu', (e) => this.context(e))
@@ -741,7 +758,6 @@ export class LoomView {
       if (this.agentUp) this.starting.remove()
     }
     if (this.raw && (mode === 'claude' || mode === 'agent')) mode = 'raw'
-    if (mode !== 'raw' && this.raw && mode !== 'claude' && mode !== 'agent') this.raw = false
 
     let ty = 0
     let clip = 0
@@ -1093,6 +1109,7 @@ export class LoomView {
   /** Ctrl+`: the real TUI, whole, or back to the canvas. */
   setRaw(on: boolean): void {
     this.raw = on
+    this.hooks.saveView?.(on ? 'cli' : 'canvas')
     this.schedule()
     if (!on) this.session.focus()
   }
@@ -1728,7 +1745,7 @@ export class LoomView {
     this.expanded = on ? piece : null
     if (on) {
       piece.el.style.setProperty('--loom-fill', `${Math.max(240, this.scroller.clientHeight - 64)}px`)
-      requestAnimationFrame(() => piece.el.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+      requestAnimationFrame(() => this.reveal(piece.el, 'start'))
     }
   }
 
@@ -2609,6 +2626,26 @@ export class LoomView {
     return [...this.pieces.values()].filter((p) => p.step === key && p.el.isConnected && !this.pinned.has(p)).reverse()
   }
 
+  /**
+   * Bring something into view by scrolling the reply up or down, and nothing else. The
+   * browser's own scrollIntoView also scrolls every ancestor sideways — the whole canvas
+   * slid left under the sidebar when the keyboard picked an object near the right edge.
+   */
+  private reveal(el: HTMLElement, block: 'nearest' | 'start' | 'center' = 'nearest'): void {
+    if (this.scroller.contains(el)) {
+      const sr = this.scroller.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      let d = 0
+      if (block === 'start') d = r.top - sr.top - 12
+      else if (block === 'center') d = r.top + r.height / 2 - (sr.top + sr.height / 2)
+      else if (r.top < sr.top) d = r.top - sr.top - 12
+      else if (r.bottom > sr.bottom) d = Math.min(r.bottom - sr.bottom + 12, r.top - sr.top - 12)
+      if (d) this.scroller.scrollBy({ top: d, behavior: reduced() ? 'auto' : 'smooth' })
+    }
+    // Anything that did slide sideways goes back.
+    for (const n of [this.el, this.panes, this.panes.parentElement, this.scroller]) if (n && n.scrollLeft) n.scrollLeft = 0
+  }
+
   // ================================================================ the canvas from the keyboard
 
   /** The object the keyboard is on, or null when the keys go to the input. */
@@ -2656,7 +2693,7 @@ export class LoomView {
     this.kbdInline = piece ? null : el
     el.classList.add('is-kbd')
     if (piece) this.raise(piece)
-    el.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' })
+    this.reveal(el, 'nearest')
     // Off the terminal, so the keys come here and nothing is typed into the agent.
     ;(document.activeElement as HTMLElement | null)?.blur?.()
     this.el.focus({ preventScroll: true })
@@ -2839,7 +2876,7 @@ export class LoomView {
       this.minimize(piece, false)
       if (!this.pinned.has(piece)) this.focusOn(piece)
     }
-    host.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    this.reveal(host, 'nearest')
     await new Promise((r) => window.setTimeout(r, 380))
     let target = host.getBoundingClientRect()
     let found = p.object
@@ -2914,7 +2951,7 @@ export class LoomView {
       this.viewing = home === turns[turns.length - 1] ? null : home
       this.restage()
       this.focusOn(piece)
-      piece.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      this.reveal(piece.el, 'nearest')
     })
     const board = live.querySelector(':scope > .loom-board')
     live.insertBefore(ref, board)
@@ -3491,7 +3528,7 @@ export class LoomView {
             .join('')
         : ''
       this.minimize(b.piece, false)
-      if (!this.visible(b.piece.el)) b.piece.el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (!this.visible(b.piece.el)) this.reveal(b.piece.el, 'center')
       reply({ ok: true, found: result?.found ?? 0, missing: result?.missing ?? [], url: b.view.getURL() })
     } catch (err) {
       reply({ ok: false, error: err instanceof Error ? err.message : String(err) })
@@ -3616,7 +3653,7 @@ export class LoomView {
                 this.restage()
               }
               this.focusOn(top)
-              top.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+              this.reveal(top.el, 'nearest')
             }
           })
         }
@@ -3643,7 +3680,7 @@ export class LoomView {
     this.sign.innerHTML =
       `<button type="button" data-s="hands" class="loom-sign-hands is-${this.hands}" title="Ember Hands — ${this.hands === 'off' ? 'off' : this.hands === 'act' ? 'may point, click and type' : 'may point and explain, never click'}. Click to change.">${ICON.hand}<span>${this.hands === 'off' ? 'Off' : this.hands === 'act' ? 'Show & act' : 'Show me'}</span></button>` +
       `<button type="button" data-s="notes" class="loom-sign-icon loom-sign-book${this.drawer.classList.contains('is-on') ? ' is-active' : ''}" title="Notebook — your todo list and notes (Ctrl+Shift+N)">${ICON.notes}${this.openTodos ? `<span class="b">${this.openTodos}</span>` : ''}</button>` +
-      `<button type="button" data-s="raw" class="loom-sign-icon" title="CLI view — the real Claude Code screen (Ctrl+\`)">${ICON.terminal}</button>`
+      viewSwitch(false)
   }
 
   /**

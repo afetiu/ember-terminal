@@ -924,6 +924,11 @@ export class App {
         send: (text, submit) => this.sendToSession(group, text, submit),
         isActive: () => this.activeId === group.id,
         toast: (text) => this.flashToast(text),
+        saveView: (view) => {
+          if (this.config.agentView === view || (view === 'canvas' && !this.config.agentView)) return
+          this.config = { ...this.config, agentView: view }
+          window.ember.saveConfig(this.config)
+        },
       })
     }
     lap('session')

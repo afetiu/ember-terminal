@@ -4882,3 +4882,14 @@ body.sidebar-mini .ember-places {
 .ember-sidebar-head .ember-sidebar-title {
   display: none;
 }
+
+/* Ctrl+K at the bottom, near where you type: the input lowest, results above it. */
+.ember-palette {
+  align-content: end;
+  padding-top: 0;
+  padding-bottom: 12vh;
+}
+.ember-palette-panel {
+  display: flex;
+  flex-direction: column-reverse;
+}

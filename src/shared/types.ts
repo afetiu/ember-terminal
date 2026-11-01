@@ -372,6 +372,8 @@ export interface EmberConfig {
   claude: ClaudeConfig
   /** Which coding-agent CLI Ember's own AI features run through. Never an API key. */
   agent: AgentConfig
+  /** How an agent tab shows by default: Ember's canvas, or the agent's own screen. Remembered. */
+  agentView?: 'canvas' | 'cli'
   /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
   brain?: { sync: boolean }
   /**
