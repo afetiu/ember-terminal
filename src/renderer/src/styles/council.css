@@ -655,3 +655,82 @@ body.is-light .ember-council-frame { background: rgba(255, 255, 255, 0.7); }
 .ember-council-list li::marker {
   color: var(--cn-dim, currentColor);
 }
+
+/* The chips' own menu: Ember's look, opening upward from the composer. */
+button.ember-council-chip.is-select {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.ember-council-chip-val {
+  font-weight: 600;
+}
+.ember-council-menu {
+  position: fixed;
+  z-index: 4000;
+  display: grid;
+  gap: 1px;
+  padding: 5px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-bg, #16120f) 94%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 18px 44px -14px rgba(0, 0, 0, 0.6);
+  animation: ember-council-menu-in 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes ember-council-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.ember-council-menu-item {
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-fg, #e8e0d5);
+  font: 500 13px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ember-council-menu-item:hover,
+.ember-council-menu-item:focus-visible {
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+.ember-council-menu-item.is-on {
+  color: var(--c-accent, #f2a43a);
+}
+.ember-council-menu-item.is-on::before {
+  content: '✓ ';
+}
+body.is-light .ember-council-menu {
+  background: color-mix(in srgb, #fff 96%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 18px 44px -14px rgba(0, 0, 0, 0.25);
+}
+body.is-light .ember-council-menu-item:hover,
+body.is-light .ember-council-menu-item:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ember-council-menu {
+    animation: none;
+  }
+}
+/* The chip is a button now: the arrow sits after the value, not over it. */
+button.ember-council-chip.is-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+button.ember-council-chip.is-select .ember-council-chip-chev {
+  position: static;
+  transform: none;
+}

@@ -422,6 +422,14 @@ export class LoomView {
     )
 
     const onMessage = (e: MessageEvent) => {
+      // Esc pressed inside an object's own frame (a click there took the keyboard into it):
+      // the same as Esc on the canvas — off the object, full screen closed, back to typing.
+      if ((e.data as { emberKey?: string } | null)?.emberKey === 'Escape') {
+        if (this.full) this.fullscreen(this.full.piece, false)
+        else if (this.kbd || this.kbdInline) this.kbdLeave()
+        else this.session.focus()
+        return
+      }
       const found = (e.data as { emberFound?: { id: string; rect: { x: number; y: number; w: number; h: number } | null } } | null)?.emberFound
       if (found) {
         this.findWaiters.get(found.id)?.(found.rect)

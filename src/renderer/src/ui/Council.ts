@@ -496,7 +496,11 @@ export class Council {
     if (focusKey) this.tools.querySelector<HTMLElement>(`[data-key="${focusKey}"]`)?.focus()
   }
 
-  /** A native select dressed as a chip: keyboard and screen readers get the real thing. */
+  /**
+   * A chip that opens Ember's own small menu above it — not the system's dropdown, which
+   * drew a white-bordered list that belonged to no part of the app. Keyboard: Enter or
+   * Space opens, arrows move, Enter picks, Esc closes.
+   */
   private selectChip(
     key: string,
     label: string,
@@ -505,26 +509,72 @@ export class Council {
     value: string,
     onChange: (v: string) => void
   ): HTMLElement {
-    const chip = el('label', 'ember-council-chip is-select')
+    const chip = el('button', 'ember-council-chip is-select')
+    chip.type = 'button'
+    chip.dataset.key = key
     chip.title = label
+    chip.setAttribute('aria-haspopup', 'listbox')
+    chip.setAttribute('aria-label', label)
+    chip.disabled = !options.length
     if (prefix) chip.appendChild(el('span', 'ember-council-chip-pre', prefix))
-    const sel = el('select')
-    sel.dataset.key = key
-    sel.setAttribute('aria-label', label)
-    for (const o of options) {
-      const opt = el('option', undefined, o.label)
-      opt.value = o.value
-      opt.selected = o.value === value
-      sel.appendChild(opt)
-    }
-    sel.disabled = !options.length
-    sel.addEventListener('change', () => {
-      onChange(sel.value)
-      this.renderComposer()
-    })
+    chip.appendChild(el('span', 'ember-council-chip-val', options.find((o) => o.value === value)?.label ?? ''))
     const chev = el('span', 'ember-council-chip-chev')
     chev.innerHTML = CHEVRON
-    chip.append(sel, chev)
+    chip.appendChild(chev)
+
+    const open = () => {
+      document.querySelector('.ember-council-menu')?.remove()
+      const menu = el('div', 'ember-council-menu')
+      menu.setAttribute('role', 'listbox')
+      const items = options.map((o) => {
+        const item = el('button', `ember-council-menu-item${o.value === value ? ' is-on' : ''}`, o.label)
+        item.type = 'button'
+        item.setAttribute('role', 'option')
+        item.setAttribute('aria-selected', String(o.value === value))
+        item.addEventListener('click', () => {
+          close()
+          onChange(o.value)
+          this.renderComposer()
+          this.tools.querySelector<HTMLElement>(`[data-key="${key}"]`)?.focus()
+        })
+        menu.appendChild(item)
+        return item
+      })
+      const r = chip.getBoundingClientRect()
+      menu.style.left = `${Math.round(r.left)}px`
+      menu.style.bottom = `${Math.round(window.innerHeight - r.top + 6)}px`
+      menu.style.minWidth = `${Math.round(r.width)}px`
+      document.body.appendChild(menu)
+      const at = Math.max(0, options.findIndex((o) => o.value === value))
+      items[at]?.focus()
+      const onKey = (e: KeyboardEvent) => {
+        const i = items.indexOf(document.activeElement as HTMLButtonElement)
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          e.stopPropagation()
+          close()
+          chip.focus()
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault()
+          const next = items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]
+          next?.focus()
+        }
+      }
+      const away = (e: PointerEvent) => {
+        if (!menu.contains(e.target as Node) && e.target !== chip) close()
+      }
+      const close = () => {
+        menu.remove()
+        window.removeEventListener('keydown', onKey, true)
+        window.removeEventListener('pointerdown', away, true)
+      }
+      window.addEventListener('keydown', onKey, true)
+      window.addEventListener('pointerdown', away, true)
+    }
+    chip.addEventListener('click', () => {
+      if (document.querySelector('.ember-council-menu')) document.querySelector('.ember-council-menu')?.remove()
+      else open()
+    })
     return chip
   }
 
