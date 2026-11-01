@@ -607,70 +607,45 @@ function start() {
 
   async function bugStory() {
     await beat(0)
-    await wait(500)
-    await ask('checkout is throwing 503s since this morning. what is going on?')
+    await ask('checkout is throwing 503s since this morning. why?')
     think('Reading the logs…')
     await wait(1300)
-    await line('Checkout runs out of database connections at peak. Each request waits for one of 10 pooled connections; after 5 s it gives up with a 503.')
-    await wait(200)
+    await line('The database runs out of connections at lunch. Only 10 are allowed.')
     const chart = piece('5xx per minute · today', 'chart', chartBody())
     await show(chart)
-    await wait(1500)
+    busy(false)
+    await wait(1600)
 
     await beat(1)
     await dragTo(chart, 'right')
-    await wait(900)
-
-    await beat(2)
-    startPlan('Fix checkout 503s', ['Find the cause', 'Raise the pool, fail fast', 'Run the tests', 'Open a PR'])
-    step(0, 'done')
-    step(1, 'active')
+    ptr.classList.remove('is-on')
     await wait(500)
-    await line('The pool is set here; 10 is too few for lunch traffic.')
+    await line('The limit is set here:')
     const code = piece('src/db/pool.ts', 'code', codeBody())
     await show(code)
-    busy(false)
-    await wait(1300)
+    await wait(1400)
 
-    await beat(3)
-    await dragTo(code, 'bottom')
-    ptr.classList.remove('is-on')
-    await wait(900)
-
-    await beat(4)
-    await askAbout(chart.querySelector('[data-spike]'), '5xx per minute · 12:10', 'why is noon worse than 9 am?',
-      'Lunch: about 2.4× the checkouts per minute, so the 10 connections run out sooner and the queue backs up.')
-
-    await beat(5)
+    await beat(2)
     const max = code.querySelector('[data-max]')
-    await change(max, 'src/db/pool.ts · max: 10', 'make it 40, and fail fast after 5 s', 'src/db/pool.ts, “max: 10”')
+    await change(max, 'src/db/pool.ts · max: 10', 'make it 40', 'src/db/pool.ts, “max: 10”')
     think('Editing pool.ts…')
-    await wait(1100)
+    await wait(1000)
+    unthink()
     max.classList.remove('is-hl')
     max.classList.add('is-del')
-    max.insertAdjacentHTML('afterend', codeLine(15, '  max: 40,', 'is-add') + codeLine(16, '  acquireTimeoutMillis: 5_000,', 'is-add'))
-    code.querySelectorAll('.cl').forEach((l, i) => {
-      if (i > 6) l.querySelector('i').textContent = String(11 + i - 1)
-    })
-    step(1, 'done')
-    step(2, 'active')
-    await wait(700)
+    max.insertAdjacentHTML('afterend', codeLine(15, '  max: 40,', 'is-add'))
     const t = tool('run', 'pnpm test')
-    await wait(1600)
+    await wait(1500)
     t.textContent = 'pnpm test · 128 passed'
-    step(2, 'done')
-    step(3, 'active')
-    await wait(800)
+    busy(false)
+    await wait(1200)
 
-    await beat(6)
-    await choose('Open a pull request with this fix?', 'Open the PR')
-    think('Pushing fix/checkout-pool…')
-    await wait(1300)
-    step(3, 'done')
+    await beat(3)
+    await choose('Open a pull request?', 'Open the PR')
+    think('Pushing…')
+    await wait(1100)
     chart.querySelector('.ch').classList.add('is-more')
-    await line('PR #418 is open. Staging has had no 503s since the fix went in.')
-    await wait(500)
-    addTodo('watch checkout 5xx after the deploy')
+    await line('PR #418 is open. No 503s on staging since the fix.')
     busy(false)
     await wait(4200)
   }
@@ -687,10 +662,16 @@ function start() {
   function mark(pageEl, target, n, note, left = false) {
     const b = box(target, pageEl)
     const m = document.createElement('div')
-    m.className = left ? 'mark is-left' : 'mark'
-    if (left) m.style.right = `${pageEl.offsetWidth - b.x + 2}px`
-    else m.style.left = `${b.x + b.w + 2}px`
-    m.style.top = `${b.y + b.h / 2 - 9}px`
+    m.className = left === true ? 'mark is-left' : 'mark'
+    // 'above': just over the target's top right, where it covers nothing else on the page
+    if (left === 'above') {
+      m.style.left = `${b.x + b.w - 4}px`
+      m.style.top = `${b.y - 20}px`
+    } else {
+      if (left) m.style.right = `${pageEl.offsetWidth - b.x + 2}px`
+      else m.style.left = `${b.x + b.w + 2}px`
+      m.style.top = `${b.y + b.h / 2 - 9}px`
+    }
     m.innerHTML = `<i>${n}</i><span>${note}</span>`
     pageEl.appendChild(m)
     void m.offsetWidth
@@ -699,79 +680,51 @@ function start() {
 
   async function pageStory() {
     await beat(0)
-    await wait(500)
-    await ask('add a pricing section to the landing page, three plans')
+    await ask('add a pricing section with three plans')
     think('Writing the section…')
-    await wait(1100)
-    tool('edit', 'src/sections/Pricing.tsx · +86')
-    await wait(500)
-    tool('edit', 'src/data/plans.json · +24')
-    await wait(500)
+    await wait(1300)
     await line('Here it is, live from your dev server.')
     const page = piece('localhost:5173 · Pricing', 'page', pageBody())
     await show(page)
     busy(false)
-    await wait(1400)
+    await wait(1600)
 
     await beat(1)
     await dragTo(page, 'bottom', 0.56)
     ptr.classList.remove('is-on')
-    await wait(800)
+    await wait(900)
 
     await beat(2)
-    await ask('where do the prices and the badge come from?')
+    await ask('where does the price come from?')
     think('Marking the page…')
     await wait(1000)
+    unthink()
     const pageEl = page.querySelector('[data-page]')
-    mark(pageEl, page.querySelector('[data-price]'), 1, 'from plans.json', true)
-    await wait(500)
-    mark(pageEl, page.querySelector('[data-badge]'), 2, '"featured": true')
-    await line('Both live in src/data/plans.json; I’ve marked them on the page.')
+    mark(pageEl, page.querySelector('[data-price]'), 1, 'plans.json', 'above')
+    await line('From plans.json. I’ve marked it on the page.')
     busy(false)
-    await wait(1600)
+    await wait(1800)
 
     await beat(3)
-    await askAbout(page.querySelector('[data-tier="team"]'), 'localhost:5173 · the Team plan', 'does this layout work on a phone?',
-      'Yes. Under 640 px the three plans stack, and the buttons stay 44 px tall.')
-
-    await beat(4)
     const btn = page.querySelector('[data-team]')
-    await change(btn, 'localhost:5173 · button “Choose Team”', 'make Team the featured plan, and say “Start free trial”', 'the page, button “Choose Team”')
+    await change(btn, 'localhost:5173 · button “Choose Team”', 'make Team the featured plan', 'the page, button “Choose Team”')
     think('Editing plans.json…')
-    await wait(1000)
-    tool('edit', 'src/data/plans.json · 2 lines')
+    await wait(1100)
     // the page reloads by itself, the way a dev server's does
     page.querySelector('[data-reload]').classList.add('is-spin')
     await wait(500)
     pageEl.querySelectorAll('.mark').forEach((m) => m.remove())
-    const pro = page.querySelector('[data-tier="pro"]')
     const team = page.querySelector('[data-tier="team"]')
-    pro.classList.remove('is-hot')
+    page.querySelector('[data-tier="pro"]').classList.remove('is-hot')
     team.classList.add('is-hot', 'is-new')
     team.prepend(page.querySelector('[data-badge]'))
-    btn.textContent = 'Start free trial'
     page.querySelector('[data-reload]').classList.remove('is-spin')
-    await line('Done. Team is featured now, and the page has reloaded.')
+    await line('Done. The page has reloaded.')
     busy(false)
-    await wait(1200)
-
-    await beat(5)
-    await choose('Commit this as “Pricing section”?', 'Commit')
-    think('Committing…')
-    await wait(900)
-    tool('git', 'commit · 3 files · a41c9e2')
-    await line('Committed on feat/pricing. The preview stays open while you keep going.')
-    busy(false)
-    await wait(4000)
+    await wait(4200)
   }
 
   // ================================================================ 3 · review a contract
-  const risksBody = () =>
-    `<table class="tbl"><thead><tr><th>Clause</th><th>What it says</th><th>Risk</th></tr></thead><tbody>` +
-    `<tr data-row="7.2"><td>7.2 Termination</td><td>30 days’ notice, either side</td><td><em class="hi">High</em></td></tr>` +
-    `<tr><td>9.1 Liability</td><td>Capped at 3 months of fees</td><td><em class="md">Medium</em></td></tr>` +
-    `<tr><td>11.4 Renewal</td><td>Renews for 12 months unless cancelled</td><td><em class="md">Medium</em></td></tr>` +
-    `</tbody></table>`
   // A few pages of the contract, one under another, the way a PDF scrolls.
   const lines = (...ws) => ws.map((w) => `<p class="ln" style="width:${w}%"></p>`).join('')
   const pdfBody = () =>
@@ -795,43 +748,35 @@ function start() {
     return el
   }
   const mailBody = () =>
-    `<div class="mail"><p><b>To</b> legal@northwind.example</p><p><b>Subject</b> MSA: notice period in 7.2</p><hr>` +
-    `<p>Hi Dana,</p><p>Before we sign, could we move the notice period in clause 7.2 from 30 to 60 days? Clause 14.1 lets us amend it in writing, and 60 days gives both teams time to hand over.</p><p>Thanks,<br>Sam</p></div>`
+    `<div class="mail"><p><b>To</b> legal@northwind.example</p><p><b>Subject</b> Notice period in 7.2</p><hr>` +
+    `<p>Hi Dana,</p><p>Before we sign, could we change the notice period in 7.2 from 30 to 60 days?</p><p>Thanks,<br>Sam</p></div>`
 
   async function contractStory() {
     await beat(0)
-    await wait(500)
-    await ask('go through the Northwind contract. what should I watch out for?')
-    think('Reading Northwind MSA.pdf, 12 pages…')
-    await wait(1400)
-    await line('Three clauses need a look before you sign:')
-    const risks = piece('Watch-outs', 'table', risksBody())
-    await show(risks)
+    await ask('what should I watch out for in this contract?')
+    think('Reading Northwind MSA.pdf…')
+    await wait(1300)
+    await line('Three clauses: 7.2, 9.1 and 11.4.')
     const pdf = piece('Northwind MSA.pdf', 'PDF', pdfBody())
     await show(pdf)
     busy(false)
-    await wait(1200)
-
-    await beat(1)
+    await wait(900)
     await dragTo(pdf, 'right')
     ptr.classList.remove('is-on')
-    await wait(800)
+    await wait(600)
 
-    await beat(2)
-    await ask('walk me through the three clauses in the PDF')
-    await wait(500)
+    await beat(1)
+    await ask('walk me through them')
     // it scrolls the PDF to each one and points at it, a step at a time
     const walk = [
       ['7.2', 'Either side can leave on 30 days’ notice'],
       ['9.1', 'Liability stops at 3 months of fees'],
-      ['11.4', 'Renews for a year unless you cancel'],
+      ['11.4', 'Renews each year unless you cancel'],
     ]
     ember(true)
-    P.x = narrow ? 200 : 520
+    P.x = narrow ? 200 : 620
     P.y = narrow ? 260 : 300
     placePtr()
-    unthink()
-    const said = await line('')
     for (const [i, [id, note]] of walk.entries()) {
       tag.textContent = ''
       const el = await turnTo(pdf, id)
@@ -839,24 +784,23 @@ function start() {
       pdf.querySelectorAll('.cl.is-hl').forEach((c) => c.classList.remove('is-hl'))
       el.classList.add('is-hl')
       tag.innerHTML = `<b>Step ${i + 1} of 3</b>${note}`
-      said.textContent = `${id}, page ${el.closest('.pdf__page').dataset.p}.`
-      await wait(2300)
+      await wait(2400)
     }
     tag.textContent = ''
-    await line('7.2 is the one to push back on; the other two are common.')
-    busy(false)
-    await wait(1000)
     ember(false)
     ptr.classList.remove('is-on')
+    await line('7.2 is the one to push back on.')
+    busy(false)
+    await wait(900)
 
-    await beat(3)
+    await beat(2)
     const clause = await turnTo(pdf, '7.2')
     pdf.querySelectorAll('.cl.is-hl').forEach((c) => c.classList.remove('is-hl'))
     clause.classList.add('is-hl')
-    await askAbout(clause, 'Northwind MSA.pdf · 7.2', 'can we ask for 60 days instead?',
-      'Yes. Clause 14.1 lets both sides amend it in writing, and 60 days is common for a contract this size.')
+    await askAbout(clause, 'Northwind MSA.pdf · 7.2', 'can we ask for 60 days?',
+      'Yes. Clause 14.1 lets you change it in writing.')
 
-    await beat(4)
+    await beat(3)
     await ask('draft the email asking for 60 days')
     think('Writing…')
     await wait(1000)
@@ -864,24 +808,9 @@ function start() {
     const mail = piece('Email to Northwind', 'draft', mailBody())
     await show(mail)
     busy(false)
-    await wait(1400)
-
-    await beat(5)
-    ember(false)
-    await click(mail.querySelector('.pc__h'), true)
-    openMenu(mid(mail.querySelector('.pc__h')), 'Email to Northwind')
-    await wait(700)
-    await click(menu.querySelector('[data-tile="note"]'))
-    closeMenu()
-    ptr.classList.remove('is-on')
+    await wait(600)
     showToast('Saved to your notes: Email to Northwind')
-    await wait(1600)
-    await ask('remind me to send it on Friday')
-    await wait(700)
-    addTodo('send the 7.2 email to Northwind, Friday')
-    await line('On your todo list for Friday.')
-    busy(false)
-    await wait(3800)
+    await wait(4200)
   }
 
   // ================================================================ 4 · work another app
@@ -891,10 +820,6 @@ function start() {
     ['LATAM', '128,400'],
     ['APAC', '301,750'],
   ]
-  const totalsBody = () =>
-    `<table class="tbl"><thead><tr><th>Region</th><th class="num">Q3 total</th><th>Invoices</th></tr></thead><tbody>` +
-    CSV.map(([r, v], i) => `<tr><td>${r}</td><td class="num">${v}</td><td>${[38, 51, 17, 29][i]}</td></tr>`).join('') +
-    `</tbody></table>`
   function buildSheet() {
     const rows = [['Region', 'Q3 revenue', 'Target'], ...CSV.map(([r], i) => [r, '', ['400,000', '700,000', '120,000', '280,000'][i]]), [], ['Total', '', '1,500,000']]
     let g = '<span class="rh"></span>' + 'ABC'.split('').map((c) => `<span class="colh">${c}</span>`).join('')
@@ -917,98 +842,87 @@ function start() {
   async function appStory() {
     buildSheet()
     await beat(0)
-    await wait(500)
-    await ask('fill the Q3 totals from invoices.csv into the finance sheet')
+    await ask('put the Q3 totals from invoices.csv into the finance sheet')
     think('Reading invoices.csv…')
-    await wait(1100)
-    await line('Four regions, 135 invoices. I’ll put the totals into Q3 revenue.xlsx; you can watch, and STOP is always on screen.')
-    const totals = piece('invoices.csv · totals by region', 'table', totalsBody())
-    await show(totals)
-    await wait(1200)
+    await wait(1300)
+    await line('Four regions. I’ll fill them in; you can watch.')
+    busy(false)
+    await wait(900)
 
     await beat(1)
     sheet.classList.add('is-on')
     stop.classList.add('is-on')
     if (!narrow) {
       // the window opens beside the reply, and the words make room for it
-      col.style.width = `${cv.offsetWidth - 500}px`
+      col.style.width = `${cv.offsetWidth - 540}px`
     }
-    await wait(500)
-    const look = tool('look', 'Q3 revenue.xlsx')
+    busy(true)
     await wait(600)
     // what look hands back: every control, numbered
+    const look = tool('look', 'Q3 revenue.xlsx')
+    await wait(500)
     sheet.classList.add('is-numbered')
-    look.textContent = 'Q3 revenue.xlsx · 64 controls, numbered'
-    await wait(2200)
+    look.textContent = 'Q3 revenue.xlsx · 64 controls'
+    await wait(2400)
     sheet.classList.remove('is-numbered')
 
     await beat(2)
     const act = tool('act', '')
-    const add = (s) => (act.textContent += `${act.textContent ? '; ' : ''}${s}`)
+    const add = (s) => (act.textContent += `${act.textContent ? ' · ' : ''}${s}`)
     ember(true)
-    P.x = narrow ? 200 : 620
+    P.x = narrow ? 200 : 700
     P.y = 300
     placePtr()
     const ref = sheet.querySelector('[data-ref]')
     const fx = sheet.querySelector('[data-fx]')
+    const select = (cell, r) => {
+      sheet.querySelectorAll('.is-sel').forEach((c) => c.classList.remove('is-sel'))
+      cell.classList.add('is-sel')
+      ref.textContent = r
+    }
     for (let i = 0; i < CSV.length; i++) {
       const cell = sheet.querySelector(`[data-c="B${i + 2}"]`)
       tag.textContent = `#${21 + i}`
-      add(`settext #${21 + i} "${CSV[i][1]}"`)
+      add(`#${21 + i}`)
       await glide(mid(cell))
       ripple(mid(cell))
-      sheet.querySelectorAll('.is-sel').forEach((c) => c.classList.remove('is-sel'))
-      cell.classList.add('is-sel')
-      ref.textContent = `B${i + 2}`
+      select(cell, `B${i + 2}`)
       await typeInto(cell, CSV[i][1], 30)
       fx.textContent = CSV[i][1]
-      sheet.querySelector('[data-dirty]').textContent = ' •'
       await wait(150)
     }
     const b7 = sheet.querySelector('[data-c="B7"]')
     tag.textContent = '#41'
-    add('settext #41 "=SUM(B2:B5)"')
+    add('#41')
     await glide(mid(b7))
     ripple(mid(b7))
-    sheet.querySelectorAll('.is-sel').forEach((c) => c.classList.remove('is-sel'))
-    b7.classList.add('is-sel')
-    ref.textContent = 'B7'
+    select(b7, 'B7')
     await typeInto(b7, '=SUM(B2:B5)', 40)
     fx.textContent = '=SUM(B2:B5)'
     await wait(250)
     b7.textContent = '1,498,350'
     b7.classList.add('is-new')
-    tag.textContent = 'Ctrl+S'
-    add('key ctrl+s')
-    await wait(500)
-    sheet.querySelector('[data-dirty]').textContent = ''
     tag.textContent = ''
     await wait(500)
+    await line('Done. The total matches the invoices.')
+    await wait(1000)
 
     await beat(3)
-    tool('look', 'B7 = 1,498,350 · matches invoices.csv')
-    await wait(500)
-    await line('Filled and saved. The sheet’s total matches the invoices to the cent: 1,498,350, just under the 1.5 M target.')
-    await wait(1200)
-
-    await beat(4)
-    await choose('Share the sheet with finance@northwind.example?', 'Share it')
+    await choose('Share it with finance?', 'Share it')
     ember(true)
-    tag.textContent = '#9'
-    const act2 = tool('act', 'press #9; settext #3 "finance@northwind.example"; press #7')
-    void act2
-    P.x = narrow ? 300 : 700
+    P.x = narrow ? 300 : 760
     P.y = 400
     placePtr()
+    tag.textContent = '#9'
     await click(sheet.querySelector('[data-share]'))
     tag.textContent = ''
-    await wait(600)
+    await wait(500)
     stop.classList.remove('is-on')
     ptr.classList.remove('is-on')
     ember(false)
     // a phone's canvas is all window: it steps back so the answer can be read
     if (narrow) sheet.classList.remove('is-on')
-    await line('Shared with finance. Computer use is done; the STOP button has gone.')
+    await line('Shared. STOP is gone: it is done with your computer.')
     busy(false)
     await wait(4000)
   }
@@ -1031,13 +945,10 @@ function start() {
       session: ['Checkout 503s', 'Opus 5.5 · 18%'],
       story: bugStory,
       moments: [
-        ['Ask', 11500, 'Checkout is failing. Ask what is going on, in plain words. The answer comes with the evidence.'],
-        ['Pin right', 4600, 'Drag the chart to the right edge and it snaps there. The conversation makes room.'],
-        ['Plan', 4500, 'The agent puts its plan on top, and shows you the code it means.'],
-        ['Pin bottom', 4400, 'Pin the code along the bottom. The cause, the code and the conversation, all in view.'],
-        ['Ask about it', 9500, 'Right-click anything to ask about it. The answer comes right there, without interrupting the work.'],
-        ['Change it', 12000, 'Or say what to change. The agent edits it in place, runs the tests, and the plan moves on.'],
-        ['Ship', 8000, 'Decide with one click. The PR is open, the chart shows the fix holding, and a follow-up lands on your todo list.'],
+        ['Ask', 9500, 'Ask what is wrong, in plain words. The answer comes with the evidence.'],
+        ['Pin it', 7500, 'Pin the chart to the side. The agent shows you the code that causes it.'],
+        ['Change it', 10000, 'Right-click the line and say what to change. It is edited, and the tests run.'],
+        ['Ship', 7500, 'One click opens the PR. The chart shows the fix holding.'],
       ],
     },
     {
@@ -1045,12 +956,10 @@ function start() {
       session: ['Pricing page', 'Opus 5.5 · 9%'],
       story: pageStory,
       moments: [
-        ['Ask', 11000, 'Ask for the change. The page comes back live from your dev server, right on the canvas.'],
-        ['Pin it', 4400, 'Pin the live page along the bottom, and keep talking above it.'],
-        ['Marks', 8000, 'Ask where things come from. The agent marks them on the page itself.'],
-        ['Ask about it', 9500, 'Right-click any part of the page to ask about it.'],
-        ['Change it', 11000, 'Or say what to change. The code is edited, and the page reloads in front of you.'],
-        ['Commit', 8000, 'One click to commit. The preview stays open for the next change.'],
+        ['Ask', 9000, 'Ask for a change. The page comes back live from your dev server.'],
+        ['Pin it', 4500, 'Pin the page along the bottom, and keep talking above it.'],
+        ['Point', 7500, 'Ask where something comes from. It marks it on the page.'],
+        ['Change it', 9500, 'Right-click the page and say what to change. It reloads in front of you.'],
       ],
     },
     {
@@ -1058,12 +967,10 @@ function start() {
       session: ['Vendor contract', 'Opus 5.5 · 22%'],
       story: contractStory,
       moments: [
-        ['Ask', 12000, 'Hand it a contract. You get the clauses to watch, and the PDF itself.'],
-        ['Pin it', 4400, 'Pin the PDF to the right, so the source is always beside the answer.'],
-        ['Walk me through', 12500, 'Ask it to walk you through. It scrolls the PDF and points at each clause, one step at a time.'],
-        ['Ask about it', 9500, 'Right-click the clause to ask about it, without leaving the page.'],
-        ['Draft', 7500, 'Have it draft the email, right there.'],
-        ['Keep it', 10000, 'Save it to your notes, and a reminder lands on your todo list.'],
+        ['Ask', 11000, 'Hand it a contract. It finds what to watch, and pins the PDF beside you.'],
+        ['Walk through', 11500, 'It scrolls the PDF and points at each clause, one step at a time.'],
+        ['Ask about it', 9000, 'Right-click a clause to ask about it, right there.'],
+        ['Draft', 8500, 'It drafts the email, and keeps it in your notes.'],
       ],
     },
     {
@@ -1071,11 +978,10 @@ function start() {
       session: ['Q3 close', 'Opus 5.5 · 15%'],
       story: appStory,
       moments: [
-        ['Ask', 11500, 'Ask for work that happens in another app. It reads your data first.'],
-        ['Look', 4500, 'Computer use: it reads the window as text, every control numbered. No screenshots.'],
-        ['Act', 12500, 'It works the app with its own pointer, one move at a time. STOP is always on screen.'],
-        ['Check', 6000, 'It checks the result against your data before it says it is done.'],
-        ['Share', 9000, 'It asks before anything leaves your machine. One click, and it is shared.'],
+        ['Ask', 7500, 'Ask for work that happens in another app.'],
+        ['Look', 4500, 'It reads the window as text, every control numbered. No screenshots.'],
+        ['Act', 11000, 'It works the app with its own pointer. STOP is always on screen.'],
+        ['Share', 8000, 'It asks before anything leaves your machine.'],
       ],
     },
   ]
@@ -1109,6 +1015,8 @@ function start() {
 
   async function beat(i) {
     beatNow = i
+    // a breath before each new moment, so the eye can catch up
+    if (i > 0 && !skipping()) await wait(550)
     if (i >= skipTo && skipTo >= 0) {
       skipTo = -1
       // Let the replayed state settle without animating, then play on.
