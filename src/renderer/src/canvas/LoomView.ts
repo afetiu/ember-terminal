@@ -32,6 +32,8 @@ export interface LoomHooks {
   isActive(): boolean
   /** Toast-level feedback. */
   toast(text: string): void
+  /** Ask the other agents to debate this turn (the council), with this tab as its host. */
+  askCouncil?(): void
   /** Open the todo list or the notes, as their own tabs. */
   openPlace?(place: 'todo' | 'notes'): void
   /** Remember the view the person chose (canvas or the agent's own screen). */
@@ -126,6 +128,7 @@ const ICON = {
   terminal: svg('<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>'),
   notes: svg('<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v6h6"/>'),
   sparkle: svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>'),
+  council: svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15 14.6c.6-.4 1.3-.6 2-.6 2.5 0 4.5 2 4.5 4.5"/>'),
   hand: svg('<path d="M18 11V6a2 2 0 0 0-4 0v1"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>'),
   more: svg('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>'),
   eye: svg('<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>'),
@@ -352,6 +355,7 @@ export class LoomView {
         this.restage()
       } else if (b?.dataset['s'] === 'clear') this.clearScreen()
       else if (b?.dataset['s'] === 'raw') this.setRaw(true)
+      else if (b?.dataset['s'] === 'council') this.hooks.askCouncil?.()
       else if ((e.target as HTMLElement).closest('[data-view="cli"]')) this.setRaw(true)
     })
     this.bar.addEventListener('click', (e) => {
@@ -1999,6 +2003,15 @@ export class LoomView {
   private z = 10
 
   /** Whether the session is working right now, for Ember on the phone. */
+  /** The turn on screen, as words: what was asked and what the agent answered. */
+  exchange(): { question: string; answer: string } | null {
+    const turn = this.shown ?? this.feed.turns().at(-1)
+    if (!turn) return null
+    const question = (turn.querySelector('.loom-ask-text, .loom-ask')?.textContent ?? '').replace(/^❯\s*/, '').trim()
+    const answer = [...turn.querySelectorAll<HTMLElement>('.loom-say')].map((e) => (e.textContent ?? '').trim()).filter(Boolean).join('\n\n')
+    return question || answer ? { question, answer } : null
+  }
+
   /** An agent's canvas is showing (not the plain shell): its keys are the canvas's. */
   get onCanvas(): boolean {
     return this.mode === 'claude' || this.mode === 'agent' || !!this.kbd || !!this.kbdInline
@@ -3684,6 +3697,7 @@ export class LoomView {
     this.renderRail()
     void n
     this.sign.innerHTML =
+      (this.hooks.askCouncil && this.feed.turns().length ? `<button type="button" data-s="council" class="loom-sign-icon" title="Ask the council — your other agents debate this turn, and the conclusion comes back here">${ICON.council}</button>` : '') +
       `<button type="button" data-s="hands" class="loom-sign-hands is-${this.hands}" title="Ember Hands — ${this.hands === 'off' ? 'off' : this.hands === 'act' ? 'may point, click and type' : 'may point and explain, never click'}. Click to change.">${ICON.hand}<span>${this.hands === 'off' ? 'Off' : this.hands === 'act' ? 'Show & act' : 'Show me'}</span></button>` +
       `<button type="button" data-s="notes" class="loom-sign-icon loom-sign-book${this.drawer.classList.contains('is-on') ? ' is-active' : ''}" title="Notebook — your todo list and notes (Ctrl+Shift+N)">${ICON.notes}${this.openTodos ? `<span class="b">${this.openTodos}</span>` : ''}</button>` +
       viewSwitch(false)

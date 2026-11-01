@@ -295,6 +295,17 @@ export class App {
       }),
     })
     this.root.appendChild(this.pairSheet.el)
+    // The council's conclusion, handed back to the session that asked: written to a file
+    // and named in one short message, the way a handoff brief is.
+    window.addEventListener('ember:council:handback', (e) => {
+      const { tabId, markdown } = (e as CustomEvent<{ tabId: string; title: string; markdown: string }>).detail
+      const g = this.groups.find((x) => x.id === tabId)
+      if (!g) return this.flashToast('That session is closed')
+      void window.ember.canvas.handoff(markdown).then((path) => {
+        void this.activate(g.id)
+        this.sendToSession(g, `The council weighed in on this. Read its conclusion at ${path} and take it into account.`, true)
+      })
+    })
     // The council's conclusion, put on the canvas of the tab you are in.
     window.addEventListener('ember:council:canvas', (e) => {
       const { title, markdown } = (e as CustomEvent<{ title: string; markdown: string }>).detail
@@ -924,6 +935,7 @@ export class App {
         isActive: () => this.activeId === group.id,
         toast: (text) => this.flashToast(text),
         openPlace: (place) => void this.goPlace(place),
+        askCouncil: () => void this.askCouncil(group),
         saveView: (view) => {
           if (this.config.agentView === view || (view === 'canvas' && !this.config.agentView)) return
           this.config = { ...this.config, agentView: view }
@@ -1082,6 +1094,24 @@ export class App {
     await this.activate(g.id, true)
     this.council.open(cwd)
     this.syncTabs()
+  }
+
+  /**
+   * The council, invited from a session: the turn on screen becomes the question, the
+   * session's agent is the host, and the conclusion can be sent back to it.
+   */
+  private async askCouncil(group: Group | null = this.activeGroup): Promise<void> {
+    const ex = group?.loom?.exchange()
+    if (!group || !ex) {
+      this.flashToast('Nothing on this turn to ask the council about yet')
+      return
+    }
+    const host = agentSpec(group.focused?.announcedAgent ?? 'claude').name
+    const clip = (t: string, n: number) => (t.length > n ? `${t.slice(0, n)}…` : t)
+    const question = [ex.question || 'Weigh in on the answer below.', ex.answer ? `\n\nWhat ${host} answered:\n${clip(ex.answer, 3000)}` : ''].join('')
+    const cwd = group.focused?.cwd || group.focused?.initialCwd || ''
+    await this.openCouncilTab()
+    this.council.startWith(question, cwd, { tabId: group.id, name: host })
   }
 
   /** Back from a place to the session you were last in. */
@@ -2891,6 +2921,13 @@ export class App {
           if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
           void this.pairSheet.show()
         },
+      },
+      {
+        id: 'council-ask',
+        group: 'Agents',
+        title: 'Ask the council about this turn',
+        cli: 'council-ask',
+        run: () => void this.askCouncil(),
       },
       {
         id: 'council',

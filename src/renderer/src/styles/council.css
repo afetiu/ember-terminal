@@ -1,7 +1,10 @@
 /* ==========================================================================
-   The council: a full-window sheet where several agents answer, debate and conclude.
-   Same system as Loom: neutral ink, the accent only for live state and the primary
-   action, glass cards, prose in the system text face, one easing, three durations.
+   The council, as a canvas page: a calm stage with the question, each round's
+   answers as glass cards, the chair's conclusion last, and one composer docked
+   at the bottom, framed like the canvas input. Same system as Loom: neutral ink,
+   the accent only for the live thing and the primary action, glass for objects,
+   prose in the system text face, mono for what you type, one easing, three
+   durations, a 4px grid.
    ========================================================================== */
 
 .ember-council {
@@ -10,18 +13,17 @@
   --cn-dim: color-mix(in srgb, var(--cn-ink) 72%, transparent);
   --cn-faint: color-mix(in srgb, var(--cn-ink) 54%, transparent);
   --cn-line: rgba(255, 255, 255, 0.075);
-  --cn-line-strong: rgba(255, 255, 255, 0.13);
-  --cn-s1: color-mix(in srgb, var(--c-bg) 86%, #fff 4%);
-  --cn-s3: color-mix(in srgb, var(--c-bg) 90%, #000);
-  --cn-fill-1: rgba(255, 255, 255, 0.035);
-  --cn-fill-2: rgba(255, 255, 255, 0.06);
-  --cn-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
-  --cn-rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  --cn-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -16px rgba(0, 0, 0, 0.6);
-  --cn-shadow-3: 0 24px 70px -20px rgba(0, 0, 0, 0.8);
+  --cn-glass: color-mix(in srgb, var(--c-bg) 52%, transparent);
+  --cn-glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.045), 0 18px 48px -30px rgba(0, 0, 0, 0.65);
+  --cn-amber: #e0b45a;
   --cn-err: var(--ui-err, #e2676f);
   --cn-prose: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
   --cn-display: 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  --cn-mono: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  --fill-1: rgba(255, 255, 255, 0.035);
+  --fill-2: rgba(255, 255, 255, 0.06);
+  --rim: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+  --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --fs-12: 12px;
   --fs-13: 13px;
   --fs-14: 14px;
@@ -35,36 +37,47 @@
   --t3: 400ms;
   --focus: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
 
+  /* Overlay mode (secondary): the same page, over the window. */
   position: fixed;
   inset: 0;
   z-index: 150;
   display: none;
-  padding: calc(var(--titlebar-h, 36px) + 16px) 24px 24px;
-  background: color-mix(in srgb, var(--c-scrim, #05020c) 58%, transparent);
-  backdrop-filter: blur(10px);
+  flex-direction: column;
+  padding-top: var(--titlebar-h, 36px);
+  background: color-mix(in srgb, var(--c-bg) 92%, transparent);
+  backdrop-filter: blur(18px);
   color: var(--cn-ink);
   font: 400 var(--fs-14) / 1.5 var(--cn-prose);
   -webkit-app-region: no-drag;
 }
 body.is-light .ember-council {
   --cn-line: rgba(0, 0, 0, 0.08);
-  --cn-line-strong: rgba(0, 0, 0, 0.14);
-  --cn-s1: color-mix(in srgb, var(--c-bg) 90%, #fff);
-  --cn-s3: #fff;
-  --cn-fill-1: rgba(0, 0, 0, 0.03);
-  --cn-fill-2: rgba(0, 0, 0, 0.055);
-  --cn-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
-  --cn-rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --cn-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.25);
-  --cn-shadow-3: 0 22px 60px -20px rgba(0, 0, 0, 0.35);
+  --cn-glass: rgba(255, 255, 255, 0.6);
+  --cn-glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(0, 0, 0, 0.05), 0 18px 48px -30px rgba(0, 0, 0, 0.3);
+  --cn-amber: #a8740f;
+  --fill-1: rgba(0, 0, 0, 0.03);
+  --fill-2: rgba(0, 0, 0, 0.055);
+  --rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+  --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 .ember-council.is-open {
   display: flex;
-  justify-content: center;
   animation: ember-council-fade var(--t2) var(--ease);
 }
 @keyframes ember-council-fade {
   from { opacity: 0; }
+}
+
+/* As a tab: the tab is its window. No scrim, no sheet, no close button: the app's own
+   background, like the canvas. */
+.ember-council.is-tab {
+  position: absolute;
+  inset: 0;
+  z-index: auto;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  animation: none;
 }
 
 .ember-council :focus-visible {
@@ -72,260 +85,177 @@ body.is-light .ember-council {
   box-shadow: var(--focus);
 }
 
-/* ---------------------------------------------------------------- the sheet */
-
-.ember-council-sheet {
-  display: flex;
-  flex-direction: column;
-  width: min(1180px, 100%);
-  max-height: 100%;
-  border-radius: var(--r-obj);
-  background: color-mix(in srgb, var(--cn-s3) 88%, transparent);
-  box-shadow: var(--cn-rim), var(--cn-rim-top), var(--cn-shadow-3);
-  overflow: hidden;
-  animation: ember-council-in var(--t3) var(--ease);
-}
-@keyframes ember-council-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.985); }
-}
-
-.ember-council-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px 24px;
-}
-.ember-council-title {
-  font: 600 var(--fs-16) / 1.2 var(--cn-display);
-  color: var(--cn-strong);
-  letter-spacing: 0;
-}
 .ember-council-x {
+  position: absolute;
+  top: calc(var(--titlebar-h, 36px) + 12px);
+  right: 16px;
+  z-index: 2;
   display: inline-grid;
   place-items: center;
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: var(--r-ctl);
+  border-radius: 8px;
   background: none;
   color: var(--cn-faint);
   cursor: pointer;
   transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease);
 }
-.ember-council-x:hover { background: var(--cn-fill-2); color: var(--cn-ink); }
+.ember-council-x:hover { background: var(--fill-2); color: var(--cn-ink); }
+.ember-council.is-tab .ember-council-x { display: none; }
 
-.ember-council-body {
+/* ---------------------------------------------------------------- the stage */
+
+.ember-council-stage {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 4px 24px 24px;
-  scrollbar-gutter: stable;
+  padding: 20px 28px 24px;
+  overscroll-behavior: contain;
+  /* The last lines fade into the composer rather than being sliced by it. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 18px), transparent 100%);
+}
+.ember-council-stage::-webkit-scrollbar { width: 9px; }
+.ember-council-stage::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c-fg) 14%, transparent);
+  border-radius: 9px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
-.ember-council-foot {
+.ember-council-flow {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 1320px;
+}
+
+/* Empty: one calm line in the middle of the page. */
+.ember-council-empty {
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+  animation: ember-council-rise var(--t3) var(--ease) backwards;
+}
+.ember-council-empty-title {
+  font: 600 var(--fs-20) / 1.3 var(--cn-display);
+  color: var(--cn-strong);
+}
+.ember-council-empty-line {
+  max-width: 46ch;
+  margin: 8px auto 0;
+  font: 400 var(--fs-16) / 1.6 var(--cn-prose);
+  color: var(--cn-dim);
+  text-wrap: balance;
+}
+
+/* The question: your line of the turn — small, dim, in the face you typed it in. */
+.ember-council-ask {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 82ch;
+  margin: 0 0 8px;
+  color: var(--cn-dim);
+  font: 400 var(--fs-13) / 1.55 var(--cn-mono);
+}
+.ember-council-ask-dot {
+  flex: 0 0 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+}
+.ember-council-ask-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cn-faint);
+}
+.ember-council-ask-body { min-width: 0; flex: 1; }
+.ember-council-ask-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ember-council-ask-text.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.ember-council-ask.is-note { margin: 0 0 12px; }
+.ember-council-ask.is-note .ember-council-ask-dot::before {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--cn-faint);
+}
+.ember-council-ask.is-pending { margin-top: 16px; opacity: 0.8; }
+.ember-council-note-tag {
+  display: block;
+  font: 600 11px / 20px var(--cn-prose);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cn-faint);
+}
+
+/* A round: its name as a seam, then the cards. */
+.ember-council-seam {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px 12px 24px;
-  border-top: 1px solid var(--cn-line);
-}
-.ember-council-foot > .ember-council-hint { margin-right: auto; }
-
-/* ---------------------------------------------------------------- controls */
-
-.ember-council-label {
-  display: block;
-  margin: 16px 0 8px;
+  gap: 12px;
+  margin: 24px 0 12px;
   font: 600 var(--fs-12) / 1 var(--cn-prose);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--cn-faint);
 }
-.ember-council-setup > .ember-council-label:first-child { margin-top: 4px; }
-
-.ember-council-hint {
-  margin-top: 6px;
-  font-size: var(--fs-12);
-  color: var(--cn-faint);
-  overflow-wrap: anywhere;
+.ember-council-seam::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cn-line);
 }
-.ember-council-foot .ember-council-hint { margin-top: 0; }
-
-.ember-council-q,
-.ember-council-note-input,
-.ember-council-select {
-  width: 100%;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: var(--r-ctl);
-  background: var(--cn-fill-1);
-  box-shadow: var(--cn-rim);
-  color: var(--cn-strong);
-  font: 400 var(--fs-14) / 1.55 var(--cn-prose);
-  transition: background-color var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
-}
-.ember-council-q,
-.ember-council-note-input {
-  display: block;
-  padding: 12px;
-  resize: vertical;
-}
-.ember-council-q { font-size: var(--fs-16); min-height: 96px; }
-.ember-council-q::placeholder,
-.ember-council-note-input::placeholder { color: var(--cn-faint); }
-.ember-council-q:hover,
-.ember-council-note-input:hover,
-.ember-council-select:hover { background: var(--cn-fill-2); }
-.ember-council-q:focus-visible,
-.ember-council-note-input:focus-visible,
-.ember-council-select:focus-visible { box-shadow: var(--cn-rim), var(--focus); }
-
-.ember-council-select {
-  height: 36px;
-  padding: 0 12px;
-  cursor: pointer;
-}
-.ember-council-select option { background: var(--c-bg); color: var(--c-fg); }
-
-.ember-council-members {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.ember-council-member {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  height: 36px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--cn-fill-1);
-  box-shadow: var(--cn-rim);
-  color: var(--cn-dim);
-  font: 500 var(--fs-13) / 36px var(--cn-prose);
-  cursor: pointer;
-  transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
-}
-.ember-council-member:hover { background: var(--cn-fill-2); color: var(--cn-ink); }
-.ember-council-member[aria-pressed='true'] {
-  color: var(--cn-strong);
-  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 45%, transparent);
-}
-.ember-council-member-vendor { font-size: var(--fs-12); font-weight: 400; color: var(--cn-faint); }
-
-.ember-council-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0 24px;
-}
-.ember-council-field { min-width: 0; }
-
-.ember-council-stepper {
-  display: inline-flex;
-  align-items: center;
-  border-radius: var(--r-ctl);
-  background: var(--cn-fill-1);
-  box-shadow: var(--cn-rim);
-}
-.ember-council-step {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: var(--r-ctl);
-  background: none;
-  color: var(--cn-dim);
-  font: 500 var(--fs-16) / 1 var(--cn-prose);
-  cursor: pointer;
-  transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease);
-}
-.ember-council-step:hover:not(:disabled) { background: var(--cn-fill-2); color: var(--cn-strong); }
-.ember-council-step:disabled { opacity: 0.35; cursor: default; }
-.ember-council-step-val {
-  min-width: 28px;
-  text-align: center;
-  font: 600 var(--fs-14) / 1 var(--cn-prose);
-  font-variant-numeric: tabular-nums;
-  color: var(--cn-strong);
-}
-
-.ember-council-btn {
-  height: 32px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: var(--r-ctl);
-  background: var(--cn-fill-1);
-  box-shadow: var(--cn-rim);
-  color: var(--cn-ink);
-  font: 500 var(--fs-13) / 1 var(--cn-prose);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease), opacity var(--t1) var(--ease);
-}
-.ember-council-btn:hover:not(:disabled) { background: var(--cn-fill-2); color: var(--cn-strong); }
-.ember-council-btn:active:not(:disabled) { transform: translateY(0.5px); }
-.ember-council-btn:disabled { opacity: 0.45; cursor: default; }
-.ember-council-btn.is-primary {
-  background: var(--c-accent);
-  box-shadow: none;
-  color: var(--c-bg);
-  font-weight: 600;
-}
-.ember-council-btn.is-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--c-accent) 88%, #fff);
-  color: var(--c-bg);
-}
-
-/* ---------------------------------------------------------------- a council */
-
-.ember-council-question {
-  margin: 4px 0 8px;
-  font: 600 var(--fs-20) / 1.35 var(--cn-display);
-  color: var(--cn-strong);
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-
-.ember-council-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 20px;
-  margin-bottom: 16px;
-  font-size: var(--fs-13);
-  color: var(--cn-dim);
-}
+.ember-council-seam.is-new { animation: ember-council-fade var(--t3) var(--ease) backwards; }
 
 .ember-council-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
   align-items: start;
 }
+/* One voice reads like prose, not like a stretched card. */
+.ember-council-grid[data-n='1'] { grid-template-columns: minmax(0, 82ch); }
+
+/* ---------------------------------------------------------------- cards: glass objects */
 
 .ember-council-card,
 .ember-council-conclusion {
   min-width: 0;
-  padding: 16px;
+  padding: 12px 16px 16px;
   border-radius: var(--r-obj);
-  background: color-mix(in srgb, var(--cn-s1) 82%, transparent);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--cn-rim), var(--cn-rim-top), var(--cn-shadow);
+  background: var(--cn-glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: var(--cn-glass-shadow);
   transition: box-shadow var(--t2) var(--ease);
 }
 .ember-council-card.is-new,
-.ember-council-conclusion.is-new { animation: ember-council-card var(--t2) var(--ease) backwards; }
-@keyframes ember-council-card {
+.ember-council-conclusion.is-new,
+.ember-council-ask.is-new { animation: ember-council-rise var(--t3) var(--ease) backwards; }
+@keyframes ember-council-rise {
   from { opacity: 0; transform: translateY(6px); }
 }
 .ember-council-card.is-thinking {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 28%, transparent), var(--cn-rim-top), var(--cn-shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 26%, transparent),
+    0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
 .ember-council-card.is-error {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cn-err) 35%, transparent), var(--cn-rim-top), var(--cn-shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px color-mix(in srgb, var(--cn-err) 32%, transparent),
+    0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
 
 .ember-council-card-head {
@@ -333,6 +263,7 @@ body.is-light .ember-council {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 24px;
   margin-bottom: 8px;
 }
 .ember-council-who {
@@ -342,7 +273,7 @@ body.is-light .ember-council {
   min-width: 0;
 }
 .ember-council-who-name {
-  font: 600 var(--fs-14) / 1.3 var(--cn-prose);
+  font: 600 var(--fs-13) / 1.3 var(--cn-prose);
   color: var(--cn-strong);
   white-space: nowrap;
 }
@@ -354,30 +285,6 @@ body.is-light .ember-council {
   text-overflow: ellipsis;
 }
 
-.ember-council-chips { display: flex; gap: 4px; flex-shrink: 0; }
-.ember-council-chip {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--cn-fill-1);
-  box-shadow: var(--cn-rim);
-  font: 500 11px / 16px var(--cn-prose);
-  color: var(--cn-faint);
-  font-variant-numeric: tabular-nums;
-}
-.ember-council-chip.is-live {
-  color: var(--c-accent);
-  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 32%, transparent);
-}
-
-.ember-council-round {
-  margin: 4px 0 4px;
-  font: 600 11px / 1 var(--cn-prose);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--cn-faint);
-}
-
 .ember-council-prose {
   font: 400 var(--fs-14) / 1.6 var(--cn-prose);
   color: var(--cn-ink);
@@ -385,14 +292,59 @@ body.is-light .ember-council {
 }
 .ember-council-prose p { margin: 0 0 8px; white-space: pre-wrap; }
 .ember-council-prose p:last-child { margin-bottom: 0; }
+.ember-council-prose p.is-head { margin-top: 12px; font-weight: 600; color: var(--cn-strong); }
+.ember-council-prose p.is-head:first-child { margin-top: 0; }
+.ember-council-prose strong { font-weight: 600; color: var(--cn-strong); }
+.ember-council-prose code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--fill-2);
+  color: var(--cn-strong);
+  font: 0.92em var(--cn-mono);
+}
+/* An earlier round, folded: the first lines, fading out. */
+.ember-council-prose.is-clamped {
+  max-height: calc(1.6em * 7);
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
 
+.ember-council-more {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--cn-faint);
+  font: 500 var(--fs-12) / 1.5 var(--cn-prose);
+  cursor: pointer;
+  transition: color var(--t1) var(--ease);
+}
+.ember-council-more:hover { color: var(--cn-ink); }
+
+/* Thinking: the card shimmers in the shape of the text to come. */
 .ember-council-thinking {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 8px;
-  margin: 4px 0 8px;
-  font-size: var(--fs-13);
-  color: var(--cn-dim);
+  padding: 4px 0 2px;
+}
+.ember-council-shimmer {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(100deg, var(--fill-1) 30%, var(--fill-2) 50%, var(--fill-1) 70%) 0 0 / 300% 100%;
+  animation: ember-council-shimmer 1.4s linear infinite;
+}
+.ember-council-shimmer:nth-child(1) { width: 92%; }
+.ember-council-shimmer:nth-child(2) { width: 78%; }
+.ember-council-shimmer:nth-child(3) { width: 54%; }
+@keyframes ember-council-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+.ember-council-thinking-label {
+  margin-top: 12px;
+  font-size: var(--fs-12);
+  color: var(--cn-faint);
 }
 
 .ember-council-err {
@@ -405,48 +357,256 @@ body.is-light .ember-council {
   overflow-wrap: anywhere;
 }
 
-.ember-council-more {
-  margin-top: 12px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--cn-faint);
-  font: 500 var(--fs-12) / 1.4 var(--cn-prose);
-  cursor: pointer;
-  transition: color var(--t1) var(--ease);
-}
-.ember-council-more:hover { color: var(--cn-ink); }
-.ember-council-past {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--cn-line);
-}
-.ember-council-past .ember-council-prose { color: var(--cn-dim); margin-bottom: 12px; }
-
-/* The note between rounds. */
-.ember-council-note { margin-top: 16px; }
-.ember-council-note-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-.ember-council-note-input { resize: none; }
-
-/* The conclusion: the one card that carries the accent. */
+/* The conclusion: the one card with a coloured rim, prose at reading size. */
 .ember-council-conclusion {
-  margin-top: 16px;
-  padding: 20px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--c-accent) 9%, transparent), transparent 70%),
-    color-mix(in srgb, var(--cn-s1) 88%, transparent);
+  max-width: 920px;
+  padding: 16px 20px 20px;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
-    var(--cn-rim-top),
-    var(--cn-shadow);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--cn-amber) 42%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--cn-amber) 6%, transparent),
+    0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
-.ember-council-conclusion .ember-council-who-name { color: var(--c-accent); font-size: var(--fs-16); }
-.ember-council-conclusion .ember-council-prose { font-size: var(--fs-16); line-height: 1.65; color: var(--cn-strong); }
-.ember-council-actions { display: flex; gap: 8px; margin-top: 16px; }
+.ember-council-conclusion .ember-council-who-name { color: var(--cn-amber); }
+.ember-council-prose.is-conclusion {
+  max-width: 82ch;
+  font-size: var(--fs-16);
+  line-height: 1.65;
+  color: var(--cn-ink);
+}
+.ember-council-prose.is-conclusion p { margin-bottom: 12px; }
+.ember-council-prose.is-conclusion p:last-child { margin-bottom: 0; }
+.ember-council-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* The live line, at the end of the page like the canvas's now-line. */
+.ember-council-now {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: var(--fs-13);
+  color: var(--cn-dim);
+}
+.ember-council-now > .ember-council-spin { margin: 0 4px; }
+
+/* ---------------------------------------------------------------- buttons */
+
+.ember-council-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-ctl);
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--cn-ink);
+  font: 500 var(--fs-13) / 1 var(--cn-prose);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease), opacity var(--t1) var(--ease);
+}
+.ember-council-btn:hover:not(:disabled) { background: var(--fill-2); color: var(--cn-strong); }
+.ember-council-btn:active:not(:disabled) { transform: translateY(0.5px); }
+.ember-council-btn:disabled { opacity: 0.45; cursor: default; }
+.ember-council-btn.is-primary {
+  background: var(--c-accent);
+  box-shadow: none;
+  color: var(--c-bg);
+  font-weight: 600;
+}
+.ember-council-btn.is-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-accent) 88%, #fff);
+  color: var(--c-bg);
+}
+.ember-council-btn.is-stop { height: 28px; padding: 0 10px; }
+.ember-council-btn.is-stop svg { color: var(--cn-dim); }
+
+/* ---------------------------------------------------------------- the composer */
+
+.ember-council-dock {
+  flex: none;
+  padding: 0 28px 10px;
+}
+.ember-council-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 1320px;
+  padding: 10px 10px 8px 14px;
+  border-radius: 14px;
+  background: var(--fill-1);
+  box-shadow: var(--rim-top), var(--rim);
+  cursor: text;
+  transition: box-shadow var(--t2) var(--ease), background-color var(--t2) var(--ease);
+}
+.ember-council-frame.is-focus {
+  box-shadow:
+    var(--rim-top),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 8%, transparent);
+}
+body.is-light .ember-council-frame { background: rgba(255, 255, 255, 0.7); }
+
+.ember-council-input {
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--cn-strong);
+  font: 400 var(--fs-14) / 1.55 var(--cn-mono);
+  resize: none;
+  overflow-y: hidden;
+}
+.ember-council-input:focus-visible { box-shadow: none; }
+.ember-council-input::placeholder {
+  color: var(--cn-faint);
+  font-family: var(--cn-prose);
+}
+.ember-council-input:disabled { cursor: default; }
+
+.ember-council-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  cursor: default;
+}
+.ember-council-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ember-council-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.ember-council-summary {
+  font-size: var(--fs-12);
+  color: var(--cn-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ember-council-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-1);
+  box-shadow: var(--rim);
+  color: var(--cn-dim);
+  font: 500 var(--fs-12) / 1 var(--cn-prose);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--t1) var(--ease), color var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.ember-council-chip:hover { background: var(--fill-2); color: var(--cn-ink); }
+.ember-council-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--cn-faint);
+  transition: background-color var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.ember-council-chip.is-member[aria-pressed='true'] {
+  color: var(--cn-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+.ember-council-chip.is-member[aria-pressed='true'] .ember-council-chip-dot {
+  background: var(--c-accent);
+  box-shadow: none;
+}
+
+/* A select dressed as a chip: the native control, its own chrome hidden. */
+.ember-council-chip.is-select { padding: 0 8px 0 10px; gap: 4px; }
+.ember-council-chip.is-select:focus-within { box-shadow: var(--rim), var(--focus); }
+.ember-council-chip-pre { color: var(--cn-faint); }
+.ember-council-chip select {
+  appearance: none;
+  field-sizing: content;
+  height: 100%;
+  margin: 0;
+  padding: 0 12px 0 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--cn-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ember-council-chip select:focus-visible { box-shadow: none; }
+.ember-council-chip select option { background: var(--c-bg); color: var(--c-fg); }
+.ember-council-chip-chev {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  display: grid;
+  transform: translateY(-50%);
+  color: var(--cn-faint);
+  pointer-events: none;
+}
+.ember-council-chip.is-disabled { opacity: 0.45; pointer-events: none; }
+
+/* Start: the one primary action, a small round arrow at the end of the frame. */
+.ember-council-go {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-bg);
+  cursor: pointer;
+  transition: background-color var(--t1) var(--ease), opacity var(--t1) var(--ease), transform var(--t1) var(--ease);
+}
+.ember-council-go:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 88%, #fff); }
+.ember-council-go:active:not(:disabled) { transform: scale(0.96); }
+.ember-council-go:disabled {
+  background: var(--fill-2);
+  color: var(--cn-faint);
+  cursor: default;
+}
+
+/* The quiet line under the frame. */
+.ember-council-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1320px;
+  padding: 8px 6px 0;
+  font: var(--fs-12) / 1 var(--cn-prose);
+  color: var(--cn-faint);
+  white-space: nowrap;
+}
+.ember-council-bar-info {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ember-council-bar-keys { flex: none; }
 
 /* ---------------------------------------------------------------- spinner */
 
@@ -463,45 +623,35 @@ body.is-light .ember-council {
   to { transform: rotate(360deg); }
 }
 
-/* ---------------------------------------------------------------- small windows */
+/* ---------------------------------------------------------------- small windows, motion */
 
 @media (max-width: 640px) {
-  .ember-council { padding: calc(var(--titlebar-h, 36px) + 8px) 8px 8px; }
-  .ember-council-head,
-  .ember-council-foot { padding-left: 16px; }
-  .ember-council-body { padding: 4px 16px 16px; }
+  .ember-council-stage { padding: 16px 16px 20px; }
+  .ember-council-dock { padding: 0 12px 8px; }
   .ember-council-grid { grid-template-columns: 1fr; }
+  .ember-council-bar-keys { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ember-council.is-open,
-  .ember-council-sheet,
+  .ember-council-empty,
+  .ember-council-seam.is-new,
+  .ember-council-ask.is-new,
   .ember-council-card.is-new,
   .ember-council-conclusion.is-new { animation: none; }
+  .ember-council-shimmer { animation: none; }
   .ember-council-spin { animation-duration: 2400ms; }
   .ember-council * { transition-duration: 0ms !important; }
 }
 
-/* Prose details: the little markdown agents write anyway. */
-.ember-council-prose p.is-head { margin-top: 12px; font-weight: 600; color: var(--cn-strong); }
-.ember-council-prose p.is-head:first-child { margin-top: 0; }
-.ember-council-prose strong { font-weight: 600; color: var(--cn-strong); }
-.ember-council-prose code {
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: var(--cn-fill-2);
-  font: 0.92em var(--term-font, 'Cascadia Code'), Consolas, monospace;
+/* Lists in an answer or the conclusion. */
+.ember-council-list {
+  margin: 0 0 0.6em;
+  padding-left: 1.3em;
 }
-
-/* The council as a tab: the tab is its window, no overlay, no scrim, no close button. */
-.ember-council.is-tab {
-  position: absolute;
-  z-index: auto;
-  padding: 16px 24px 24px;
-  background: none;
-  backdrop-filter: none;
-  animation: none;
+.ember-council-list li {
+  margin: 0.2em 0;
 }
-.ember-council.is-tab .ember-council-x {
-  display: none;
+.ember-council-list li::marker {
+  color: var(--cn-dim, currentColor);
 }
