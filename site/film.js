@@ -456,21 +456,20 @@ function start() {
   }
 
   // ================================================================ 0 · run a project
+  // Three parts of a release, one subagent each, and a board that follows them.
   const TICKETS = [
     ['PAY-311', 'Retry failed charges', 'pay'],
     ['SRCH-88', 'Index the new fields', 'search'],
     ['WEB-142', 'Saved carts', 'web'],
-    ['QA-20', 'Full regression', 'qa'],
   ]
   const boardBody = () =>
     `<div class="kb">${['To do', 'Doing', 'Done']
       .map((name, i) => {
-        const cards = TICKETS.filter((t) => (t[2] === 'qa' ? i === 0 : i === 1))
-          .map(([id, t, k]) => `<div class="kc" data-id="${k}"><b>${id}</b><small>${t}</small></div>`)
-          .join('')
+        const cards = i === 1 ? TICKETS.map(([id, t, k]) => `<div class="kc" data-id="${k}"><b>${id}</b><small>${t}</small></div>`).join('') : ''
         return `<div class="kb__c" data-col="${i}"><h6>${name}<i></i></h6>${cards}</div>`
       })
       .join('')}</div>`
+  const countCards = (board) => board.querySelectorAll('.kb__c').forEach((c) => (c.querySelector('h6 i').textContent = c.querySelectorAll('.kc').length))
   function moveCard(board, k, col) {
     const card = board.querySelector(`[data-id="${k}"]`)
     const a = card.getBoundingClientRect()
@@ -481,54 +480,14 @@ function start() {
     }
     countCards(board)
   }
-  const countCards = (board) => board.querySelectorAll('.kb__c').forEach((c) => (c.querySelector('h6 i').textContent = c.querySelectorAll('.kc').length))
-  const healthBody = () =>
-    `<div class="st">${[
-      ['tests', 'Tests', '398 / 412'],
-      ['prs', 'Open PRs', '0'],
-      ['agents', 'Agents', '3 working'],
-      ['block', 'Blockers', '1'],
-    ]
-      .map(([k, l, v]) => `<div><small>${l}</small><b data-st="${k}">${v}</b></div>`)
-      .join('')}</div>`
-  const setStat = (el, k, v) => {
-    const b = el.querySelector(`[data-st="${k}"]`)
-    b.textContent = v
-    b.classList.remove('is-bump')
-    void b.offsetWidth
-    b.classList.add('is-bump')
-  }
-  // what v2.4 touches, as the agent draws it: the parts in play are lit
-  const mapBody = () => {
-    const N = [
-      ['web', 'Web app', 150, 36, 1],
-      ['api', 'API', 150, 116, 0],
-      ['pay', 'Payments', 74, 206, 1],
-      ['search', 'Search', 226, 206, 1],
-      ['db', 'Postgres', 74, 296, 0],
-      ['index', 'Search index', 226, 296, 1],
-    ]
-    const at = Object.fromEntries(N.map((n) => [n[0], n]))
-    const E = [['web', 'api'], ['api', 'pay'], ['api', 'search'], ['pay', 'db'], ['search', 'index']]
-    const edge = ([a, b]) => {
-      const [, , x1, y1] = at[a]
-      const [, , x2, y2] = at[b]
-      return `<path d="M${x1} ${y1 + 20} C ${x1} ${y1 + 50}, ${x2} ${y2 - 50}, ${x2} ${y2 - 20}"/>`
-    }
-    return (
-      `<svg class="dg" viewBox="0 0 300 330"><g class="dg__e">${E.map(edge).join('')}</g>` +
-      N.map(([k, t, x, y, hot]) => `<g class="dg__n${hot ? ' is-hot' : ''}" data-node="${k}"><rect x="${x - 58}" y="${y - 20}" width="116" height="40" rx="11"/><text x="${x}" y="${y + 5}">${t}</text></g>`).join('') +
-      `</svg>`
-    )
-  }
   /** The session's subagents, as pills: what each is on, and whether it is done. */
   function agentsRow() {
     const row = document.createElement('div')
     row.className = 'subagents'
     row.innerHTML = [
-      ['pay', 'payments', 'editing retry.ts'],
-      ['search', 'search', 'reindexing'],
-      ['web', 'web', 'building saved carts'],
+      ['pay', 'payments', 'working'],
+      ['search', 'search', 'working'],
+      ['web', 'web', 'working'],
     ]
       .map(([k, n, a]) => `<span class="agent is-run" data-agent="${k}"><i></i><b>${n}</b><small>${a}</small></span>`)
       .join('')
@@ -540,123 +499,75 @@ function start() {
     p.className = `agent is-${state}`
     p.querySelector('small').textContent = text
   }
+  /** Land one part: its pill, its card and its step all say done. */
+  function land(row, board, k, i, files) {
+    agentState(row, k, 'done', `done · ${files} files`)
+    board.querySelector(`[data-id="${k}"]`).classList.remove('is-fail')
+    moveCard(board, k, 2)
+    step(i, 'done')
+  }
 
   async function projectStory() {
-    const other = cards.children[1]
     await beat(0)
     await wait(500)
-    await ask('v2.4 ships Friday. split the work across agents and keep me posted')
+    await ask('v2.4 ships Friday. split the work across agents')
     think('Reading the v2.4 milestone…')
-    await wait(1300)
-    startPlan('Ship v2.4', ['Payments: retry failed charges', 'Search: index the new fields', 'Web: saved carts', 'QA: full regression'])
-    step(0, 'active')
-    step(1, 'active')
-    step(2, 'active')
+    await wait(1200)
+    startPlan('Ship v2.4', ['Payments: retry failed charges', 'Search: index the new fields', 'Web: saved carts'])
+    TICKETS.forEach((_, i) => step(i, 'active'))
     const row = agentsRow()
-    // your other session keeps going alongside
-    other.classList.add('is-busy')
-    other.querySelector('small').textContent = 'Codex · writing'
-    await line('Three subagents are on it, one per area. QA runs when they land.')
-    await wait(1600)
+    await line('Three subagents are on it, one per part.')
+    const board = piece('v2.4 board', 'kanban', boardBody())
+    countCards(board)
+    await show(board)
+    busy(false)
+    await wait(1200)
 
     await beat(1)
-    await line('This is what v2.4 touches:')
-    const map = piece('What v2.4 touches', 'diagram', mapBody())
-    await show(map)
-    busy(false)
-    await wait(900)
-    await dragTo(map, 'right')
+    await dragTo(board, 'bottom', 0.4)
     ptr.classList.remove('is-on')
-    await wait(700)
+    await wait(900)
 
     await beat(2)
-    await ask('give me a board I can keep an eye on')
-    think('Pulling the tickets…')
-    await wait(900)
-    unthink()
-    const board = piece('v2.4 board', 'kanban', boardBody())
-    board.dataset.w = '2'
-    countCards(board)
-    const health = piece('Release health', 'stats', healthBody())
-    await show(board)
-    if (!narrow) await show(health)
-    busy(false)
-    await wait(600)
-    await dragTo(board, 'bottom', 0.4)
-    if (!narrow) await dragTo(health, 'bottom', 0.4)
-    ptr.classList.remove('is-on')
-    await wait(800)
-
-    await beat(3)
-    // search lands first; payments hits a failing test
-    agentState(row, 'search', 'done', 'done · 4 files')
-    moveCard(board, 'search', 2)
-    step(1, 'done')
-    map.querySelector('[data-node="search"]').classList.add('is-done')
-    map.querySelector('[data-node="index"]').classList.add('is-done')
-    await wait(900)
+    land(row, board, 'search', 1, 4)
+    await wait(1000)
     agentState(row, 'pay', 'fail', '1 test failing')
     board.querySelector('[data-id="pay"]').classList.add('is-fail')
-    if (!narrow) setStat(health, 'tests', '411 / 412')
-    await wait(1100)
-    // the trail of what it did, one click on its pill
+    await wait(900)
+    // what it did, one click on its pill
     const pill = row.querySelector('[data-agent="pay"]')
     await click(pill)
     const pop = document.createElement('div')
     pop.className = 'apop'
     pop.innerHTML =
-      `<b>payments · 2:14</b><ol>${['read src/payments/retry.ts', 'edit retry.ts · +32 −4', 'edit queue.ts · +11', 'run pnpm test payments · 1 failing', 'reading the failing test'].map((s) => `<li>${s}</li>`).join('')}</ol>` +
-      `<p>A retried charge is counted twice. Adding an idempotency key.</p>`
+      `<b>payments</b><ol>${['edit retry.ts', 'run the tests · 1 failing', 'reading the failing test'].map((s) => `<li>${s}</li>`).join('')}</ol>` +
+      `<p>A retried charge was counted twice. Fixing it.</p>`
     const pb = box(pill, cv)
     pop.style.left = `${Math.min(pb.x, cv.offsetWidth - 300)}px`
     pop.style.top = `${pb.y + pb.h + 8}px`
     cv.appendChild(pop)
     void pop.offsetWidth
     pop.classList.add('is-on')
-    await wait(3600)
+    await wait(3400)
     pop.classList.remove('is-on')
+    ptr.classList.remove('is-on')
     await wait(300)
     pop.remove()
-
-    await beat(4)
-    await askAbout(board.querySelector('[data-id="pay"]'), 'v2.4 board · PAY-311', 'will this hold up Friday?',
-      'No. The fix is small and the agent is on it now; nothing else depends on PAY-311.')
-
-    await beat(5)
-    agentState(row, 'pay', 'done', 'done · 3 files')
-    board.querySelector('[data-id="pay"]').classList.remove('is-fail')
-    moveCard(board, 'pay', 2)
-    step(0, 'done')
-    map.querySelector('[data-node="pay"]').classList.add('is-done')
-    if (!narrow) setStat(health, 'block', '0')
+    land(row, board, 'pay', 0, 3)
     await wait(900)
-    agentState(row, 'web', 'done', 'done · 7 files')
-    moveCard(board, 'web', 2)
-    step(2, 'done')
-    map.querySelector('[data-node="web"]').classList.add('is-done')
-    if (!narrow) setStat(health, 'prs', '3')
-    if (!narrow) setStat(health, 'agents', 'all done')
-    await wait(800)
-    await line('All three are in. Running QA.')
-    step(3, 'active')
-    moveCard(board, 'qa', 1)
-    const qa = tool('run', 'pnpm test:e2e')
-    await wait(1800)
-    qa.textContent = 'pnpm test:e2e · 412 passed'
-    if (!narrow) setStat(health, 'tests', '412 / 412')
-    moveCard(board, 'qa', 2)
-    step(3, 'done')
-    await wait(900)
+    land(row, board, 'web', 2, 7)
+    await wait(700)
 
-    await beat(6)
-    await choose('Everything is green. Tag v2.4-rc1?', 'Tag it')
+    await beat(3)
+    await line('All three are in, and the tests pass.')
+    await choose('Tag v2.4-rc1?', 'Tag it')
     think('Tagging…')
     await wait(900)
     tool('git', 'tag v2.4-rc1 · pushed')
-    await line('Tagged. Three PRs are open for review, two days early.')
+    await line('Tagged, two days early. Three PRs are open for review.')
     addTodo('review the three v2.4 PRs')
     busy(false)
-    await wait(4200)
+    await wait(4000)
   }
 
   // ================================================================ 1 · fix a bug
@@ -1106,16 +1017,13 @@ function start() {
   const SCENES = [
     {
       tab: 'Run a project',
-      session: ['Ship v2.4', 'Opus 5.5 · 31%'],
+      session: ['Ship v2.4', 'Opus 5.5 · 24%'],
       story: projectStory,
       moments: [
-        ['Split the work', 10500, 'Hand it a release. It plans the work and sends a subagent to each part, side by side.'],
-        ['Map', 7000, 'It draws what the release touches, and you pin the map to the right.'],
-        ['Board', 11500, 'Ask for a board. Pin the tickets and the numbers along the bottom: your mission control.'],
-        ['Trace', 8000, 'Search lands, payments hits a failing test. Click its pill to see every step it took.'],
-        ['Ask about it', 9500, 'Right-click the ticket to ask if it holds up the release.'],
-        ['Land', 8000, 'The fixes land, the board moves, the map goes green, QA runs.'],
-        ['Ship', 8000, 'One click to tag the release, and a review lands on your todo list.'],
+        ['Split the work', 10000, 'Hand it a release. It plans the work and sends a subagent to each part.'],
+        ['Pin the board', 4500, 'Pin the board along the bottom. It moves as the work lands.'],
+        ['Check one', 10500, 'One hits a failing test. Click it to see what it did, and watch it fix it.'],
+        ['Ship', 9000, 'All in and passing. One click to tag the release.'],
       ],
     },
     {
