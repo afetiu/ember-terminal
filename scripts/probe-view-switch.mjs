@@ -69,9 +69,11 @@ for (let i = 0; i < 40; i++) {
 }
 await wait(3000)
 await shot('canvas')
+console.log('  canvas bar:', JSON.stringify(await ev(`(() => { const r = document.querySelector('.loom-sign:not(.loom-rawpill)').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)))
 await ev(`document.querySelector('.loom-sign [data-view="cli"]').click()`)
 await wait(1500)
 await shot('cli')
+console.log('  cli bar:   ', JSON.stringify(await ev(`(() => { const r = document.querySelector('.loom-rawpill').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)))
 console.log('  mode after CLI:', (await snap()).mode)
 const { readFileSync } = await import('node:fs')
 console.log('  saved view:', JSON.parse(readFileSync(join(EMBER_HOME, 'config.json'), 'utf8')).agentView)

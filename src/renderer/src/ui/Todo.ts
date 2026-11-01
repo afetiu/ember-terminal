@@ -39,10 +39,6 @@ export class TodoView {
   private archiveOpen = false
   private saveTimer: number | null = null
   private disposed = false
-  /** The daily check: once a day, the open items one at a time. */
-  private readonly review: HTMLElement
-  private reviewAt = -1
-  private reviewKeys: ((e: KeyboardEvent) => void) | null = null
 
   constructor(private readonly hooks: TodoHooks) {
     this.el = document.createElement('div')
@@ -93,114 +89,7 @@ export class TodoView {
       onLeave: () => hooks.onClose?.(),
     })
 
-    this.review = document.createElement('section')
-    this.review.className = 'ember-todo-review'
-    this.review.hidden = true
-
-    this.el.append(head, this.review, this.list.el, this.foot)
-  }
-
-  // ---------------------------------------------------------------- the daily check
-
-  private static readonly REVIEWED = 'ember.todo.reviewed'
-
-  private openItems(): string[] {
-    return this.text
-      .split('\n')
-      .filter((l) => /^\s*- \[ \] \S/.test(l))
-      .map((l) => l.replace(/^\s*- \[ \] /, ''))
-  }
-
-  /** The first visit of the day: what is open, what got done since the last check. */
-  private offerReview(): void {
-    let last = ''
-    try {
-      last = localStorage.getItem(TodoView.REVIEWED) ?? ''
-    } catch {
-      /* no storage: offer every time, which is harmless */
-    }
-    const today = TodoView.today()
-    const open = this.openItems()
-    if (last === today || !open.length) {
-      this.review.hidden = true
-      return
-    }
-    const done = TodoView.archived(this.archive)
-      .filter((d) => !last || d.day > last)
-      .reduce((n, d) => n + d.items.length, 0)
-    this.review.hidden = false
-    this.review.innerHTML =
-      `<div class="ember-todo-review-head"><strong>Today</strong><span>${open.length} open${done ? ` · ${done} done since your last check` : ''}</span></div>` +
-      `<div class="ember-todo-review-acts"><button type="button" class="is-primary" data-r="go">Go through them</button><button type="button" data-r="skip">Not now</button></div>`
-    this.review.querySelector('[data-r="go"]')?.addEventListener('click', () => this.reviewStep(0))
-    this.review.querySelector('[data-r="skip"]')?.addEventListener('click', () => this.reviewEnd(false))
-  }
-
-  /** One item, large, with single keys: D done, K keep, L later, Del drop, Esc stop. */
-  private reviewStep(i: number): void {
-    const open = this.openItems()
-    if (i >= open.length) return this.reviewEnd(true)
-    this.reviewAt = i
-    const item = open[i]!
-    this.review.innerHTML =
-      `<div class="ember-todo-review-head"><strong>Today</strong><span>${i + 1} of ${open.length}</span></div>` +
-      `<div class="ember-todo-review-item"></div>` +
-      `<div class="ember-todo-review-acts">` +
-      `<button type="button" data-r="done"><b>D</b> Done</button><button type="button" data-r="keep"><b>K</b> Keep</button>` +
-      `<button type="button" data-r="later"><b>L</b> Later</button><button type="button" data-r="drop"><b>Del</b> Drop</button>` +
-      `<button type="button" data-r="stop"><b>Esc</b> Stop</button></div>`
-    this.review.querySelector<HTMLElement>('.ember-todo-review-item')!.textContent = item
-    const act = (what: string) => {
-      if (what === 'stop') return this.reviewEnd(false)
-      if (what === 'keep') return this.reviewStep(i + 1)
-      const lines = this.text.split('\n')
-      const at = lines.findIndex((l) => /^\s*- \[ \] /.test(l) && l.replace(/^\s*- \[ \] /, '') === item)
-      if (at < 0) return this.reviewStep(i + 1)
-      if (what === 'done') lines[at] = lines[at]!.replace('- [ ] ', '- [x] ')
-      else if (what === 'drop') lines.splice(at, 1)
-      else if (what === 'later') {
-        const [line] = lines.splice(at, 1)
-        let last = lines.length - 1
-        while (last > 0 && !lines[last]!.trim()) last--
-        lines.splice(last + 1, 0, line!)
-      }
-      this.text = lines.join('\n')
-      this.list.setText(this.text)
-      this.countItems()
-      this.queueSave()
-      // Done, dropped or moved: the next item is now at the same place.
-      this.reviewStep(what === 'later' && i < this.openItems().length - 1 ? i : what === 'later' ? i + 1 : i)
-    }
-    this.review.querySelectorAll<HTMLElement>('[data-r]').forEach((b) => b.addEventListener('click', () => act(b.dataset['r']!)))
-    if (!this.reviewKeys) {
-      this.reviewKeys = (e: KeyboardEvent) => {
-        if (this.review.hidden || this.reviewAt < 0 || this.el.offsetParent === null) return
-        const k = e.key.toLowerCase()
-        const map: Record<string, string> = { d: 'done', k: 'keep', l: 'later', delete: 'drop', escape: 'stop' }
-        const what = map[k]
-        if (!what || (e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]')) return
-        e.preventDefault()
-        e.stopPropagation()
-        const btn = this.review.querySelector<HTMLElement>(`[data-r="${what}"]`)
-        btn?.click()
-      }
-      window.addEventListener('keydown', this.reviewKeys, true)
-    }
-  }
-
-  private reviewEnd(finished: boolean): void {
-    this.reviewAt = -1
-    try {
-      localStorage.setItem(TodoView.REVIEWED, TodoView.today())
-    } catch {
-      /* fine */
-    }
-    if (!finished) {
-      this.review.hidden = true
-      return
-    }
-    this.review.innerHTML = `<div class="ember-todo-review-head"><strong>Today</strong><span>All gone through. See you tomorrow.</span></div>`
-    window.setTimeout(() => (this.review.hidden = true), 2200)
+    this.el.append(head, this.list.el, this.foot)
   }
 
   /** Read the file and show it. */
@@ -211,7 +100,6 @@ export class TodoView {
     this.list.setText(body)
     this.countItems()
     await this.loadArchive()
-    this.offerReview()
   }
 
   /** The file changed under us — `todo add` from a shell, an agent, another editor. */
@@ -471,7 +359,6 @@ export class TodoView {
   }
 
   dispose(): void {
-    if (this.reviewKeys) window.removeEventListener('keydown', this.reviewKeys, true)
     void this.flush()
     this.disposed = true
     this.el.remove()

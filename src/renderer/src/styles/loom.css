@@ -1819,7 +1819,8 @@
 .loom,
 .loom-bar,
 .loom-frame-box,
-.loom-modal {
+.loom-modal,
+.loom-rawpill {
   --l-ink: color-mix(in srgb, var(--c-fg) 14%, #e7e4df);
   --l-strong: color-mix(in srgb, var(--c-fg) 8%, #f7f5f2);
   --l-dim: color-mix(in srgb, var(--l-ink) 64%, transparent);
@@ -3887,7 +3888,8 @@ body.is-light .loom-menu .loom-menu-grid button {
 .loom,
 .loom-bar,
 .loom-frame-box,
-.loom-modal {
+.loom-modal,
+.loom-rawpill {
   --fs-12: 12px;
   --fs-13: 13px;
   --fs-14: 14px;
@@ -3912,7 +3914,8 @@ body.is-light .loom-menu .loom-menu-grid button {
 body.is-light .loom,
 body.is-light .loom-bar,
 body.is-light .loom-frame-box,
-body.is-light .loom-modal {
+body.is-light .loom-modal,
+body.is-light .loom-rawpill {
   --rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
   --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --fill-1: rgba(0, 0, 0, 0.03);
@@ -5436,17 +5439,6 @@ body.is-light .loom-ask .loom-caret::before {
   background: color-mix(in srgb, var(--c-accent) 22%, transparent);
   color: var(--l-ink);
 }
-/* The same switch over the agent's own screen, top right, where the canvas keeps it. */
-.loom-rawpill {
-  padding: 0 !important;
-  background: none !important;
-  box-shadow: none !important;
-}
-.loom-rawpill .loom-view-switch {
-  background: color-mix(in srgb, var(--c-bg, #16120f) 86%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
 /* Outside the canvas (over the CLI view) the canvas's own variables do not reach. */
 .loom-view-switch button {
   font: 500 12px/1.4 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
@@ -5455,9 +5447,6 @@ body.is-light .loom-ask .loom-caret::before {
 .loom-view-switch button:hover,
 .loom-view-switch button.is-on {
   color: var(--l-ink, var(--c-fg));
-}
-.loom-rawpill .loom-view-switch {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 10%, transparent);
 }
 
 /* ---------------------------------------------------------------- sticky notes */
@@ -5480,4 +5469,41 @@ body.is-light .loom-piece.is-sticky {
 }
 body.is-light .loom-piece.is-sticky .loom-piece-head {
   background: #fde9a8;
+}
+
+/* ---------------------------------------------------------------- one bar, both views */
+
+/* Over the agent's own screen the bar is the canvas's bar: same buttons, same frame,
+   same height, so switching between Canvas and CLI moves nothing. */
+.loom-sign,
+.loom-rawpill.loom-sign {
+  box-sizing: border-box;
+  height: 38px;
+}
+.loom-rawpill.loom-sign {
+  top: 8px;
+  right: 16px;
+  gap: 7px;
+  padding: 3px;
+  background: color-mix(in srgb, var(--c-bg) 92%, #000);
+  color: var(--l-faint);
+  font: var(--l-font-size, 14px) / 1.6 var(--l-mono, monospace);
+  font-size: calc(var(--l-font-size, 14px) * 0.78);
+  cursor: default;
+}
+body.is-light .loom-rawpill.loom-sign {
+  background: color-mix(in srgb, var(--c-bg) 94%, #fff);
+}
+/* The bar's words in the canvas's text face in both views, not the terminal's mono. */
+.loom-rawpill.loom-sign,
+.loom-rawpill.loom-sign button {
+  font-family: var(--l-prose, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif);
+}
+.loom-rawpill.loom-sign {
+  font-size: 14px;
+}
+
+.loom-rawpill.loom-sign button {
+  font-size: 13px;
+  font-weight: 600;
 }

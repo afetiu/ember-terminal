@@ -281,7 +281,13 @@ export class LoomView {
     this.ctxMenu = div('loom-menu')
     this.chip = div('loom-chip', '? ask')
     this.lightbox = div('loom-lightbox')
-    this.rawPill = div('loom-rawpill', viewSwitch(true))
+    // Over the agent's own screen: the same bar as on the canvas, so switching views moves nothing.
+    this.rawPill = div('loom-rawpill loom-sign', viewSwitch(true))
+    // The canvas's size and colours, so the same bar renders the same.
+    for (const k of ['--l-font-size', '--l-green', '--l-red', '--l-yellow', '--l-blue', '--l-magenta', '--l-cyan']) {
+      const v = this.el.style.getPropertyValue(k)
+      if (v) this.rawPill.style.setProperty(k, v)
+    }
 
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
@@ -502,6 +508,7 @@ export class LoomView {
     this.jump.addEventListener('click', () => this.toBottom(true))
     this.rawPill.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-view="canvas"]')) this.setRaw(false)
+      else if ((e.target as HTMLElement).closest('[data-s="hands"]')) this.cycleHands()
     })
 
     this.el.addEventListener('click', (e) => this.click(e))
@@ -3733,10 +3740,10 @@ export class LoomView {
     const n = this.pinned.size
     this.renderRail()
     void n
-    this.sign.innerHTML =
-      `<button type="button" data-s="hands" class="loom-sign-hands is-${this.hands}" title="Ember Hands — ${this.hands === 'off' ? 'off' : this.hands === 'act' ? 'may point, click and type' : 'may point and explain, never click'}. Click to change.">${ICON.hand}<span>${this.hands === 'off' ? 'Off' : this.hands === 'act' ? 'Show & act' : 'Show me'}</span></button>` +
-      `<button type="button" data-s="notes" class="loom-sign-icon loom-sign-book${this.drawer.classList.contains('is-on') ? ' is-active' : ''}" title="Notebook — your todo list and notes (Ctrl+Shift+N)">${ICON.notes}${this.openTodos ? `<span class="b">${this.openTodos}</span>` : ''}</button>` +
-      viewSwitch(false)
+    const hands = `<button type="button" data-s="hands" class="loom-sign-hands is-${this.hands}" title="Ember Hands — ${this.hands === 'off' ? 'off' : this.hands === 'act' ? 'may point, click and type' : 'may point and explain, never click'}. Click to change.">${ICON.hand}<span>${this.hands === 'off' ? 'Off' : this.hands === 'act' ? 'Show & act' : 'Show me'}</span></button>` +
+      ''
+    this.sign.innerHTML = hands + viewSwitch(false)
+    this.rawPill.innerHTML = hands + viewSwitch(true)
   }
 
   /**
