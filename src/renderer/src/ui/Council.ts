@@ -117,8 +117,10 @@ export class Council {
     this.el.appendChild(this.sheet)
 
     document.addEventListener('keydown', (e) => {
-      if (!this.opened) return
+      // Only while it is on screen: as a tab, it sits in the stack behind other tabs.
+      if (!this.opened || this.el.offsetParent === null) return
       if (e.key === 'Escape') {
+        if (this.el.classList.contains('is-tab')) return
         e.preventDefault()
         e.stopPropagation()
         this.close()
@@ -147,6 +149,8 @@ export class Council {
   }
 
   close(): void {
+    // A tab closes the way every tab does; the council inside it stays.
+    if (this.el.classList.contains('is-tab')) return
     this.opened = false
     this.el.classList.remove('is-open')
   }

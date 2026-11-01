@@ -171,6 +171,23 @@ export class Group {
     return this.map !== null
   }
 
+  /** The council, as the tab itself. One council view, moved into whichever tab shows it. */
+  council: HTMLElement | null = null
+
+  ensureCouncil(el: HTMLElement): void {
+    if (this.map) this.hideMap()
+    if (this.todo) this.hideTodo()
+    if (this.note) this.hideNote()
+    if (this.council !== el) {
+      this.council = el
+      this.cover(el, false)
+    }
+  }
+
+  get isCouncil(): boolean {
+    return this.council !== null
+  }
+
   /** Take the notes off a shell tab and give it back its title and its terminals. */
   hideNote(): void {
     if (!this.note) return

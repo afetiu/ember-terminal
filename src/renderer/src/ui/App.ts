@@ -155,7 +155,7 @@ export class App {
       onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
-      onOrchestrator: () => this.council.open(this.activeGroup?.focused?.cwd || ''),
+      onOrchestrator: () => void this.openCouncilTab(),
       onProvider: (anchor) => void this.providerMenu(anchor),
       onSelect: (id) => void this.activate(id),
       onClose: (id) => this.closeGroup(id),
@@ -295,7 +295,6 @@ export class App {
       }),
     })
     this.root.appendChild(this.pairSheet.el)
-    this.root.appendChild(this.council.el)
     // The council's conclusion, put on the canvas of the tab you are in.
     window.addEventListener('ember:council:canvas', (e) => {
       const { title, markdown } = (e as CustomEvent<{ title: string; markdown: string }>).detail
@@ -924,6 +923,7 @@ export class App {
         send: (text, submit) => this.sendToSession(group, text, submit),
         isActive: () => this.activeId === group.id,
         toast: (text) => this.flashToast(text),
+        openPlace: (place) => void this.goPlace(place),
         saveView: (view) => {
           if (this.config.agentView === view || (view === 'canvas' && !this.config.agentView)) return
           this.config = { ...this.config, agentView: view }
@@ -968,11 +968,8 @@ export class App {
    * not; with no tab at all, a tab of its own. Its own surface, not a note.
    */
   async openTodoIn(group: Group | null): Promise<void> {
-    // In a session it is the notebook beside the canvas.
-    if (group?.loom) {
-      group.loom.openDrawer('todo')
-      return
-    }
+    // A tab of its own, always: never laid over a session's terminal.
+    if (group && group.panes.length > 0) group = null
     let g = group ?? this.placeGroup('todo')
     if (!g) {
       g = new Group(() => this.syncTabs())
@@ -1046,11 +1043,6 @@ export class App {
    * the work.
    */
   async goPlace(place: Place, toggle = false): Promise<void> {
-    // In a session, your todo list and notes are the notebook beside it, not a tab of their own.
-    if ((place === 'todo' || place === 'notes') && this.activeGroup?.loom) {
-      this.activeGroup.loom.openDrawer(place === 'todo' ? 'todo' : 'notes')
-      return
-    }
     if (toggle && this.activePlace() === place) return this.leavePlace()
     const g = this.placeGroup(place)
     if (place === 'todo') return this.openTodoIn(g)
@@ -1064,6 +1056,32 @@ export class App {
       return
     }
     await this.newNoteGroup()
+  }
+
+  /**
+   * The council, as a tab: the one already open, or a new tab. A council keeps running
+   * while you are on other tabs, and is there to come back to.
+   */
+  private async openCouncilTab(): Promise<void> {
+    const cwd = this.activeGroup?.focused?.cwd || ''
+    let g = this.groups.find((x) => x.isCouncil) ?? null
+    if (!g) {
+      g = new Group(() => this.syncTabs())
+      this.tuneGroup(g)
+      g.pop.set(0)
+      g.pop.to(1)
+      g.slide.set(0)
+      this.stack.appendChild(g.el)
+      this.groups.push(g)
+      g.customTitle = 'Council'
+      g.ensureCouncil(this.council.el)
+      this.council.el.classList.add('is-tab')
+      sound.play('open')
+      this.applyPaneStyles()
+    }
+    await this.activate(g.id, true)
+    this.council.open(cwd)
+    this.syncTabs()
   }
 
   /** Back from a place to the session you were last in. */
@@ -1175,10 +1193,8 @@ export class App {
    * With no tab at all, a notes tab is made.
    */
   async openNotesIn(group: Group | null, mode: 'list' | 'new' | 'open', text?: string, id?: string): Promise<void> {
-    if (group?.loom) {
-      group.loom.openDrawer('notes', mode === 'open' ? id : undefined, mode === 'new' ? (text ?? '') : undefined)
-      return
-    }
+    // A tab of its own, always: the notes tab if there is one, else a new one.
+    if (group && group.panes.length > 0) group = this.placeGroup('notes')
     if (!group) {
       const g = await this.newNoteGroup(mode === 'open' ? id : undefined)
       if (mode === 'new') await g.note?.create(text ?? '')
@@ -2549,9 +2565,9 @@ export class App {
     // were sitting in front of went on claiming it needed you indefinitely.
     if (document.hasFocus()) this.activeGroup?.acknowledge()
 
-    // A place (the list, the notes, the map as a tab of its own) has its
-    // button at the top of the column, so it is not also a card in the list.
-    const models: CardModel[] = this.groups.filter((g) => g.panes.length > 0).map((g) => {
+    // Every tab is a card — sessions, and the todo list, notes, map and council as tabs
+    // of their own — so all of them are switched between the same way.
+    const models: CardModel[] = this.groups.map((g) => {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
@@ -2561,7 +2577,9 @@ export class App {
         subtitle: g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
-        accent: g.isTodo
+        accent: g.isCouncil
+          ? this.config.theme.magenta
+          : g.isTodo
           ? this.config.theme.cyan
           : g.isMap
             ? this.config.theme.green
@@ -2879,7 +2897,7 @@ export class App {
         group: 'Agents',
         title: 'Council — have your agents debate a question',
         cli: 'council',
-        run: () => this.council.open(this.activeGroup?.focused?.cwd || ''),
+        run: () => void this.openCouncilTab(),
       },
       {
         id: 'orchestrator',

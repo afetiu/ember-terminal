@@ -32,6 +32,8 @@ export interface LoomHooks {
   isActive(): boolean
   /** Toast-level feedback. */
   toast(text: string): void
+  /** Open the todo list or the notes, as their own tabs. */
+  openPlace?(place: 'todo' | 'notes'): void
   /** Remember the view the person chose (canvas or the agent's own screen). */
   saveView?(view: 'canvas' | 'cli'): void
 }
@@ -339,7 +341,10 @@ export class LoomView {
     this.sign.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('button[data-s]')
       if (b?.dataset['s'] === 'hands') this.cycleHands()
-      else if (b?.dataset['s'] === 'notes') this.toggleDrawer()
+      else if (b?.dataset['s'] === 'notes') {
+        if (this.hooks.openPlace) this.hooks.openPlace('todo')
+        else this.toggleDrawer()
+      }
       else if (b?.dataset['s'] === 'older') this.stepTurn(-1)
       else if (b?.dataset['s'] === 'newer') this.stepTurn(1)
       else if (b?.dataset['s'] === 'now') {
@@ -1138,7 +1143,8 @@ export class LoomView {
     if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (this.mode === 'claude' || this.mode === 'agent' || this.mode === 'shell')) {
       e.preventDefault()
       e.stopPropagation()
-      this.toggleDrawer('notes')
+      if (this.hooks.openPlace) this.hooks.openPlace('notes')
+      else this.toggleDrawer('notes')
       return
     }
     if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
