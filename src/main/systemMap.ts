@@ -662,7 +662,7 @@ const SCHEMA = `{
 const RULES = `Rules:
 - You are READ-ONLY. Look at anything; never change, create, push, deploy or delete anything.
 - Never write secret values (keys, tokens, passwords, connection strings) anywhere in your answer. Names of env vars are fine.
-- Ids are forever: lowercase kebab-case derived from the real name of the thing (repo-radix-api, svc-auth, db-radix-mongo). Later updates refer to nodes by these ids, and the whole history hangs off them.
+- Ids are forever: lowercase kebab-case derived from the real name of the thing (repo-acme-api, svc-auth, db-acme-mongo). Later updates refer to nodes by these ids, and the whole history hangs off them.
 - The hierarchy is the zoom. Top level: 3-8 big areas or systems (use kind "group" or "system"). Inside them: repos, apps, services, datastores, infrastructure, external services, jobs. Inside those: the components and modules worth knowing about. Go one level deeper only where it helps understanding. 25-150 nodes total.
 - Edges are the important relationships (calls, reads/writes, deploys to, authenticates with, publishes to). Direction: FROM the part that depends/acts TO the part it uses, so the map reads left to right as "uses". Connect the most specific nodes that are true.
 - Flows: the 3-8 journeys that matter most (a user action end to end, a payment, a deploy, a scheduled job, data coming in). Each is an ordered list of 3-10 steps across existing node ids.

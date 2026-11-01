@@ -94,7 +94,7 @@ Outlook), the Slack permalink. For example:
 
 ```
 todo add "Reply to Blerim about the invoice, 2 Sep [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)"
-todo add "Review Guri's PR radix-platform#521 [GitHub](https://github.com/org/radix-platform/pull/521)"
+todo add "Review Sam's PR acme-shop#521 [GitHub](https://github.com/org/acme-shop/pull/521)"
 todo add "Answer Noah on DE-862, native S3 or the EBS pin [Jira](https://org.atlassian.net/browse/DE-862)"
 ```
 

@@ -111,7 +111,12 @@ for (const file of files) {
 
 if (!process.argv.slice(2).length) {
   const all = walk(root)
-  const newest = all.map((f) => ({ f, m: statSync(f).mtimeMs })).sort((a, b) => b.m - a.m)[0]
+  // The newest interactive session: headless `codex exec` runs (the council's) are never a tab's.
+  const interactive = (f) => {
+    const p = JSON.parse(readFileSync(f, 'utf8').split('\n')[0]).payload ?? {}
+    return p.originator !== 'codex_exec' && p.source !== 'exec'
+  }
+  const newest = all.filter(interactive).map((f) => ({ f, m: statSync(f).mtimeMs })).sort((a, b) => b.m - a.m)[0]
   if (newest) {
     const cwd = JSON.parse(readFileSync(newest.f, 'utf8').split('\n')[0]).payload.cwd
     const odd = cwd.toUpperCase().replace(/\\/g, '/') + '/'

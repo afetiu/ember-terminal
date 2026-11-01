@@ -221,7 +221,7 @@ export class MapView {
     if (!this.summaries.length) {
       const empty = el('div', 'ember-map-empty')
       empty.innerHTML =
-        '<p><strong>No projects yet.</strong></p><p>Name a project and say what belongs to it — a few repos, where it runs, a domain, or just “everything about radix-platform”. Your agent surveys it once and draws the map; after that it only patches the map when something actually changes, and the map shows where your sessions are working as they work.</p>'
+        '<p><strong>No projects yet.</strong></p><p>Name a project and say what belongs to it — a few repos, where it runs, a domain, or just “everything about acme-shop”. Your agent surveys it once and draws the map; after that it only patches the map when something actually changes, and the map shows where your sessions are working as they work.</p>'
       const go = el('button', 'ember-map-btn is-primary', 'Set up the first project')
       go.addEventListener('click', () => this.showForm(null))
       empty.append(go)
@@ -267,13 +267,13 @@ export class MapView {
     this.fTitle = el('h2', undefined, 'New project')
     const l1 = el('label', undefined, 'Name')
     this.fName = el('input')
-    this.fName.placeholder = 'radix-platform'
+    this.fName.placeholder = 'acme-shop'
     this.fName.spellcheck = false
     const l2 = el('label', undefined, 'What is it, and what belongs to it?')
     this.fBrief = el('textarea')
     this.fBrief.rows = 7
     this.fBrief.placeholder =
-      'The Radix platform: the API in ~/radix-api, the Angular admin in ~/radix-admin, the marketing site at radix.example, a Postgres database, a payments provider. Anything else with radix in it too.\n\nMention whatever you know; your agent finds the rest.'
+      'The Acme shop: the API in ~/acme-api, the Angular admin in ~/acme-admin, the marketing site at acme.example, a Postgres database, a payments provider. Anything else with acme in it too.\n\nMention whatever you know; your agent finds the rest.'
     const l3 = el('label', undefined, 'Check for changes')
     this.fPoll = el('select')
     for (const [v, t] of [

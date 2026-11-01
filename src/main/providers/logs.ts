@@ -224,13 +224,18 @@ function codexLocate(cwd: string, since: number, taken?: ReadonlySet<string>): s
       if (dirOf === undefined) {
         try {
           const meta = JSON.parse(firstLine(path)) as Json
-          dirOf = meta['type'] === 'session_meta' ? sameDir(str(obj(meta['payload'])['cwd'])) : ''
+          const payload = obj(meta['payload'])
+          // Headless runs (the council, Ember's own questions) are `codex exec`; a tab only
+          // ever follows an interactive session.
+          const headless = str(payload['originator']) === 'codex_exec' || str(payload['source']) === 'exec'
+          dirOf = meta['type'] === 'session_meta' && !headless ? sameDir(str(payload['cwd'])) : '<headless>'
         } catch {
           // The first line is still being written; try again next time.
           continue
         }
         codexCwd.set(path, dirOf)
       }
+      if (dirOf === '<headless>') continue
       if (want && dirOf !== want) continue
       best = path
       bestAt = mtime

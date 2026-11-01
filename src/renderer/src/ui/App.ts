@@ -2532,9 +2532,13 @@ export class App {
   private applyPaneStyles(): void {
     const blurMax = this.config.motion.switchBlur
     for (const g of this.groups) {
+      const isActive = g.id === this.activeId
+      // A tab that is not the active one, at rest, still on screen: it never got its
+      // slide out (a tab was switched in by a path that did not move it) and would sit
+      // visibly under the one you are on. Move it off.
+      if (!isActive && g.slide.settled && Math.abs(g.slide.value) < 1) g.slide.set(-60)
       const off = g.slide.value
       const away = Math.min(1, Math.abs(off) / 60)
-      const isActive = g.id === this.activeId
       const el = g.el
 
       // Strictly vertical. Any scale here reads as horizontal motion — a 5% shrink on

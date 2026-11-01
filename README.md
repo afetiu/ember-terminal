@@ -574,7 +574,7 @@ skill; `todo check gmail` overrides for one run.
 A project's architecture as one zoomable picture, kept up to date by Claude. `map` (or
 Ctrl+Shift+G) opens a list of projects, the way `notes` opens the notes; **New project**
 takes a name and a sentence or two about what belongs to it — folders, repos, a Heroku
-app, a domain, or just "everything about radix-platform". Claude surveys it once (a few
+app, a domain, or just "everything about acme-shop". Claude surveys it once (a few
 minutes, read-only) and draws the map: areas, then repos, apps, services, datastores,
 infrastructure and external services, then the parts inside them, with the connections
 between. Scroll to zoom — a box opens into its parts once it is big enough on screen,
