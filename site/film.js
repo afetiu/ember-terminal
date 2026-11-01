@@ -118,7 +118,11 @@ function start() {
 
   // ---------------------------------------------------------------- the pointer: yours (white) or Ember's (amber)
   const P = { x: 900, y: 640 }
-  const placePtr = () => (ptr.style.transform = `translate3d(${P.x.toFixed(1)}px, ${P.y.toFixed(1)}px, 0)`)
+  const placePtr = () => {
+    ptr.style.transform = `translate3d(${P.x.toFixed(1)}px, ${P.y.toFixed(1)}px, 0)`
+    // near the right edge its note goes on the left, so it never runs off the screen
+    ptr.classList.toggle('is-flip', P.x > desk.offsetWidth - 280)
+  }
   placePtr()
   const glideMs = (d) => (d < 2 ? 0 : Math.max(160, Math.min(560, 160 + 85 * Math.log2(1 + d / 60))))
   async function glide(to) {
@@ -276,7 +280,9 @@ function start() {
   }
 
   // ---------------------------------------------------------------- dragging out, snapping
-  const snaps = { right: null, bottom: null }
+  const snaps = { right: null }
+  // the bottom band can hold several pieces side by side, each taking its share (data-w)
+  const bottoms = []
   const GAP = 10
   // how deep the bottom band is: two fifths of the canvas, or more for a page that needs it
   let depth = 0.42
@@ -289,10 +295,23 @@ function start() {
     const r = snaps.right ? W - rw - 2 * GAP : W - GAP
     return { x: GAP, y: H - bh - GAP, w: r - GAP, h: bh }
   }
+  /** Where each piece in the bottom band goes, by its share of the width. */
+  function bottomRects(list) {
+    const band = snapRect('bottom')
+    const total = band.w - GAP * (list.length - 1)
+    const sum = list.reduce((a, e) => a + (Number(e.dataset.w) || 1), 0)
+    let x = band.x
+    return list.map((e) => {
+      const w = (total * (Number(e.dataset.w) || 1)) / sum
+      const r = { x, y: band.y, w, h: band.h }
+      x += w + GAP
+      return r
+    })
+  }
   /** The words keep clear of what is snapped. */
   function makeRoom() {
     col.style.width = snaps.right ? `${snapRect('right').x - GAP}px` : ''
-    col.style.height = snaps.bottom ? `${snapRect('bottom').y - GAP}px` : ''
+    col.style.height = bottoms.length ? `${snapRect('bottom').y - GAP}px` : ''
   }
   const setRect = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` })
 
@@ -321,7 +340,7 @@ function start() {
     gap.style.height = '0px'
     const c0 = box(cv)
     const grab = { x: P.x - c0.x - r0.x, y: P.y - c0.y - r0.y }
-    const target = snapRect(side)
+    const target = side === 'right' ? snapRect('right') : bottomRects([...bottoms, el]).at(-1)
     // Carried towards the edge at its own size; near it, the snap shows where it will land.
     const end = side === 'right' ? { x: target.x + 30, y: Math.max(40, r0.y - 10) } : { x: r0.x + 20, y: target.y + 20 }
     let shown = false
@@ -348,7 +367,15 @@ function start() {
     el.classList.remove('is-lift', 'is-hover')
     el.classList.add('is-snapped')
     const from = { x: parseFloat(el.style.left), y: parseFloat(el.style.top), w: r0.w, h: r0.h }
-    snaps[side] = el
+    if (side === 'right') snaps.right = el
+    else {
+      // the pieces already in the band move over to share it
+      bottoms.forEach((b, i) => {
+        b.classList.add('is-relayout')
+        setRect(b, bottomRects([...bottoms, el])[i])
+      })
+      bottoms.push(el)
+    }
     makeRoom()
     zone.classList.remove('is-on')
     await tween(420, (u) =>
@@ -426,6 +453,210 @@ function start() {
     todoN.classList.remove('is-bump')
     void todoN.offsetWidth
     todoN.classList.add('is-bump')
+  }
+
+  // ================================================================ 0 · run a project
+  const TICKETS = [
+    ['PAY-311', 'Retry failed charges', 'pay'],
+    ['SRCH-88', 'Index the new fields', 'search'],
+    ['WEB-142', 'Saved carts', 'web'],
+    ['QA-20', 'Full regression', 'qa'],
+  ]
+  const boardBody = () =>
+    `<div class="kb">${['To do', 'Doing', 'Done']
+      .map((name, i) => {
+        const cards = TICKETS.filter((t) => (t[2] === 'qa' ? i === 0 : i === 1))
+          .map(([id, t, k]) => `<div class="kc" data-id="${k}"><b>${id}</b><small>${t}</small></div>`)
+          .join('')
+        return `<div class="kb__c" data-col="${i}"><h6>${name}<i></i></h6>${cards}</div>`
+      })
+      .join('')}</div>`
+  function moveCard(board, k, col) {
+    const card = board.querySelector(`[data-id="${k}"]`)
+    const a = card.getBoundingClientRect()
+    board.querySelector(`[data-col="${col}"]`).appendChild(card)
+    if (!skipping()) {
+      const b = card.getBoundingClientRect()
+      card.animate([{ transform: `translate(${(a.left - b.left) / scale}px, ${(a.top - b.top) / scale}px)` }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' })
+    }
+    countCards(board)
+  }
+  const countCards = (board) => board.querySelectorAll('.kb__c').forEach((c) => (c.querySelector('h6 i').textContent = c.querySelectorAll('.kc').length))
+  const healthBody = () =>
+    `<div class="st">${[
+      ['tests', 'Tests', '398 / 412'],
+      ['prs', 'Open PRs', '0'],
+      ['agents', 'Agents', '3 working'],
+      ['block', 'Blockers', '1'],
+    ]
+      .map(([k, l, v]) => `<div><small>${l}</small><b data-st="${k}">${v}</b></div>`)
+      .join('')}</div>`
+  const setStat = (el, k, v) => {
+    const b = el.querySelector(`[data-st="${k}"]`)
+    b.textContent = v
+    b.classList.remove('is-bump')
+    void b.offsetWidth
+    b.classList.add('is-bump')
+  }
+  // what v2.4 touches, as the agent draws it: the parts in play are lit
+  const mapBody = () => {
+    const N = [
+      ['web', 'Web app', 150, 36, 1],
+      ['api', 'API', 150, 116, 0],
+      ['pay', 'Payments', 74, 206, 1],
+      ['search', 'Search', 226, 206, 1],
+      ['db', 'Postgres', 74, 296, 0],
+      ['index', 'Search index', 226, 296, 1],
+    ]
+    const at = Object.fromEntries(N.map((n) => [n[0], n]))
+    const E = [['web', 'api'], ['api', 'pay'], ['api', 'search'], ['pay', 'db'], ['search', 'index']]
+    const edge = ([a, b]) => {
+      const [, , x1, y1] = at[a]
+      const [, , x2, y2] = at[b]
+      return `<path d="M${x1} ${y1 + 20} C ${x1} ${y1 + 50}, ${x2} ${y2 - 50}, ${x2} ${y2 - 20}"/>`
+    }
+    return (
+      `<svg class="dg" viewBox="0 0 300 330"><g class="dg__e">${E.map(edge).join('')}</g>` +
+      N.map(([k, t, x, y, hot]) => `<g class="dg__n${hot ? ' is-hot' : ''}" data-node="${k}"><rect x="${x - 58}" y="${y - 20}" width="116" height="40" rx="11"/><text x="${x}" y="${y + 5}">${t}</text></g>`).join('') +
+      `</svg>`
+    )
+  }
+  /** The session's subagents, as pills: what each is on, and whether it is done. */
+  function agentsRow() {
+    const row = document.createElement('div')
+    row.className = 'subagents'
+    row.innerHTML = [
+      ['pay', 'payments', 'editing retry.ts'],
+      ['search', 'search', 'reindexing'],
+      ['web', 'web', 'building saved carts'],
+    ]
+      .map(([k, n, a]) => `<span class="agent is-run" data-agent="${k}"><i></i><b>${n}</b><small>${a}</small></span>`)
+      .join('')
+    plan.after(row)
+    return row
+  }
+  function agentState(row, k, state, text) {
+    const p = row.querySelector(`[data-agent="${k}"]`)
+    p.className = `agent is-${state}`
+    p.querySelector('small').textContent = text
+  }
+
+  async function projectStory() {
+    const other = cards.children[1]
+    await beat(0)
+    await wait(500)
+    await ask('v2.4 ships Friday. split the work across agents and keep me posted')
+    think('Reading the v2.4 milestone…')
+    await wait(1300)
+    startPlan('Ship v2.4', ['Payments: retry failed charges', 'Search: index the new fields', 'Web: saved carts', 'QA: full regression'])
+    step(0, 'active')
+    step(1, 'active')
+    step(2, 'active')
+    const row = agentsRow()
+    // your other session keeps going alongside
+    other.classList.add('is-busy')
+    other.querySelector('small').textContent = 'Codex · writing'
+    await line('Three subagents are on it, one per area. QA runs when they land.')
+    await wait(1600)
+
+    await beat(1)
+    await line('This is what v2.4 touches:')
+    const map = piece('What v2.4 touches', 'diagram', mapBody())
+    await show(map)
+    busy(false)
+    await wait(900)
+    await dragTo(map, 'right')
+    ptr.classList.remove('is-on')
+    await wait(700)
+
+    await beat(2)
+    await ask('give me a board I can keep an eye on')
+    think('Pulling the tickets…')
+    await wait(900)
+    unthink()
+    const board = piece('v2.4 board', 'kanban', boardBody())
+    board.dataset.w = '2'
+    countCards(board)
+    const health = piece('Release health', 'stats', healthBody())
+    await show(board)
+    if (!narrow) await show(health)
+    busy(false)
+    await wait(600)
+    await dragTo(board, 'bottom', 0.4)
+    if (!narrow) await dragTo(health, 'bottom', 0.4)
+    ptr.classList.remove('is-on')
+    await wait(800)
+
+    await beat(3)
+    // search lands first; payments hits a failing test
+    agentState(row, 'search', 'done', 'done · 4 files')
+    moveCard(board, 'search', 2)
+    step(1, 'done')
+    map.querySelector('[data-node="search"]').classList.add('is-done')
+    map.querySelector('[data-node="index"]').classList.add('is-done')
+    await wait(900)
+    agentState(row, 'pay', 'fail', '1 test failing')
+    board.querySelector('[data-id="pay"]').classList.add('is-fail')
+    if (!narrow) setStat(health, 'tests', '411 / 412')
+    await wait(1100)
+    // the trail of what it did, one click on its pill
+    const pill = row.querySelector('[data-agent="pay"]')
+    await click(pill)
+    const pop = document.createElement('div')
+    pop.className = 'apop'
+    pop.innerHTML =
+      `<b>payments · 2:14</b><ol>${['read src/payments/retry.ts', 'edit retry.ts · +32 −4', 'edit queue.ts · +11', 'run pnpm test payments · 1 failing', 'reading the failing test'].map((s) => `<li>${s}</li>`).join('')}</ol>` +
+      `<p>A retried charge is counted twice. Adding an idempotency key.</p>`
+    const pb = box(pill, cv)
+    pop.style.left = `${Math.min(pb.x, cv.offsetWidth - 300)}px`
+    pop.style.top = `${pb.y + pb.h + 8}px`
+    cv.appendChild(pop)
+    void pop.offsetWidth
+    pop.classList.add('is-on')
+    await wait(3600)
+    pop.classList.remove('is-on')
+    await wait(300)
+    pop.remove()
+
+    await beat(4)
+    await askAbout(board.querySelector('[data-id="pay"]'), 'v2.4 board · PAY-311', 'will this hold up Friday?',
+      'No. The fix is small and the agent is on it now; nothing else depends on PAY-311.')
+
+    await beat(5)
+    agentState(row, 'pay', 'done', 'done · 3 files')
+    board.querySelector('[data-id="pay"]').classList.remove('is-fail')
+    moveCard(board, 'pay', 2)
+    step(0, 'done')
+    map.querySelector('[data-node="pay"]').classList.add('is-done')
+    if (!narrow) setStat(health, 'block', '0')
+    await wait(900)
+    agentState(row, 'web', 'done', 'done · 7 files')
+    moveCard(board, 'web', 2)
+    step(2, 'done')
+    map.querySelector('[data-node="web"]').classList.add('is-done')
+    if (!narrow) setStat(health, 'prs', '3')
+    if (!narrow) setStat(health, 'agents', 'all done')
+    await wait(800)
+    await line('All three are in. Running QA.')
+    step(3, 'active')
+    moveCard(board, 'qa', 1)
+    const qa = tool('run', 'pnpm test:e2e')
+    await wait(1800)
+    qa.textContent = 'pnpm test:e2e · 412 passed'
+    if (!narrow) setStat(health, 'tests', '412 / 412')
+    moveCard(board, 'qa', 2)
+    step(3, 'done')
+    await wait(900)
+
+    await beat(6)
+    await choose('Everything is green. Tag v2.4-rc1?', 'Tag it')
+    think('Tagging…')
+    await wait(900)
+    tool('git', 'tag v2.4-rc1 · pushed')
+    await line('Tagged. Three PRs are open for review, two days early.')
+    addTodo('review the three v2.4 PRs')
+    busy(false)
+    await wait(4200)
   }
 
   // ================================================================ 1 · fix a bug
@@ -630,12 +861,28 @@ function start() {
     `<tr><td>9.1 Liability</td><td>Capped at 3 months of fees</td><td><em class="md">Medium</em></td></tr>` +
     `<tr><td>11.4 Renewal</td><td>Renews for 12 months unless cancelled</td><td><em class="md">Medium</em></td></tr>` +
     `</tbody></table>`
+  // A few pages of the contract, one under another, the way a PDF scrolls.
+  const lines = (...ws) => ws.map((w) => `<p class="ln" style="width:${w}%"></p>`).join('')
   const pdfBody = () =>
-    `<div class="pdf"><div class="pdf__bar"><span>‹ <b data-pg>1</b> / 12 ›</span><span>− 100% +</span></div><div class="pdf__page">` +
-    `<h4>7. Term and termination</h4><p class="ln" style="width:92%"></p><p class="ln" style="width:86%"></p>` +
-    `<p class="cl" data-clause><b>7.2</b> Either party may terminate this Agreement for convenience on thirty (30) days’ written notice.</p>` +
-    `<p class="ln" style="width:90%"></p><p class="ln" style="width:78%"></p><p class="ln" style="width:88%"></p><p class="ln" style="width:64%"></p>` +
-    `<h4>8. Fees</h4><p class="ln" style="width:94%"></p><p class="ln" style="width:70%"></p></div></div>`
+    `<div class="pdf"><div class="pdf__bar"><span>‹ <b data-pg>1</b> / 12 ›</span><span>− 100% +</span></div><div class="pdf__doc" data-doc>` +
+    `<div class="pdf__page" data-p="1"><h4>Master Services Agreement</h4>${lines(94, 88, 91, 70, 86, 93, 64, 90, 82)}</div>` +
+    `<div class="pdf__page" data-p="7"><h4>7. Term and termination</h4>${lines(92, 86)}` +
+    `<p class="cl" data-clause="7.2"><b>7.2</b> Either party may terminate this Agreement for convenience on thirty (30) days’ written notice.</p>${lines(90, 78, 88, 64)}</div>` +
+    `<div class="pdf__page" data-p="9"><h4>9. Liability</h4>${lines(88)}` +
+    `<p class="cl" data-clause="9.1"><b>9.1</b> Each party’s total liability is limited to the fees paid in the three (3) months before the claim.</p>${lines(93, 80, 86)}</div>` +
+    `<div class="pdf__page" data-p="11"><h4>11. Term</h4>${lines(90, 84)}` +
+    `<p class="cl" data-clause="11.4"><b>11.4</b> This Agreement renews for successive twelve (12) month terms unless either party cancels in writing.</p>${lines(88, 72, 90)}</div>` +
+    `</div></div>`
+  /** Scroll the PDF so a clause sits near the top, and show its page number. */
+  async function turnTo(pdf, clause) {
+    const doc = pdf.querySelector('[data-doc]')
+    const el = pdf.querySelector(`[data-clause="${clause}"]`)
+    const from = doc.scrollTop
+    const to = Math.max(0, el.closest('.pdf__page').offsetTop - 8)
+    pdf.querySelector('[data-pg]').textContent = el.closest('.pdf__page').dataset.p
+    await tween(700, (u) => (doc.scrollTop = from + (to - from) * u))
+    return el
+  }
   const mailBody = () =>
     `<div class="mail"><p><b>To</b> legal@northwind.example</p><p><b>Subject</b> MSA: notice period in 7.2</p><hr>` +
     `<p>Hi Dana,</p><p>Before we sign, could we move the notice period in clause 7.2 from 30 to 60 days? Clause 14.1 lets us amend it in writing, and 60 days gives both teams time to hand over.</p><p>Thanks,<br>Sam</p></div>`
@@ -660,28 +907,41 @@ function start() {
     await wait(800)
 
     await beat(2)
-    await ask('show me the termination clause')
-    think('Opening page 7…')
-    await wait(800)
-    pdf.querySelector('[data-pg]').textContent = '7'
-    pdf.querySelector('.pdf__page').classList.add('is-turn')
+    await ask('walk me through the three clauses in the PDF')
     await wait(500)
-    // it points at the clause on the page, with a note beside it
-    const clause = pdf.querySelector('[data-clause]')
+    // it scrolls the PDF to each one and points at it, a step at a time
+    const walk = [
+      ['7.2', 'Either side can leave on 30 days’ notice'],
+      ['9.1', 'Liability stops at 3 months of fees'],
+      ['11.4', 'Renews for a year unless you cancel'],
+    ]
     ember(true)
     P.x = narrow ? 200 : 520
-    P.y = narrow ? 260 : 320
+    P.y = narrow ? 260 : 300
     placePtr()
-    await glide(mid(clause))
-    clause.classList.add('is-hl')
-    tag.textContent = 'Page 7 · either side can leave'
-    await line('Here: 7.2, on page 7. Either side can leave on 30 days’ notice.')
+    unthink()
+    const said = await line('')
+    for (const [i, [id, note]] of walk.entries()) {
+      tag.textContent = ''
+      const el = await turnTo(pdf, id)
+      await glide(mid(el))
+      pdf.querySelectorAll('.cl.is-hl').forEach((c) => c.classList.remove('is-hl'))
+      el.classList.add('is-hl')
+      tag.innerHTML = `<b>Step ${i + 1} of 3</b>${note}`
+      said.textContent = `${id}, page ${el.closest('.pdf__page').dataset.p}.`
+      await wait(2300)
+    }
+    tag.textContent = ''
+    await line('7.2 is the one to push back on; the other two are common.')
     busy(false)
-    await wait(1800)
+    await wait(1000)
     ember(false)
     ptr.classList.remove('is-on')
 
     await beat(3)
+    const clause = await turnTo(pdf, '7.2')
+    pdf.querySelectorAll('.cl.is-hl').forEach((c) => c.classList.remove('is-hl'))
+    clause.classList.add('is-hl')
     await askAbout(clause, 'Northwind MSA.pdf · 7.2', 'can we ask for 60 days instead?',
       'Yes. Clause 14.1 lets both sides amend it in writing, and 60 days is common for a contract this size.')
 
@@ -845,6 +1105,20 @@ function start() {
   // ================================================================ the scenes
   const SCENES = [
     {
+      tab: 'Run a project',
+      session: ['Ship v2.4', 'Opus 5.5 · 31%'],
+      story: projectStory,
+      moments: [
+        ['Split the work', 10500, 'Hand it a release. It plans the work and sends a subagent to each part, side by side.'],
+        ['Map', 7000, 'It draws what the release touches, and you pin the map to the right.'],
+        ['Board', 11500, 'Ask for a board. Pin the tickets and the numbers along the bottom: your mission control.'],
+        ['Trace', 8000, 'Search lands, payments hits a failing test. Click its pill to see every step it took.'],
+        ['Ask about it', 9500, 'Right-click the ticket to ask if it holds up the release.'],
+        ['Land', 8000, 'The fixes land, the board moves, the map goes green, QA runs.'],
+        ['Ship', 8000, 'One click to tag the release, and a review lands on your todo list.'],
+      ],
+    },
+    {
       tab: 'Fix a bug',
       session: ['Checkout 503s', 'Opus 5.5 · 18%'],
       story: bugStory,
@@ -855,7 +1129,7 @@ function start() {
         ['Pin bottom', 4400, 'Pin the code along the bottom. The cause, the code and the conversation, all in view.'],
         ['Ask about it', 9500, 'Right-click anything to ask about it. The answer comes right there, without interrupting the work.'],
         ['Change it', 12000, 'Or say what to change. The agent edits it in place, runs the tests, and the plan moves on.'],
-        ['Ship', 11500, 'Decide with one click. The PR is open, the chart shows the fix holding, and a follow-up lands on your todo list.'],
+        ['Ship', 8000, 'Decide with one click. The PR is open, the chart shows the fix holding, and a follow-up lands on your todo list.'],
       ],
     },
     {
@@ -878,7 +1152,7 @@ function start() {
       moments: [
         ['Ask', 12000, 'Hand it a contract. You get the clauses to watch, and the PDF itself.'],
         ['Pin it', 4400, 'Pin the PDF to the right, so the source is always beside the answer.'],
-        ['Show me', 8500, 'Ask where something is. It turns to the page and points at the clause.'],
+        ['Walk me through', 12500, 'Ask it to walk you through. It scrolls the PDF and points at each clause, one step at a time.'],
         ['Ask about it', 9500, 'Right-click the clause to ask about it, without leaving the page.'],
         ['Draft', 7500, 'Have it draft the email, right there.'],
         ['Keep it', 10000, 'Save it to your notes, and a reminder lands on your todo list.'],
@@ -954,11 +1228,16 @@ function start() {
     inpT.textContent = ''
     ptr.classList.remove('is-on')
     ember(false)
-    snaps.right = snaps.bottom = null
+    snaps.right = null
+    bottoms.length = 0
     depth = 0.42
+    col.querySelector('.subagents')?.remove()
+    cv.querySelector('.apop')?.remove()
     col.style.width = col.style.height = ''
     todoN.textContent = '3'
     busy(false)
+    cards.children[1].classList.remove('is-busy')
+    cards.children[1].querySelector('small').textContent = 'Codex · idle'
     beatNow = 0
     say = null
   }
