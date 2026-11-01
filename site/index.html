@@ -27,9 +27,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1.4.0-658f71c9">
-<script src="main.js?v=1.4.0-658f71c9" defer></script>
-<script src="film.js?v=1.4.0-658f71c9" type="module"></script>
+<link rel="stylesheet" href="styles.css?v=1.4.0-e66bbaec">
+<script src="main.js?v=1.4.0-e66bbaec" defer></script>
+<script src="film.js?v=1.4.0-e66bbaec" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -71,7 +71,7 @@
 
   <!-- ============================ THE DEMO ============================ -->
   <div class="wrap demo-wrap" id="demo">
-    <div class="demo" data-demo aria-label="Ember, playing a short demo" role="img">
+    <div class="demo" data-demo aria-label="Ember, playing four short scenarios" role="img">
       <div class="desk" aria-hidden="true">
         <div class="win" data-win>
           <div class="win__title">
@@ -122,18 +122,14 @@
         </div>
 
         <div class="keys" data-keys></div>
-        <div class="ptr" data-ptr><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2.5 19.5 13l-6.6 1.3L9.6 21z"/></svg></div>
+        <div class="sheet" data-sheet></div>
+        <div class="stop" data-stop><span class="stop__dot"></span>Ember is using your computer<b>STOP</b></div>
+        <div class="ptr" data-ptr><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2.5 19.5 13l-6.6 1.3L9.6 21z"/></svg><span class="ptr__tag" data-tag></span></div>
       </div>
     </div>
 
-    <div class="chapters" role="group" aria-label="Moments in the demo" data-chapters>
-      <button type="button" data-ch="0"><span>1</span>Ask<i><b></b></i></button>
-      <button type="button" data-ch="1"><span>2</span>Pin right<i><b></b></i></button>
-      <button type="button" data-ch="2"><span>3</span>Plan<i><b></b></i></button>
-      <button type="button" data-ch="3"><span>4</span>Pin bottom<i><b></b></i></button>
-      <button type="button" data-ch="4"><span>5</span>Ask about it<i><b></b></i></button>
-      <button type="button" data-ch="5"><span>6</span>Change it<i><b></b></i></button>
-      <button type="button" data-ch="6"><span>7</span>Ship<i><b></b></i></button>
+    <div class="scenes" role="tablist" aria-label="Scenarios" data-scenes></div>
+    <div class="chapters" role="group" aria-label="Moments in the scenario" data-chapters>
       <button type="button" class="chapters__pause" data-pause aria-label="Pause the demo"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path class="i-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/><path class="i-play" d="M4 2.5v11l9-5.5z"/></svg></button>
     </div>
     <p class="caption" aria-live="polite" data-cap>Checkout is failing. Ask what is going on, in plain words.</p>
