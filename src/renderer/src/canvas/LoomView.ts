@@ -1070,8 +1070,10 @@ export class LoomView {
   /** One line, large: what the session is doing this moment. It replaces itself; nothing piles up. */
   private renderNow(): void {
     const action = this.working ? this.feed.action || this.spin.verb : ''
-    const inPlan = this.plan.classList.contains('is-on') && !!this.plan.querySelector('li[data-state="active"]')
-    this.now.classList.toggle('is-on', !!action && !inPlan)
+    // Always in the turn while it works, plan or no plan: the plan can be in an earlier
+    // turn, minimized, removed, or holding a step the agent left "in progress" long ago,
+    // and the turn you are looking at must still say what is happening now.
+    this.now.classList.toggle('is-on', !!action)
     if (!action) {
       this.nowText = ''
       return
