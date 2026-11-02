@@ -162,6 +162,8 @@ const AGENT_ROWS = 10
 const LIFTABLE = '.loom-diagram, .loom-table, .loom-code, .loom-say img.loom-img, .loom-shelf .loom-figure, .loom-tool-peek .loom-figure'
 
 const RULE_CHARS = /[─━▔═╌╍┄┅┈┉]/g
+/** The input box's first line: `❯`, or `!` in shell mode. */
+const PROMPT = /^\s?[❯!]/
 /** Box junctions: a row with any of these is a table's border, not one of the TUI's rules. */
 const JUNCTIONS = /[┼├┤┬┴│╭╮╰╯┌┐└┘║╔╗╚╝╞╡╪]/
 
@@ -613,12 +615,12 @@ export class LoomView {
     let box: [number, number] | null = null
     let open = -1
     const prev = rules.length > 1 ? rules[rules.length - 2]! : -1
-    if (prev >= 0 && low - prev <= 18 && /^\s?❯/.test(rows[prev + 1] ?? '')) {
+    if (prev >= 0 && low - prev <= 18 && PROMPT.test(rows[prev + 1] ?? '')) {
       top = open = prev
       box = [prev + 1, low - 1]
       dialog = false
     }
-    if (dialog && /^\s*❯/.test(rows[low + 1] ?? '') && last - low <= 3) {
+    if (dialog && /^\s*[❯!]/.test(rows[low + 1] ?? '') && last - low <= 3) {
       // A single rule with the prompt under it: an input box whose top rule scrolled off.
       dialog = false
       open = low
@@ -630,7 +632,7 @@ export class LoomView {
       // marks its choices, under its rule, never above it. Without this the dock would
       // be cropped to the bottom rule and the prompt line hidden.
       for (let y = low - 1; y > 3 && low - y <= 18 && rows[y]!.trim(); y--) {
-        if (!/^\s?❯/.test(rows[y]!)) continue
+        if (!PROMPT.test(rows[y]!)) continue
         open = (rows[y - 1]!.match(RULE_CHARS)?.length ?? 0) >= 8 ? y - 1 : -1
         top = open >= 0 ? open : y
         box = [y, low - 1]
@@ -727,7 +729,7 @@ export class LoomView {
     const lines = below.filter((r) => r.trim())
     if (lines.length > 4) return false
     if (lines.some((r) => /^\s*(?:❯\s*)?\d+\.\s/.test(r) || /Do you want|Esc to cancel|Enter to (?:select|confirm)/i.test(r))) return false
-    return !lines.length || lines.some((r) => /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|for agents|esc to interrupt|context\)/i.test(r))
+    return !lines.length || lines.some((r) => /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|bash mode|for agents|esc to interrupt|context\)/i.test(r))
   }
 
   private layout(): void {
