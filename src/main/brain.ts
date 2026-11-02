@@ -284,12 +284,32 @@ const MEMORY_PROTOCOL = [
   `- Shared skills: the Ember tool \`skills\`, or ${SKILLS.replace(HOME, '~')}.`,
 ].join('\n')
 
+/**
+ * Where things are shown, when the agent runs inside Ember. In a global instructions file,
+ * because that is the only text an agent weighs as heavily as its own tools' descriptions:
+ * Claude Code also carries the claude.ai Artifact tool, which asks to publish every
+ * dashboard as a page, and the canvas tools' MCP instructions alone lost to it ("show me
+ * a mission control" opened a browser). Worded to apply only inside Ember, since the same
+ * file is read in every other terminal too.
+ */
+const CANVAS_PROTOCOL = [
+  '## Showing things (Ember)',
+  '',
+  "When you are running inside Ember (Ember's tools such as `show_view` and `show_panel` are available to you),",
+  "Ember's canvas is where you show things. A request to show, visualize or lay out anything — a dashboard, a",
+  'mission control, a plan, a board, a chart, a diagram, a table, a mockup, a page, a report — goes on the canvas',
+  'with those tools: `show_view` for data (stats, kanban, table, timeline, charts), `show_panel` for a diagram,',
+  'markdown or a small html page, `show_steps` for a plan, `show_file` for a file. Do not publish it as a claude.ai',
+  'Artifact, write an HTML file and open it in a browser, or use another app, unless the user asks for that by',
+  'name. Outside Ember, this section does not apply.',
+].join('\n')
+
 function block(agent: string, from: BrainState['instructionsFrom']): string {
   const parts = [START, '']
   // Claude reads imports; everything else gets the text itself. The agent the instructions
   // were seeded from already has them in its own file.
   if (agent !== from) parts.push(agent === 'claude' ? `@${INSTRUCTIONS.replace(HOME, '~').split(sep).join('/')}` : read(INSTRUCTIONS).trim(), '')
-  parts.push(MEMORY_PROTOCOL, '', END)
+  parts.push(MEMORY_PROTOCOL, '', CANVAS_PROTOCOL, '', END)
   return parts.join('\n')
 }
 

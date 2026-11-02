@@ -108,6 +108,10 @@ const INSTRUCTIONS = [
   'Use open_url instead of telling them to open a browser — a dev server you just started, a PR, docs ',
   'you are quoting. Use clear_panel when what is up is finished with.\n\n',
 
+  'The panel is where you show things in Ember: a dashboard, mission control, board, chart, diagram or page ',
+  'goes on it, never as a claude.ai Artifact, an HTML file opened in a browser or another app, unless the user ',
+  'asks for that by name.\n\n',
+
   'The terminal cannot draw images, so the user does not see the screenshots you take or the pictures ',
   'you read unless they reach the panel. In Claude Code most of them get there by themselves — an image ',
   'you Read and a screenshot an MCP tool returns are added to the panel\'s Images — but when an image is ',
@@ -133,6 +137,9 @@ const CANVAS_INSTRUCTIONS = [
   // steers to what is cheap: what renders by itself costs nothing extra, an html page is
   // written once and then re-read on every later call while it stays in the conversation.
   'This session runs in an Ember canvas tab: your replies are drawn on a canvas, not read as terminal text.\n',
+  'The canvas is where you show things. A dashboard, mission control, board, chart, diagram, table, mockup or ',
+  'page goes on it with these tools, never as a claude.ai Artifact, an HTML file opened in a browser or another ',
+  'app, unless the user asks for that by name.\n',
   'Free (no tool): markdown in your reply renders rich; a ```mermaid fence becomes a live diagram; a markdown ',
   'table becomes a table; `![caption](C:\\abs\\path.png)` shows an image; `[label](ember:text)` is a button ',
   'that sends text. Prefer these — they are the cheapest way to show something.\n',
