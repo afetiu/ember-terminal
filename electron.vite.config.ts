@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import type { Plugin } from 'vite'
+
+/** The version a build shows (at the foot of the sidebar): package.json's, baked in. */
+const VERSION = (JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as { version: string }).version
 
 /**
  * Two lines of @xterm/addon-webgl, changed at build time. Both only matter on a light
@@ -77,6 +81,7 @@ export default defineConfig({
   renderer: {
     root: resolve('src/renderer'),
     plugins: [patchXtermWebgl()],
+    define: { __EMBER_VERSION__: JSON.stringify(VERSION) },
     // Pre-bundling would hand dev mode an unpatched copy.
     optimizeDeps: { exclude: ['@xterm/addon-webgl'] },
     resolve: {

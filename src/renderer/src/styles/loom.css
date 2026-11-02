@@ -3837,23 +3837,60 @@ body.is-light .loom-rail {
 
 /* ---------------------------------------------------------------- queued messages */
 
+/* Right above the input box: its top is the box's top, and it lifts itself by its own height. */
 .loom-queue {
+  position: absolute;
+  z-index: 6;
   display: none;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 12px;
+  /* Solid: what is on the canvas behind it must not read through. */
+  background: var(--c-bg);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+  transform: translateY(calc(-100% - 8px));
+  /* Outside the canvas element, so it carries the canvas's tokens itself. */
+  --l-dim: color-mix(in srgb, var(--c-fg) 62%, transparent);
+  --l-faint: color-mix(in srgb, var(--c-fg) 42%, transparent);
+  --l-accent: var(--c-accent);
+  --l-mono: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  --l-prose: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  font-family: var(--l-prose);
+  font-size: var(--l-font-size, 14px);
+  line-height: 1.5;
 }
-.loom-queue.is-on {
+.loom-queue.is-on.has-items {
   display: flex;
 }
-.loom-activity:has(.loom-queue.is-on) {
-  display: block;
+.loom-queue-item {
+  max-width: none;
+}
+.loom-queue-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 4px 0 6px;
+  font-size: 0.82em;
+  color: var(--l-faint);
+}
+.loom-queue-foot button {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 8px;
+  font: 600 0.95em var(--l-prose);
+  color: var(--c-bg);
+  background: var(--l-accent);
+  cursor: pointer;
+}
+.loom-queue-foot button:hover {
+  filter: brightness(1.1);
 }
 .loom-queue-item {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  max-width: min(900px, 100%);
   padding: 6px 12px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.035);

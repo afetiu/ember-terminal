@@ -173,6 +173,12 @@ export class Sidebar {
       nav.append(btn)
       this.navBtns.set(p.id, { btn, badge })
     }
+    // Which Ember this is, quietly, in the free end of the row.
+    const version = document.createElement('span')
+    version.className = 'ember-version'
+    version.textContent = `v${__EMBER_VERSION__}`
+    version.title = `Ember ${__EMBER_VERSION__}`
+    nav.append(version)
     this.list = document.createElement('div')
     this.list.className = 'ember-cards'
 

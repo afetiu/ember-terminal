@@ -3733,6 +3733,24 @@ body.is-zen .ember-fx {
   container-type: inline-size;
 }
 
+/* Which Ember this is: small and faint, in the empty end of the places row. */
+.ember-version {
+  grid-column: -2 / -1;
+  align-self: end;
+  justify-self: end;
+  padding: 0 4px 6px 0;
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  cursor: default;
+}
+body.sidebar-mini .ember-version {
+  display: none;
+}
+
 .ember-place {
   position: relative;
   display: flex;

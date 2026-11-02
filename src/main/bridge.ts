@@ -52,8 +52,10 @@ export function markCanvasTab(tabId: string, on: boolean): void {
 }
 
 let mcpConfig = ''
-/** The `--settings` file the shim passes: a status line and nothing else. */
+/** The `--settings` file the shim passes: full screen, the status line and the image hook. */
 let settingsFile = ''
+/** The same with the status line setting off: full screen only. */
+let baseSettingsFile = ''
 /** The user's own status line command, if their settings have one, to run inside ours. */
 let innerStatusLine = ''
 
@@ -89,11 +91,19 @@ function writeSettings(): string {
     'utf8'
   )
   const imageHook = { type: 'command', command: hook.replace(/\\/g, '/'), async: true, timeout: 30 }
+  // Full screen, always. The canvas reads Claude Code's full-screen layout (its input box
+  // on the alternate screen); drawn inline, as it is by default on a machine whose own
+  // settings lack `"tui": "fullscreen"`, the tab looked like a plain shell: no canvas and
+  // no Canvas | CLI switch. Passed only inside Ember, so other terminals keep theirs.
+  const tui = { tui: 'fullscreen' }
+  baseSettingsFile = join(dir, 'ember-settings-base.json')
+  writeFileSync(baseSettingsFile, JSON.stringify(tui, null, 2), 'utf8')
   const file = join(dir, 'ember-settings.json')
   writeFileSync(
     file,
     JSON.stringify(
       {
+        ...tui,
         statusLine: { type: 'command', command: cmd.replace(/\\/g, '/'), padding: 0 },
         hooks: {
           PostToolUse: [{ matcher: 'Read|mcp__.*', hooks: [imageHook] }],
@@ -247,9 +257,13 @@ export function bridgeEnv(tabId: string): Record<string, string> {
     EMBER_NOTES_DIR: NOTES_DIR,
     // Computer use: the port and token `desk` needs. Only a shell Ember spawned has them.
     ...deskEnv(),
-    // The status line, when the setting is on. Read at spawn time so a change in
-    // Settings applies to the next shell without a restart.
-    ...(settingsFile && loadConfig().claude.statusLine ? { EMBER_SETTINGS: settingsFile } : {}),
+    // Full screen always, and the status line when the setting is on. Read at spawn time
+    // so a change in Settings applies to the next shell without a restart.
+    ...(settingsFile && loadConfig().claude.statusLine
+      ? { EMBER_SETTINGS: settingsFile }
+      : baseSettingsFile
+        ? { EMBER_SETTINGS: baseSettingsFile }
+        : {}),
     ...(innerStatusLine ? { EMBER_STATUSLINE_INNER: innerStatusLine } : {}),
   }
 }

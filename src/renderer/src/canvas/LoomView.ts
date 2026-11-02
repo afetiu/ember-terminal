@@ -271,9 +271,11 @@ export class LoomView {
     // What Claude is doing sits in the turn itself, right under its words and above what
     // it showed: it moves with the content and nothing can sit on it.
     this.activity = div('loom-activity')
+    // Messages waiting for the turn to end sit right above the input box, where you typed
+    // them, not up in the turn: placed with the box in layout().
     this.queue = div('loom-queue')
     this.agentsRow = div('loom-agents')
-    this.activity.append(this.queue, this.trail, this.now, this.agentsRow)
+    this.activity.append(this.trail, this.now, this.agentsRow)
     this.pinLayer = div('loom-pins')
     this.frame = div('loom-frame-box')
     this.bar = div('loom-bar')
@@ -294,7 +296,13 @@ export class LoomView {
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
     this.el.append(this.scroller, this.rail, this.pinLayer, this.hint, this.sign, this.steps, this.jump, this.chip, this.pop, this.ctxMenu, this.drawer, this.lightbox)
-    panes.append(this.el, this.frame, this.bar, this.rawPill)
+    panes.append(this.el, this.frame, this.queue, this.bar, this.rawPill)
+    // Send now: Claude Code's own keys for it (its hint reads "ctrl+x ctrl+s to send now").
+    this.queue.addEventListener('click', (e) => {
+      if (!(e.target as HTMLElement).closest('[data-q="send"]')) return
+      window.ember.write(this.session.id, '\x18\x13')
+      this.session.focus()
+    })
     panes.classList.add('has-loom')
     session.el.classList.add('is-loom')
 
@@ -878,12 +886,19 @@ export class LoomView {
     const left = pane.offsetLeft
     const width = pane.offsetWidth
     this.frame.classList.toggle('is-on', showCanvas && !!frame)
+    // The queue rides on top of the input box (its own height lifts it, in CSS).
+    this.queue.classList.toggle('is-on', showCanvas && !!frame)
     if (showCanvas && frame) {
       Object.assign(this.frame.style, {
         left: `${left + 10}px`,
         width: `${width - 20}px`,
         top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
         height: `${frame.height.toFixed(1)}px`,
+      })
+      Object.assign(this.queue.style, {
+        left: `${left + 10}px`,
+        width: `${width - 20}px`,
+        top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
       })
     }
     this.bar.classList.toggle('is-on', showCanvas && !!foot)
@@ -957,10 +972,14 @@ export class LoomView {
     const key = items.join('')
     if (key === this.queueKey) return
     this.queueKey = key
-    this.queue.innerHTML = items
-      .map((t) => `<div class="loom-queue-item"><span class="loom-queue-tag">queued</span><span class="loom-queue-text">${escapeHtml(t)}</span></div>`)
-      .join('')
-    this.queue.classList.toggle('is-on', items.length > 0)
+    this.queue.innerHTML =
+      items
+        .map((t) => `<div class="loom-queue-item"><span class="loom-queue-tag">queued</span><span class="loom-queue-text">${escapeHtml(t)}</span></div>`)
+        .join('') +
+      (items.length
+        ? `<div class="loom-queue-foot"><span>Sent when this turn ends</span><button type="button" data-q="send" title="Send now, without waiting for the turn to end (Ctrl+X Ctrl+S)">Send now</button></div>`
+        : '')
+    this.queue.classList.toggle('has-items', items.length > 0)
   }
 
   private onAgentEvent(e: Parameters<NonNullable<import('./Feed').FeedContext['agent']>>[0]): void {
