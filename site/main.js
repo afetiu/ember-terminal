@@ -23,6 +23,17 @@ for (const el of document.querySelectorAll('[data-version]')) {
   el.classList.add('has-version')
 }
 
+// Copy buttons: the install command, ready to paste into a terminal.
+for (const b of document.querySelectorAll('[data-copy]')) {
+  b.addEventListener('click', () => {
+    navigator.clipboard?.writeText(b.dataset.copy).then(() => {
+      const was = b.textContent
+      b.textContent = 'Copied'
+      setTimeout(() => (b.textContent = was), 1400)
+    })
+  })
+}
+
 // ---- Reveal on scroll --------------------------------------------------------------
 ;(function reveal() {
   const els = document.querySelectorAll('.feat, .agents__in, .steps li, .faq details, .closer__in')

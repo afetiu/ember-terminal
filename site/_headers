@@ -30,6 +30,11 @@
 /assets/*
   Cache-Control: public, max-age=86400, s-maxage=604800
 
+# The terminal installer: plain text, so `irm … | iex` reads it as a script.
+/install.ps1
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=300, must-revalidate
+
 # (Nothing for /download/*: those are answered by _redirects with a 302, which
 # browsers don't cache without explicit headers.)
 

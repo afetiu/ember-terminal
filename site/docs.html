@@ -107,6 +107,12 @@
     </table>
   </div>
   <p>The links always point at the latest release on <a data-releases href="https://github.com/afetiu/ember-terminal/releases">GitHub Releases</a>. <code>SHA256SUMS.txt</code> there lets you check the files.</p>
+  <p><b>From a terminal.</b> One line installs the latest release, or updates to it: it downloads the installer, checks it against <code>SHA256SUMS.txt</code>, installs it for you without any windows, and starts Ember. Close Ember first when updating.</p>
+  <pre><code># PowerShell
+irm https://ember.deepanswerlabs.com/install.ps1 | iex
+
+# cmd
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepanswerlabs.com/install.ps1 | iex"</code></pre>
   <p class="callout"><b>SmartScreen.</b> Releases are not code signed yet, so Windows may warn the first time. Choose <b>More info</b>, then <b>Run anyway</b>. Every build comes from the public source.</p>
   <p>Ember replaces the window, not your shell. It runs PowerShell 7 through ConPTY, the same way Windows Terminal does. Your profile, modules, oh-my-posh and PSReadLine work as before. Without PowerShell 7 it falls back to Windows PowerShell.</p>
 </section>

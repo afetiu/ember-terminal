@@ -53,6 +53,17 @@ Download the installer from [ember.deepanswerlabs.com](https://ember.deepanswerl
 the [releases page](https://github.com/afetiu/ember-terminal/releases/latest). There is a
 portable `.zip` and `.tar.gz` too. It installs for your user only, with no admin prompt.
 
+Or from a terminal, which installs or updates to the latest release, checks it against the
+release's checksums, and starts Ember:
+
+```powershell
+# PowerShell
+irm https://ember.deepanswerlabs.com/install.ps1 | iex
+
+# cmd
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepanswerlabs.com/install.ps1 | iex"
+```
+
 **Not code signed yet.** Windows SmartScreen may warn the first time: choose **More info**,
 then **Run anyway**. Every release is built from this repository by GitHub Actions and
 ships with `SHA256SUMS.txt` so you can check the file (see [CODE_SIGNING.md](CODE_SIGNING.md)).
