@@ -1180,6 +1180,11 @@
 .loom-turn.is-shown > .loom-note-line {
   display: none;
 }
+/* An earlier message that holds a result (a table, a list, findings) stays, above the last. */
+.loom-turn.is-shown > .loom-say.is-kept {
+  display: block;
+  margin-bottom: 14px;
+}
 
 .loom-turn.is-shown > .loom-ask {
   font-size: 0.95em;

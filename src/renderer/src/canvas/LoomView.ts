@@ -1613,7 +1613,14 @@ export class LoomView {
       }
     })
     const says = live.querySelectorAll<HTMLElement>(':scope > .loom-say')
-    says.forEach((el, i) => el.classList.toggle('is-current', i === says.length - 1))
+    says.forEach((el, i) => {
+      const last = i === says.length - 1
+      el.classList.toggle('is-current', last)
+      // Earlier messages are mostly the agent narrating its steps, and give way to the last
+      // one. One that holds a result stays: a long agent often writes its findings, works on,
+      // and ends with a short line that refers back to them.
+      el.classList.toggle('is-kept', !last && holdsResult(el))
+    })
     // A new turn starts a new trail; while it works, each new sentence joins it.
     if (live !== this.trailTurn) {
       this.trailTurn = live
@@ -3965,6 +3972,16 @@ function fmtTokens(n: number): string {
 /** A todo's text: markdown links become short clickable words; everything else stays text. */
 function linkify(text: string): string {
   return escapeHtml(text).replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_, label: string, url: string) => `<a class="loom-link" href="${url}">${label}</a>`)
+}
+
+/**
+ * Whether an agent message is a result rather than narration: it has structure (a table,
+ * a list, a heading, code, an object) or it is long. "Let me check the config" is not;
+ * a gap list or a go/no-go table is, and must not vanish when the turn ends on a one-liner.
+ */
+function holdsResult(say: HTMLElement): boolean {
+  if (say.querySelector('table, ul, ol, pre, h1, h2, h3, h4, blockquote, img, iframe, .loom-diagram, .loom-liftable')) return true
+  return (say.textContent ?? '').trim().length > 320
 }
 
 function sameTitle(a: string, b: string): boolean {
