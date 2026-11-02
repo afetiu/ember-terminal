@@ -387,6 +387,11 @@
   max-height: 520px;
   font: 0.9em/1.55 var(--l-mono);
 }
+.loom-code.is-wrap pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+}
 .loom-code code {
   background: none;
   border: 0;
@@ -5682,4 +5687,12 @@ body.is-light .loom-zoom {
 .loom-liftable.is-sized,
 .loom-piece.is-sized:not(.is-pinned) {
   max-width: none !important;
+}
+
+/* The code inside a code block is not an inline code chip: no box behind each line. */
+.loom-say .loom-code pre code {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }

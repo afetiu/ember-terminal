@@ -152,8 +152,11 @@ export function renderMarkdown(src: string): Rendered {
         diagrams.push(text)
         out.push(`<div class="loom-diagram" data-diagram="${diagrams.length - 1}"></div>`)
       } else {
+        // Plain text wraps instead of scrolling sideways; code, and text drawn with box
+        // characters (a tree, a table), keep their lines.
+        const wrap = ['', 'text', 'txt', 'plain', 'plaintext', 'markdown', 'md'].includes(lang) && !/[─━│┃┌┐└┘├┤┬┴┼╭╮╰╯]/.test(text)
         out.push(
-          `<div class="loom-code"><div class="loom-code-bar"><span>${escapeHtml(lang || 'text')}</span><button type="button" class="loom-copy" title="Copy">copy</button></div>` +
+          `<div class="loom-code${wrap ? ' is-wrap' : ''}"><div class="loom-code-bar"><span>${escapeHtml(lang || 'text')}</span><button type="button" class="loom-copy" title="Copy">copy</button></div>` +
             `<pre><code>${escapeHtml(text)}</code></pre></div>`
         )
       }
