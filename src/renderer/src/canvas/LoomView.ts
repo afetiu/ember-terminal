@@ -2033,6 +2033,8 @@ export class LoomView {
     const sy = e.clientY
     let piece: Piece | null = null
     let snapSide: Side | null = null
+    let snapAt = 0
+    let lastSlot = ''
     let ox = 0
     let oy = 0
     this.track(
@@ -2061,8 +2063,20 @@ export class LoomView {
         // At an edge: show where it would snap.
         const side = this.snapSideAt(ev.clientX, ev.clientY, piece)
         snapSide = side
+        // It goes where the pointer is among what is there already, not at the end.
+        const at = side ? this.snapIndexAt(side, ev.clientX, ev.clientY, piece) : 0
+        const slot = side ? `${side}:${at}` : ''
+        const moved = slot !== lastSlot
+        lastSlot = slot
+        snapAt = at
+        // Leaving the edge: the others close up again.
+        if (moved && !side) this.layoutSnaps()
         if (side) {
-          const trial = { ...this.snaps, [side]: [...this.snaps[side], piece] } as Record<Side, Piece[]>
+          const list = this.snaps[side].filter((p) => p !== piece)
+          list.splice(snapAt, 0, piece)
+          const trial = { ...this.snaps, [side]: list } as Record<Side, Piece[]>
+          // The others on that edge move apart to make room, once per new slot.
+          if (moved) this.layoutSnaps(true, trial, piece)
           const r = this.snapRects(trial).get(piece)
           if (r) {
             Object.assign(this.preview.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` })
@@ -2076,7 +2090,7 @@ export class LoomView {
         this.preview.classList.remove('is-on')
         if (!piece) return
         piece.el.classList.remove('is-dragging')
-        if (snapSide) this.snapTo(piece, snapSide)
+        if (snapSide) this.snapTo(piece, snapSide, snapAt)
         else this.settlePin(piece)
       }
     )
@@ -2096,8 +2110,9 @@ export class LoomView {
 
   // ================================================================ snapping
 
-  /** Up to two objects per edge, in order; the edge is split between them. */
+  /** Up to four objects per edge, in order; the edge is split between them. */
   private readonly snaps: Record<Side, Piece[]> = { left: [], right: [], top: [], bottom: [] }
+  private static readonly SNAPS_PER_EDGE = 4
   private readonly preview = div('loom-snap-preview')
 
   /** How deep an edge's snaps are: a third of the width for a side, two fifths of the height for a band. */
@@ -2168,9 +2183,14 @@ export class LoomView {
     return out
   }
 
-  /** Put every snapped object where it belongs, gliding there. */
-  private layoutSnaps(animate = true): void {
-    for (const [p, r] of this.snapRects(this.snaps)) {
+  /**
+   * Put every snapped object where it belongs, gliding there. With a trial arrangement
+   * (while one is dragged to an edge) the others make room for it; the dragged one itself
+   * stays under the pointer.
+   */
+  private layoutSnaps(animate = true, snaps = this.snaps, skip?: Piece): void {
+    for (const [p, r] of this.snapRects(snaps)) {
+      if (p === skip) continue
       const el = p.el
       const from = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }
       const to = { left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) }
@@ -2200,7 +2220,22 @@ export class LoomView {
     gaps.sort((a, b) => a[1] - b[1])
     const [side, d] = gaps[0]!
     if (d > 56) return null
-    return this.snaps[side].filter((p) => p !== piece).length < 2 ? side : null
+    return this.snaps[side].filter((p) => p !== piece).length < LoomView.SNAPS_PER_EDGE ? side : null
+  }
+
+  /**
+   * Where along an edge a dropped object goes: before the first object whose middle is
+   * past the pointer (below it on a side, to its right on a band), so it lands where you
+   * let go — above the one already there, between two, or after them.
+   */
+  private snapIndexAt(side: Side, x: number, y: number, piece: Piece): number {
+    const vertical = side === 'left' || side === 'right'
+    const list = this.snaps[side].filter((p) => p !== piece)
+    const i = list.findIndex((p) => {
+      const r = p.el.getBoundingClientRect()
+      return vertical ? y < r.top + r.height / 2 : x < r.left + r.width / 2
+    })
+    return i < 0 ? list.length : i
   }
 
   private unsnap(piece: Piece): void {
@@ -2217,14 +2252,17 @@ export class LoomView {
     this.layoutSnaps()
   }
 
-  private snapTo(piece: Piece, side: Side): void {
+  /** Snap to an edge, at a place along it (the end when not given). */
+  private snapTo(piece: Piece, side: Side, at?: number): void {
     if (!piece.free) piece.free = { w: piece.el.offsetWidth, h: piece.el.offsetHeight }
     piece.snap = side
     piece.dock = side
     piece.el.classList.add('is-snapped')
     piece.el.dataset['snap'] = side
     piece.el.style.zIndex = '1'
-    this.snaps[side].push(piece)
+    const list = this.snaps[side].filter((p) => p !== piece)
+    list.splice(Math.max(0, Math.min(at ?? list.length, list.length)), 0, piece)
+    this.snaps[side] = list
     this.layoutSnaps()
     this.reflow()
     this.reportScreen()
@@ -3005,6 +3043,10 @@ export class LoomView {
     if (arrow && e.shiftKey) {
       stop()
       const side: Side = k === 'ArrowLeft' ? 'left' : k === 'ArrowRight' ? 'right' : k === 'ArrowUp' ? 'top' : 'bottom'
+      if (piece.snap !== side && this.snaps[side].length >= LoomView.SNAPS_PER_EDGE) {
+        this.hooks.toast(`That edge already holds ${LoomView.SNAPS_PER_EDGE}`)
+        return
+      }
       if (!this.pinned.has(piece)) this.pin(piece, false)
       if (piece.snap) this.unsnap(piece)
       this.snapTo(piece, side)
