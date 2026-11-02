@@ -9,8 +9,8 @@ weekend on something that won't fit.
 
 Everything Ember knows about an agent CLI is one entry in
 [`src/shared/agents.ts`](src/shared/agents.ts): how to find it, install it and sign in,
-how to ask it one question headless, how to make that run read-only, how to give it the
-panel's MCP server, and how to recognise it from the terminal title. The CLIs change
+how to ask it one question headless, how to make that run read-only, how to give it
+Ember's MCP tools, and how to recognise it from the terminal title. The CLIs change
 their flags often, so a row goes stale quietly. Checking one against the version you
 have installed, and fixing it, is a contained and useful change.
 
@@ -20,13 +20,14 @@ To verify a row:
    against `<cli> --help` for your installed version.
 2. **Headless answer.** Pick the CLI in Settings › Agent and press **Test**. It should
    come back with `ready`. The run must not be able to change files.
-3. **Panel and status.** Start the CLI in a tab. The card should show it, and asking it
-   to draw something should reach the side panel. The PowerShell shims that announce
-   each CLI and hand it the panel are `otherAgentShims` in
+3. **Tools and status.** Pick the CLI in the chip beside **+** and open a session. Its
+   card should show it working or waiting, and asking it to draw something should put
+   it on the canvas. The PowerShell shims that announce each CLI and hand it Ember's
+   tools are `otherAgentShims` in
    [`src/main/pty/ConPtyHost.ts`](src/main/pty/ConPtyHost.ts).
 
 In the PR, say which CLI version you tested against and which of the three steps you
-ran. "Verified 1–2; the panel needs a login I don't have" is a fine PR.
+ran. "Verified 1–2; step 3 needs a login I don't have" is a fine PR.
 
 Adding a CLI Ember doesn't know yet is the same work. Add a row and a case in
 `attachMcp`. If the CLI has no per-session way to take an MCP server, use
