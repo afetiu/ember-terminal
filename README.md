@@ -72,6 +72,8 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 - **The plan** of a longer piece of work is an object like the others: it ticks itself off, follows
   the work into later turns, and can be moved, snapped, minimized or removed.
 - **Subagents** show as pills while they work. Click one to see the steps it took.
+- **Queued messages**, sent while the agent works, wait right above the input; **Send now**
+  sends them without waiting for the turn to end.
 
 | Keys | With an object selected (`Ctrl+↑` from the input) |
 | --- | --- |
