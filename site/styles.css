@@ -2697,3 +2697,19 @@ section h2 span {
     transition: none;
   }
 }
+
+/* the demo's plan, as the app now shows it: an object in the reply, the piece is the card */
+.pc .plan {
+  margin: 0 !important;
+  padding: 10px 14px 8px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  animation: none;
+}
+.pc .plan ol {
+  grid-template-columns: 1fr;
+}
+.demo.is-narrow .pc .plan li:not([data-s='active']) {
+  display: flex;
+}

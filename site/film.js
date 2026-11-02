@@ -249,20 +249,26 @@ function start() {
     await ask(yes, false)
   }
 
-  // ---------------------------------------------------------------- the plan, on top
+  // ---------------------------------------------------------------- the plan, an object like the others
+  // As in the app: the plan is a piece in the reply, with its own bar, that ticks itself off.
+  let planEl = null
   function startPlan(title, steps) {
-    plan.innerHTML =
-      `<div class="plan__h"><b>${title}</b><span data-plan-n>0/${steps.length}</span></div>` +
-      `<div class="plan__bar"><i data-plan-bar></i></div>` +
-      `<ol>${steps.map((s) => `<li data-s="pending"><i></i><span>${s}</span></li>`).join('')}</ol>`
-    plan.classList.add('is-on')
+    const p = piece(
+      title,
+      'plan',
+      `<div class="plan is-on"><div class="plan__h"><span data-plan-n>0/${steps.length}</span></div>` +
+        `<div class="plan__bar"><i data-plan-bar></i></div>` +
+        `<ol>${steps.map((s) => `<li data-s="pending"><i></i><span>${s}</span></li>`).join('')}</ol></div>`
+    )
+    planEl = p.querySelector('.plan')
+    return p
   }
   function step(i, state) {
-    const li = plan.querySelectorAll('li')
+    const li = planEl.querySelectorAll('li')
     li[i].dataset.s = state
-    const done = plan.querySelectorAll('li[data-s="done"]').length
-    plan.querySelector('[data-plan-n]').textContent = `${done}/${li.length}`
-    plan.querySelector('[data-plan-bar]').style.width = `${(done / li.length) * 100}%`
+    const done = planEl.querySelectorAll('li[data-s="done"]').length
+    planEl.querySelector('[data-plan-n]').textContent = `${done}/${li.length}`
+    planEl.querySelector('[data-plan-bar]').style.width = `${(done / li.length) * 100}%`
   }
 
   // ---------------------------------------------------------------- pieces
@@ -513,10 +519,11 @@ function start() {
     await ask('v2.4 ships Friday. split the work across agents')
     think('Reading the v2.4 milestone…')
     await wait(1200)
-    startPlan('Ship v2.4', ['Payments: retry failed charges', 'Search: index the new fields', 'Web: saved carts'])
-    TICKETS.forEach((_, i) => step(i, 'active'))
     const row = agentsRow()
     await line('Three subagents are on it, one per part.')
+    const planPiece = startPlan('Ship v2.4', ['Payments: retry failed charges', 'Search: index the new fields', 'Web: saved carts'])
+    TICKETS.forEach((_, i) => step(i, 'active'))
+    await show(planPiece)
     const board = piece('v2.4 board', 'kanban', boardBody())
     countCards(board)
     await show(board)
