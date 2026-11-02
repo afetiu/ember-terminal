@@ -1,8 +1,9 @@
 /**
- * Claude Code's `!` shell mode keeps the input box framed: the prompt starts with `!`
- * instead of `❯` and the mode line says "! for shell mode". A dev Ember (own EMBER_HOME)
- * whose terminal display is given a copy of Claude Code's full-screen layout, first as a
- * normal prompt, then in shell mode, then with a status line of several lines, then as a\n * question from Claude, whose question must stay in view. Nothing is typed into the shell or any agent.
+ * Claude Code's input box stays framed, and its dialogs whole, in the screens that broke
+ * it: `!` shell mode (prompt `!`, mode line "! for shell mode"), a status line of many
+ * lines, and a question from Claude, whose question must stay in view. A dev Ember (own
+ * EMBER_HOME) whose terminal display is given a copy of Claude Code's full-screen layout.
+ * Nothing is typed into the shell or any agent.
  *
  *   npm run build; node scripts/probe-input-dock.mjs [out-dir]
  */
