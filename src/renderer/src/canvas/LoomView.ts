@@ -724,10 +724,13 @@ export class LoomView {
   /**
    * The lines under the input box: the mode line ("⏵⏵ bypass permissions on (shift+tab
    * to cycle)", "? for shortcuts") and the status line. A dialog has choices there instead.
+   * A custom status line can run to many lines (a repo list); that many lines count only
+   * with the mode line at the bottom of them.
    */
   private isFooter(below: string[]): boolean {
     const lines = below.filter((r) => r.trim())
-    if (lines.length > 4) return false
+    const modeLast = /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|esc to interrupt/i.test(lines[lines.length - 1] ?? '')
+    if (lines.length > (modeLast ? 16 : 4)) return false
     if (lines.some((r) => /^\s*(?:❯\s*)?\d+\.\s/.test(r) || /Do you want|Esc to cancel|Enter to (?:select|confirm)/i.test(r))) return false
     return !lines.length || lines.some((r) => /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|bash mode|for agents|esc to interrupt|context\)/i.test(r))
   }

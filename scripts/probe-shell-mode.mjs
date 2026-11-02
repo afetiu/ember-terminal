@@ -2,7 +2,7 @@
  * Claude Code's `!` shell mode keeps the input box framed: the prompt starts with `!`
  * instead of `❯` and the mode line says "! for shell mode". A dev Ember (own EMBER_HOME)
  * whose terminal display is given a copy of Claude Code's full-screen layout, first as a
- * normal prompt, then in shell mode. Nothing is typed into the shell or any agent.
+ * normal prompt, then in shell mode, then with a status line of several lines. Nothing is typed into the shell or any agent.
  *
  *   npm run build; node scripts/probe-shell-mode.mjs [out-dir]
  */
@@ -66,7 +66,7 @@ try {
       const t = window.__ember.term(${JSON.stringify(sid)}); const cols = t.cols, rows = t.rows
       const rule = '\\u2500'.repeat(cols)
       const body = [' \\u2590\\u259b\\u2588\\u2588\\u2588\\u259c\\u258c   Claude Code v2.1.316', '\\u259d\\u259c\\u2588\\u2588\\u2588\\u2588\\u2588\\u259b\\u2598  Opus 5.5 · Claude Max', '']
-      const foot = [rule, ${JSON.stringify(promptLine)}, rule, ${JSON.stringify(modeLine)}]
+      const foot = [rule, ${JSON.stringify(promptLine)}, rule, ...${JSON.stringify([modeLine].flat())}]
       const lines = [...body, ...Array(Math.max(0, rows - body.length - foot.length)).fill(''), ...foot]
       t.write('\\x1b[?1049h\\x1b[H\\x1b[2J' + lines.map((l) => l.slice(0, cols)).join('\\r\\n'))
       t.write('\\x1b]0;\\u2733 Claude Code\\x07')
@@ -87,6 +87,19 @@ try {
   await wait(1500)
   console.log('shell mode   ', JSON.stringify(await state()))
   await shot('shell')
+  // A custom status line of several lines between the box and the mode line.
+  await draw('❯ git status', [
+    'Opus 5.5 | platform | $0.18 | ▉ 6% 55k/1000k',
+    'radix-platform        ⎇ EN-23519-realrents-single-property-guard ~6 ?3',
+    'renterPortal          ⎇ main ↓73 ~1',
+    'renters-portal-api    ⎇ main ~1',
+    'ui                    ⎇ main ~1',
+    'survey-app-frontend   ⎇ master ✓',
+    '  ⏵⏵ bypass permissions on (shift+tab to cycle) · + 1 agent',
+  ])
+  await wait(1500)
+  console.log('tall status  ', JSON.stringify(await state()))
+  await shot('tall-status')
   ws.close()
 } finally {
   spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
