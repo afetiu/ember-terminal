@@ -2634,6 +2634,30 @@ section h2 span {
 .closer .meta {
   margin: 0;
 }
+/* the portable downloads, beside the main button: one quiet button, two links inside */
+.portable {
+  gap: 4px;
+  padding: 5px 6px 5px 14px;
+  color: var(--faint);
+}
+.portable:hover {
+  transform: none;
+  background: transparent;
+}
+.portable a {
+  padding: 7px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--strong);
+  transition: background 160ms;
+}
+.portable a:hover {
+  background: var(--acc-soft);
+}
+.portable span {
+  margin-right: 4px;
+}
+
 .alt {
   margin: 0;
   font-size: 13.5px;
