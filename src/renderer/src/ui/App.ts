@@ -321,6 +321,8 @@ export class App {
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
+      /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
+      loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
       /** Type into a tab's focused pane as the user would, Enter separately. */
       send: (id: string, text: string, submit = true) => {
         const g = this.groups.find((x) => x.id === id)
@@ -2045,11 +2047,37 @@ export class App {
   /** Type into every pane of the active group at once. */
   private swallowPasteUntil = 0
 
-  /** Paste with terminal semantics: LF becomes CR, as xterm's own paste does. */
+  /**
+   * Paste with terminal semantics: LF becomes CR, as xterm's own paste does.
+   *
+   * An image, though, cannot travel as text. When the clipboard holds one (a screenshot,
+   * a copied picture) and Claude Code is in the tab, Claude is sent its own image-paste
+   * key, Alt+V on Windows: it reads the clipboard itself and attaches the picture as
+   * "[Image #n]", exactly as it would natively. The canvas shows a thumbnail of it above
+   * the input until the message goes.
+   */
   private pasteClipboard(): void {
-    void navigator.clipboard.readText().then((text) => {
+    void (async () => {
+      const group = this.activeGroup
+      const session = group?.focused
+      if (session && group?.loom?.isClaude) {
+        try {
+          const items = await navigator.clipboard.read()
+          const text = items.some((i) => i.types.includes('text/plain'))
+          const img = items.find((i) => i.types.some((t) => t.startsWith('image/')))
+          if (img && !text) {
+            const blob = await img.getType(img.types.find((t) => t.startsWith('image/'))!)
+            window.ember.write(session.id, '\x1bv')
+            group.loom.pastedImage(URL.createObjectURL(blob))
+            return
+          }
+        } catch {
+          /* no clipboard access: fall back to text */
+        }
+      }
+      const text = await navigator.clipboard.readText()
       if (text) this.sendInput(text.replace(/\r?\n/g, '\r'))
-    })
+    })()
   }
 
   private sendInput(text: string): void {

@@ -3837,19 +3837,16 @@ body.is-light .loom-rail {
 
 /* ---------------------------------------------------------------- queued messages */
 
-/* Right above the input box: its top is the box's top, and it lifts itself by its own height. */
-.loom-queue {
+/* What sits right above the input box — queued messages, pasted pictures: its top is the
+   box's top, and it lifts itself by its own height. */
+.loom-above {
   position: absolute;
   z-index: 6;
   display: none;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 12px;
-  /* Solid: what is on the canvas behind it must not read through. */
-  background: var(--c-bg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+  gap: 8px;
   transform: translateY(calc(-100% - 8px));
+  pointer-events: none;
   /* Outside the canvas element, so it carries the canvas's tokens itself. */
   --l-dim: color-mix(in srgb, var(--c-fg) 62%, transparent);
   --l-faint: color-mix(in srgb, var(--c-fg) 42%, transparent);
@@ -3860,8 +3857,65 @@ body.is-light .loom-rail {
   font-size: var(--l-font-size, 14px);
   line-height: 1.5;
 }
-.loom-queue.is-on.has-items {
+.loom-above.is-on {
   display: flex;
+}
+.loom-above > * {
+  pointer-events: auto;
+}
+.loom-queue {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  /* Solid: what is on the canvas behind it must not read through. */
+  background: var(--c-bg);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+}
+.loom-queue.has-items {
+  display: flex;
+}
+
+/* Pictures pasted into the prompt: thumbnails, as a chat app shows an attachment. */
+.loom-attach {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.loom-attach.has-items {
+  display: flex;
+}
+.loom-attach-item {
+  position: relative;
+  margin: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--c-bg);
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.6), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 14%, transparent);
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-attach-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.loom-attach-item figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+}
+.loom-attach-item.is-wait img {
+  opacity: 0.5;
 }
 .loom-queue-item {
   max-width: none;

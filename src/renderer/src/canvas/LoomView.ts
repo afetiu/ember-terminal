@@ -296,7 +296,10 @@ export class LoomView {
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
     this.el.append(this.scroller, this.rail, this.pinLayer, this.hint, this.sign, this.steps, this.jump, this.chip, this.pop, this.ctxMenu, this.drawer, this.lightbox)
-    panes.append(this.el, this.frame, this.queue, this.bar, this.rawPill)
+    // Above the input box, stacked: messages waiting for the turn, then pictures pasted
+    // into the prompt.
+    this.above.append(this.queue, this.attach)
+    panes.append(this.el, this.frame, this.above, this.bar, this.rawPill)
     // Send now: Claude Code's own keys for it (its hint reads "ctrl+x ctrl+s to send now").
     this.queue.addEventListener('click', (e) => {
       if (!(e.target as HTMLElement).closest('[data-q="send"]')) return
@@ -886,8 +889,9 @@ export class LoomView {
     const left = pane.offsetLeft
     const width = pane.offsetWidth
     this.frame.classList.toggle('is-on', showCanvas && !!frame)
-    // The queue rides on top of the input box (its own height lifts it, in CSS).
-    this.queue.classList.toggle('is-on', showCanvas && !!frame)
+    // The queue and the pasted pictures ride on top of the input box (their own height
+    // lifts them, in CSS).
+    this.above.classList.toggle('is-on', showCanvas && !!frame)
     if (showCanvas && frame) {
       Object.assign(this.frame.style, {
         left: `${left + 10}px`,
@@ -895,12 +899,15 @@ export class LoomView {
         top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
         height: `${frame.height.toFixed(1)}px`,
       })
-      Object.assign(this.queue.style, {
+      Object.assign(this.above.style, {
         left: `${left + 10}px`,
         width: `${width - 20}px`,
         top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
       })
     }
+    // Pictures follow Claude's own "[Image #n]" marks in the prompt, read only while the
+    // prompt is on screen (a question in its place must not drop them).
+    if (mode === 'claude' && dock?.box && !dock.dialog) this.syncAttach(rows.slice(dock.box[0], dock.box[1] + 1).join(' '))
     this.bar.classList.toggle('is-on', showCanvas && !!foot)
     if (showCanvas && foot) {
       Object.assign(this.bar.style, {
@@ -4110,6 +4117,53 @@ export class LoomView {
   }
 
   /** What this view believes, for probes and for support: `window.__ember.loom()`. */
+  // ================================================================ pasted pictures
+
+  private readonly above = div('loom-above')
+  private readonly attach = div('loom-attach')
+  /** Pictures pasted into Claude's prompt, each with the number Claude gave it once seen. */
+  private pasted: Array<{ url: string; n: number | null; at: number }> = []
+  private attachKey = ''
+
+  /** Claude Code is in this tab (on the canvas or in its own view): Alt+V pastes a picture. */
+  get isClaude(): boolean {
+    return this.claudeSeen
+  }
+
+  /** A picture was just pasted (App sent Claude Alt+V): show it until it is sent. */
+  pastedImage(url: string): void {
+    this.pasted.push({ url, n: null, at: Date.now() })
+    this.schedule()
+  }
+
+  /**
+   * Match the pasted pictures to the "[Image #n]" marks in Claude's prompt. A new mark
+   * belongs to the oldest paste still waiting for one; a paste Claude never marked (no
+   * picture after all) goes after a few seconds; a mark that left the prompt — deleted,
+   * or sent — takes its thumbnail with it.
+   */
+  private syncAttach(prompt: string): void {
+    const marks = [...prompt.matchAll(/\[Image #(\d+)\]/g)].map((m) => Number(m[1]))
+    for (const n of marks) {
+      if (this.pasted.some((p) => p.n === n)) continue
+      const p = this.pasted.find((x) => x.n === null)
+      if (p) p.n = n
+    }
+    const now = Date.now()
+    this.pasted = this.pasted.filter((p) => {
+      const keep = p.n === null ? now - p.at < 5000 : marks.includes(p.n)
+      if (!keep) URL.revokeObjectURL(p.url)
+      return keep
+    })
+    const key = this.pasted.map((p) => `${p.n ?? '…'}`).join(',')
+    if (key === this.attachKey) return
+    this.attachKey = key
+    this.attach.innerHTML = this.pasted
+      .map((p) => `<figure class="loom-attach-item${p.n === null ? ' is-wait' : ''}"><img src="${p.url}" alt=""><figcaption>${p.n === null ? 'Attaching…' : `Image #${p.n}`}</figcaption></figure>`)
+      .join('')
+    this.attach.classList.toggle('has-items', this.pasted.length > 0)
+  }
+
   /** Probe-only: hand the canvas transcript lines as if they came from the session's log. */
   feedForProbe(lines: Array<Record<string, unknown>>): void {
     this.feed.add(lines as never)
