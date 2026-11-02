@@ -48,7 +48,11 @@ try {
   $line = ($sums -split "`n") | Where-Object { $_ -match [regex]::Escape($file) } | Select-Object -First 1
   if (-not $line) { throw "SHA256SUMS.txt has no line for $file" }
   $want = ($line.Trim() -split '\s+')[0].ToLower()
-  $got = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+  # .NET rather than Get-FileHash: Windows PowerShell started from PowerShell 7 inherits a
+  # module path where Get-FileHash does not load.
+  $sha = [Security.Cryptography.SHA256]::Create()
+  $fs = [IO.File]::OpenRead($exe)
+  try { $got = ([BitConverter]::ToString($sha.ComputeHash($fs)) -replace '-', '').ToLower() } finally { $fs.Dispose(); $sha.Dispose() }
   if ($got -ne $want) { throw "The download does not match the release checksum ($got, expected $want)." }
 
   if ($env:EMBER_INSTALL_DRYRUN) {
