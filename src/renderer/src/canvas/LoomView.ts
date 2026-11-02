@@ -164,6 +164,8 @@ const LIFTABLE = '.loom-diagram, .loom-table, .loom-code, .loom-say img.loom-img
 const RULE_CHARS = /[─━▔═╌╍┄┅┈┉]/g
 /** The input box's first line: `❯`, or `!` in shell mode. */
 const PROMPT = /^\s?[❯!]/
+/** A dialog's numbered choice, the selected one marked with `❯`. */
+const CHOICE = /^\s*(?:❯\s*)?\d+\.\s/
 /** Box junctions: a row with any of these is a table's border, not one of the TUI's rules. */
 const JUNCTIONS = /[┼├┤┬┴│╭╮╰╯┌┐└┘║╔╗╚╝╞╡╪]/
 
@@ -629,10 +631,10 @@ export class LoomView {
     if (dialog) {
       // The `❯` line directly above the lowest rule, with no rule between: the input box,
       // its top rule not recognised (drawn differently, or not there). A dialog's own `❯`
-      // marks its choices, under its rule, never above it. Without this the dock would
-      // be cropped to the bottom rule and the prompt line hidden.
+      // marks one of its numbered choices, so `❯ 2.` is not a prompt. Without this the
+      // dock would be cropped to the bottom rule and the prompt line hidden.
       for (let y = low - 1; y > 3 && low - y <= 18 && rows[y]!.trim(); y--) {
-        if (!PROMPT.test(rows[y]!)) continue
+        if (!PROMPT.test(rows[y]!) || CHOICE.test(rows[y]!)) continue
         open = (rows[y - 1]!.match(RULE_CHARS)?.length ?? 0) >= 8 ? y - 1 : -1
         top = open >= 0 ? open : y
         box = [y, low - 1]
@@ -654,6 +656,13 @@ export class LoomView {
         while (top - 1 > 3 && low - top < 18 && rows[top - 1]!.trim()) top--
         box = [top, low - 1]
       }
+    }
+    if (dialog && prev >= 0 && low - prev <= 40) {
+      // A question (AskUserQuestion) runs from its own top rule: the tabs, the question,
+      // its choices, then a rule and "Chat about this" under it. Cropped to the lowest
+      // rule, only that last choice showed and the question was hidden.
+      const choices = (a: number, b: number) => rows.slice(a, b).filter((r) => CHOICE.test(r)).length
+      if (choices(low + 1, last + 1) && choices(prev + 1, low) >= 2) top = prev
     }
     if (box && box[1] < box[0]) box = null
     const close = box && box[1] === low - 1 ? low : -1

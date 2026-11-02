@@ -2,9 +2,9 @@
  * Claude Code's `!` shell mode keeps the input box framed: the prompt starts with `!`
  * instead of `❯` and the mode line says "! for shell mode". A dev Ember (own EMBER_HOME)
  * whose terminal display is given a copy of Claude Code's full-screen layout, first as a
- * normal prompt, then in shell mode, then with a status line of several lines. Nothing is typed into the shell or any agent.
+ * normal prompt, then in shell mode, then with a status line of several lines, then as a\n * question from Claude, whose question must stay in view. Nothing is typed into the shell or any agent.
  *
- *   npm run build; node scripts/probe-shell-mode.mjs [out-dir]
+ *   npm run build; node scripts/probe-input-dock.mjs [out-dir]
  */
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -61,12 +61,14 @@ try {
   await wait(2500)
   const sid = await ev('window.__ember.sessions()[0].id')
   // Claude Code's full-screen layout, idle: the prompt line and the mode line under the box.
-  const draw = (promptLine, modeLine) =>
+  const draw = (promptLine, modeLine) => drawFoot(['RULE', promptLine, 'RULE', ...[modeLine].flat()])
+  // The bottom of the screen, line by line; 'RULE' is one of Claude Code's rules.
+  const drawFoot = (footLines) =>
     ev(`(() => {
       const t = window.__ember.term(${JSON.stringify(sid)}); const cols = t.cols, rows = t.rows
       const rule = '\\u2500'.repeat(cols)
       const body = [' \\u2590\\u259b\\u2588\\u2588\\u2588\\u259c\\u258c   Claude Code v2.1.316', '\\u259d\\u259c\\u2588\\u2588\\u2588\\u2588\\u2588\\u259b\\u2598  Opus 5.5 · Claude Max', '']
-      const foot = [rule, ${JSON.stringify(promptLine)}, rule, ...${JSON.stringify([modeLine].flat())}]
+      const foot = ${JSON.stringify(footLines)}.map((l) => (l === 'RULE' ? rule : l))
       const lines = [...body, ...Array(Math.max(0, rows - body.length - foot.length)).fill(''), ...foot]
       t.write('\\x1b[?1049h\\x1b[H\\x1b[2J' + lines.map((l) => l.slice(0, cols)).join('\\r\\n'))
       t.write('\\x1b]0;\\u2733 Claude Code\\x07')
@@ -100,6 +102,36 @@ try {
   await wait(1500)
   console.log('tall status  ', JSON.stringify(await state()))
   await shot('tall-status')
+  // A question from Claude (AskUserQuestion): the question must stay in view.
+  await drawFoot([
+    'RULE',
+    ' ←  ☐ Artifacts  ✔ Submit  →',
+    '',
+    'When a channel message mentions an artifact, what should the bot do?',
+    '',
+    '❯ 1. Link silently (Recommended)',
+    '     If the target is clear, it links the artifact and posts nothing.',
+    '  2. Ignore them',
+    '     Artifacts are linked only when a person asks in a mention or a DM.',
+    '  3. Type something.',
+    'RULE',
+    '  4. Chat about this',
+    '',
+    'Enter to select · Tab/Arrow keys to navigate · Esc to cancel',
+  ])
+  await wait(1500)
+  console.log('question     ', JSON.stringify(await ev(`(() => {
+    const scr = [...document.querySelectorAll('.xterm-screen')].find((x) => x.offsetParent)
+    let pane = scr.parentElement
+    while (pane && !pane.style.clipPath) pane = pane.parentElement
+    const clip = parseFloat(/inset\\(([\\d.]+)px/.exec(pane?.style.clipPath ?? '')?.[1] ?? '0')
+    const t = window.__ember.term(${JSON.stringify(sid)}), buf = t.buffer.active
+    let q = -1
+    for (let y = 0; y < t.rows; y++) if (buf.getLine(buf.viewportY + y)?.translateToString(true).startsWith('When a channel')) q = y
+    const sr = scr.getBoundingClientRect(), pr = pane.getBoundingClientRect()
+    return { questionRow: q, questionVisible: q >= 0 && sr.top - pr.top + (q * sr.height) / t.rows >= clip }
+  })()`)))
+  await shot('question')
   ws.close()
 } finally {
   spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
