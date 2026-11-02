@@ -63,9 +63,10 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 ## Working on the canvas
 
 - **Ask in the input box** at the bottom. The current turn fills the canvas; earlier turns
-  are a step away with `Ctrl+Shift+↑` / `↓`.
+  are a step away with `Ctrl+Shift+↑` / `↓`, or keep scrolling past the top or bottom.
 - **Objects in a reply** resize from any edge. **Drag out** takes one out of the reply:
-  drop it anywhere, or at an edge to snap it there, and the text moves out of the way.
+  drop it anywhere, or at an edge to snap it there (up to four per edge, each where you drop
+  it), and the text moves out of the way.
 - **Full screen** has a zoom bar. `Ctrl` + wheel or a pinch zooms toward the pointer,
   `+` / `−` / `0` from the keyboard, and a double-click zooms to 2×.
 - **The plan** of a longer piece of work is an object like the others: it ticks itself off, follows
