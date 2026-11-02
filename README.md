@@ -68,7 +68,8 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
   drop it anywhere, or at an edge to snap it there, and the text moves out of the way.
 - **Full screen** has a zoom bar. `Ctrl` + wheel or a pinch zooms toward the pointer,
   `+` / `−` / `0` from the keyboard, and a double-click zooms to 2×.
-- **The plan** of a longer piece of work sits at the top of the canvas and ticks itself off.
+- **The plan** of a longer piece of work is an object like the others: it ticks itself off, follows
+  the work into later turns, and can be moved, snapped, minimized or removed.
 - **Subagents** show as pills while they work. Click one to see the steps it took.
 
 | Keys | With an object selected (`Ctrl+↑` from the input) |

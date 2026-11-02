@@ -2916,6 +2916,20 @@ body.is-light .loom-frame-box {
 .loom-plan.is-on {
   display: block;
 }
+/* Inside its object, the plan is just the content: the object is the card. */
+.loom-piece-body > .loom-plan {
+  margin: 0;
+  padding: 12px 14px 8px;
+  border-radius: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  animation: none;
+}
+.loom-piece.is-steps .loom-plan-title {
+  display: none;
+}
 .loom-plan-head {
   display: flex;
   align-items: baseline;

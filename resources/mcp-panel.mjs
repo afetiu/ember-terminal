@@ -515,7 +515,7 @@ const CANVAS_TOOLS = [
   },
   {
     name: 'show_steps',
-    description: 'The plan of the work, shown at the top of the canvas with live progress. Call it first for multi-step work, then again with the whole list each time a step starts or finishes. Empty list removes it.',
+    description: 'The plan of the work, shown on the canvas as an object with live progress, which follows the work into later turns. Call it first for multi-step work, then again with the whole list each time a step starts or finishes. Empty list removes it.',
     inputSchema: {
       type: 'object',
       properties: {

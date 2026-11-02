@@ -257,8 +257,10 @@ export class LoomView {
     // Three layers, top to bottom: the plan of the work in progress, the exchange (your
     // words and Claude's latest), and the board — everything Claude has shown, which stays
     // across turns and changes in place. A new turn replaces only the exchange.
+    // The plan is drawn here and shown inside an object of its own (see showPlan), not
+    // fixed above the exchange: it moves, snaps, minimizes and goes like anything shown.
     this.plan = div('loom-plan')
-    this.scroller.append(this.plan, this.feed.el)
+    this.scroller.append(this.feed.el)
 
     this.hint = div('loom-hint', `<span class="loom-hint-glyph">✻</span><span class="loom-hint-text">Ask below — what your agent says and shows appears on this canvas.</span>`)
     this.sign = div('loom-sign')
@@ -1924,6 +1926,7 @@ export class LoomView {
   /** Take a pinned piece off the screen for good. */
   private unpin(piece: Piece, delay = 0): void {
     if (!this.pinned.delete(piece)) return
+    this.planClosed(piece)
     if (this.full?.piece === piece) this.fullscreen(piece, false)
     if (piece.snap) {
       this.snaps[piece.snap] = this.snaps[piece.snap].filter((p) => p !== piece)
@@ -1953,6 +1956,7 @@ export class LoomView {
 
   /** Take an object off the board: it fades, and the board closes up. */
   private dismiss(piece: Piece): void {
+    this.planClosed(piece)
     const el = piece.el
     const h = el.offsetHeight
     const out = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }], { duration: ms(200), easing: EASE, fill: 'forwards' })
@@ -2790,7 +2794,7 @@ export class LoomView {
 
   /** The objects a plan step carries, newest first. */
   private stepPieces(key: string): Piece[] {
-    return [...this.pieces.values()].filter((p) => p.step === key && p.el.isConnected && !this.pinned.has(p)).reverse()
+    return [...this.pieces.values()].filter((p) => p !== this.planPiece && p.step === key && p.el.isConnected && !this.pinned.has(p)).reverse()
   }
 
   /**
@@ -3761,12 +3765,21 @@ export class LoomView {
     const now = Date.now()
     if (!list.length) {
       this.plan.classList.remove('is-on')
+      // An empty plan takes it off the screen.
+      const p = this.planPiece
+      this.planPiece = null
+      if (p?.el.isConnected) (this.pinned.has(p) ? this.unpin(p) : this.dismiss(p))
+      this.planGone = false
       return
     }
     // A different plan (other steps): start the timings over.
     const key = list.map((t) => t.content).join('\u0001')
     if (this.plan.dataset['key'] !== key) {
-      if (this.plan.dataset['key'] && !list.some((t) => this.stepTimes.has(t.content))) this.stepTimes.clear()
+      if (!this.plan.dataset['key'] || !list.some((t) => this.stepTimes.has(t.content))) {
+        this.stepTimes.clear()
+        // A new plan is shown even if the last one was closed.
+        this.planGone = false
+      }
       this.plan.dataset['key'] = key
     }
     for (const t of list) {
@@ -3825,8 +3838,48 @@ export class LoomView {
     this.plan.classList.toggle('is-complete', complete)
     if (complete) this.plan.classList.remove('is-open')
     this.plan.classList.add('is-on')
+    this.showPlan()
     this.tickPlan()
     if (!this.planTimer) this.planTimer = window.setInterval(() => this.tickPlan(), 1000)
+  }
+
+  /** The plan's object: made on the first step, kept in view as the work moves on. */
+  private planPiece: Piece | null = null
+  /** You closed this plan: its updates do not bring it back (a new plan does). */
+  private planGone = false
+
+  private showPlan(): void {
+    if (this.planGone) return
+    const title = this.stepsTitle || 'Plan'
+    let p = this.planPiece
+    if (!p || !p.el.isConnected) {
+      p = this.makePiece(this.boardSlot(), title, 'steps')
+      p.body.appendChild(this.plan)
+      this.pieces.set(title, p)
+      this.planPiece = p
+      this.focusOn(p, true)
+      this.grew()
+      this.reportScreen()
+      return
+    }
+    p.el.querySelector('.loom-piece-title')!.textContent = title
+    // Still in an earlier turn's reply: it follows the work to the turn on screen, as the
+    // plan always has. Placed on the screen, it stays where it was put.
+    const newest = this.feed.turns().at(-1)
+    if (!this.pinned.has(p) && newest && !newest.contains(p.el)) {
+      const slot = this.boardSlot()
+      const old = p.el.parentElement
+      slot.appendChild(p.el)
+      if (old?.classList.contains('loom-slot') && !old.childElementCount) old.remove()
+      this.reportScreen()
+    }
+  }
+
+  /** The plan's object was removed by hand: leave this plan off the screen. */
+  private planClosed(piece: Piece): void {
+    if (piece !== this.planPiece) return
+    this.planPiece = null
+    this.planGone = true
   }
 
   /** The clocks on the plan, and the live line under the step in progress. */
