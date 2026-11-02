@@ -288,6 +288,8 @@ export class Feed {
   readonly el: HTMLElement
   private turn: HTMLElement
   private quiet: QuietGroup | null = null
+  /** The last slash command, shown as a quiet line until the agent answers it (then it is a turn). */
+  private pendingCmd: { note: HTMLElement; label: string } | null = null
   private readonly tools = new Map<string, { view?: ToolView; quiet?: { group: QuietGroup; item: QuietItem }; name: string; input: Json }>()
   /** Where a piece the session pushes should land: right after the tool call that made it. */
   private readonly anchors: Array<{ name: string; el: HTMLElement; used: boolean }> = []
@@ -314,7 +316,11 @@ export class Feed {
 
   /** Every turn that has something in it, oldest first. */
   turns(): HTMLElement[] {
-    return Array.from(this.el.querySelectorAll<HTMLElement>(':scope > .loom-turn')).filter((t) => t.childElementCount > 0)
+    const all = Array.from(this.el.querySelectorAll<HTMLElement>(':scope > .loom-turn')).filter((t) => t.childElementCount > 0)
+    // A turn holding nothing but slash commands (/rename, /model) asked the agent nothing:
+    // it is not a turn to step to. Only when there is nothing else does it count.
+    const real = all.filter((t) => Array.from(t.children).some((c) => !(c as HTMLElement).dataset['cmd']))
+    return real.length ? real : all
   }
 
   private newTurn(): HTMLElement {
@@ -389,6 +395,7 @@ export class Feed {
       body.innerHTML = renderMarkdown(partsOf(content).text).html
       div.appendChild(body)
       this.el.appendChild(div)
+      this.pendingCmd = null
       this.newTurn()
       return
     }
@@ -406,23 +413,36 @@ export class Feed {
     const { text, images } = partsOf(content)
     const clean = text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim()
 
-    // A slash command and what it printed.
+    // A slash command and what it printed. Most (/rename, /model, /cost) are the CLI's own
+    // business and the agent never answers them, so they are a quiet line in the turn
+    // already on screen. One the agent does answer (a custom command, a skill) becomes a
+    // turn when its answer starts; see promoteCommand.
     const cmd = /<command-name>([^<]*)<\/command-name>/.exec(clean)
     if (cmd) {
       const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(clean)?.[1]?.trim() ?? ''
-      this.newTurn()
-      this.turn.appendChild(el('div', 'loom-ask is-command', `<span class="loom-caret">❯</span>${escapeHtml(`${cmd[1]}${args ? ` ${args}` : ''}`)}`))
+      const label = `${cmd[1]}${args ? ` ${args}` : ''}`
+      const note = el('div', 'loom-note-line is-command', `<span class="loom-caret">❯</span>${escapeHtml(label)}`)
+      note.dataset['cmd'] = '1'
+      this.turn.appendChild(note)
+      this.pendingCmd = { note, label }
       return
     }
     const stdout = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(clean)
     if (stdout) {
       const out = stripAnsi(stdout[1] ?? '').trim()
-      if (out) this.turn.appendChild(el('pre', 'loom-note', escapeHtml(out)))
+      if (out) {
+        const pre = el('pre', 'loom-note', escapeHtml(out))
+        pre.dataset['cmd'] = '1'
+        this.turn.appendChild(pre)
+      }
+      // It printed its own result: the agent is not going to answer it.
+      this.pendingCmd = null
       return
     }
     // `!` shell mode inside Claude Code.
     const bashIn = /<bash-input>([\s\S]*?)<\/bash-input>/.exec(clean)
     if (bashIn) {
+      this.pendingCmd = null
       this.newTurn()
       this.turn.appendChild(el('div', 'loom-ask is-command', `<span class="loom-caret">!</span>${escapeHtml(bashIn[1] ?? '')}`))
       return
@@ -450,6 +470,7 @@ export class Feed {
     if (!clean && !images.length) return
     if (clean.startsWith('Caveat: The messages below')) return
 
+    this.pendingCmd = null
     this.newTurn()
     const ask = el('div', 'loom-ask')
     ask.innerHTML = `<span class="loom-caret">❯</span><span class="loom-ask-text">${escapeHtml(clean)}</span>`
@@ -467,12 +488,23 @@ export class Feed {
     this.turn.appendChild(ask)
   }
 
+  /** The agent is answering the last slash command: it was a real ask after all, so it opens a turn. */
+  private promoteCommand(): void {
+    const c = this.pendingCmd
+    if (!c) return
+    this.pendingCmd = null
+    c.note.remove()
+    this.newTurn()
+    this.turn.appendChild(el('div', 'loom-ask is-command', `<span class="loom-caret">❯</span>${escapeHtml(c.label)}`))
+  }
+
   // -------------------------------------------------------------- assistant
 
   private assistant(line: Json): void {
     const msg = (line['message'] ?? {}) as Json
     const content = msg['content']
     if (!Array.isArray(content)) return
+    this.promoteCommand()
     for (const block of content as Json[]) {
       const type = block['type']
       if (type === 'text') this.say(String(block['text'] ?? ''))
