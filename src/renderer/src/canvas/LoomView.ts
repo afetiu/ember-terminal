@@ -497,6 +497,8 @@ export class LoomView {
       if (this.atBottom()) this.jump.classList.remove('is-on')
       this.chip.classList.remove('is-on')
     })
+    // Not passive: the end of a push that changed the turn must not go on to scroll the new one.
+    this.scroller.addEventListener('wheel', (e) => this.wheelTurns(e), { passive: false })
     this.jump.addEventListener('click', () => this.toBottom(true))
     this.rawPill.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-view="canvas"]')) this.setRaw(false)
@@ -1541,6 +1543,78 @@ export class LoomView {
     const next = Math.max(0, Math.min(turns.length - 1, at + dir))
     this.viewing = next === turns.length - 1 ? null : turns[next]!
     this.restage()
+  }
+
+  // ---------------------------------------------------------------- the wheel walks the turns
+  // The canvas holds one turn, but the chat still reads as one column: scroll past the top
+  // of a turn and the one before it comes down, landing at its end; scroll past the bottom
+  // and the next comes up. It takes a deliberate push past the edge, and a turn changes at
+  // most once per push, so a touchpad's momentum never skips several.
+  private wheelPush = 0
+  private wheelIdle = 0
+  private wheelRest = 0
+
+  private wheelTurns(e: WheelEvent): void {
+    if (e.ctrlKey || this.full || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return
+    const dir = e.deltaY < 0 ? -1 : 1
+    // Something inside that scrolls on its own (code, a wide table) gets the wheel first.
+    for (let n = e.target as HTMLElement | null; n && n !== this.scroller; n = n.parentElement) {
+      const oy = getComputedStyle(n).overflowY
+      if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) {
+        if (dir < 0 ? n.scrollTop > 0 : n.scrollTop + n.clientHeight < n.scrollHeight - 1) return
+      }
+    }
+    const s = this.scroller
+    const atEdge = dir < 0 ? s.scrollTop <= 0 : s.scrollTop + s.clientHeight >= s.scrollHeight - 1
+    const now = performance.now()
+    // Right after a change the wheel is still the same push: let it run out, without
+    // scrolling the turn that just arrived (it starts at its top, or its end going back).
+    if (now < this.wheelRest) {
+      this.wheelRest = now + 260
+      e.preventDefault()
+      return
+    }
+    const turns = this.feed.turns()
+    const at = turns.indexOf(this.shown ?? turns[turns.length - 1]!)
+    const canGo = dir < 0 ? at > 0 : at >= 0 && at < turns.length - 1
+    if (!atEdge || !canGo) {
+      this.wheelPush = 0
+      this.pull(0)
+      return
+    }
+    // Pushing past the edge toward another turn: the wheel is ours, so the event that
+    // changes the turn does not then scroll the turn it brought.
+    e.preventDefault()
+    // Pixels and lines both count, in pixels.
+    this.wheelPush += Math.abs(e.deltaY) * (e.deltaMode === 1 ? 40 : 1)
+    window.clearTimeout(this.wheelIdle)
+    this.wheelIdle = window.setTimeout(() => {
+      this.wheelPush = 0
+      this.pull(0)
+    }, 220)
+    const need = 260
+    this.pull((dir * Math.min(this.wheelPush, need)) / need)
+    if (this.wheelPush < need) return
+    this.wheelPush = 0
+    this.wheelRest = now + 420
+    this.pull(0)
+    this.stepTurn(dir)
+    // Going back up lands at the end of the earlier turn, as scrolling up a chat would.
+    if (dir < 0) s.scrollTop = s.scrollHeight
+    const shown = this.shown
+    if (shown && !reduced()) {
+      shown.classList.remove('is-from-above', 'is-from-below')
+      void shown.offsetWidth
+      shown.classList.add(dir < 0 ? 'is-from-above' : 'is-from-below')
+    }
+  }
+
+  /** The rubber-band give while pushing past an edge: -1 up … 1 down, 0 at rest. */
+  private pull(p: number): void {
+    if (reduced()) return
+    const el = this.feed.el
+    el.classList.toggle('is-pulling', p !== 0)
+    el.style.transform = p ? `translateY(${(-p * 22).toFixed(1)}px)` : ''
   }
 
   /**
@@ -3920,6 +3994,11 @@ export class LoomView {
   }
 
   /** What this view believes, for probes and for support: `window.__ember.loom()`. */
+  /** Probe-only: hand the canvas transcript lines as if they came from the session's log. */
+  feedForProbe(lines: Array<Record<string, unknown>>): void {
+    this.feed.add(lines as never)
+  }
+
   debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number; rows: string[]; sessionId: string } {
     return {
       rows: this.rowsText(),

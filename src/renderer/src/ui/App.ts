@@ -319,6 +319,8 @@ export class App {
       /** A Loom tab, and what its canvas believes. */
       newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
+      /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
+      loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
       /** Type into a tab's focused pane as the user would, Enter separately. */
       send: (id: string, text: string, submit = true) => {
         const g = this.groups.find((x) => x.id === id)

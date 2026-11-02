@@ -1180,6 +1180,33 @@
 .loom-turn.is-shown > .loom-note-line {
   display: none;
 }
+/* The wheel walks the turns: a little give while you push past an edge, and the next turn
+   arrives from the side you scrolled toward. */
+.loom-flow {
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-flow.is-pulling {
+  transition: transform 90ms linear;
+}
+.loom-turn.is-shown.is-from-above {
+  animation: loom-from-above 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-turn.is-shown.is-from-below {
+  animation: loom-from-below 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes loom-from-above {
+  from {
+    opacity: 0.2;
+    transform: translateY(-36px);
+  }
+}
+@keyframes loom-from-below {
+  from {
+    opacity: 0.2;
+    transform: translateY(36px);
+  }
+}
+
 /* An earlier message that holds a result (a table, a list, findings) stays, above the last. */
 .loom-turn.is-shown > .loom-say.is-kept {
   display: block;
