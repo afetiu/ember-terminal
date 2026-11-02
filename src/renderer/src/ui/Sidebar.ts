@@ -1,5 +1,5 @@
 import type { ActivitySnapshot } from '../core/Activity'
-import type { ClaudeStatus, GitStatus } from '@shared/types'
+import type { ClaudeStatus, GitStatus, UpdateState } from '@shared/types'
 import { ticker } from '../motion/ticker'
 import { Spring } from '../motion/spring'
 import type { Reaction } from './Mascot'
@@ -7,6 +7,79 @@ import { Odometer } from './Odometer'
 
 /** The things that are places rather than sessions. */
 export type Place = 'todo' | 'notes'
+
+/**
+ * The version at the foot of the sidebar, which is also Ember's update button.
+ *
+ * Quiet while this is the latest: "v1.4.4", and a click looks for a newer release now.
+ * When one is out it lights up: "Update to 1.4.5". The first click arms it ("Restart to
+ * update", for a few seconds) because installing restarts Ember and closes the sessions;
+ * the second one downloads, checks and installs it, and Ember comes back on the new
+ * version. A portable copy opens the download page instead.
+ */
+function updateControl(): HTMLElement {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.className = 'ember-version'
+  let s: UpdateState = { current: __EMBER_VERSION__, latest: null, available: false, installed: true, phase: 'idle', error: '', checkedAt: 0 }
+  let armed = 0
+  let note = ''
+  const render = (): void => {
+    const busy = s.phase === 'downloading' || s.phase === 'installing'
+    el.classList.toggle('is-update', s.available)
+    el.classList.toggle('is-armed', !!armed && !busy)
+    el.disabled = busy
+    if (s.phase === 'downloading') el.textContent = 'Downloading…'
+    else if (s.phase === 'installing') el.textContent = 'Installing…'
+    else if (s.available && armed) el.textContent = s.installed ? 'Restart to update' : `Get ${s.latest}`
+    else if (s.available) el.textContent = s.phase === 'error' ? 'Update failed · retry' : `Update to ${s.latest}`
+    else el.textContent = note || `v${s.current}`
+    el.title = s.available
+      ? s.installed
+        ? `Ember ${s.latest} is out (you have ${s.current}). Updating restarts Ember and closes open sessions.${s.error ? `\nLast try: ${s.error}` : ''}`
+        : `Ember ${s.latest} is out. This copy is portable: download the new one.`
+      : `Ember ${s.current}${s.checkedAt ? ' · up to date' : ''}. Click to look for an update.`
+  }
+  window.ember.update.onState((next) => {
+    s = next
+    render()
+  })
+  void window.ember.update.state().then((next) => {
+    s = next
+    render()
+  })
+  el.addEventListener('click', () => {
+    if (!s.available) {
+      // Look now, and say how it went for a moment.
+      note = 'Checking…'
+      render()
+      void window.ember.update.check().then((next) => {
+        s = next
+        note = next.available ? '' : next.error ? 'Could not check' : 'Up to date'
+        render()
+        window.setTimeout(() => {
+          note = ''
+          render()
+        }, 2200)
+      })
+      return
+    }
+    if (!armed) {
+      armed = window.setTimeout(() => {
+        armed = 0
+        render()
+      }, 5000)
+      render()
+      return
+    }
+    window.clearTimeout(armed)
+    armed = 0
+    window.ember.update.install()
+    render()
+  })
+  render()
+  return el
+}
 
 /**
  * The places' marks. Drawn, 16px, `currentColor`, one stroke, so the row reads as one set
@@ -173,12 +246,9 @@ export class Sidebar {
       nav.append(btn)
       this.navBtns.set(p.id, { btn, badge })
     }
-    // Which Ember this is, quietly, in the free end of the row.
-    const version = document.createElement('span')
-    version.className = 'ember-version'
-    version.textContent = `v${__EMBER_VERSION__}`
-    version.title = `Ember ${__EMBER_VERSION__}`
-    nav.append(version)
+    // Which Ember this is, quietly, in the free end of the row — and, when a newer release
+    // is out, the way to it.
+    nav.append(updateControl())
     this.list = document.createElement('div')
     this.list.className = 'ember-cards'
 

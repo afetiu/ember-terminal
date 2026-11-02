@@ -3733,19 +3733,42 @@ body.is-zen .ember-fx {
   container-type: inline-size;
 }
 
-/* Which Ember this is: small and faint, in the empty end of the places row. */
+/* Which Ember this is: small and faint, in the empty end of the places row. It is also
+   the update button, and lights up when a newer release is out. */
 .ember-version {
-  grid-column: -2 / -1;
+  grid-column: -3 / -1;
   align-self: end;
   justify-self: end;
-  padding: 0 4px 6px 0;
+  margin: 0 2px 4px 0;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
   font-size: 10.5px;
   line-height: 1;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  background: transparent;
   font-variant-numeric: tabular-nums;
-  user-select: text;
-  cursor: default;
+  cursor: pointer;
+  transition: color 160ms, background 160ms;
+}
+.ember-version:hover {
+  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
+}
+.ember-version.is-update {
+  font-weight: 600;
+  color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+}
+.ember-version.is-update:hover,
+.ember-version.is-armed {
+  color: var(--c-bg);
+  background: var(--c-accent);
+}
+.ember-version:disabled {
+  cursor: progress;
 }
 body.sidebar-mini .ember-version {
   display: none;

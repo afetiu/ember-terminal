@@ -20,6 +20,7 @@ import type {
   DeskState,
   ClaudeStatus,
   ClaudeUsage,
+  UpdateState,
   CanvasFeed,
   CanvasMedia,
   CanvasAnnotate,
@@ -128,6 +129,12 @@ const bridge: EmberBridge = {
     state: () => ipcRenderer.invoke('ember:usage:state') as Promise<ClaudeUsage>,
     refresh: () => ipcRenderer.send('ember:usage:refresh'),
     onState: (cb) => on<ClaudeUsage>('ember:usage:state', cb),
+  },
+  update: {
+    state: () => ipcRenderer.invoke('ember:update:state') as Promise<UpdateState>,
+    check: () => ipcRenderer.invoke('ember:update:check') as Promise<UpdateState>,
+    install: () => ipcRenderer.send('ember:update:install'),
+    onState: (cb) => on<UpdateState>('ember:update:state', cb),
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),

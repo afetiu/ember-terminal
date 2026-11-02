@@ -216,6 +216,23 @@ export interface ClaudeUsage {
   error: string | null
 }
 
+/** Ember's own updates, from its GitHub releases (src/main/update.ts). */
+export interface UpdateState {
+  /** This build's version. */
+  current: string
+  /** The latest release's version, once known. */
+  latest: string | null
+  /** A newer release than this build exists. */
+  available: boolean
+  /** Installed by the installer, so it can replace itself; false for a portable copy. */
+  installed: boolean
+  phase: 'idle' | 'checking' | 'downloading' | 'installing' | 'error'
+  /** The last failure, or ''. */
+  error: string
+  /** When the latest release was last asked for, epoch ms; 0 before the first look. */
+  checkedAt: number
+}
+
 /** What a Claude session's status line reports about itself, once per update. */
 /** One object the user placed on a Loom canvas, as the session is told about it. */
 export interface ScreenItem {
@@ -732,6 +749,15 @@ export interface EmberBridge {
     /** Fetch now rather than at the next tick. */
     refresh(): void
     onState(cb: (u: ClaudeUsage) => void): () => void
+  }
+  /** Ember's own updates. */
+  update: {
+    state(): Promise<UpdateState>
+    /** Ask for the latest release now. */
+    check(): Promise<UpdateState>
+    /** Download, check, install silently and restart into the new version. */
+    install(): void
+    onState(cb: (s: UpdateState) => void): () => void
   }
   /** What the Claude session in a tab reports through its status line. */
   claude: {

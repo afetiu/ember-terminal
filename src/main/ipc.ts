@@ -11,6 +11,7 @@ import { listFonts } from './fonts.js'
 import { gitStatus, killPort, listTasks } from './project.js'
 import { VitalsWatcher } from './vitals.js'
 import { UsageWatcher } from './usage.js'
+import { Updater } from './update.js'
 import { detectAgents, pingAgent } from './agents.js'
 import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
 import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
@@ -101,6 +102,13 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.handle('ember:agents:detect', (_e, withVersions: boolean) => detectAgents(withVersions))
   ipcMain.handle('ember:agents:ping', (_e, id: string) => pingAgent(agentSpec(id).id))
   ipcMain.on('ember:usage:refresh', () => usage.refresh())
+
+  // Ember's own updates: checked from its GitHub releases, installed on request.
+  const updater = new Updater((s) => broadcast('ember:update:state', s))
+  app.on('before-quit', () => updater.dispose())
+  ipcMain.handle('ember:update:state', () => updater.state)
+  ipcMain.handle('ember:update:check', () => updater.check())
+  ipcMain.on('ember:update:install', () => void updater.install())
 
   // Computer use: the strip's indicator and Stop switch, and the overlay's pill.
   onDeskState((s) => broadcast('ember:desk:state', s))
