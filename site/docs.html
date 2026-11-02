@@ -113,6 +113,7 @@ irm https://ember.deepanswerlabs.com/install.ps1 | iex
 
 # cmd
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepanswerlabs.com/install.ps1 | iex"</code></pre>
+  <p><b>Updates.</b> From 1.4.5, Ember looks for a newer release when it starts and every few hours. When one is out, the version at the bottom of the sidebar becomes <b>Update to …</b>. Click it, then <b>Restart to update</b>: it downloads the new version, checks it, installs it and restarts. Updating closes the open sessions. Click the version any time to look now.</p>
   <p class="callout"><b>SmartScreen.</b> Releases are not code signed yet, so Windows may warn the first time. Choose <b>More info</b>, then <b>Run anyway</b>. Every build comes from the public source.</p>
   <p>Ember replaces the window, not your shell. It runs PowerShell 7 through ConPTY, the same way Windows Terminal does. Your profile, modules, oh-my-posh and PSReadLine work as before. Without PowerShell 7 it falls back to Windows PowerShell.</p>
 </section>

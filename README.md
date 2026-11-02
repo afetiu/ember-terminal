@@ -64,6 +64,9 @@ irm https://ember.deepanswerlabs.com/install.ps1 | iex
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepanswerlabs.com/install.ps1 | iex"
 ```
 
+From 1.4.5 Ember updates itself: when a newer release is out, the version at the bottom of
+the sidebar becomes **Update to …**; click it, then **Restart to update**.
+
 **Not code signed yet.** Windows SmartScreen may warn the first time: choose **More info**,
 then **Run anyway**. Every release is built from this repository by GitHub Actions and
 ships with `SHA256SUMS.txt` so you can check the file (see [CODE_SIGNING.md](CODE_SIGNING.md)).
