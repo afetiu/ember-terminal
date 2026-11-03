@@ -13,7 +13,7 @@ import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedi
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { homedir } from 'node:os'
-import { deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskState, haltDesk, hands, HANDS_OFF, HANDS_SHOW, onActivity, setDeskBridge, startDesk, stopDesk } from './desk.js'
+import { asideState, deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskRecipe, deskState, haltDesk, hands, HANDS_OFF, HANDS_SHOW, onActivity, setDeskBridge, startDesk, stopDesk } from './desk.js'
 import type { DeskActivity } from '../shared/types.js'
 
 /**
@@ -903,6 +903,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
               label: String(body['label'] ?? '').slice(0, 120),
               tab: String(body['tab'] ?? ''),
               at: Date.now(),
+              ...(body['app'] ? { app: String(body['app']).slice(0, 40) } : {}),
+              ...(body['exe'] ? { exe: String(body['exe']).slice(0, 60) } : {}),
+              ...(body['win'] ? { win: String(body['win']).slice(0, 80) } : {}),
+              ...(typeof body['own'] === 'boolean' ? { own: body['own'] } : {}),
             }
             onActivity(a)
             return send(res, 200, JSON.stringify({ ok: true }))
@@ -918,7 +922,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           // brake the session can release is not one: Resume is a button in Ember (the strip,
           // the overlay's pill), reached over IPC, never over this socket.
           case 'status':
-            return send(res, 200, JSON.stringify({ ok: true, state: deskState() }))
+            return send(res, 200, JSON.stringify({ ok: true, state: deskState(), aside: asideState() }))
           // Ember Hands. Pointing shows and explains, and never clicks; acting clicks and
           // types. Each is allowed only as far as the user's setting says.
           case 'point': {
@@ -953,7 +957,18 @@ function route(req: IncomingMessage, res: ServerResponse): void {
             // says: Ember may point and look, never press.
             const mode = hands()
             if (mode !== 'act') return send(res, 200, JSON.stringify({ ok: false, error: mode === 'off' ? HANDS_OFF : HANDS_SHOW }))
-            const r = await deskAct(String(body['script'] ?? ''))
+            // save: keep the plan as a recipe once it has worked ([name, value1, value2…]:
+            // those values become the recipe's $1 $2…).
+            const save = Array.isArray(body['save']) ? body['save'].map(String).slice(0, 10) : body['save'] ? [String(body['save'])] : undefined
+            const r = await deskAct(String(body['script'] ?? ''), save)
+            return send(res, 200, JSON.stringify(r))
+          }
+          case 'recipe': {
+            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
+            const op = String(body['op'] ?? 'list')
+            if (!['list', 'show', 'run'].includes(op)) return send(res, 200, JSON.stringify({ ok: false, error: 'recipe: op is list, show or run' }))
+            const args = Array.isArray(body['args']) ? body['args'].map(String).slice(0, 9) : []
+            const r = await deskRecipe(op, body['name'] ? String(body['name']) : '', args)
             return send(res, 200, JSON.stringify(r))
           }
           case 'look': {

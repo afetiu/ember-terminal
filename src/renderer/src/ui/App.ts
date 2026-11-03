@@ -116,6 +116,8 @@ export class App {
   private themes: ThemeConfig[] | null = null
   private notifiedGroups = new Map<string, number>()
   /** Said once per run, not once per config reload. */
+  /** Last told to main: is any agent's turn in flight (see syncTabs). */
+  private agentsWorking = false
   /** cwd -> git status, refreshed on the activity tick. */
   private readonly gitByCwd = new Map<string, GitStatus | null>()
   /** What each tab's Claude session last said through its status line, by tab id. */
@@ -2071,6 +2073,13 @@ export class App {
 
     this.updateFocusRing()
 
+    // Computer use: Ember's step-aside card stays up until no agent's turn is in flight.
+    const working = this.groups.some((g) => g.panes.some((p) => p.activity.current.isClaude && p.activity.current.state === 'working'))
+    if (working !== this.agentsWorking) {
+      this.agentsWorking = working
+      window.ember.desk.agentsWorking(working)
+    }
+
     const needy = models.filter((m) => m.activity.state === 'attention' && m.id !== this.activeId)
     document.body.classList.toggle('has-attention', needy.length > 0)
 
@@ -2262,6 +2271,19 @@ export class App {
             const off = c.hands !== 'off'
             void window.ember.saveConfig({ ...c, hands: off ? 'off' : 'act' })
             this.flashToast(off ? 'Computer use off: agents cannot point, click or type on your desktop' : 'Computer use on: STOP is always on screen while an agent acts')
+          }),
+      },
+      {
+        id: 'computer-use-step-aside',
+        group: 'Session',
+        title: 'Computer use: step aside on / off',
+        cli: 'step-aside',
+        aliases: ['aside'],
+        run: () =>
+          void window.ember.getConfig().then((c) => {
+            const off = c.deskStepAside !== false
+            void window.ember.saveConfig({ ...c, deskStepAside: !off })
+            this.flashToast(off ? 'Ember stays put while an agent works in another app' : 'Ember steps aside while an agent works in another app, with STOP on a card')
           }),
       },
       { id: 'terminal', group: 'Session', title: 'New terminal', cli: 'terminal [dir]', aliases: ['shell'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
