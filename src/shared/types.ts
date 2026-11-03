@@ -160,6 +160,25 @@ export interface DeskActivity {
   /** The tab whose Claude did it. */
   tab: string
   at: number
+  /** The app the action landed in, in words ("Notepad"), and its executable. */
+  app?: string
+  exe?: string
+  /** The window acted on, by title. */
+  win?: string
+  /** The window is one of Ember's own. */
+  own?: boolean
+}
+
+/** The step-aside card: Ember out of the way while an agent works in another app. */
+export interface DeskCard {
+  /** What it is doing now. */
+  now: string
+  /** The steps before it, newest first (at most three). */
+  trail: string[]
+  /** The app it is working in. */
+  app: string
+  /** Distance from the overlay's bottom-right corner to the work area's, in CSS px. */
+  inset: { right: number; bottom: number }
 }
 
 export type DeskReady = 'off' | 'starting' | 'ok' | 'installing' | 'no-python' | 'no-deps' | 'failed'
@@ -186,6 +205,8 @@ export interface DeskOverlayState {
   visible: boolean
   halted: boolean
   showStop?: boolean
+  /** The step-aside card; null takes it down. Absent leaves it as it is. */
+  card?: DeskCard | null
 }
 
 /** One of the plan's rate-limit windows, as Anthropic's usage endpoint reports it. */
@@ -385,6 +406,11 @@ export interface EmberConfig {
    * with STOP always on screen. 'off': neither.
    */
   hands?: 'off' | 'show' | 'act'
+  /**
+   * When an agent starts acting in another app, Ember minimises itself and leaves a small
+   * card with STOP at the bottom-right, and comes back when the work ends. On unless false.
+   */
+  deskStepAside?: boolean
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
@@ -618,7 +644,11 @@ export interface SpawnRequest {
 /** What a Loom tab's transcript tail sends: lines as they are written, or a new session. */
 export type CanvasFeed =
   | { tabId: string; kind: 'lines'; lines: Array<Record<string, unknown>> }
-  | { tabId: string; kind: 'switch'; file: string; first: boolean }
+  /**
+   * `fresh`: the new transcript holds no conversation from before the switch — `/clear`, or
+   * `claude` started anew — so the canvas starts over instead of keeping history above a seam.
+   */
+  | { tabId: string; kind: 'switch'; file: string; first: boolean; fresh?: boolean }
 
 /** Media handed to a Loom canvas by the session (show_media). */
 export interface CanvasMedia {
@@ -817,6 +847,8 @@ export interface EmberBridge {
     halt(): void
     resume(): void
     onState(cb: (s: DeskState) => void): () => void
+    /** Whether an agent's turn is in flight in any tab: the step-aside card waits for it to end. */
+    agentsWorking(on: boolean): void
   }
   /** The coding-agent CLIs on this machine: which are installed, and whether one answers. */
   agents: {

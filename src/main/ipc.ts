@@ -14,7 +14,7 @@ import { UsageWatcher } from './usage.js'
 import { Updater } from './update.js'
 import { detectAgents, pingAgent } from './agents.js'
 import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
-import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
+import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setAgentsWorking, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
@@ -118,6 +118,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.on('ember:desk:resume', () => resumeDesk())
   ipcMain.on('ember:desk:toggle', () => toggleDesk())
   ipcMain.on('ember:desk:overlay:interactive', (_e, on: boolean) => setOverlayInteractive(on === true))
+  ipcMain.on('ember:desk:agentsWorking', (_e, on: boolean) => setAgentsWorking(on === true))
   ipcMain.handle('ember:desk:overlay:state', () => overlayState())
   app.on('before-quit', () => stopDesk())
 

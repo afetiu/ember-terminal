@@ -123,9 +123,15 @@ Agents in Ember can use your Windows desktop, with a pointer of Ember's own that
 to each target and dips on every click.
 
 - `look` reads a window as text, with its controls numbered: `#7 [Button] 'Save' (412,88)`.
-- `act` runs a whole sequence in one call (`press #7; settext #3 "hello"; key ctrl+s`) and
-  its reply ends with the screen afterwards, numbered again.
+- `act` runs a whole task as one plan, on your machine, without going back to the model
+  between steps: `key ctrl+s; wait "Save As"; settext [Edit] "File name:" "notes.txt";
+  press [Button] "Save"; expect title "notes.txt"`. It stops at the first step that fails
+  and says which, why, and what is on screen.
 - `point` shows you where something is, with a short note beside it, and never clicks.
+- A plan that worked can be kept as a recipe and run again with other values.
+
+While an agent works in another app, Ember steps aside: its window minimises and a small
+card in the corner says what it is doing, with STOP. It comes back when the work is done.
 
 **STOP** is on screen whenever an agent acts. `Ctrl+K` › **Computer use: on / off** turns
 it off altogether. Computer use needs Python 3, Python packages you install yourself

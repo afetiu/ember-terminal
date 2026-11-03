@@ -6254,3 +6254,144 @@ body.is-light .loom-zoom {
   border-width: 0 0 2px 2px;
   transform: rotate(-45deg);
 }
+
+/* ---------------------------------------------------------------- answers to questions
+
+   Under the questions a reply ends with: each one's options as chips, a field for
+   anything else, one Send. Quiet until touched; the chosen chip takes the accent. */
+
+.loom-answers {
+  margin: 4px 0 14px;
+  padding: 6px 14px 10px;
+  border-radius: var(--l-r-card);
+  border: 1px solid var(--l-line-strong);
+  background: var(--l-card-2);
+  font: 0.9em var(--l-prose);
+  line-height: 1.4;
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-answers.is-stale {
+  display: none;
+}
+.loom-ans-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+.loom-ans-row + .loom-ans-row {
+  border-top: 1px solid var(--l-line);
+}
+.loom-ans-n {
+  flex: none;
+  width: 1.4em;
+  padding-top: 6px;
+  font: 0.9em var(--l-mono);
+  color: var(--l-faint);
+  text-align: right;
+}
+.loom-ans-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.loom-ans-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: var(--l-r-ctl);
+  border: 1px solid var(--l-line-strong);
+  background: transparent;
+  color: var(--l-ink);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+.loom-ans-chip:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 45%, var(--l-line-strong));
+  color: var(--l-strong);
+}
+.loom-ans-chip[aria-pressed='true'] {
+  border-color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  color: var(--l-strong);
+}
+.loom-ans-tag {
+  font: 0.78em var(--l-mono);
+  color: var(--l-faint);
+}
+.loom-ans-other {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 320px;
+  padding: 4px 10px;
+  border-radius: var(--l-r-ctl);
+  border: 1px solid transparent;
+  border-bottom-color: var(--l-line-strong);
+  background: transparent;
+  color: var(--l-strong);
+  font: inherit;
+  outline: none;
+}
+.loom-ans-other.is-only {
+  max-width: none;
+  border-color: var(--l-line-strong);
+}
+.loom-ans-other:focus {
+  border-bottom-color: var(--c-accent);
+}
+.loom-ans-other.is-only:focus {
+  border-color: color-mix(in srgb, var(--c-accent) 60%, var(--l-line-strong));
+}
+.loom-ans-other::placeholder {
+  color: var(--l-faint);
+}
+.loom-ans-chip:focus-visible,
+.loom-ans-send:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+.loom-ans-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--l-line);
+}
+.loom-ans-note {
+  font-size: 0.9em;
+  color: var(--l-faint);
+}
+.loom-ans-send {
+  padding: 4px 16px;
+  border: 0;
+  border-radius: var(--l-r-ctl);
+  font: 600 1em var(--l-prose);
+  color: var(--c-bg);
+  background: var(--c-accent);
+  cursor: pointer;
+}
+.loom-ans-send:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.loom-ans-send:disabled {
+  background: var(--l-card-2);
+  color: var(--l-faint);
+  cursor: default;
+}
+.loom-answers.is-sent .loom-ans-chip:not([aria-pressed='true']),
+.loom-answers.is-sent .loom-ans-other:placeholder-shown {
+  opacity: 0.4;
+}
+.loom-answers.is-sent .loom-ans-chip,
+.loom-answers.is-sent .loom-ans-other {
+  cursor: default;
+}

@@ -116,6 +116,8 @@ export class App {
   private themes: ThemeConfig[] | null = null
   private notifiedGroups = new Map<string, number>()
   /** Said once per run, not once per config reload. */
+  /** Last told to main: is any agent's turn in flight (see syncTabs). */
+  private agentsWorking = false
   /** cwd -> git status, refreshed on the activity tick. */
   private readonly gitByCwd = new Map<string, GitStatus | null>()
   /** What each tab's Claude session last said through its status line, by tab id. */
@@ -328,8 +330,16 @@ export class App {
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
+      /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
+      loomSwitch: (id: string, first = false, fresh = false) => this.groups.find((g) => g.id === id)?.loom?.switchForProbe(first, fresh),
       /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
       loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
+      /** From now on, record what would be typed into sessions instead of typing it; `sends()` reads it. */
+      recordSends: () => {
+        this.probeSends = []
+        return true
+      },
+      sends: () => this.probeSends ?? [],
       /** Type into a tab's focused pane as the user would, Enter separately. */
       send: (id: string, text: string, submit = true) => {
         const g = this.groups.find((x) => x.id === id)
@@ -1433,6 +1443,11 @@ export class App {
     const session = group.focused
     const line = text.replace(/\s*\r?\n\s*/g, ' ').trim()
     if (!session || !line) return
+    // A probe that asked to see what would be typed gets it here instead of a terminal.
+    if (this.probeSends) {
+      this.probeSends.push({ tab: group.id, text: line, submit })
+      return
+    }
 
     if (!submit) {
       window.ember.write(session.id, `${line} `)
@@ -1451,6 +1466,9 @@ export class App {
     window.setTimeout(() => window.ember.write(session.id, '\r'), App.SUBMIT_GAP_MS)
     sound.play('toggle')
   }
+
+  /** What canvas buttons would have typed, while a probe records them (`__ember.recordSends`). */
+  private probeSends: Array<{ tab: string; text: string; submit: boolean }> | null = null
 
   /** Gap between typing a line and pressing Enter, so a TUI stops reading it as a paste. */
   private static readonly SUBMIT_GAP_MS = 140
@@ -2060,6 +2078,13 @@ export class App {
 
     this.updateFocusRing()
 
+    // Computer use: Ember's step-aside card stays up until no agent's turn is in flight.
+    const working = this.groups.some((g) => g.panes.some((p) => p.activity.current.isClaude && p.activity.current.state === 'working'))
+    if (working !== this.agentsWorking) {
+      this.agentsWorking = working
+      window.ember.desk.agentsWorking(working)
+    }
+
     const needy = models.filter((m) => m.activity.state === 'attention' && m.id !== this.activeId)
     document.body.classList.toggle('has-attention', needy.length > 0)
 
@@ -2251,6 +2276,19 @@ export class App {
             const off = c.hands !== 'off'
             void window.ember.saveConfig({ ...c, hands: off ? 'off' : 'act' })
             this.flashToast(off ? 'Computer use off: agents cannot point, click or type on your desktop' : 'Computer use on: STOP is always on screen while an agent acts')
+          }),
+      },
+      {
+        id: 'computer-use-step-aside',
+        group: 'Session',
+        title: 'Computer use: step aside on / off',
+        cli: 'step-aside',
+        aliases: ['aside'],
+        run: () =>
+          void window.ember.getConfig().then((c) => {
+            const off = c.deskStepAside !== false
+            void window.ember.saveConfig({ ...c, deskStepAside: !off })
+            this.flashToast(off ? 'Ember stays put while an agent works in another app' : 'Ember steps aside while an agent works in another app, with STOP on a card')
           }),
       },
       { id: 'terminal', group: 'Session', title: 'New terminal', cli: 'terminal [dir]', aliases: ['shell'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
