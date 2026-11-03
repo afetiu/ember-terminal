@@ -551,7 +551,11 @@ export interface SpawnRequest {
 /** What a Loom tab's transcript tail sends: lines as they are written, or a new session. */
 export type CanvasFeed =
   | { tabId: string; kind: 'lines'; lines: Array<Record<string, unknown>> }
-  | { tabId: string; kind: 'switch'; file: string; first: boolean }
+  /**
+   * `fresh`: the new transcript holds no conversation from before the switch — `/clear`, or
+   * `claude` started anew — so the canvas starts over instead of keeping history above a seam.
+   */
+  | { tabId: string; kind: 'switch'; file: string; first: boolean; fresh?: boolean }
 
 /** Media handed to a Loom canvas by the session (show_media). */
 export interface CanvasMedia {

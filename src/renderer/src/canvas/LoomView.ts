@@ -379,7 +379,7 @@ export class LoomView {
     this.unsubs.push(
       window.ember.canvas.onFeed((f: CanvasFeed) => {
         if (f.tabId !== this.tabId) return
-        if (f.kind === 'switch') this.feed.switchSession(f.first)
+        if (f.kind === 'switch') this.feed.switchSession(f.first, f.fresh === true)
         else this.feed.add(f.lines)
         this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
         this.restage()
@@ -4228,8 +4228,8 @@ export class LoomView {
   }
 
   /** Probe-only: the tab's session moved to another transcript, as main reports it. */
-  switchForProbe(first = false): void {
-    this.feed.switchSession(first)
+  switchForProbe(first = false, fresh = false): void {
+    this.feed.switchSession(first, fresh)
     this.restage()
   }
 

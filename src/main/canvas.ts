@@ -175,6 +175,21 @@ function slimBlock(block: unknown): unknown {
 }
 
 /** One transcript line, reduced to what the canvas renders. Null for lines it never shows. */
+/**
+ * A transcript the session moved to holds nothing said before the move: `/clear` (Claude
+ * Code clears its messages and goes on under a new session id, in a new file) or a new
+ * `claude`. A resumed session's file carries its earlier exchange, written before the move.
+ * The margin covers the status line's report arriving a moment after the move itself.
+ */
+export function isFresh(lines: Json[], since: number): boolean {
+  for (const l of lines) {
+    if (l['type'] !== 'user' && l['type'] !== 'assistant') continue
+    const t = Date.parse(String(l['timestamp'] ?? ''))
+    if (Number.isFinite(t) && t < since - 1500) return false
+  }
+  return true
+}
+
 function slimLine(line: Json): Json | null {
   const type = String(line['type'] ?? '')
   if (type !== 'user' && type !== 'assistant' && type !== 'system') return null
@@ -236,6 +251,10 @@ function slimResult(raw: unknown): unknown {
  */
 class Tail {
   private file = ''
+  /** The transcript the tab's session points at, and since when: a switch to it is told once its first lines show whether it is fresh. */
+  private target = ''
+  private targetSince = 0
+  private switching: { file: string; first: boolean; since: number } | null = null
   private offset = 0
   private carry = ''
   private timer: NodeJS.Timeout | null = null
@@ -338,6 +357,10 @@ class Tail {
     this.log = null
     const file = transcriptPath(this.tabId)
     if (!file) return
+    if (file !== this.target) {
+      this.target = file
+      this.targetSince = Date.now()
+    }
     if (file !== this.file) {
       // A new session in the same tab: `/clear`, `/resume`, or `claude` run again. The
       // canvas marks the seam and reads the new one from its first line, because a resumed
@@ -348,7 +371,9 @@ class Tail {
       this.offset = 0
       this.carry = ''
       this.meter = new CostMeter()
-      this.emit({ tabId: this.tabId, kind: 'switch', file, first })
+      // Told with the first lines, which say whether the session is fresh (`/clear`, a new
+      // `claude`) or one with a history (`/resume`, `--continue`).
+      this.switching = { file, first, since: this.targetSince }
     }
     let size = 0
     try {
@@ -385,6 +410,11 @@ class Tail {
         }
       }
       cut = this.carry.indexOf('\n')
+    }
+    const sw = this.switching
+    if (sw && lines.length) {
+      this.switching = null
+      this.emit({ tabId: this.tabId, kind: 'switch', file: sw.file, first: sw.first, fresh: isFresh(lines, sw.since) })
     }
     if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
     if (costed && !this.to.isDestroyed()) this.to.send('ember:canvas:cost', this.meter.summary(this.tabId))

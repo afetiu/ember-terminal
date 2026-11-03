@@ -13,7 +13,7 @@
  * Nothing is typed into any terminal.
  */
 import { spawn } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 const REPO = new URL('..', import.meta.url).pathname.slice(1).replace(/\/$/, '')
 const OUT = process.argv[2] ?? join(process.env.TEMP ?? '.', 'ember-clear-shots')
@@ -113,7 +113,7 @@ try {
     log.push(`${ok ? 'PASS' : 'FAIL'} ${label.padEnd(44)} turns ${s.turns}  rail ${s.rail}${s.railOn ? ' (on)' : ''}  says ${s.says}  seams ${s.seams}  notes ${s.notes}  hint ${s.hint}  plan ${s.plan}  asks ${JSON.stringify(s.asks)}`)
   }
   const feed = (lines) => ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify(lines)})`)
-  const switchTo = (first = false) => ev(`window.__ember.loomSwitch(${JSON.stringify(tab)}, ${first})`)
+  const switchTo = (first = false, fresh = false) => ev(`window.__ember.loomSwitch(${JSON.stringify(tab)}, ${first}, ${fresh})`)
 
   // 1. A session with three turns and a plan.
   await switchTo(true)
@@ -162,6 +162,64 @@ try {
   s = await state()
   check('/model stays a note, not a turn', s, s.turns === 3 && s.rail === 3 && s.notes === 2)
   await shot('4-end')
+
+  // 7. A switch main marks fresh (no /clear line at all) starts over too.
+  await switchTo(false, true)
+  await feed(session('fresh', 1))
+  await wait(800)
+  s = await state()
+  check('fresh switch, no /clear line: starts over', s, s.turns === 1 && s.rail === 1 && s.seams === 0 && s.notes === 0 && s.asks[0].startsWith('fresh'))
+
+  // ---- The same through main, end to end: real transcript files and the status line's
+  // report of a new session (as after /clear or /resume), nothing fed by hand.
+  const origin = await ev('window.ember.panel.origin()')
+  const tokenFile = join(EMBER_HOME, 'tok.txt')
+  // The probe's own PowerShell, never a terminal running claude.
+  await ev(`(() => { const s = window.__ember.sessions()[0]; window.ember.write(s.id, ${JSON.stringify(`$env:EMBER_BRIDGE_TOKEN | Set-Content -Encoding utf8 '${tokenFile.replace(/\\/g, '/')}'\r`)}); return true })()`)
+  let token = ''
+  for (let i = 0; i < 50 && !token; i++) {
+    await wait(300)
+    if (existsSync(tokenFile)) token = readFileSync(tokenFile, 'utf8').trim()
+  }
+  if (!token) throw new Error('could not read the bridge token from the shell')
+  const DIR = join(EMBER_HOME, 'projects')
+  mkdirSync(DIR, { recursive: true })
+  const status = async (sessionId) => {
+    const r = await fetch(`${origin}/status`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-ember-token': token },
+      body: JSON.stringify({ tabId: tab, status: { session_id: sessionId, transcript_path: join(DIR, `${sessionId}.jsonl`), cwd: EMBER_HOME, model: { display_name: 'Opus' } } }),
+    })
+    if (!r.ok) throw new Error(`status refused: ${r.status}`)
+  }
+  const jsonl = (lines) => lines.map((l) => JSON.stringify(l)).join('\n') + '\n'
+  const dated = (lines, ms) => lines.map((l, i) => ({ ...l, uuid: `${l.uuid}-${ms}`, timestamp: new Date(ms + i * 1000).toISOString() }))
+  const hourAgo = Date.now() - 3600_000
+  writeFileSync(join(DIR, 'sess-a.jsonl'), jsonl(dated(session('e2e-a', 2), hourAgo)))
+  writeFileSync(join(DIR, 'sess-c.jsonl'), jsonl(dated(session('e2e-c', 2), hourAgo - 3600_000)))
+  await status('sess-a')
+  await wait(1500)
+  s = await state()
+  check('e2e: session A (has history) on screen', s, s.asks.filter((x) => x.startsWith('e2e-a')).length === 2)
+  // /clear: the status line reports a new session whose file does not exist yet; the
+  // first prompt creates it. No /clear line is written here.
+  await status('sess-b')
+  await wait(800)
+  writeFileSync(join(DIR, 'sess-b.jsonl'), jsonl(dated(session('e2e-b', 1), Date.now())))
+  await wait(1500)
+  s = await state()
+  check('e2e: switch to a fresh file empties the rail', s, s.turns === 1 && s.rail === 1 && s.seams === 0 && s.asks[0]?.startsWith('e2e-b'))
+  await shot('5-e2e-fresh')
+  // /resume into a session with history: kept below a seam.
+  await status('sess-c')
+  await wait(1500)
+  s = await state()
+  check('e2e: /resume (file with history) keeps a seam', s, s.turns === 3 && s.rail === 3 && s.seams === 1)
+  // /resume back into the cleared conversation shows it again.
+  await status('sess-a')
+  await wait(1500)
+  s = await state()
+  check('e2e: /resume back into A shows its turns', s, s.asks.filter((x) => x.startsWith('e2e-a')).length === 2 && s.seams === 2)
 
   console.log(log.join('\n'))
   console.log(fails ? `${fails} FAILED` : 'all passed')

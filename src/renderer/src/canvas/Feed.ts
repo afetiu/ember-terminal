@@ -336,9 +336,18 @@ export class Feed {
     return t
   }
 
-  /** The session in the tab changed (a new `claude`, `/clear`, `/resume`). */
-  switchSession(first: boolean): void {
+  /**
+   * The session in the tab changed (a new `claude`, `/clear`, `/resume`). A fresh one (no
+   * conversation from before the switch in its transcript) starts the canvas over, as
+   * `/clear` does, whether or not Claude Code writes the command into the log.
+   */
+  switchSession(first: boolean, fresh = false): void {
     this.sessions++
+    if (fresh) {
+      this.restart()
+      this.clearedOut = false
+      return
+    }
     // Only a seam between two conversations that both have something on screen: after a
     // `/clear` (recorded at the end of the old log or the top of the new) there is nothing above it.
     if ((!first || this.seen.size) && !this.isEmpty) {
@@ -356,6 +365,8 @@ export class Feed {
    */
   private restart(): void {
     this.el.replaceChildren()
+    // Forgotten too, so that `/resume` back into the cleared conversation shows it again.
+    this.seen.clear()
     this.tools.clear()
     this.anchors.length = 0
     this.pendingCmd = null
