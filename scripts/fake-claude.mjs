@@ -38,8 +38,7 @@ let sid = (() => {
   return i > 0 ? process.argv[i + 1] : r > 0 ? process.argv[r + 1] : randomUUID()
 })()
 if (process.argv.includes('--resume') && process.env.FAKE_CLAUDE_MISSING && process.env.FAKE_CLAUDE_MISSING === sid) {
-  process.stderr.write(`No conversation found with session ID: ${sid}
-`)
+  process.stderr.write(`No conversation found with session ID: ${sid}\n`)
   process.exit(1)
 }
 let model = 'fake-haiku'

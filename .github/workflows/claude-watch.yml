@@ -1,0 +1,43 @@
+# Keeps Ember's native canvas in step with Claude Code (docs/specs/canvas-native.md,
+# "Keeping up with Claude Code").
+#
+# Weekly, and on demand: compares the latest @anthropic-ai/claude-code on npm with
+# docs/specs/claude-version.txt. On a new version, scripts/claude-watch.mjs reads the
+# CHANGELOG sections in between, diffs the Agent SDK's sdk.d.ts against
+# docs/specs/sdk.d.ts, and opens ONE issue — "Claude Code <version>: what's new for
+# Ember" — with the changelog, the protocol changes and a checklist of what Ember
+# handles. It changes no code and pushes nothing; updating the stored version and types
+# is a reviewed PR. Actions are pinned to commit SHAs.
+name: Claude Code watch
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: claude-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Compare with the latest Claude Code and report
+        run: node scripts/claude-watch.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
