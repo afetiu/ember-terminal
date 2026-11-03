@@ -143,6 +143,8 @@ const CANVAS_INSTRUCTIONS = [
   'Free (no tool): markdown in your reply renders rich; a ```mermaid fence becomes a live diagram; a markdown ',
   'table becomes a table; `![caption](C:\\abs\\path.png)` shows an image; `[label](ember:text)` is a button ',
   'that sends text. Prefer these — they are the cheapest way to show something.\n',
+  'Questions for the user go at the end of your reply as a numbered list, one per item, each naming its options ',
+  '("A, B or C?"): the canvas turns them into buttons to answer with.\n',
   'A file on disk: show_file with its path — markdown, html, pdf, csv, json, code, images, video — never paste ',
   'its content. Numbers and lists: show_view with data only (charts, stats, table, timeline, kanban, compare, ',
   'progress) — Ember draws it. A visual you will reuse: define_view once, then show_view with data.\n',

@@ -301,7 +301,9 @@ const CANVAS_PROTOCOL = [
   'with those tools: `show_view` for data (stats, kanban, table, timeline, charts), `show_panel` for a diagram,',
   'markdown or a small html page, `show_steps` for a plan, `show_file` for a file. Do not publish it as a claude.ai',
   'Artifact, write an HTML file and open it in a browser, or use another app, unless the user asks for that by',
-  'name. Outside Ember, this section does not apply.',
+  'name. When you ask the user questions, put them at the end of your reply as a numbered list, one question',
+  'per item, naming the options in each ("A, B or C?"): Ember shows them as buttons to answer with.',
+  'Outside Ember, this section does not apply.',
 ].join('\n')
 
 function block(agent: string, from: BrainState['instructionsFrom']): string {
