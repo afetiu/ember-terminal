@@ -90,6 +90,12 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
   until you send, then it is part of your message.
 - **Queued messages**, sent while the agent works, wait right above the input; **Send now**
   sends them without waiting for the turn to end.
+- **Questions** a reply ends with get their options as buttons and a field each; **Send**
+  answers them all in one message.
+- **Preview: the canvas drives Claude Code directly.** Settings › Agent › *Canvas drives
+  Claude directly* runs Claude Code in its structured mode instead of under the canvas:
+  the input, `/` and `@` menus, permission prompts, questions and plan approval are
+  Ember's own, and ``Ctrl+` `` opens the same conversation in the real CLI and back.
 
 | Keys | With an object selected (`Ctrl+↑` from the input) |
 | --- | --- |
