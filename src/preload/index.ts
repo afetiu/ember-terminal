@@ -25,7 +25,9 @@ import type {
   CanvasMedia,
   CanvasAnnotate,
   CanvasAnnotateResult,
-  CanvasSteps, EmberCost } from '../shared/types.js'
+  CanvasSteps, EmberCost,
+  ClaudeEvent,
+  ClaudeStartResult } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -138,6 +140,12 @@ const bridge: EmberBridge = {
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
+    start: (tabId, opts) => ipcRenderer.invoke('ember:claude:start', tabId, opts) as Promise<ClaudeStartResult>,
+    send: (tabId, text, images) => ipcRenderer.send('ember:claude:send', tabId, text, images),
+    interrupt: (tabId) => ipcRenderer.invoke('ember:claude:interrupt', tabId) as Promise<{ ok: boolean; error?: string }>,
+    answer: (tabId, requestId, response) => ipcRenderer.send('ember:claude:answer', tabId, requestId, response),
+    stop: (tabId) => ipcRenderer.send('ember:claude:stop', tabId),
+    onEvent: (cb) => on<ClaudeEvent>('ember:claude:event', cb),
   },
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),

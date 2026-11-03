@@ -364,6 +364,38 @@ export class Feed {
     this.ctx.grew()
   }
 
+  private liveEl: HTMLElement | null = null
+
+  /**
+   * The reply as it is being written, for a session the canvas drives itself (native mode):
+   * the words so far, at the end of the turn, until the finished block arrives and takes
+   * its place. Not a `.loom-say` of the turn — the trail and the stage count those — and
+   * '' takes it away.
+   */
+  live(text: string): void {
+    if (!text.trim()) {
+      this.liveEl?.remove()
+      this.liveEl = null
+      return
+    }
+    if (!this.liveEl || this.liveEl.parentElement !== this.turn) {
+      this.liveEl?.remove()
+      this.liveEl = el('div', 'loom-writing', '<div class="loom-say is-current"></div>')
+      // Above the line that says what is happening now, where the reply will land.
+      const activity = this.turn.querySelector(':scope > .loom-activity')
+      this.turn.insertBefore(this.liveEl, activity)
+    }
+    this.liveEl.firstElementChild!.innerHTML = renderMarkdown(text).html
+  }
+
+  /** One plain line in the turn from Ember itself: how a turn ended, why the session stopped. */
+  notice(text: string, error = false): void {
+    const n = el('div', `loom-notice${error ? ' is-error' : ''}`, escapeHtml(text))
+    const activity = this.turn.querySelector(':scope > .loom-activity')
+    this.turn.insertBefore(n, activity)
+    this.ctx.grew()
+  }
+
   /** Where a pushed piece of `tool` should go, or the end of the current turn. */
   slotFor(tool: string): HTMLElement {
     for (let i = this.anchors.length - 1; i >= 0; i--) {

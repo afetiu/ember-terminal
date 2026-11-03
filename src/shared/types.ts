@@ -268,6 +268,47 @@ export interface ClaudeStatus {
   at: number
 }
 
+/**
+ * A Claude tab the canvas drives directly (Settings › Agent › "Canvas drives Claude
+ * directly"): Claude Code in its structured stdio mode, hosted by main, one process per
+ * tab. See docs/specs/canvas-native.md.
+ */
+export interface ClaudeStartOptions {
+  /** The tab's folder. Defaults to the shell profile's. */
+  cwd?: string
+  /** Pick up this session instead of starting a new one. */
+  resume?: string
+}
+
+export interface ClaudeStartResult {
+  ok: boolean
+  /** The session's id, known before Claude Code says it (`--session-id`). */
+  sessionId?: string
+  pid?: number
+  error?: string
+}
+
+/** A picture to send with a message, already read and base64'd. */
+export interface ClaudeImage {
+  mediaType: string
+  data: string
+}
+
+/** What a tab's Claude Code process said, as main passes it on. */
+export type ClaudeEvent =
+  /** `initialize` answered: Claude Code is up and taking messages. */
+  | { tabId: string; kind: 'ready'; info: Record<string, unknown> }
+  /** One stdout message that is not part of a control exchange: assistant, user, system, stream_event, result… */
+  | { tabId: string; kind: 'message'; msg: Record<string, unknown> }
+  /** Claude Code asks before a tool runs (`can_use_tool`). Must be answered. */
+  | { tabId: string; kind: 'ask'; requestId: string; request: Record<string, unknown> }
+  /** It withdrew a question it asked (after an interrupt, say). */
+  | { tabId: string; kind: 'cancel'; requestId: string }
+  | { tabId: string; kind: 'stderr'; text: string }
+  /** Something went wrong on Ember's side: the process would not start, a request timed out. */
+  | { tabId: string; kind: 'error'; text: string }
+  | { tabId: string; kind: 'exit'; code: number | null; signal: string | null }
+
 export interface ClaudeConfig {
   /** Poll the plan's rate limits and show them beside CPU and memory. */
   usageLimits: boolean
@@ -376,6 +417,12 @@ export interface EmberConfig {
   agent: AgentConfig
   /** How an agent tab shows by default: Ember's canvas, or the agent's own screen. Remembered. */
   agentView?: 'canvas' | 'cli'
+  /**
+   * `native`: a Claude tab on the canvas runs Claude Code in its structured mode and the
+   * canvas draws it from data, instead of reading its screen. Off by default while it is
+   * a preview (docs/specs/canvas-native.md).
+   */
+  canvas?: { native?: boolean }
   /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
   brain?: { sync: boolean }
   /**
@@ -775,6 +822,17 @@ export interface EmberBridge {
   /** What the Claude session in a tab reports through its status line. */
   claude: {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
+    /** Native canvas: start this tab's Claude Code process (structured mode). */
+    start(tabId: string, opts: ClaudeStartOptions): Promise<ClaudeStartResult>
+    /** One message from the person, with pictures if any. Held until Claude Code is up. */
+    send(tabId: string, text: string, images?: ClaudeImage[]): void
+    /** Stop the turn in progress. Resolves with Claude Code's answer, or an error. */
+    interrupt(tabId: string): Promise<{ ok: boolean; error?: string }>
+    /** Answer a question Claude Code asked (an `ask` event), by its request id. */
+    answer(tabId: string, requestId: string, response: Record<string, unknown>): void
+    /** End the process: stdin closed, then killed if it lingers. */
+    stop(tabId: string): void
+    onEvent(cb: (e: ClaudeEvent) => void): () => void
   }
   window: {
     minimize(): void

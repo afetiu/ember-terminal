@@ -887,7 +887,17 @@ export class Session implements ActivitySource {
     return lines.join('\n').replace(/\n+$/, '')
   }
 
+  /**
+   * Where the keyboard goes instead of this terminal, when something else is the tab's
+   * input: a native canvas tab (canvas.native) types into Ember's own box, never the shell.
+   */
+  focusInstead: (() => void) | null = null
+
   focus(): void {
+    if (this.focusInstead) {
+      this.focusInstead()
+      return
+    }
     this.term.focus()
     this.cursor?.setFocused(true)
     this.cursor?.wake()

@@ -18,6 +18,7 @@ import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resume
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
+import { registerClaudeHost } from './claudeHost.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import type { PtyHost } from './pty/PtyHost.js'
@@ -127,6 +128,8 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   // open tab by itself.
   const notesBin = installNotesCli()
   installSkills()
+  // Native canvas: Claude Code in structured mode, one process per tab (canvas.native).
+  registerClaudeHost([notesBin])
   const unwatchNotes = watchNotes((id) => broadcast('ember:notes:changed', { id }))
   ipcMain.on('ember:cmd:reply', (_e, reqId: string, r: { result: string; error?: string }) => resolveCmd(reqId, r))
   ipcMain.handle('ember:todo:read', () => readTodo())

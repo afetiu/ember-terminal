@@ -323,6 +323,8 @@ export class App {
       newTab: () => this.newGroup().then((g) => g.id),
       /** A Loom tab, and what its canvas believes. */
       newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
+      /** A Claude tab, as + opens one: native when canvas.native is on (scripts/probe-native.mjs). */
+      newClaude: (cwd?: string) => this.newGroup(undefined, cwd, { agent: 'claude' }).then((g) => g.id),
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
@@ -849,7 +851,10 @@ export class App {
 
     const session = warm?.session ?? this.makeSession(profileId)
     if (cwd) session.initialCwd = cwd
-    if (opts?.agent) session.startAgent = opts.agent
+    // Native canvas (canvas.native): a Claude tab's Claude Code is started by the canvas,
+    // in structured mode, not by the shell. The shell stays a plain shell underneath.
+    const native = opts?.agent === 'claude' && opts?.loom !== false && this.config.canvas?.native === true
+    if (opts?.agent && !native) session.startAgent = opts.agent
     session.tabId = group.id
     if (!warm) group.add(session)
     // Every tab is a Loom tab: the shell, with a canvas over its output space for when an
@@ -867,7 +872,7 @@ export class App {
           this.config = { ...this.config, agentView: view }
           window.ember.saveConfig(this.config)
         },
-      })
+      }, native ? { ...(cwd ? { cwd } : {}) } : null)
     }
     lap('session')
     sound.play('open')

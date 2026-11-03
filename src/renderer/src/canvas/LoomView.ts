@@ -4,6 +4,7 @@ import { Feed, type Todo } from './Feed'
 import { escapeHtml, renderMarkdown } from './markdown'
 import { docTone } from '../core/docTone'
 import { agentSpec } from '@shared/agents'
+import { NativeClaude, type NativeState } from './NativeClaude'
 
 /**
  * A Loom tab: a real shell whose output space is a canvas.
@@ -227,13 +228,22 @@ export class LoomView {
   private stepsTitle = ''
   private status: ClaudeStatus | null = null
   private readonly unsubs: Array<() => void> = []
+  /** The tab's Claude Code in structured mode, when the canvas drives it (native mode). */
+  private native: NativeClaude | null = null
+  private nativeState: NativeState | null = null
 
   constructor(
     private readonly tabId: string,
     private readonly panes: HTMLElement,
     private readonly session: Session,
     config: EmberConfig,
-    private readonly hooks: LoomHooks
+    private readonly hooks: LoomHooks,
+    /**
+     * Native mode (`canvas.native`): Claude Code runs in its structured mode, driven from
+     * here, and the canvas is drawn from what it says rather than from its screen. The
+     * shell under the canvas stays a plain shell. Null for every other tab.
+     */
+    native: { cwd?: string } | null = null
   ) {
     this.el = document.createElement('div')
     this.el.className = 'loom'
@@ -245,7 +255,7 @@ export class LoomView {
     this.scroller = document.createElement('div')
     this.scroller.className = 'loom-scroll'
     this.feed = new Feed({
-      send: (text, submit) => this.hooks.send(text, submit),
+      send: (text, submit) => this.type(text, submit),
       localImage: async (path) => {
         const r = await window.ember.canvas.media(path)
         return 'src' in r ? r.src : null
@@ -314,6 +324,24 @@ export class LoomView {
     session.el.classList.add('is-loom')
 
     this.wire()
+    if (native) {
+      this.frame.classList.add('is-native')
+      this.native = new NativeClaude(tabId, native.cwd, {
+        feed: this.feed,
+        frame: this.frame,
+        above: this.above,
+        changed: (s) => this.nativeChanged(s),
+        relayout: () => this.schedule(),
+        grew: () => this.grew(),
+        toast: (t) => this.hooks.toast(t),
+      })
+      const input = this.native.input
+      session.focusInstead = () => input.focus()
+      if (document.activeElement === session.term.textarea) input.focus()
+      const nf = () => this.frame.classList.toggle('is-focus', document.activeElement === this.native?.input)
+      this.native.input.addEventListener('focus', nf)
+      this.native.input.addEventListener('blur', nf)
+    }
     this.renderSign()
     this.schedule()
     void window.ember.panel.origin().then((o) => (this.origin = o))
@@ -341,7 +369,15 @@ export class LoomView {
     sub(term.onCursorMove(() => this.schedule()))
     const ta = this.session.term.textarea
     if (ta) {
-      const focus = () => this.frame.classList.toggle('is-focus', document.activeElement === ta)
+      const focus = () => {
+        // Native mode: the shell under the canvas is not where the person types. Whatever
+        // put the keyboard there (switching tabs, a click) puts it in Ember's input instead.
+        if (this.native && document.activeElement === ta) {
+          this.native.input.focus()
+          return
+        }
+        this.frame.classList.toggle('is-focus', document.activeElement === ta)
+      }
       ta.addEventListener('focus', focus)
       ta.addEventListener('blur', focus)
       this.unsubs.push(() => {
@@ -367,6 +403,10 @@ export class LoomView {
     this.bar.addEventListener('click', (e) => {
       // The mode chip cycles the permission mode, as Shift+Tab does.
       if ((e.target as HTMLElement).closest('.loom-bar-mode')) {
+        if (this.native) {
+          this.hooks.toast('Switching the permission mode comes in a later phase')
+          return
+        }
         window.ember.write(this.session.id, '\x1b[Z')
         this.session.focus()
       }
@@ -378,6 +418,8 @@ export class LoomView {
     this.unsubs.push(
       window.ember.canvas.onFeed((f: CanvasFeed) => {
         if (f.tabId !== this.tabId) return
+        // Native mode is fed by the process itself; the transcript would say it all twice.
+        if (this.native) return
         if (f.kind === 'switch') this.feed.switchSession(f.first)
         else this.feed.add(f.lines)
         this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
@@ -746,6 +788,10 @@ export class LoomView {
 
   private layout(): void {
     if (this.disposed) return
+    if (this.native) {
+      this.layoutNative()
+      return
+    }
     const term = this.session.term
     const buf = term.buffer.active
     const pane = this.session.el
@@ -933,6 +979,111 @@ export class LoomView {
       this.renderBar(foot)
     }
     if (mode === 'claude') this.readLive(rows, dock)
+  }
+
+  /**
+   * Native mode's layout: no screen to read. The canvas takes the tab down to Ember's own
+   * input, framed exactly where the TUI's prompt sat, with the bar under it. The shell
+   * stays alive underneath, out of sight.
+   */
+  private layoutNative(): void {
+    const pane = this.session.el
+    const paneH = pane.clientHeight
+    if (!paneH || !this.native) return
+    pane.style.visibility = 'hidden'
+    pane.style.transform = ''
+    pane.style.clipPath = ''
+    pane.style.maskImage = ''
+    if (this.mode !== 'claude') {
+      this.mode = 'claude'
+      this.claudeSeen = true
+      this.el.classList.add('is-on')
+      this.rawPill.classList.remove('is-on')
+      this.panes.dataset['loom'] = 'claude'
+      this.restage()
+      this.renderSign()
+    }
+    const left = pane.offsetLeft
+    const width = pane.offsetWidth
+    const frameH = Math.max(this.native.height, 20) + FRAME_PAD * 2
+    const frameTop = pane.offsetTop + paneH - BAR_H - 6 - frameH
+    this.frame.classList.add('is-on')
+    this.frame.classList.remove('is-empty')
+    this.above.classList.add('is-on')
+    this.bar.classList.add('is-on')
+    Object.assign(this.frame.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px`, height: `${frameH.toFixed(1)}px` })
+    Object.assign(this.above.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px` })
+    Object.assign(this.bar.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${(pane.offsetTop + paneH - BAR_H - 2).toFixed(1)}px`, height: `${BAR_H}px` })
+    const h = `${Math.max(0, frameTop - pane.offsetTop - 8).toFixed(1)}px`
+    if (this.el.style.height !== h) {
+      this.el.style.height = h
+      for (const p of this.pinned) if (!p.snap) this.settlePin(p)
+      this.layoutSnaps(false)
+      if (this.pinned.size) this.reflow()
+    }
+    this.renderBarNative()
+  }
+
+  /** The tab's Claude Code changed state: the working line, the bar, the hint. */
+  private nativeChanged(s: NativeState): void {
+    this.nativeState = s
+    const was = this.working
+    this.working = s.phase === 'working'
+    this.spin = { glyph: '✻', verb: s.phase === 'starting' ? 'Starting…' : 'Working…', detail: s.detail }
+    const hint = this.hint.querySelector('.loom-hint-text')
+    if (hint) {
+      hint.textContent =
+        s.phase === 'starting'
+          ? 'Starting Claude Code…'
+          : s.phase === 'exited'
+            ? 'Claude Code stopped. Send a message to pick the session up again.'
+            : 'Claude Code is here. Ask below — what it says and shows appears on this canvas.'
+    }
+    this.renderNow()
+    if (was !== this.working) {
+      this.restage()
+      this.trail.classList.toggle('is-on', this.working && this.trail.childElementCount > 0)
+      if (!this.working) this.clearTrail()
+    }
+    this.barKey = ''
+    if (this.bar.classList.contains('is-on')) this.renderBarNative()
+  }
+
+  /** Native mode's bar: the permission mode, the model, and what the session is doing. */
+  private renderBarNative(): void {
+    const s = this.nativeState
+    const key = `native|${s?.phase}|${s?.model}|${s?.permissionMode}`
+    if (key === this.barKey) return
+    this.barKey = key
+    const modes: Record<string, [string, string]> = {
+      bypassPermissions: ['bypass', 'is-bypass'],
+      acceptEdits: ['accept edits', 'is-edits'],
+      plan: ['plan', 'is-plan'],
+      auto: ['auto', 'is-auto'],
+      dontAsk: ["don't ask", 'is-auto'],
+    }
+    const [label, cls] = modes[s?.permissionMode ?? ''] ?? ['default', 'is-default']
+    const phase =
+      s?.phase === 'starting' ? 'starting…' : s?.phase === 'working' ? 'working · esc to interrupt' : s?.phase === 'asking' ? 'waiting for you' : s?.phase === 'exited' ? 'stopped' : 'ready'
+    this.bar.innerHTML =
+      `<button type="button" class="loom-bar-mode ${cls}" title="Permission mode">${escapeHtml(label)}</button>` +
+      `<span class="loom-bar-model">${escapeHtml(s?.model || 'Claude Code')}</span>` +
+      `<span class="loom-bar-rest">${escapeHtml(phase)}</span>`
+  }
+
+  /** Words for the session, as the person: typed into the CLI, or sent straight to it in native mode. */
+  private type(text: string, submit: boolean): void {
+    if (!this.native) {
+      this.hooks.send(text, submit)
+      return
+    }
+    if (submit) this.native.send(text)
+    else {
+      const input = this.native.input
+      input.value = input.value ? `${input.value} ${text}` : text
+      input.focus()
+      input.setSelectionRange(input.value.length, input.value.length)
+    }
   }
 
   /**
@@ -1165,6 +1316,10 @@ export class LoomView {
 
   /** Ctrl+`: the real TUI, whole, or back to the canvas. */
   setRaw(on: boolean): void {
+    if (this.native) {
+      if (on) this.hooks.toast('CLI view comes in a later phase')
+      return
+    }
     this.raw = on
     this.hooks.saveView?.(on ? 'cli' : 'canvas')
     this.schedule()
@@ -1201,6 +1356,12 @@ export class LoomView {
       return
     }
     if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
+      if (this.native) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.setRaw(true)
+        return
+      }
       if (this.mode === 'claude' || this.mode === 'agent' || this.mode === 'raw') {
         e.preventDefault()
         e.stopPropagation()
@@ -1231,7 +1392,7 @@ export class LoomView {
     if (inLoomInput && e.key !== 'Escape') return
     if (e.key === 'Escape') {
       // Esc is Claude Code's interrupt. Only take it when something of ours is open.
-      if (this.closeOverlays()) {
+      if (this.closeOverlays() || this.native?.escape()) {
         e.preventDefault()
         e.stopPropagation()
       }
@@ -1307,7 +1468,7 @@ export class LoomView {
     const act = t.closest<HTMLElement>('.loom-act')
     if (act) {
       e.preventDefault()
-      this.hooks.send(act.dataset['send'] ?? act.textContent ?? '', act.dataset['submit'] !== '0')
+      this.type(act.dataset['send'] ?? act.textContent ?? '', act.dataset['submit'] !== '0')
       act.classList.add('is-pressed')
       return
     }
@@ -1453,7 +1614,7 @@ export class LoomView {
       const question = /\?\s*$/.test(q) || /^(what|why|how|when|where|who|which|is|are|was|were|can|could|does|do|did|should|would|will|explain|tell me|describe|summari[sz]e|compare)/i.test(q)
       if (obj.title && !question) mode = 'change'
       if (mode === 'change') {
-        this.hooks.send(`Change ${about}${quoted}: ${q}. It is on my screen as "${obj.title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`, true)
+        this.type(`Change ${about}${quoted}: ${q}. It is on my screen as "${obj.title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`, true)
         this.closeMenu()
         return
       }
@@ -1536,7 +1697,7 @@ export class LoomView {
         const context = change
           ? `Change ${about}${quoted}: ${q}. It is on my screen as "${title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`
           : `About ${about}${quoted} — ${q}`
-        this.hooks.send(context, true)
+        this.type(context, true)
         this.closeAsk()
         this.toBottom(true)
       }
@@ -1577,6 +1738,8 @@ export class LoomView {
   }
 
   private grew(): void {
+    // Native mode has no transcript feed to clear the hint; the first message does.
+    if (this.native) this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
     this.restage()
     if (this.pinned.size) this.reflow()
     // The stage starts at the top of the turn, your words first. It follows what is
@@ -3580,7 +3743,7 @@ export class LoomView {
           void this.todoOp('toggle', li.dataset['t'] ?? '')
         })
         li.querySelector('.go')?.addEventListener('click', () => {
-          this.hooks.send(`Do this from my todo list: ${li.dataset['t'] ?? ''}`, true)
+          this.type(`Do this from my todo list: ${li.dataset['t'] ?? ''}`, true)
           this.closeDrawer()
         })
         // Taken out, a todo brings the live todo list onto the canvas (tickable there).
@@ -4197,8 +4360,10 @@ export class LoomView {
     this.feed.add(lines as never)
   }
 
-  debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number; rows: string[]; sessionId: string } {
+  debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number; rows: string[]; sessionId: string; native: ReturnType<NativeClaude['debug']> | null; text: string } {
     return {
+      native: this.native?.debug() ?? null,
+      text: this.feed.el.innerText,
       rows: this.rowsText(),
       sessionId: this.session.id,
       mode: this.mode,
@@ -4221,7 +4386,11 @@ export class LoomView {
     if (this.frameReq) cancelAnimationFrame(this.frameReq)
     for (const u of this.unsubs) u()
     window.ember.canvas.unwatch(this.tabId)
+    this.native?.dispose()
+    this.native = null
+    this.session.focusInstead = null
     const pane = this.session.el
+    pane.style.visibility = ''
     pane.style.transform = ''
     pane.style.clipPath = ''
     pane.style.maskImage = ''

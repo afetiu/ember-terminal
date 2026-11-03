@@ -5730,3 +5730,138 @@ body.is-light .loom-zoom {
   color: var(--l-strong);
   border-color: color-mix(in srgb, var(--c-accent) 50%, var(--l-line-strong));
 }
+
+/* ---------------------------------------------------------------- native mode (canvas.native) */
+
+/* The input is Ember's own: a textarea in the same frame, with the TUI's caret drawn in
+   front of it, so the box reads exactly as it did when it held Claude Code's prompt. */
+.loom-frame-box.is-native {
+  pointer-events: auto;
+  cursor: text;
+}
+.loom-frame-box.is-native::before {
+  content: '❯';
+  left: 14px;
+  top: 10px;
+  height: 21px;
+  opacity: 0.75;
+  color: var(--c-fg);
+  font: 14px var(--term-font), 'Cascadia Code', Consolas, monospace;
+}
+.loom-frame-box.is-native::after {
+  bottom: 12px;
+}
+.loom-native-input {
+  position: absolute;
+  left: 32px;
+  right: 70px;
+  top: 10px;
+  height: 21px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow-y: auto;
+  background: transparent;
+  color: var(--c-fg);
+  caret-color: var(--c-accent);
+  font: 14px / 21px var(--term-font), 'Cascadia Code', Consolas, monospace;
+  scrollbar-width: thin;
+}
+.loom-native-input::placeholder {
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+}
+
+/* The reply while it is being written: the same type as the finished one. */
+.loom-writing > .loom-say {
+  display: block;
+}
+
+/* How a turn ended, from Ember: plain, small, red only when it is an error. */
+.loom-notice {
+  margin: 8px 0 2px;
+  font-size: 0.86em;
+  color: var(--l-faint);
+}
+.loom-notice.is-error {
+  color: var(--l-err, #e2676f);
+}
+
+/* Claude asks before a tool runs: a card over the input, Allow or Deny. */
+.loom-asks {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.loom-asks.has-items {
+  display: flex;
+}
+.loom-ask-card {
+  padding: 12px 14px 10px;
+  border-radius: 12px;
+  background: var(--c-bg);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 34%, transparent);
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-ask-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-fg);
+}
+.loom-ask-card-head b {
+  font-weight: 600;
+}
+.loom-ask-card-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  animation: loom-queue-wait 2s ease-in-out infinite;
+}
+.loom-ask-card-what {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+  color: var(--c-fg);
+  font: 0.9em / 1.5 var(--l-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.loom-ask-card-why {
+  margin-top: 6px;
+  font-size: 0.85em;
+  color: var(--l-faint);
+}
+.loom-ask-card-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.loom-ask-card-acts button {
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 8px;
+  font: 600 0.92em var(--l-prose);
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+  cursor: pointer;
+}
+.loom-ask-card-acts button.is-primary {
+  color: var(--c-bg);
+  background: var(--l-accent);
+}
+.loom-ask-card-acts button:hover {
+  filter: brightness(1.12);
+}
+.loom-ask-card-keys {
+  margin-left: auto;
+  font-size: 0.8em;
+  color: var(--l-faint);
+}
