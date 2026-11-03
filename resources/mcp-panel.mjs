@@ -163,8 +163,10 @@ const CANVAS_INSTRUCTIONS = [
   'Computer use — the user\'s real screen: to show them anything there, look (the screen as text) then point at it ',
   'on their screen with a short note; walk through steps with point step/steps. Never take a screenshot to explain ',
   'something to the user and never draw the screen on the canvas — they are looking at the real thing. Screenshots ',
-  'are only for when you yourself must see pixels. Act (click, type) only when they asked; one act call per sequence, ' +
-  'by control number, and decide the next step from the numbered screen it returns — no extra look in between. ',
+  'are only for when you yourself must see pixels. Act (click, type) only when they asked. Plan the whole task as ONE ' +
+  'act call — steps by control name, with wait after anything that opens or loads and expect where it must have ' +
+  'worked — and come back only if it fails: the failure says which step, why, and the screen. ' +
+  'A task they will want again: save it as a recipe and run it next time. ',
   'Never described afterwards. open_url + annotate to point at a live page; show_media for images and video.\n',
   "The user's notes and todo list: the notes and todo tools (show them on the canvas, add, tick). When a turn leaves something only they can do, add a todo once; when you finish something on their list, tick it.",
 ].join('')
@@ -458,12 +460,46 @@ const CANVAS_TOOLS = [
   {
     name: 'act',
     description:
-      'Computer use: click and type on the desktop, with the pointer visible and STOP on screen. A script of desk ' +
-      'commands, one per line or ";"-separated: focus "<window>", press #N (or press "<window>" "<name>"), click #N ' +
-      '(or click X Y), settext #N "<text>", type "<text>", key ctrl+s, scroll -3, run <program>, wait "<window>". ' +
-      'Do the whole sequence in ONE call. The reply ends with what is on screen afterwards, numbered: chain the next ' +
-      'act from it without calling look again. Prefer numbers, then names, then coordinates.',
-    inputSchema: { type: 'object', properties: { script: { type: 'string' } }, required: ['script'] },
+      'Computer use: click and type on the desktop, with the pointer visible and STOP on screen. Ember steps aside ' +
+      'while you work in another app. Write the whole task as ONE plan, one step per line or ";"-separated; it runs ' +
+      'on the machine without coming back to you, and stops at the first step that fails.\n' +
+      'Do: focus "<window>"; press "<name>" or press [Button] "<name>"; click [ListItem] "<name>"; ' +
+      'settext [Edit] "<name>" "<text>"; type "<text>"; key ctrl+s; scroll -3; run <program>. ' +
+      'Add in "<window>" to look in a window other than the one in front. #N numbers from look also work, but ' +
+      'names survive a changed screen.\n' +
+      'Check: wait <condition> [5s] after anything that opens, loads or saves (polls, no fixed sleeps); ' +
+      'expect <condition> where the plan must have worked; if <condition> [2s] then <step> [else <step>]. ' +
+      'Conditions: "<window title>" (a window), title "<text>" (the window in front), [Type] "<name>", ' +
+      'gone "<name>", value [Edit] "<name>" = "<text>"; not before any of them.\n' +
+      'Example: focus "Notepad"; key ctrl+s; wait "Save as"; settext [Edit] "File name:" "C:\\\\tmp\\\\a.txt"; ' +
+      'press [Button] "Save"; wait not window "Save as"; expect title "a.txt"\n' +
+      'The reply ends with the screen afterwards, numbered. On failure: the step, why, and the screen; repair ' +
+      'from there. save: ["name", values…] keeps a plan that worked as a recipe; the values given become $1 $2… ' +
+      'so recipe run can pass others.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        script: { type: 'string' },
+        save: { type: 'array', items: { type: 'string' }, description: 'Keep it as a recipe once it works: ["name", value1, …].' },
+      },
+      required: ['script'],
+    },
+  },
+  {
+    name: 'recipe',
+    description:
+      'Computer use: plans that worked before, kept by name (saved with act save). list them, show one, or run one ' +
+      'with arguments for its $1 $2… It runs on the machine and comes back only when done or failed. Check list ' +
+      'before planning a task you may have done before.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        op: { type: 'string', enum: ['list', 'show', 'run'] },
+        name: { type: 'string' },
+        args: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['op'],
+    },
   },
   {
     name: 'edit_panel',
@@ -762,9 +798,19 @@ async function call(name, args) {
       return `Pointing at ${r.found || `${r.x},${r.y}`}${args.say ? ' with the note shown' : ''}.`
     }
     case 'act': {
-      const r = await post('/desk/act', { script: String(args.script ?? '') })
-      if (!r.ok) throw new Error(r.error || 'the actions did not complete')
-      return `Done in ${r.ms}ms.${r.output ? `\n${String(r.output).slice(0, 2000)}` : ''}`
+      const save = Array.isArray(args.save) ? args.save.map(String) : args.save ? [String(args.save)] : undefined
+      const r = await post('/desk/act', { script: String(args.script ?? ''), ...(save?.length ? { save } : {}) })
+      if (!r.ok) throw new Error(String(r.error || 'the actions did not complete').slice(0, 6000))
+      return `Done in ${r.ms}ms.${r.output ? `\n${String(r.output).slice(0, 6000)}` : ''}`
+    }
+    case 'recipe': {
+      const r = await post('/desk/recipe', {
+        op: String(args.op ?? 'list'),
+        ...(args.name ? { name: String(args.name) } : {}),
+        ...(Array.isArray(args.args) ? { args: args.args.map(String) } : {}),
+      })
+      if (!r.ok) throw new Error(String(r.error || 'the recipe did not complete').slice(0, 6000))
+      return `${args.op === 'run' ? `Done in ${r.ms}ms.\n` : ''}${String(r.output ?? '').slice(0, 6000)}`
     }
     case 'edit_panel': {
       if (!CANVAS) throw new Error('edit_panel is only available in an Ember canvas tab')
@@ -861,7 +907,9 @@ async function handle(msg) {
         const text = await call(params?.name, params?.arguments ?? {})
         return reply(id, { content: [{ type: 'text', text }] })
       } catch (err) {
-        return fail(id, `Panel unavailable: ${err.message}`)
+        // Computer use reports its own failures (a plan's failed step, why, the screen): as is.
+        const desk = ['act', 'recipe', 'look', 'point'].includes(params?.name)
+        return fail(id, desk ? err.message : `Panel unavailable: ${err.message}`)
       }
     default:
       if (id !== undefined && id !== null) {

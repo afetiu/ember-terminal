@@ -36,6 +36,11 @@ HELP = """desk - Claude drives the desktop (screenshots, mouse, keys, UI Automat
 
   desk do "focus X; press #4; type hi"                   many steps in ONE call (';' or one per line);
                                                           ends with what is on screen now, numbered
+      in a do, also:  wait "Save As" [5s] | wait [Button] "Save" | wait gone "Saving" | wait title "x"
+                      expect <condition> [2s]   (not met: the plan stops, says why, shows the screen)
+                      if <condition> then <step> [else <step>]
+                      press [Button] "Save" [in "Save As"] | settext [Edit] "File name:" "a.txt" | click "OK"
+  desk recipe list | show NAME | run NAME [ARGS] | save NAME   replay a plan that worked ($1.. = ARGS)
   desk shot [--window T|--full] [--scale 0.5] [--png]     screenshot -> image path (default: foreground window)
   desk windows                                            visible top-level windows (* = foreground)
   desk focus TITLE                                        bring a window to front (substring or ^exact$)
@@ -78,13 +83,54 @@ def _check_locked():
     if not d: raise SystemExit("LOCKED: the Windows session is locked (or a secure desktop is up). Unlock the machine, then try again.")
     _u32.CloseDesktop(d)
 
+EMBER_PID = int(os.environ.get("EMBER_PID", "0") or 0)
+_k32 = ctypes.windll.kernel32
+
+def _pid_of(h):
+    pid = wt.DWORD(0); _u32.GetWindowThreadProcessId(ctypes.c_void_p(h), ctypes.byref(pid)); return pid.value
+
+def _ember_chrome(h):
+    """Ember's own see-through windows (the pointer overlay and the step-aside card it
+    carries): never activatable, owned by Ember. Left out of every list, so the session
+    never reads, finds or targets them."""
+    if not EMBER_PID or _pid_of(h) != EMBER_PID: return False
+    return bool(_u32.GetWindowLongW(ctypes.c_void_p(h), -20) & 0x08000000)   # WS_EX_NOACTIVATE
+
+_exe_cache = {}
+def _exe(h):
+    pid = _pid_of(h)
+    if pid in _exe_cache: return _exe_cache[pid]
+    name = ""
+    hp = _k32.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+    if hp:
+        buf = ctypes.create_unicode_buffer(520); n = wt.DWORD(520)
+        if _k32.QueryFullProcessImageNameW(hp, 0, buf, ctypes.byref(n)): name = os.path.basename(buf.value)
+        _k32.CloseHandle(hp)
+    _exe_cache[pid] = name
+    return name
+
+def _app_of(h):
+    """Which app a window belongs to, in words: 'Notepad' for 'Untitled - Notepad', and a
+    dialog's owner for the dialog ('Save As' in Notepad is Notepad's)."""
+    if not h: return {}
+    try:
+        owner = _u32.GetWindow(ctypes.c_void_p(h), 4)   # GW_OWNER
+        top = owner or h
+        title = _title(top)
+        app = title.rsplit(" - ", 1)[-1] if " - " in title else (title or os.path.splitext(_exe(top))[0])
+        return {"app": app[:40], "exe": _exe(top), "win": _title(h)[:80], "own": bool(EMBER_PID) and _pid_of(top) == EMBER_PID}
+    except Exception:
+        return {}
+
 _reports = None
-def _report(action, x=None, y=None, label=""):
-    """Tell Ember what is happening: drawn cursor + sidebar indicator. Fire and forget, but
-    in order: one worker drains a queue, so the strip's last label is the last action."""
+def _report(action, x=None, y=None, label="", h=None):
+    """Tell Ember what is happening: drawn cursor + sidebar indicator + which app it is in.
+    Fire and forget, but in order: one worker drains a queue, so the strip's last label is
+    the last action. h: the window acted on (default: the one in front)."""
     global _reports
     if not BRIDGE: return
-    body = json.dumps({"action": action, "x": x, "y": y, "label": label[:120], "tab": _current_tab, "at": time.time()}).encode()
+    info = _app_of(h or _u32.GetForegroundWindow())
+    body = json.dumps({"action": action, "x": x, "y": y, "label": label[:120], "tab": _current_tab, "at": time.time(), **info}).encode()
     if _reports is None:
         import queue, urllib.request
         _reports = queue.Queue()
@@ -114,9 +160,9 @@ def _glide_ms(x, y):
     if dist < 2: return 0.0
     return max(140.0, min(480.0, 140.0 + 75.0 * math.log2(1.0 + dist / 60.0)))
 
-def _mark(x, y, action="move", label="", wait=0.0):
+def _mark(x, y, action="move", label="", wait=0.0, h=None):
     ms = _glide_ms(int(x), int(y))
-    _report(action, int(x), int(y), label)
+    _report(action, int(x), int(y), label, h)
     if wait and GLIDE and ms: time.sleep(ms / 1000.0 + 0.02)
 
 _pg_mod = None
@@ -138,7 +184,7 @@ class _UserMouse:
 def _enum_windows():
     out = []
     def cb(h, _):
-        if _u32.IsWindowVisible(h) and not _cloaked(h):
+        if _u32.IsWindowVisible(h) and not _cloaked(h) and not _ember_chrome(h):
             n = _u32.GetWindowTextLengthW(h)
             if n:
                 buf = ctypes.create_unicode_buffer(n + 1); _u32.GetWindowTextW(h, buf, n + 1)
@@ -221,6 +267,7 @@ _LOOKS = {"shot", "windows", "wait", "sleep", "tree", "find", "read", "point", "
 def _is_look(argv):
     if not argv: return True
     if argv[0] == "clip": return len(argv) == 1   # reading the clipboard is a look; setting it is not
+    if argv[0] == "recipe": return argv[1:2] in (["list"], ["show"])   # running one acts
     return argv[0] in _LOOKS
 
 def _check_allowed(argv):
@@ -290,7 +337,7 @@ def cmd_focus(a):
     if _u32.IsIconic(h): _u32.ShowWindow(h, 9)
     _u32.SetForegroundWindow(h)
     if _u32.GetForegroundWindow() != h: _win(a.title).set_focus()
-    l, t, r, b = _rect(h); _report("focus", (l + r) // 2, t + 20, f"focus {_title(h)}")
+    l, t, r, b = _rect(h); _report("focus", (l + r) // 2, t + 20, f"focus {_title(h)}", h)
     print("focused:", _title(h))
 
 def cmd_wait(a):
@@ -312,6 +359,7 @@ def cmd_run(a):
     print("started:", " ".join(cmd))
 
 def cmd_click(a):
+    h = None
     if _is_ref(a.x):
         h, _, cx, cy, name, _ = _ref(a.x)
         if h and _u32.GetForegroundWindow() != h: _u32.SetForegroundWindow(h)
@@ -319,12 +367,12 @@ def cmd_click(a):
     else:
         try: a.x, a.y = int(a.x), int(a.y)
         except (TypeError, ValueError): raise SystemExit("click: X Y, or #N")
-    _mark(a.x, a.y, "move", f"click at {a.x},{a.y}", wait=GLIDE)
+    _mark(a.x, a.y, "move", f"click at {a.x},{a.y}", wait=GLIDE, h=h)
     with _UserMouse() as m:
         pg = m.pg; pg.moveTo(a.x, a.y)
         if a.double: pg.doubleClick(a.x, a.y)
         else: pg.click(a.x, a.y, button="right" if a.right else "left")
-    _mark(a.x, a.y, "click", f"click at {a.x},{a.y}")
+    _mark(a.x, a.y, "click", f"click at {a.x},{a.y}", h=h)
     print(f"clicked {a.x},{a.y}")
 
 def cmd_move(a):
@@ -595,27 +643,28 @@ def cmd_press(a):
             if _u32.IsIconic(h): _u32.ShowWindow(h, 9)
             _u32.SetForegroundWindow(h)
         label = f"press {name or a.title}" + (f" in {_title(h)}" if h else "")
+        a.name = name
     else:
         w, c = _ctrl(a)
         h = _hwnd(a.title)
         if _u32.GetForegroundWindow() != h: w.set_focus()
         label = f"press {c.window_text() or a.name} in {_title(h)}"
     r = c.rectangle(); cx, cy = (r.left+r.right)//2, (r.top+r.bottom)//2
-    _mark(cx, cy, "move", label, wait=GLIDE)
+    _mark(cx, cy, "move", label, wait=GLIDE, h=h)
     try: c.invoke()
     except Exception:
         with _UserMouse(): c.click_input()
-    _mark(cx, cy, "click", label)
-    print("pressed:", c.window_text())
+    _mark(cx, cy, "click", label, h=h)
+    print("pressed:", c.window_text() or a.name or "")
 
 def cmd_settext(a):
     if _is_ref(a.title):
-        h, c, _, _, _, _ = _ref(a.title)
+        h, c, _, _, rname, _ = _ref(a.title)
         a.text = [a.name] + list(a.text or [])
         if h and _u32.GetForegroundWindow() != h: _u32.SetForegroundWindow(h)
         try: c.set_focus()
         except Exception: pass
-        r = c.rectangle(); _mark((r.left+r.right)//2, (r.top+r.bottom)//2, "type", f"fill {c.window_text() or a.title}")
+        r = c.rectangle(); _mark((r.left+r.right)//2, (r.top+r.bottom)//2, "type", f"fill {rname or c.window_text() or a.title}", h=h)
         try: c.set_edit_text(" ".join(a.text))
         except Exception:
             with _UserMouse(): c.click_input()
@@ -719,6 +768,7 @@ def build_parser():
     x = s.add_parser("point"); x.add_argument("title", nargs="?"); x.add_argument("name", nargs="?"); x.add_argument("--xy", nargs=2, type=int)
     x.add_argument("--type"); x.add_argument("--say"); x.set_defaults(f=cmd_point)
     s.add_parser("bench").set_defaults(f=cmd_bench)
+    x = s.add_parser("recipe"); x.add_argument("op", choices=("list", "show", "run", "save")); x.add_argument("name", nargs="*"); x.set_defaults(f=cmd_recipe)
     return p
 
 # Commands that change what is on screen: they drop the cached trees, and after the reply
@@ -776,15 +826,397 @@ def _now():
     except Exception:
         return ""
 
+# ----------------------------------------------------------------------------- plans
+#
+# One `do` call can carry a whole checked sequence, run here without going back to the
+# model after each step: waits that poll UI Automation until something is true, expects
+# that stop the plan with the reason and the screen, if/then/else, and controls targeted
+# by what they are called rather than by a number that changes between reads.
+#
+#   wait "Save As" [5s]                 a window whose title has it (bare text = a window)
+#   wait [Button] "Save" | wait control "Save" | wait gone "Saving" | wait title "report"
+#   wait value [Edit] "File name:" = "report.txt"
+#   expect <condition> [2s]             not met (within half a second, or the time given): stop here
+#   if <condition> [2s] then <step> [else <step>]
+#   press "Save" | press [Button] "Save" [in "Save As"] | click [ListItem] "report.txt"
+#   settext "File name:" "report.txt" | settext [Edit] "File name:" "report.txt" [in "Save As"]
+#
+# Names: exact (any case) wins over starts-with over contains; the window is the one in
+# front unless `in "Title"` says otherwise. Any condition can be negated with `not`.
+
+POLL = 0.06            # seconds between checks while waiting
+WAIT_DEFAULT = 10.0    # how long a wait waits when the step does not say
+EXPECT_SETTLE = 0.5    # an expect allows the UI this long to catch up with the last action
+_TYPE_TOK = re.compile(r"^\[([A-Za-z]+)\]$")
+_DUR = re.compile(r"^(\d+(?:\.\d+)?)(ms|s)?$")
+
+class PlanFail(Exception):
+    """A step's condition was not met, or its target is not there. The message says why."""
+
+def _say(toks):
+    """Steps back to text that _split_steps reads the same way (quoted where it must be)."""
+    def q(t):
+        if t and not re.search(r"[\s;\\\"'#$]", t): return t
+        return '"' + t.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return " ".join(q(t) for t in toks)
+
+def _norm_type(ctype):
+    if not ctype: return None
+    known = _iuia().known_control_types
+    if ctype in known: return ctype
+    for k in known:
+        if k.lower() == ctype.lower(): return k
+    raise PlanFail(f"unknown control type [{ctype}]; try [Button], [Edit], [MenuItem], [ListItem], [Text], [Window]")
+
+def _target(toks):
+    """[Type] name -> (type, name). Either may be missing, not both."""
+    toks = list(toks); ctype = None
+    m = _TYPE_TOK.match(toks[0]) if toks else None
+    if m: ctype = m.group(1); toks = toks[1:]
+    name = " ".join(toks)
+    if not name and not ctype: raise PlanFail('which control? write [Type] "name", e.g. [Button] "Save"')
+    return _norm_type(ctype), name
+
+def _split_scope(toks):
+    toks = list(toks)
+    if len(toks) >= 3 and toks[-2].lower() == "in": return toks[:-2], toks[-1]
+    return toks, None
+
+def _split_timeout(toks, default):
+    toks = list(toks)
+    if len(toks) >= 3 and toks[-2] in ("--timeout", "timeout"):
+        try: return toks[:-2], float(toks[-1])
+        except ValueError: pass
+    if len(toks) >= 2:
+        m = _DUR.match(toks[-1])
+        if m: return toks[:-1], float(m.group(1)) / (1000.0 if m.group(2) == "ms" else 1.0)
+    return toks, default
+
+def _parse_cond(toks):
+    toks = list(toks); neg = False
+    while toks and toks[0].lower() in ("not", "no"): neg = not neg; toks = toks[1:]
+    if not toks: raise PlanFail('a condition is missing: "Window title", title "text", [Type] "name", gone "name", value [Type] "name" = "text"')
+    toks, scope = _split_scope(toks)
+    kind = toks[0].lower()
+    if kind in ("window", "title"):
+        if len(toks) < 2: raise PlanFail(f"{kind}: which title?")
+        return {"kind": kind, "text": " ".join(toks[1:]), "neg": neg, "scope": scope}
+    if kind == "value":
+        rest = toks[1:]
+        i = next((k for k, t in enumerate(rest) if t in ("=", "==", "is")), None)
+        if i is None: raise PlanFail('value: write value [Type] "name" = "text"')
+        ctype, name = _target(rest[:i])
+        return {"kind": "value", "ctype": ctype, "name": name, "text": " ".join(rest[i + 1:]), "neg": neg, "scope": scope}
+    if kind == "gone": neg = not neg; toks = toks[1:]
+    elif kind == "control": toks = toks[1:]
+    elif not _TYPE_TOK.match(toks[0]):
+        # Bare text is a window, as `wait TITLE` always was.
+        return {"kind": "window", "text": " ".join(toks), "neg": neg, "scope": scope}
+    ctype, name = _target(toks)
+    return {"kind": "control", "ctype": ctype, "name": name, "neg": neg, "scope": scope}
+
+def _tdesc(ctype, name):
+    return (f"[{ctype}] " if ctype else "") + (repr(name) if name else "(any)")
+
+def _cdesc(c):
+    k = c["kind"]; neg = c["neg"]
+    if k == "window": d = f"{'no ' if neg else ''}window {c['text']!r}"
+    elif k == "title": d = f"title {'without' if neg else 'with'} {c['text']!r}"
+    elif k == "value": d = f"{_tdesc(c['ctype'], c['name'])} {'not ' if neg else ''}= {c['text']!r}"
+    else: d = ("no " if neg else "") + _tdesc(c["ctype"], c["name"])
+    if c.get("scope"): d += f" in {c['scope']!r}"
+    return d
+
+def _windows_matching(text):
+    t = text.lower(); exact = t.startswith("^") and t.endswith("$")
+    return [h for h, n in _enum_windows() if ((t[1:-1] == n.lower()) if exact else (t in n.lower()))]
+
+def _scope_h(scope):
+    if not scope: return _u32.GetForegroundWindow()
+    hs = _windows_matching(scope)
+    return hs[0] if hs else None
+
+def _find_named(h, name, ctype):
+    """Controls of window h by visible name, best first: exact (any case), then starts-with,
+    then contains; among equals, one on screen. Names are text, not patterns, unless they
+    are written ^like this$."""
+    if name.startswith("^"):
+        cands = _find_all(h, name, ctype)
+    else:
+        cands = _find_all(h, re.escape(name), ctype) if name else _find_all(h, "", ctype)
+        if not cands and name:
+            nf = name.casefold()
+            cands = [e for e in _find_all(h, "", ctype) if nf in (e.CachedName or "").casefold()]
+    if len(cands) <= 1 or not name or name.startswith("^"): return cands
+    nf = name.casefold().strip()
+    def rank(e):
+        n = (e.CachedName or "").casefold().strip()
+        return 0 if n == nf else 1 if n.startswith(nf) else 2
+    cands.sort(key=rank)
+    best = [e for e in cands if rank(e) == rank(cands[0])]
+    first = _pick(best, h)
+    return [first] + [e for e in cands if e is not first]
+
+def _value_of(e):
+    try:
+        v = e.GetCurrentPropertyValue(_iuia().UIA_dll.UIA_ValueValuePropertyId)
+        if v not in (None, ""): return str(v)
+    except Exception:
+        pass
+    try: return e.CurrentName or ""
+    except Exception: return ""
+
+def _text_has(want, got):
+    if want.startswith("^") and want.endswith("$"): return want[1:-1].casefold() == (got or "").casefold()
+    return want.casefold() in (got or "").casefold()
+
+def _check(c):
+    """(met, what is there) for one condition, read fresh. `met` ignores `not`."""
+    k = c["kind"]
+    if k == "window":
+        hs = _windows_matching(c["text"])
+        return bool(hs), (f"window {_title(hs[0])!r} is open" if hs else f"no open window has {c['text']!r} in its title")
+    h = _scope_h(c["scope"])
+    if not h: return False, f"no open window has {c['scope']!r} in its title"
+    if k == "title":
+        t = _title(h); return _text_has(c["text"], t), f"the window in front is {t!r}"
+    _invalidate()
+    hits = _find_named(h, c["name"], c["ctype"])
+    if k == "control":
+        return bool(hits), (f"{_tdesc(c['ctype'], c['name'])} is there" if hits else f"no {_tdesc(c['ctype'], c['name'])} in {_title(h)!r}")
+    if not hits: return False, f"no {_tdesc(c['ctype'], c['name'])} in {_title(h)!r}"
+    v = _value_of(hits[0])
+    return v.strip() == c["text"].strip(), f"{_tdesc(c['ctype'], c['name'])} is {v!r}"
+
+def _poll(c, timeout):
+    """Check until the condition holds or the time is up. Returns (ok, what is there, ms)."""
+    t0 = time.time(); beat = t0
+    while True:
+        met, why = _check(c)
+        if met != c["neg"]: return True, why, (time.time() - t0) * 1000
+        now = time.time()
+        if now - t0 >= timeout: return False, why, (now - t0) * 1000
+        if _halted(): raise SystemExit("HALTED: the Stop button in Ember was pressed.")
+        if now - beat > 1.5: _report("tick"); beat = now   # still working: keeps Ember's card up
+        time.sleep(POLL)
+
+def _gate():
+    _check_allowed(["wait"]); _check_locked()
+
+def _step_wait(toks):
+    _gate()
+    toks, timeout = _split_timeout(toks, WAIT_DEFAULT)
+    c = _parse_cond(toks)
+    _report("wait", label=f"wait for {_cdesc(c)}", h=_scope_h(c["scope"]) if c["scope"] else None)
+    ok, why, ms = _poll(c, timeout)
+    if not ok: raise PlanFail(f"waited {timeout:g}s for {_cdesc(c)}: {why}")
+    print(f"waited {ms:.0f} ms: {why}")
+
+def _step_expect(toks):
+    _gate()
+    toks, timeout = _split_timeout(toks, EXPECT_SETTLE)
+    c = _parse_cond(toks)
+    _report("check", label=f"check {_cdesc(c)}")
+    ok, why, _ = _poll(c, timeout)
+    if not ok: raise PlanFail(f"expected {_cdesc(c)}: {why}")
+    print(f"ok: {why}")
+
+def _step_if(toks, depth):
+    _gate()
+    low = [t.lower() for t in toks]
+    if "then" not in low: raise PlanFail("if: write if <condition> then <step> [else <step>]")
+    i = low.index("then")
+    j = next((k for k in range(i + 1, len(low)) if low[k] == "else"), None)
+    then = toks[i + 1:j] if j is not None else toks[i + 1:]
+    other = toks[j + 1:] if j is not None else []
+    if not then: raise PlanFail("if: nothing after then")
+    ctoks, timeout = _split_timeout(toks[:i], 0.0)
+    c = _parse_cond(ctoks)
+    ok, why, _ = _poll(c, timeout)
+    branch = then if ok else other
+    head = f"if {_cdesc(c)}: {'yes' if ok else 'no'} ({why})" + (f" -> {_say(branch)}" if branch else "")
+    if not branch: return True, head
+    bok, bout = _run_step(branch, depth + 1)
+    return bok, head + "\n" + bout
+
+def _resolve(verb, ctype, name, scope):
+    """Find a control by name now, waiting up to FIND_TIMEOUT for it to appear (the window
+    in front can change under a plan: a dialog opening). Leaves it as #0."""
+    deadline = time.time() + FIND_TIMEOUT
+    tries = (ctype,) if ctype else (("Edit", "ComboBox", None) if verb == "settext" else (None,))
+    while True:
+        h = _scope_h(scope)
+        if h:
+            for t in tries:
+                hits = _find_named(h, name, t)
+                if hits:
+                    e = hits[0]; r = e.CachedBoundingRectangle
+                    try: ct = _ctype_name(e.CurrentControlType)
+                    except Exception: ct = t or ""
+                    _refs[0] = (h, e, (r.left + r.right) // 2, (r.top + r.bottom) // 2, e.CachedName or name, ct)
+                    return h
+        if time.time() > deadline:
+            where = _title(h) if h else (scope or "the window in front")
+            raise PlanFail(f"no {_tdesc(ctype, name)} in {where!r}")
+        time.sleep(POLL); _invalidate()
+
+def _named(st):
+    """press/click/settext by name -> the same step on #0. Old forms pass through unchanged:
+    press #N, press TITLE NAME, click X Y, settext #N TEXT, settext TITLE NAME TEXT."""
+    verb = st[0].lower()
+    flags = [t for t in st[1:] if t in ("--right", "--double")]
+    pos = []; ctype = None; k = 1
+    while k < len(st):
+        t = st[k]
+        if t == "--type" and k + 1 < len(st): ctype = st[k + 1]; k += 2; continue
+        if not t.startswith("--"): pos.append(t)
+        k += 1
+    if not pos or _is_ref(pos[0]): return st
+    pos, scope = _split_scope(pos)
+    typed = bool(_TYPE_TOK.match(pos[0]))
+    if typed: ctype = _TYPE_TOK.match(pos[0]).group(1); pos = pos[1:]
+    if verb == "click" and not typed and not scope and re.fullmatch(r"-?\d+", pos[0]): return st     # click X Y
+    if verb == "press" and not typed and not scope and len(pos) == 2: return st                      # press TITLE NAME
+    if verb == "settext" and not typed and not scope and len(pos) != 2: return st                    # settext TITLE NAME TEXT
+    if not pos: raise PlanFail(f'{verb}: which control? e.g. {verb} [Button] "Save"')
+    name = pos[0]; rest = pos[1:]
+    if verb == "settext" and not rest: raise PlanFail('settext: what text? settext [Edit] "name" "text"')
+    _resolve(verb, _norm_type(ctype), name, scope)
+    return [verb, "#0"] + (rest if verb == "settext" else []) + flags
+
+def _capture(f, toks):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf): f(toks)
+    return True, buf.getvalue()
+
+def _run_step(st, depth=0):
+    if depth > 4: return False, "if: nested too deep"
+    try:
+        verb = st[0].lower()
+        if verb == "wait": return _capture(_step_wait, st[1:])
+        if verb == "expect": return _capture(_step_expect, st[1:])
+        if verb == "if": return _step_if(st[1:], depth)
+        if verb in ("press", "click", "settext"): st = _named(st)
+        return dispatch(st)
+    except PlanFail as e:
+        return False, str(e)
+    except SystemExit as e:
+        return False, str(e.code)
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+
+def _windows_line():
+    names = [n for _, n in _enum_windows() if n.strip()][:12]
+    return "-- open windows: " + ", ".join(repr(n[:40]) for n in names)
+
+_last_plan = {"script": "", "h": None}
+
 def run_batch(script):
     steps = _split_steps(script)
-    outs = []; ok = True
-    for st in steps:
-        ok, out = dispatch(st); outs.append(out.rstrip())
-        if not ok: outs.append(f"!! batch stopped at: {' '.join(st)}"); break
-    if any(st[0] in _ACTIONS for st in steps if st) and not _halted():
+    outs = []; ok = True; acted = False; t0 = time.time(); fail = ""
+    for i, st in enumerate(steps, 1):
+        ok, out = _run_step(st)
+        if st[0].lower() in _ACTIONS or st[0].lower() == "if": acted = True
+        lines = out.strip().splitlines()
+        if not ok:
+            why = lines[-1] if lines else "failed"
+            if lines[:-1]: outs.append("\n".join(lines[:-1]))
+            fail = f"FAILED at step {i} of {len(steps)}: {_say(st)}\n  why: {why}"
+            break
+        if lines: outs.append("\n".join(lines))
+    ms = (time.time() - t0) * 1000
+    if ok:
+        _last_plan["script"] = script if isinstance(script, str) else _say(script)
+        _last_plan["h"] = _u32.GetForegroundWindow()
+        outs.append(f"-- {len(steps)} step{'s' if len(steps) != 1 else ''} in {ms:.0f} ms")
+    if (acted or not ok) and not _halted():
         outs.append(_now())
-    return ok, "\n".join(o for o in outs if o)
+        if not ok: outs.append(_windows_line())
+    body = "\n".join(o for o in outs if o)
+    return ok, (fail + "\n" + body) if fail else body
+
+# ----------------------------------------------------------------------------- recipes
+#
+# A plan that worked, kept under a name and replayed here without the model:
+#   ~/.ember/recipes/<app>/<name>.txt -- a header (# app / # exe / # window / # saved) and the
+#   plan, one step per line. $1..$9 in the plan are the arguments of `recipe run NAME ARGS...`.
+
+RECIPES = os.path.join(HOME, "recipes")
+_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]{0,60}$")
+
+def _recipe_files():
+    out = []
+    if not os.path.isdir(RECIPES): return out
+    for app in sorted(os.listdir(RECIPES)):
+        d = os.path.join(RECIPES, app)
+        if not os.path.isdir(d): continue
+        for f in sorted(os.listdir(d)):
+            if f.endswith(".txt"): out.append((app, f[:-4], os.path.join(d, f)))
+    return out
+
+def _recipe_read(path):
+    meta = {}; body = []
+    with open(path, encoding="utf-8") as fh:
+        for line in fh.read().splitlines():
+            m = re.match(r"^#\s*(app|exe|window|saved):\s*(.*)$", line)
+            if m: meta[m.group(1)] = m.group(2).strip(); continue
+            if line.lstrip().startswith("# "): continue
+            body.append(line)
+    return meta, "\n".join(body).strip()
+
+def cmd_recipe(a):
+    op = a.op
+    if op == "list":
+        rows = _recipe_files()
+        if not rows: print('no recipes yet: run a plan with act, then save it (act with save "name", or desk recipe save NAME)'); return
+        for app, name, path in rows:
+            meta, body = _recipe_read(path)
+            n = len(_split_steps(body)) if body else 0
+            args = sorted(set(re.findall(r"\$[1-9]", body)))
+            print(f"{name}  ({meta.get('app') or app}, {n} steps{', args ' + ' '.join(args) if args else ''})")
+        return
+    if not a.name: raise SystemExit(f"recipe {op}: which name?")
+    name = a.name[0].strip()
+    if op == "save":
+        script = _last_plan["script"]
+        if not script: raise SystemExit("recipe save: no plan has succeeded yet; run it with act first")
+        if not _SLUG.match(name): raise SystemExit("recipe save: a name is letters, digits, space, - _ .")
+        h = _last_plan["h"]; info = _app_of(h) if h else {}
+        app = re.sub(r"[^a-z0-9_.-]", "", os.path.splitext(info.get("exe", "") or "desktop")[0].lower()) or "desktop"
+        os.makedirs(os.path.join(RECIPES, app), exist_ok=True)
+        path = os.path.join(RECIPES, app, name + ".txt")
+        steps = _split_steps(script)
+        # recipe save NAME VALUE1 VALUE2: those values become the recipe's $1 $2, so the
+        # next run can pass others (another file name, another text).
+        vals = sorted(((k, v) for k, v in enumerate(a.name[1:], 1) if v), key=lambda kv: -len(kv[1]))
+        if vals:
+            def param(t):
+                for k, v in vals: t = t.replace(v, f"${k}")
+                return t
+            steps = [[param(t) for t in st] for st in steps]
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(f"# app: {info.get('app', '')}\n# exe: {info.get('exe', '')}\n# window: {info.get('win', '')}\n# saved: {time.strftime('%Y-%m-%d %H:%M')}\n")
+            for st in steps: fh.write(_say(st) + "\n")
+        print(f"saved recipe {name!r} ({len(steps)} steps) -> {path}")
+        if any(_is_ref(t) for st in steps for t in st):
+            print("note: it uses control numbers (#N), which change between runs -- name the controls instead so it replays")
+        return
+    rows = [r for r in _recipe_files() if r[1].lower() == name.lower()]
+    if not rows: raise SystemExit(f"no recipe {name!r} -- `recipe list` shows them")
+    if len(rows) > 1:
+        # One name for two apps: the app in front wins.
+        fg = os.path.splitext(_exe(_u32.GetForegroundWindow()).lower())[0]
+        rows = [r for r in rows if r[0] == fg] or rows
+    meta, body = _recipe_read(rows[0][2])
+    if op == "show": print(f"# {rows[0][1]} ({meta.get('app') or rows[0][0]})\n{body}"); return
+    args = a.name[1:]
+    def sub(m):
+        k = int(m.group(1))
+        if k > len(args): raise SystemExit(f"recipe {name!r} needs argument ${k}")
+        return args[k - 1].replace("\\", "\\\\").replace('"', '\\"')
+    ok, out = run_batch(re.sub(r"\$([1-9])", sub, body))
+    print(out)
+    if not ok: raise SystemExit(1)
 
 # ----------------------------------------------------------------------------- server
 

@@ -4,10 +4,10 @@ import { connect, createServer } from 'node:net'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { BrowserWindow, ipcMain, screen, type Display } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, type Display } from 'electron'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { resourcePath } from './resources.js'
-import type { DeskActivity, DeskOverlayState, DeskState } from '../shared/types.js'
+import type { DeskActivity, DeskCard, DeskOverlayState, DeskState } from '../shared/types.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -358,6 +358,7 @@ export function haltDesk(): DeskState {
   state.ready = 'off'
   emit()
   visible = false
+  comeBack()
   pushOverlay({ visible: false, halted: true, showStop: true })
   // The Resume pill stays for a while, then the overlay gets out of the way.
   if (hideTimer) clearTimeout(hideTimer)
@@ -389,6 +390,9 @@ export function toggleDesk(): DeskState {
 // ---------- activity → strip + cursor ----------
 
 export function onActivity(a: DeskActivity): void {
+  lastActAt = Date.now()
+  // A long wait in a plan says it is still going; nothing to draw.
+  if (a.action === 'tick') return
   state.last = a
   state.busy = true
   emit()
@@ -400,6 +404,7 @@ export function onActivity(a: DeskActivity): void {
 
   if (state.halted) return
   visible = true
+  if (aside || shouldStepAside(a)) noteStep(a)
   const st: DeskOverlayState = { label: a.label, action: a.action, visible: true, halted: false, showStop: true }
   if (typeof a.x === 'number' && typeof a.y === 'number') {
     // The daemon speaks physical pixels (it is DPI-aware); windows are laid out in DIPs.
@@ -421,10 +426,122 @@ export function onActivity(a: DeskActivity): void {
     visible = false
     pushOverlay({ visible: false, halted: state.halted, showStop: false })
     setTimeout(() => {
-      if (!visible) hideOverlay()
+      if (!visible && !aside) hideOverlay()
     }, 400)
   }, HIDE_MS)
 }
+
+// ---------- stepping aside ----------
+//
+// When an agent starts working in another app, Ember gets out of the way: its window
+// minimises and a small card at the bottom-right of the screen says what is happening,
+// with STOP. The card is drawn by the overlay page (one see-through, never-focused
+// window), so it takes no focus from the app being driven, and the daemon leaves the
+// overlay out of every window list it reads. When the work ends (no action for a few
+// seconds and no agent turn in flight) or STOP is pressed, Ember comes back where it was.
+
+/** Quiet this long, with no agent turn in flight, and Ember comes back. */
+const ASIDE_IDLE_MS = 4000
+/** Back regardless after this long without an action: a turn that never seems to end. */
+const ASIDE_MAX_IDLE_MS = 120_000
+/** Actions that put something into another app (not looks, not pointing). */
+const STEP_ASIDE_ON = new Set(['move', 'click', 'drag', 'type', 'focus', 'scroll'])
+
+interface Aside {
+  win: BrowserWindow | null
+  /** Ember was the window in front (or just had been) when it stepped aside: focus goes back to it. */
+  hadFocus: boolean
+  wasMaximized: boolean
+  timer: NodeJS.Timeout
+}
+let aside: Aside | null = null
+let lastActAt = 0
+let agentsWorking = false
+let actsInFlight = 0
+let emberBlurAt = 0
+let card: DeskCard | null = null
+
+/** From the renderer: is an agent's turn in flight in any tab. */
+export function setAgentsWorking(on: boolean): void {
+  agentsWorking = on
+}
+
+function stepAsideEnabled(): boolean {
+  return loadConfig().deskStepAside !== false
+}
+
+function shouldStepAside(a: DeskActivity): boolean {
+  return stepAsideEnabled() && !state.halted && STEP_ASIDE_ON.has(a.action) && a.own === false && !!(a.app || a.win)
+}
+
+/** Ember's own window: the visible one that is not the overlay. */
+function mainWindow(): BrowserWindow | null {
+  return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w !== overlay && w.isVisible() && !w.isMinimized()) ?? null
+}
+
+function noteStep(a: DeskActivity): void {
+  const text = (a.label || a.action).replace(/\s+/g, ' ').trim().slice(0, 90)
+  const app = a.own === false ? a.app || a.win || '' : ''
+  if (!aside) stepAside()
+  const prev = card
+  const trail = prev ? (prev.now && prev.now !== text ? [prev.now, ...prev.trail] : prev.trail) : []
+  card = { now: text, trail: trail.slice(0, 3), app: app || prev?.app || '', inset: cardInset() }
+}
+
+function cardInset(): { right: number; bottom: number } {
+  const d = overlayDisplay ?? screen.getPrimaryDisplay()
+  const b = d.bounds
+  const w = d.workArea
+  return { right: Math.max(0, b.x + b.width - (w.x + w.width)), bottom: Math.max(0, b.y + b.height - (w.y + w.height)) }
+}
+
+function stepAside(): void {
+  const win = mainWindow()
+  const hadFocus = !!win && (win.isFocused() || Date.now() - emberBlurAt < 4000)
+  const wasMaximized = !!win && win.isMaximized()
+  if (win) win.minimize()
+  aside = { win, hadFocus, wasMaximized, timer: setInterval(checkAside, 400) }
+  log(`stepped aside (${win ? (wasMaximized ? 'maximised' : 'normal') : 'no window'})`)
+}
+
+function checkAside(): void {
+  if (!aside) return
+  const idle = Date.now() - lastActAt
+  if (actsInFlight > 0 || idle < ASIDE_IDLE_MS) return
+  if (agentsWorking && idle < ASIDE_MAX_IDLE_MS) return
+  comeBack()
+}
+
+/** End stepping aside: the card goes, Ember's window comes back as it was. */
+function comeBack(): void {
+  const a = aside
+  if (!a) return
+  aside = null
+  clearInterval(a.timer)
+  card = null
+  pushOverlay({ ...(lastOverlay ?? { visible: false, halted: state.halted }), card: null })
+  const win = a.win
+  if (win && !win.isDestroyed() && win.isMinimized()) {
+    if (a.hadFocus) win.restore()
+    else {
+      // Back without taking the keyboard from whatever the person is in now.
+      win.showInactive()
+      if (a.wasMaximized && !win.isMaximized()) win.maximize()
+    }
+  }
+  log('came back')
+}
+
+/** For probes and the bridge's status: stepping aside, as main sees it. */
+export function asideState(): { aside: boolean; card: DeskCard | null; agentsWorking: boolean; minimized: boolean; maximized: boolean } {
+  const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w !== overlay && (w.isVisible() || w.isMinimized()))
+  return { aside: !!aside, card, agentsWorking, minimized: !!win?.isMinimized(), maximized: !!win?.isMaximized() }
+}
+
+// Ember's window lost focus: remembered so stepping aside knows whether Ember had it.
+app.on('browser-window-blur', (_e, w) => {
+  if (w !== overlay) emberBlurAt = Date.now()
+})
 
 function ensureOverlay(display: Display): BrowserWindow {
   const b = display.bounds
@@ -482,6 +599,9 @@ function ensureOverlay(display: Display): BrowserWindow {
 
 let lastOverlay: DeskOverlayState | null = null
 function pushOverlay(st: DeskOverlayState): void {
+  // The card rides along with every state, so one sent for the pointer never drops it.
+  st = { ...st, card: st.card !== undefined ? st.card : card }
+  if (st.card) ensureOverlay(overlayDisplay ?? screen.getPrimaryDisplay())
   lastOverlay = st
   if (!overlay || overlay.isDestroyed()) return
   overlay.webContents.send('ember:desk:overlay', st)
@@ -666,17 +786,48 @@ export async function deskPoint(opts: {
  * type hello"). The pointer glides to each target and the real action lands on arrival.
  * Honours Stop.
  */
-export async function deskAct(script: string): Promise<{ ok: boolean; output: string; error?: string; ms: number }> {
+export async function deskAct(script: string, save?: string[]): Promise<{ ok: boolean; output: string; error?: string; ms: number }> {
   const t0 = Date.now()
   if (hands() !== 'act') return { ok: false, output: '', error: hands() === 'off' ? HANDS_OFF : HANDS_SHOW, ms: 0 }
   const why = await ensureRunning()
   if (why) return { ok: false, output: '', error: why, ms: Date.now() - t0 }
   pushCallout(null)
+  actsInFlight++
   try {
     const r = await callDaemon(['do', script], 10 * 60_000)
-    return { ok: r.ok, output: r.out.trim(), ...(r.ok ? {} : { error: r.out.trim().split('\n').pop() ?? 'failed' }), ms: Date.now() - t0 }
+    let out = r.out.trim()
+    if (r.ok && save?.length) {
+      const s = await callDaemon(['recipe', 'save', ...save], 20_000)
+      out += `\n${s.out.trim()}`
+    }
+    // A failed plan's whole report is the error: which step, why, and the screen now.
+    return { ok: r.ok, output: out, ...(r.ok ? {} : { error: out || 'failed' }), ms: Date.now() - t0 }
   } catch (err) {
     return { ok: false, output: '', error: err instanceof Error ? err.message : String(err), ms: Date.now() - t0 }
+  } finally {
+    actsInFlight--
+    lastActAt = Date.now()
+  }
+}
+
+/** Recipes: plans that worked, kept by name. list and show only read; run acts. */
+export async function deskRecipe(op: string, name = '', args: string[] = []): Promise<{ ok: boolean; output: string; error?: string; ms: number }> {
+  const t0 = Date.now()
+  if (op === 'run' && hands() !== 'act') return { ok: false, output: '', error: hands() === 'off' ? HANDS_OFF : HANDS_SHOW, ms: 0 }
+  const why = await ensureRunning()
+  if (why) return { ok: false, output: '', error: why, ms: Date.now() - t0 }
+  if (op === 'run') actsInFlight++
+  try {
+    const r = await callDaemon(['recipe', op, ...(name ? [name] : []), ...args], 10 * 60_000)
+    const out = r.out.trim()
+    return { ok: r.ok, output: out, ...(r.ok ? {} : { error: out || 'failed' }), ms: Date.now() - t0 }
+  } catch (err) {
+    return { ok: false, output: '', error: err instanceof Error ? err.message : String(err), ms: Date.now() - t0 }
+  } finally {
+    if (op === 'run') {
+      actsInFlight--
+      lastActAt = Date.now()
+    }
   }
 }
 

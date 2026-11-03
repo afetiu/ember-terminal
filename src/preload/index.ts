@@ -120,6 +120,7 @@ const bridge: EmberBridge = {
     halt: () => ipcRenderer.send('ember:desk:halt'),
     resume: () => ipcRenderer.send('ember:desk:resume'),
     onState: (cb) => on<DeskState>('ember:desk:state', cb),
+    agentsWorking: (on) => ipcRenderer.send('ember:desk:agentsWorking', on === true),
   },
   agents: {
     detect: (withVersions?: boolean) => ipcRenderer.invoke('ember:agents:detect', !!withVersions),
