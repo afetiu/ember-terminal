@@ -1,0 +1,89 @@
+# Canvas, native: Ember drives Claude Code instead of reading its screen
+
+Status: approved 2026-11-03, in progress on branch `canvas-native`.
+Protocol facts: [claude-protocol-reference.md](claude-protocol-reference.md).
+
+## Why
+
+The canvas today overlays Claude Code's full-screen TUI and cuts its input box, menus and
+dialogs out of the screen (`LoomView.findDock`). Every layout change in Claude Code breaks
+something: the question dialog, `!` shell mode, a tall status line, the `/` menu with wrapped
+descriptions. Each fix is another guess about rows of text.
+
+Claude Code has a structured stdio mode, the one the Agent SDK and the IDE extensions use.
+It sends the session as data (messages, tool calls, permission requests, questions, the
+command list) and takes commands (send, interrupt, set model, set permission mode, answer).
+Driving that, Ember owns every pixel of the canvas and reads nothing off a screen.
+
+## What changes for the user
+
+- A Claude tab opened on the canvas runs Claude Code in structured mode. The input box,
+  `/` and `@` menus, image paste, permission prompts, Claude's questions, the plan, queued
+  messages, model and permission mode are Ember's own UI.
+- **CLI** (Ctrl+`) stops this process and opens the same session in the real TUI
+  (`claude --resume <id>`). Switching back stops the TUI and resumes structured mode. Only
+  one process owns a session at a time.
+- Things that only exist in the TUI (`/login`, MCP OAuth, `/config`, `/resume` picker, vim
+  mode) open the CLI view.
+- Behind a setting until it matches today's canvas: Settings › Agent › "Canvas drives
+  Claude directly" (`canvas.native`). Off = today's overlay, untouched.
+
+## Architecture
+
+```
+main:      ClaudeHost (one per tab)   spawn claude.exe stream-json, line codec, control
+           requests with ids/timeouts, answers to can_use_tool, restart/resume
+           ipc: claude:start/send/control/answer/stop  →  renderer events claude:event
+renderer:  NativeClaude (per tab)     state machine: idle / working / asking / waiting
+           Feed (existing)            fed the stream's assistant/user messages directly —
+                                      they have the transcript's shapes
+           Composer                   Ember's input: text, images, `/` and `@` menus,
+                                      `!` runs in the tab's shell, queue + send now
+           Asks                       permission card, question card, plan approval
+           Bar                        model, permission mode, context %, interrupt
+```
+
+- **Spawn** (reference §1.2): `--output-format stream-json --verbose --input-format
+  stream-json --include-partial-messages --replay-user-messages --permission-prompt-tool
+  stdio`, plus `--resume <id>` or `--session-id <uuid>`. Long-path cwd. Ember's MCP config
+  and settings (statusLine, hooks) as today. `initialize` first, declaring the dialog kinds
+  Ember renders.
+- **One warm process per tab.** Startup is 4–9 s (hooks, MCP servers); never respawn per
+  message.
+- **Unknown message types are ignored**, never fatal. Features are gated on the
+  `capabilities` list in `system/init`.
+- **Permissions:** every `can_use_tool` becomes a card; "always allow" echoes the
+  `permission_suggestions` entry and is hidden when `suppress_always_allow_rule`. A
+  `control_cancel_request` closes the card. An unanswered request stalls the turn, so the
+  card is never dismissable without an answer (Esc = deny).
+- **AskUserQuestion** arrives as `can_use_tool`; answered with `updatedInput.answers`.
+- **ExitPlanMode** is a plan card: approve (and pick the mode) or keep planning.
+- **`!command`** has no equivalent on this channel: Ember runs it in the tab's shell and
+  shows the output in the turn.
+- **Interrupt** cancels the turn; queued messages are cancelled with it unless sent now.
+- **Cost:** `total_cost_usd` is list price even on a subscription; shown only as tokens.
+
+## Keeping up with Claude Code
+
+`.github/workflows/claude-watch.yml`, weekly and on demand:
+
+1. `npm view @anthropic-ai/claude-code version` against `docs/specs/claude-version.txt`.
+2. On a new version: fetch the changelog section (github.com/anthropics/claude-code
+   CHANGELOG.md), `npm pack @anthropic-ai/claude-agent-sdk` and diff its `sdk.d.ts`
+   against the copy kept in `docs/specs/sdk.d.ts`.
+3. Open one issue: new version, changelog lines, new message types / control subtypes /
+   capabilities, and which of them Ember does not handle yet. No code changes from CI.
+4. Update the stored version and `sdk.d.ts` in the issue's suggested PR, for review.
+
+## Phases
+
+1. **Host and stream** — ClaudeHost, IPC, the stream feeding Feed; plain text in, replies
+   out; interrupt. Behind the setting.
+2. **Composer** — Ember's input with images, `/` menu from `commands`, `@` from
+   `file_suggestions`, queue and send now, `!` in the shell.
+3. **Asks** — permission, question and plan cards; elicitation.
+4. **Bar and switches** — model, permission mode, effort, context %, CLI view hand-off
+   (stop → `--resume` in the TUI → back).
+5. **Watch job** — the GitHub workflow above.
+6. **Parity and default** — probes for each phase, then the setting defaults on and the
+   overlay code (`findDock` and friends) is retired.
