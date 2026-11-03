@@ -1,8 +1,9 @@
 # Canvas, native: Ember drives Claude Code instead of reading its screen
 
-Status: approved 2026-11-03, in progress on branch `canvas-native`. Phases 1–3 done
-(`claudeHost.ts`, `canvas/NativeClaude.ts`, `canvas/Composer.ts`, `canvas/Asks.ts`; probes
-`scripts/probe-native.mjs`, `scripts/probe-native-composer.mjs`).
+Status: approved 2026-11-03, in progress on branch `canvas-native`. Phases 1–5 done
+(`claudeHost.ts`, `canvas/NativeClaude.ts`, `canvas/Composer.ts`, `canvas/Asks.ts`, the bar
+and CLI view in `canvas/LoomView.ts`, `.github/workflows/claude-watch.yml`; probes
+`scripts/probe-native.mjs`, `scripts/probe-native-composer.mjs`, `scripts/probe-native-bar.mjs`).
 Protocol facts: [claude-protocol-reference.md](claude-protocol-reference.md).
 
 ## Why
@@ -91,6 +92,30 @@ renderer:  NativeClaude (per tab)     state machine: idle / working / asking / w
 3. **Asks** — permission, question and plan cards; elicitation.
 4. **Bar and switches** — model, permission mode, effort, context %, CLI view hand-off
    (stop → `--resume` in the TUI → back).
-5. **Watch job** — the GitHub workflow above.
+   - The mode chip and Shift+Tab cycle default → acceptEdits → plan (→ auto when the model
+     has `supportsAutoMode`) with `set_permission_mode`; bypass is never offered. The model
+     is a picker over `initialize.models` (`set_model`, `default` = null); effort cycles the
+     model's `supportedEffortLevels` (`apply_flag_settings {effortLevel}`); the context meter
+     is `get_context_usage.percentage`, asked after each `result`.
+   - Sessions across restarts: `native-tabs.json` under EMBER_HOME, `[{sessionId, cwd}]` in
+     tab order, written whenever a native tab's session id or folder changes and when one is
+     closed. At boot with `canvas.native` on, each comes back with `--resume <id>`; a tab that
+     never started a turn comes back fresh in its folder; a session that is gone (`--resume`
+     exits before `initialize`) is said so and a new one starts.
+   - CLI view: the turn is finished, or stopped after asking ("Stop the current turn and open
+     the CLI?" — a card like Claude's, Esc = no); the process is stopped and waited on; then
+     `claude --resume <id>` is typed into the tab's shell (its `claude` carries Ember's
+     settings and panel; `Set-Location` first if the shell moved). TUI-only commands
+     (`/login`…) are typed into the TUI once its input box is up (`findDock`). Back: refused
+     while the TUI shows "esc to interrupt"; otherwise Ctrl+C, a beat, Ctrl+C (the first
+     clears anything half-typed) until the shell's prompt returns; the id it ended on comes
+     from the status line (or the panel server's binding), and the canvas resumes on it.
+     While the TUI owns the session the canvas follows the transcript again.
+   - Learned on the real one: Claude Code's screen may be inline (normal buffer), not
+     full-screen, so "the TUI has gone" is the shell's next prompt (OSC 9;9), not the buffer.
+     A folder the TUI never trusted opens on its "trust this folder?" dialog (structured
+     mode never asks); the CLI view shows it as is.
+5. **Watch job** — the GitHub workflow above: `scripts/claude-watch.mjs` (runnable with
+   `--dry`), `docs/specs/claude-version.txt`, `docs/specs/sdk.d.ts`.
 6. **Parity and default** — probes for each phase, then the setting defaults on and the
    overlay code (`findDock` and friends) is retired.

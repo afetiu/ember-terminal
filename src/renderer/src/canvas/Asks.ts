@@ -24,7 +24,7 @@ export interface AsksContext {
 
 interface Card {
   el: HTMLElement
-  kind: 'tool' | 'question' | 'plan' | 'elicitation'
+  kind: 'tool' | 'question' | 'plan' | 'elicitation' | 'confirm'
   /** Esc. */
   no(): void
   key?(e: KeyboardEvent): boolean
@@ -58,6 +58,10 @@ export class Asks {
           : tool === 'ExitPlanMode'
             ? this.plan(requestId, req)
             : this.tool(requestId, req)
+    this.mount(requestId, card)
+  }
+
+  private mount(requestId: string, card: Card): void {
     card.el.dataset['req'] = requestId
     card.el.tabIndex = -1
     card.el.addEventListener('keydown', (e) => {
@@ -71,11 +75,52 @@ export class Asks {
     this.el.appendChild(card.el)
     this.el.classList.add('has-items')
     this.ctx.relayout()
-    // The keyboard goes to the question: 1 / 2 / 3 and Enter answer it.
-    requestAnimationFrame(() => {
+    // The keyboard goes to the question: 1 / 2 / 3 and Enter answer it. At once, so a key
+    // pressed the moment it shows is the card's; and again after layout, in case the
+    // card was not focusable yet (its frame still hidden).
+    const take = () => {
       if (!card.el.isConnected || card.el.contains(document.activeElement)) return
       const first = card.el.querySelector<HTMLElement>('[data-autofocus]')
       ;(first ?? card.el).focus({ preventScroll: true })
+    }
+    take()
+    requestAnimationFrame(take)
+  }
+
+  /**
+   * One of Ember's own questions, as a card like Claude's (nothing is sent to Claude Code):
+   * yes or no, Esc = no. Resolves with the answer.
+   */
+  confirm(question: string, yes: string, no: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const id = `ember-confirm-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+      const el = card(escapeHtml(question), 'is-confirm')
+      el.insertAdjacentHTML('beforeend', acts([['yes', yes, true], ['no', no]], 'Enter yes · Esc no'))
+      const done = (answer: boolean) => {
+        if (!this.cards.has(id)) return
+        this.close(id)
+        resolve(answer)
+      }
+      el.addEventListener('click', (e) => {
+        const a = (e.target as HTMLElement).closest<HTMLElement>('button[data-a]')?.dataset['a']
+        if (a) done(a === 'yes')
+      })
+      this.mount(id, {
+        el,
+        kind: 'confirm',
+        no: () => done(false),
+        key: (e) => {
+          if (e.key === '1' || (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement))) {
+            done(true)
+            return true
+          }
+          if (e.key === '2') {
+            done(false)
+            return true
+          }
+          return false
+        },
+      })
     })
   }
 

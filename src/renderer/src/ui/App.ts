@@ -327,6 +327,16 @@ export class App {
       newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
       /** A Claude tab, as + opens one: native when canvas.native is on (scripts/probe-native.mjs). */
       newClaude: (cwd?: string) => this.newGroup(undefined, cwd, { agent: 'claude' }).then((g) => g.id),
+      /** Probes: what the CLI view runs as `claude` (a stand-in TUI). */
+      cliBin: (bin: string) => {
+        LoomView.cliBin = bin
+        return true
+      },
+      /** The sidebar card of a tab, as drawn. */
+      card: (id: string) => {
+        const el = document.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"], [data-group-id="${CSS.escape(id)}"]`)
+        return el?.innerText ?? ''
+      },
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
@@ -588,8 +598,25 @@ export class App {
       this.startFirstRun()
       return
     }
+    // Native canvas: the Claude tabs open at the last quit come back, each on its own
+    // session (`--resume`), in its folder. Live sessions, not a replay of old text.
+    const saved = this.config.canvas?.native === true ? await window.ember.claude.savedTabs().catch(() => []) : []
+    if (saved.length) {
+      for (const t of saved) await this.newGroup(undefined, t.cwd || undefined, { agent: 'claude', ...(t.sessionId ? { resume: t.sessionId } : {}) })
+      this.scheduleSpare()
+      return
+    }
     await this.newAgentSession()
     this.scheduleSpare()
+  }
+
+  /** The native tabs as they stand, for the next start (see boot). */
+  private saveNativeTabs(): void {
+    const tabs = this.groups.flatMap((g) => {
+      const n = g.loom?.nativeSession
+      return n ? [n] : []
+    })
+    window.ember.claude.saveTabs(tabs)
   }
 
   private startFirstRun(): void {
@@ -833,7 +860,7 @@ export class App {
     this.sidebar.setProvider(AGENTS[id].name)
   }
 
-  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId }): Promise<Group> {
+  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId; resume?: string }): Promise<Group> {
     const marks: Record<string, number> = {}
     let last = performance.now()
     const lap = (k: string) => {
@@ -882,7 +909,8 @@ export class App {
           this.config = { ...this.config, agentView: view }
           window.ember.saveConfig(this.config)
         },
-      }, native ? { ...(cwd ? { cwd } : {}) } : null)
+        nativeSession: () => this.saveNativeTabs(),
+      }, native ? { ...(cwd ? { cwd } : {}), ...(opts?.resume ? { resume: opts.resume } : {}) } : null)
     }
     lap('session')
     sound.play('open')
@@ -1208,9 +1236,12 @@ export class App {
     const group = this.groups[idx]!
     sound.play('close')
     this.groups.splice(idx, 1)
+    const wasNative = !!group.loom?.nativeSession
     group.dispose()
     window.ember.panel.forget(id)
     this.claudeByTab.delete(id)
+    // A Claude tab closed on purpose does not come back at the next start.
+    if (wasNative) this.saveNativeTabs()
 
     if (this.groups.length === 0) {
       // Nothing left to show: the window stays, with the empty state and the sidebar's
@@ -2048,10 +2079,13 @@ export class App {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
+      // A native tab is Claude Code in a folder, not the shell that idles under its canvas.
+      const native = !g.isSplit ? g.loom?.nativeCard : null
+      const folder = native ? folderName(native.folder) : ''
       return {
         id: g.id,
-        title: g.displayTitle,
-        subtitle: g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
+        title: native && !g.customTitle ? `Claude Code${folder ? ` · ${folder}` : ''}${native.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        subtitle: native ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
         accent: g.isTodo
@@ -2066,7 +2100,8 @@ export class App {
         git: this.gitByCwd.get(cwd) ?? null,
         url: focused?.urls[focused.urls.length - 1] ?? null,
         unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
-        claude: this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null,
+        // A native tab has no status line: its model and context come from the canvas's own bar.
+        claude: native?.status ?? (this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null),
       }
     })
     this.sidebar.render(models, this.activeId)
@@ -2973,4 +3008,10 @@ export class App {
     this.vitals.dispose()
     this.sidebar.dispose()
   }
+}
+
+/** The last part of a folder path, for a card: 'C:\\work\\ember' → 'ember'. */
+function folderName(path: string): string {
+  const parts = path.replace(/[\\/]+$/, '').split(/[\\/]/)
+  return parts[parts.length - 1] || path
 }

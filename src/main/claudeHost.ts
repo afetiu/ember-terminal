@@ -1,15 +1,16 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, realpathSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { delimiter, extname } from 'node:path'
+import { delimiter, extname, join } from 'node:path'
 import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
-import type { ClaudeControlRequest, ClaudeEvent, ClaudeImage, ClaudeSendOptions, ClaudeStartOptions, ClaudeStartResult } from '../shared/types.js'
+import type { ClaudeControlRequest, ClaudeEvent, ClaudeImage, ClaudeSendOptions, ClaudeStartOptions, ClaudeStartResult, NativeTabState } from '../shared/types.js'
 import { killTree, resolveBin } from './agents.js'
 import { bridgeEnv } from './bridge.js'
-import { loadConfig, resolveHome } from './config.js'
+import { CONFIG_DIR, loadConfig, resolveHome } from './config.js'
 import { NOTES_DIR } from './notes.js'
 import { cleanEnv } from './pty/ConPtyHost.js'
+import { boundSession } from './transcript.js'
 
 /**
  * Claude Code in its structured mode, one process per canvas tab.
@@ -212,16 +213,26 @@ class ClaudeHost {
     this.write(JSON.stringify({ type: 'control_response', response: { subtype: 'success', request_id: requestId, response } }))
   }
 
-  /** Close stdin — Claude Code finishes what it is writing and exits — and kill it if it lingers. */
-  stop(now = false): void {
+  /**
+   * Close stdin — Claude Code finishes what it is writing and exits — and kill it if it
+   * lingers. Resolves once the process has gone (the CLI view waits on it: one process
+   * owns a session at a time).
+   */
+  stop(now = false): Promise<void> {
     const child = this.child
-    if (!child || this.stopping) return
+    if (!child) return Promise.resolve()
+    const gone = new Promise<void>((resolve) => {
+      if (child.exitCode !== null || child.signalCode !== null) return resolve()
+      child.once('exit', () => resolve())
+      setTimeout(resolve, STOP_GRACE_MS + 3_000)
+    })
+    if (this.stopping) return gone
     this.stopping = true
     // A question left open would hold the turn; say no to it on the way out.
     for (const [id, kind] of [...this.asked]) this.answer(id, kind === 'elicitation' ? { action: 'decline' } : { behavior: 'deny', message: 'The tab was closed.' })
     if (now) {
       killTreeNow(child)
-      return
+      return gone
     }
     try {
       child.stdin?.end()
@@ -231,6 +242,7 @@ class ClaudeHost {
     setTimeout(() => {
       if (child.exitCode === null && child.signalCode === null) killTree(child)
     }, STOP_GRACE_MS)
+    return gone
   }
 
   // ------------------------------------------------------------- the wire
@@ -359,6 +371,8 @@ function summarise(r: Json): Json {
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MODES = new Set(['default', 'acceptEdits', 'plan', 'dontAsk', 'auto'])
+const MODEL_RE = /^[\w.:\-[\]]{1,100}$/
+const EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max'])
 
 /** Rebuilds a canvas control request from its known fields only; null for anything else. */
 function sanitizeControl(req: ClaudeControlRequest): Json | null {
@@ -375,6 +389,14 @@ function sanitizeControl(req: ClaudeControlRequest): Json | null {
       return MODES.has(String(req.mode)) ? { subtype: 'set_permission_mode', mode: req.mode } : null
     case 'get_context_usage':
       return { subtype: 'get_context_usage' }
+    case 'set_model':
+      // A model id or alias as `initialize.models` lists them ('default', 'sonnet[1m]', 'claude-haiku-5-5'), or null.
+      if (req.model === null) return { subtype: 'set_model', model: null }
+      return typeof req.model === 'string' && MODEL_RE.test(req.model) ? { subtype: 'set_model', model: req.model } : null
+    case 'apply_flag_settings': {
+      const level = String(req.settings?.effortLevel ?? '')
+      return EFFORTS.has(level) ? { subtype: 'apply_flag_settings', settings: { effortLevel: level } } : null
+    }
     default:
       return null
   }
@@ -407,6 +429,45 @@ function killTreeNow(child: ChildProcess): void {
   else child.kill('SIGKILL')
 }
 
+// ------------------------------------------------------------------ tabs across restarts
+
+/**
+ * The native tabs, so that after a restart each comes back on its own session
+ * (`--resume <id>`). Only this: a session id and a folder per tab, in order. Unlike the
+ * old scrollback replay (state.ts), what comes back is the live session itself.
+ */
+const NATIVE_TABS = join(CONFIG_DIR, 'native-tabs.json')
+const MAX_TABS = 30
+
+function cleanTabs(raw: unknown): NativeTabState[] {
+  if (!Array.isArray(raw)) return []
+  const out: NativeTabState[] = []
+  for (const t of raw.slice(0, MAX_TABS)) {
+    if (!t || typeof t !== 'object') continue
+    const r = t as Record<string, unknown>
+    const sessionId = typeof r['sessionId'] === 'string' && UUID_RE.test(r['sessionId']) ? r['sessionId'] : ''
+    const cwd = typeof r['cwd'] === 'string' && r['cwd'].length < 1000 && !/[\0\r\n]/.test(r['cwd']) ? r['cwd'] : ''
+    out.push({ sessionId, cwd })
+  }
+  return out
+}
+
+function saveNativeTabs(raw: unknown): void {
+  try {
+    writeFileSync(NATIVE_TABS, JSON.stringify(cleanTabs(raw), null, 2))
+  } catch (err) {
+    console.error(`[ember] could not save native tabs: ${(err as Error).message}`)
+  }
+}
+
+function loadNativeTabs(): NativeTabState[] {
+  try {
+    return existsSync(NATIVE_TABS) ? cleanTabs(JSON.parse(readFileSync(NATIVE_TABS, 'utf8'))) : []
+  } catch {
+    return []
+  }
+}
+
 // ------------------------------------------------------------------ IPC
 
 const hosts = new Map<string, ClaudeHost>()
@@ -422,7 +483,7 @@ export function registerClaudeHost(extraBin: string[]): void {
     if (owners.has(wc)) return
     owners.add(wc)
     wc.once('destroyed', () => {
-      for (const h of hosts.values()) h.stop()
+      for (const h of hosts.values()) void h.stop()
       hosts.clear()
     })
   }
@@ -444,12 +505,16 @@ export function registerClaudeHost(extraBin: string[]): void {
     hosts.get(tabId)?.ask(request) ?? { ok: false, error: 'no Claude in this tab' }
   )
   ipcMain.on('ember:claude:answer', (_e, tabId: string, requestId: string, response: Json) => hosts.get(tabId)?.answer(String(requestId), response ?? {}))
-  ipcMain.on('ember:claude:stop', (_e, tabId: string) => {
-    hosts.get(tabId)?.stop()
+  ipcMain.handle('ember:claude:stop', async (_e, tabId: string) => {
+    const h = hosts.get(tabId)
     hosts.delete(tabId)
+    await h?.stop()
   })
+  ipcMain.on('ember:claude:saveTabs', (_e, tabs: unknown) => saveNativeTabs(tabs))
+  ipcMain.handle('ember:claude:savedTabs', () => loadNativeTabs())
+  ipcMain.handle('ember:claude:bound', (_e, tabId: string) => boundSession(String(tabId)))
   app.on('before-quit', () => {
-    for (const h of hosts.values()) h.stop(true)
+    for (const h of hosts.values()) void h.stop(true)
     hosts.clear()
   })
 }

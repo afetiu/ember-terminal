@@ -39,6 +39,8 @@ export interface ComposerContext {
   files(query: string): Promise<string[]>
   /** Enter. The composer is cleared after. */
   submit(text: string, images: Attachment[]): void
+  /** Shift+Tab: the next permission mode, as in Claude Code. */
+  cycleMode(): void
   sendNow(uuid: string): void
   cancel(uuid: string): void
   toast(text: string): void
@@ -178,6 +180,11 @@ export class Composer {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault()
       this.submit()
+      return
+    }
+    if (e.key === 'Tab' && e.shiftKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault()
+      this.ctx.cycleMode()
       return
     }
     // Up on an empty box (or on one still showing what Up brought back) recalls what was sent.

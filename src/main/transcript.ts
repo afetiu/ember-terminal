@@ -516,3 +516,8 @@ export function stopNarration(tabId: string): void {
 export function stopAllNarration(): void {
   for (const id of [...narrations.keys()]) stopNarration(id)
 }
+
+/** The session a tab's Claude last reported — by its panel server or its status line. */
+export function boundSession(tabId: string): string {
+  return bindings.get(tabId)?.sessionId ?? ''
+}

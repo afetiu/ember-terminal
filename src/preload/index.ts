@@ -27,6 +27,7 @@ import type {
   CanvasAnnotateResult,
   CanvasSteps, EmberCost,
   ClaudeEvent,
+  NativeTabState,
   ClaudeStartResult } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
@@ -146,8 +147,11 @@ const bridge: EmberBridge = {
     control: (tabId, request) => ipcRenderer.invoke('ember:claude:control', tabId, request) as Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>,
     interrupt: (tabId) => ipcRenderer.invoke('ember:claude:interrupt', tabId) as Promise<{ ok: boolean; error?: string }>,
     answer: (tabId, requestId, response) => ipcRenderer.send('ember:claude:answer', tabId, requestId, response),
-    stop: (tabId) => ipcRenderer.send('ember:claude:stop', tabId),
+    stop: (tabId) => ipcRenderer.invoke('ember:claude:stop', tabId) as Promise<void>,
     onEvent: (cb) => on<ClaudeEvent>('ember:claude:event', cb),
+    saveTabs: (tabs) => ipcRenderer.send('ember:claude:saveTabs', tabs),
+    savedTabs: () => ipcRenderer.invoke('ember:claude:savedTabs') as Promise<NativeTabState[]>,
+    boundSession: (tabId) => ipcRenderer.invoke('ember:claude:bound', tabId) as Promise<string>,
   },
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),

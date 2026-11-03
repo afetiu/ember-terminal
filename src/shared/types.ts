@@ -334,6 +334,20 @@ export type ClaudeControlRequest =
   | { subtype: 'interrupt'; cancel_queued?: boolean }
   | { subtype: 'set_permission_mode'; mode: string }
   | { subtype: 'get_context_usage' }
+  /** A model from `initialize.models` (its `value`), or null for the default. */
+  | { subtype: 'set_model'; model: string | null }
+  /** Only the effort level: the one flag setting the bar changes. */
+  | { subtype: 'apply_flag_settings'; settings: { effortLevel: string } }
+
+/**
+ * A native tab, as remembered across restarts (`native-tabs.json` under EMBER_HOME): the
+ * Claude session it held and its folder. No session id = the tab never started a turn,
+ * and comes back as a fresh session in that folder.
+ */
+export interface NativeTabState {
+  sessionId: string
+  cwd: string
+}
 
 /** What a tab's Claude Code process said, as main passes it on. */
 export type ClaudeEvent =
@@ -884,9 +898,14 @@ export interface EmberBridge {
     control(tabId: string, request: ClaudeControlRequest): Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>
     /** Answer a question Claude Code asked (an `ask` event), by its request id. */
     answer(tabId: string, requestId: string, response: Record<string, unknown>): void
-    /** End the process: stdin closed, then killed if it lingers. */
-    stop(tabId: string): void
+    /** End the process: stdin closed, then killed if it lingers. Resolves once it has gone. */
+    stop(tabId: string): Promise<void>
     onEvent(cb: (e: ClaudeEvent) => void): () => void
+    /** The native tabs, in order, to bring back on the next start. */
+    saveTabs(tabs: NativeTabState[]): void
+    savedTabs(): Promise<NativeTabState[]>
+    /** The session a tab's Claude last reported (panel server or status line): '' if none. */
+    boundSession(tabId: string): Promise<string>
   }
   window: {
     minimize(): void

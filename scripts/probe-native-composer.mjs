@@ -139,6 +139,10 @@ const logLines = (log) => (existsSync(log) ? readFileSync(log, 'utf8').split('\n
   const folder = join(process.env.TEMP ?? '.', 'ember-native-composer-fake')
   mkdirSync(folder, { recursive: true })
   const e = await ember('fake', PORT, { EMBER_CLAUDE_BIN: join(REPO, 'scripts', 'fake-claude.mjs'), FAKE_CLAUDE_LOG: log })
+  // The CLI view runs a stand-in TUI here, never the real `claude`.
+  const tuiLog = join(process.env.TEMP ?? '.', `ember-fake-tui-composer${process.env.PROBE_TAG ?? ''}.log`)
+  rmSync(tuiLog, { force: true })
+  await e.ev(`window.__ember.cliBin(${JSON.stringify(`node "${join(REPO, 'scripts', 'fake-claude-tui.mjs')}" --log "${tuiLog}"`)})`)
   const replied = (re, ms = 10000) =>
     e.until(async () => {
       const l = await loom(e, tab)
@@ -186,8 +190,18 @@ const logLines = (log) => (existsSync(log) ? readFileSync(log, 'utf8').split('\n
     await clearInput(e)
 
     await e.say('/login')
-    await wait(300)
-    check('/login says it opens in the CLI view, and is not sent', !!(await toastSeen(e, /login opens in the CLI view/)) && !users().some((u) => u.content === '/login'))
+    // /login only exists in Claude Code's own screen: the CLI view opens and it is typed there.
+    const typedThere = await e.until(async () => {
+      const t = existsSync(tuiLog) ? readFileSync(tuiLog, 'utf8') : ''
+      return t.includes('"submitted":"/login"') ? t : null
+    }, 20000)
+    check('/login opens the CLI view and is typed there, not sent', !!typedThere && !users().some((u) => u.content === '/login'))
+    await e.key('`', 'Backquote', 192, 2)
+    const backFromLogin = await e.until(async () => {
+      const l = await loom(e, tab)
+      return !l?.native?.cli && l?.native?.phase === 'idle' ? l : null
+    }, 20000)
+    check('and back to the canvas', !!backFromLogin)
     await clearInput(e)
 
     // ---- `@` files

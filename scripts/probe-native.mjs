@@ -5,7 +5,7 @@
  * Two runs of a dev Ember, each with its own EMBER_HOME:
  *   1. a stand-in (scripts/fake-claude.mjs, via EMBER_CLAUDE_BIN): the spawn args, a reply
  *      drawn on the canvas, the shell untouched, interrupt, Allow on a permission card,
- *      Ctrl+` saying it is not here yet, and the process gone when the tab closes.
+ *      Ctrl+` to the CLI view (a stand-in TUI) and back, and the process gone when the tab closes.
  *   2. the real `claude`, `--model haiku`, in a fresh temp folder: "Reply with the word ok."
  *
  * Keys go to Ember's own input box only. Nothing is typed into a terminal running claude.
@@ -123,13 +123,16 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
     const tab = await claudeTab(e, folder)
     const ready = await e.until(async () => (await loom(e, tab))?.native?.phase === 'idle', 15000)
     check('stand-in comes up', !!ready)
-    const head = existsSync(log) ? JSON.parse(readFileSync(log, 'utf8').split('\n')[0]) : { argv: [] }
+    // The log is shared by every stand-in this Ember starts (the tab it opened with too): this tab's is the one with its id.
+    const logged = existsSync(log) ? readFileSync(log, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []
+    const at = logged.findLastIndex((l) => l.argv && l.env?.EMBER_TAB_ID === tab)
+    const head = logged[at] ?? { argv: [] }
     const argv = head.argv.join(' ')
     for (const a of ['--output-format stream-json', '--input-format stream-json', '--verbose', '--include-partial-messages', '--replay-user-messages', '--permission-prompt-tool stdio', '--session-id', '--mcp-config', '--settings'])
       check(`spawned with ${a}`, argv.includes(a))
     check('runs in the tab folder, by its long path', head.cwd?.toLowerCase() === realpathSync.native(folder).toLowerCase(), head.cwd)
     check('carries the tab id', head.env?.EMBER_TAB_ID === tab && head.env?.EMBER_SURFACE === 'canvas')
-    check('initialize sent first', readFileSync(log, 'utf8').split('\n')[1]?.includes('"initialize"'))
+    check('initialize sent first', logged.slice(at + 1).find((l) => l.in)?.subtype === 'initialize')
     const focus = await e.ev(`document.activeElement?.className`)
     check('the keyboard is in Ember\'s input, not the shell', focus === 'loom-native-input', focus)
     await e.shot('native-fake-idle')
@@ -172,11 +175,23 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
     }, 8000)
     check('Allow reaches Claude Code', !!allowed)
 
+    // Ctrl+`: the CLI view, here with a stand-in TUI (scripts/fake-claude-tui.mjs) in place of `claude`.
+    const tuiLog = join(process.env.TEMP ?? '.', `ember-fake-tui-native${process.env.PROBE_TAG ?? ''}.log`)
+    rmSync(tuiLog, { force: true })
+    await e.ev(`window.__ember.cliBin(${JSON.stringify(`node "${join(REPO, 'scripts', 'fake-claude-tui.mjs')}" --log "${tuiLog}"`)})`)
+    const before = (await loom(e, tab))?.native?.pid
     await e.key('`', 'Backquote', 192, 2)
-    await wait(300)
-    const after = await loom(e, tab)
-    const toast = await e.ev(`[...document.querySelectorAll('*')].some((n) => n.childElementCount === 0 && /CLI view comes in a later phase/.test(n.textContent))`)
-    check('Ctrl+` says the CLI view is not here yet', !!toast && after?.raw === false && after?.mode === 'claude')
+    const inCli = await e.until(async () => {
+      const l = await loom(e, tab)
+      return l?.native?.cli && l.mode === 'raw' ? l : null
+    }, 15000)
+    check('Ctrl+` opens the session in the CLI view', !!inCli && !alive(before), inCli?.cliLine)
+    await e.key('`', 'Backquote', 192, 2)
+    const after = await e.until(async () => {
+      const l = await loom(e, tab)
+      return !l?.native?.cli && l?.native?.phase === 'idle' && l.mode === 'claude' ? l : null
+    }, 15000)
+    check('Ctrl+` again comes back to the canvas', !!after)
 
     const pid = after?.native?.pid
     check('process alive while the tab is open', !!pid && alive(pid), String(pid))

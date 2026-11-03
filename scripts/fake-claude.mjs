@@ -17,25 +17,38 @@
  *   "elicit"    an MCP server's form (`elicitation`)
  *   "cancelme"  asks, then withdraws the question (`control_cancel_request`)
  *   "/context"  a synthetic context table, as /context answers
+ *   "/clear"    a new conversation: a new session id from then on
+ * Also: `--resume <id>` takes that id (FAKE_CLAUDE_MISSING=<id> makes it fail the way a
+ * missing session does); set_model, apply_flag_settings and get_context_usage answer.
  * Pictures are counted; `<bash-input>`/`<bash-stdout>` blocks before the text are quoted.
  *
- * FAKE_CLAUDE_LOG names a file that gets its argv, cwd and a line per message it read.
+ * FAKE_CLAUDE_LOG names a file that gets its argv, cwd and a line per message it read —
+ * appended, so a restarted process (the CLI view and back, a restart) adds its own argv line.
  */
-import { appendFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 
 const LOG = process.env.FAKE_CLAUDE_LOG
 const log = (o) => LOG && appendFileSync(LOG, JSON.stringify(o) + '\n')
-if (LOG) writeFileSync(LOG, JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd(), env: { EMBER_TAB_ID: process.env.EMBER_TAB_ID ?? '', EMBER_SURFACE: process.env.EMBER_SURFACE ?? '' } }) + '\n')
+if (LOG) appendFileSync(LOG, JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd(), env: { EMBER_TAB_ID: process.env.EMBER_TAB_ID ?? '', EMBER_SURFACE: process.env.EMBER_SURFACE ?? '' } }) + '\n')
 
-const sid = (() => {
+let sid = (() => {
   const i = process.argv.indexOf('--session-id')
-  return i > 0 ? process.argv[i + 1] : randomUUID()
+  const r = process.argv.indexOf('--resume')
+  return i > 0 ? process.argv[i + 1] : r > 0 ? process.argv[r + 1] : randomUUID()
 })()
+if (process.argv.includes('--resume') && process.env.FAKE_CLAUDE_MISSING && process.env.FAKE_CLAUDE_MISSING === sid) {
+  process.stderr.write(`No conversation found with session ID: ${sid}
+`)
+  process.exit(1)
+}
+let model = 'fake-haiku'
+let ctxPct = 3
 const out = (o) => process.stdout.write(JSON.stringify({ session_id: sid, ...o }) + '\n')
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const COMMANDS = [
+  { name: 'clear', description: 'Clear conversation history and free up context', argumentHint: '' },
   { name: 'compact', description: 'Clear conversation history but keep a summary in context', argumentHint: '<optional custom summarization instructions>' },
   { name: 'context', description: 'Visualize current context usage as a colored grid', argumentHint: '' },
   { name: 'cost', description: 'Show the total cost and duration of the current session', argumentHint: '' },
@@ -44,6 +57,11 @@ const COMMANDS = [
   { name: 'da-labs', description: 'Run the business side of Deep Answer Labs (user)', argumentHint: '' },
   { name: 'config', description: 'Set a setting: /config key=value', argumentHint: 'key=value' },
   { name: 'fake-terminal-only', description: 'Bound to the terminal', argumentHint: '' },
+]
+const MODELS = [
+  { value: 'default', displayName: 'Default (recommended)', description: 'Opus 5.5 for complex work', supportsEffort: true, supportedEffortLevels: ['low', 'medium', 'high', 'xhigh', 'max'], supportsAutoMode: true },
+  { value: 'sonnet', displayName: 'Sonnet', description: 'Sonnet 5.5 for everyday tasks', supportsEffort: true, supportedEffortLevels: ['low', 'medium', 'high'] },
+  { value: 'haiku', displayName: 'Haiku', description: 'Haiku 5.5 for quick answers' },
 ]
 const FILES = ['src\\', 'src\\main.ts', 'src\\renderer\\', 'scripts\\probe.mjs', 'README.md', 'package.json']
 
@@ -80,7 +98,18 @@ async function run(m) {
   const uuid = m.uuid
   const me = (turn = { stop: false, uuid })
   out({ type: 'command_lifecycle', command_uuid: uuid, state: 'started', uuid: randomUUID() })
-  out({ type: 'system', subtype: 'init', model: 'fake-haiku', permissionMode: 'default', cwd: process.cwd(), terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
+  if (said0.trim() === '/clear') {
+    // A new conversation, as Claude Code starts one: a new id, the command and its (empty) output.
+    sid = randomUUID()
+    ctxPct = 1
+    out({ type: 'system', subtype: 'init', model, permissionMode: 'default', cwd: process.cwd(), terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
+    out({ ...m, isReplay: true })
+    out({ type: 'user', message: { role: 'user', content: '<local-command-stdout></local-command-stdout>' }, isReplay: true, parent_tool_use_id: null, uuid: randomUUID() })
+    out({ type: 'result', subtype: 'success', is_error: false, terminal_reason: 'completed', result: '', local_command: 'clear', user_message_uuid: uuid, uuid: randomUUID() })
+    return finish(me, uuid)
+  }
+  ctxPct += 9
+  out({ type: 'system', subtype: 'init', model, permissionMode: 'default', cwd: process.cwd(), effort: 'medium', terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
   out({ ...m, isReplay: true })
   out({ type: 'system', subtype: 'status', status: 'requesting', user_message_uuids: [uuid], uuid: randomUUID() })
   let text = said0
@@ -207,7 +236,7 @@ process.stdin.on('data', (d) => {
         // A little startup time, as the real one has.
         setTimeout(
           () =>
-            reply({ commands: COMMANDS, models: [], account: {}, current_permission_mode: 'default', claude_code_version: 'fake', capabilities: ['interrupt_send_now_v1', 'interrupt_cancel_queued_v1'] }),
+            reply({ commands: COMMANDS, models: MODELS, account: {}, current_permission_mode: 'default', claude_code_version: 'fake', capabilities: ['interrupt_send_now_v1', 'interrupt_cancel_queued_v1'] }),
           400
         )
       } else if (r.subtype === 'interrupt') {
@@ -225,6 +254,13 @@ process.stdin.on('data', (d) => {
           out({ type: 'command_lifecycle', command_uuid: r.message_uuid, state: 'cancelled', uuid: randomUUID() })
         }
         reply({ cancelled: at >= 0 })
+      } else if (r.subtype === 'set_model') {
+        model = r.model ?? 'fake-haiku'
+        reply({ model })
+      } else if (r.subtype === 'apply_flag_settings') {
+        reply({})
+      } else if (r.subtype === 'get_context_usage') {
+        reply({ percentage: ctxPct, totalTokens: ctxPct * 2000, maxTokens: 200000, categories: [] })
       } else if (r.subtype === 'set_permission_mode') {
         reply({})
         out({ type: 'system', subtype: 'status', status: null, permissionMode: r.mode, uuid: randomUUID() })

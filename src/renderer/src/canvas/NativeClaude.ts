@@ -12,12 +12,25 @@ import { Composer, tuiOnly, type Attachment, type QueuedMessage, type SlashComma
  * the questions Claude Code asks (Asks). Nothing is read off a screen and nothing is typed
  * into one; the tab's shell stays a plain shell underneath, and `!command` runs there.
  *
- * Phases 1–3 of docs/specs/canvas-native.md. The bar's switches and the CLI view come later.
+ * Phases 1–4 of docs/specs/canvas-native.md: the bar's switches (mode, model, effort,
+ * context) are driven from here, and the CLI view hands the session to the real TUI and
+ * takes it back (`handOff` / `takeBack`): one process owns a session at a time.
  */
 
 type Json = Record<string, unknown>
 
-export type NativePhase = 'starting' | 'idle' | 'working' | 'asking' | 'exited'
+export type NativePhase = 'starting' | 'idle' | 'working' | 'asking' | 'exited' | 'cli'
+
+/** A model as `initialize.models` lists it. */
+export interface NativeModel {
+  value: string
+  resolvedModel?: string
+  displayName: string
+  description: string
+  supportsEffort?: boolean
+  supportedEffortLevels?: string[]
+  supportsAutoMode?: boolean
+}
 
 export interface NativeState {
   phase: NativePhase
@@ -26,6 +39,12 @@ export interface NativeState {
   permissionMode: string
   /** "12s · ↓ 340 tokens", while it works. */
   detail: string
+  /** The model picked from the bar (a `models` value), '' = whatever Claude Code started with. */
+  picked: string
+  /** The effort level set from the bar, or the session's own (`system/init.effort`). */
+  effort: string
+  /** Context used after the last turn, 0–100; null before the first. */
+  context: number | null
 }
 
 export interface ShellResult {
@@ -53,7 +72,16 @@ export interface NativeContext {
   shell(command: string): Promise<ShellResult>
   /** Ctrl+C to that shell. */
   interruptShell(): void
+  /**
+   * The session this tab holds, whenever it is known or changes: its id (only once it has a
+   * transcript, i.e. a turn started) and its folder. Remembered across restarts.
+   */
+  session(sessionId: string, cwd: string): void
+  /** A command that only exists in Claude Code's own screen (`/login`): open the CLI view with it. */
+  openCli(command: string): void
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** What a `!command` hands Claude, at most: Claude Code's bash mode trims long output too. */
 const BANG_CONTEXT_MAX = 30_000
@@ -68,8 +96,23 @@ export class NativeClaude {
   private readonly composer: Composer
   private readonly asks: Asks
   private readonly unsubs: Array<() => void> = []
-  private state: NativeState = { phase: 'starting', model: '', permissionMode: '', detail: '' }
+  private state: NativeState = { phase: 'starting', model: '', permissionMode: '', detail: '', picked: '', effort: '', context: null }
   private sessionId = ''
+  /** The session has a transcript on disk: it can be resumed. */
+  private hasTranscript = false
+  /** The folder Claude Code says it runs in (long path). */
+  private workDir = ''
+  /** Started with `--resume`: a failure before `initialize` means the session is gone. */
+  private resuming = ''
+  private everReady = false
+  /** Between `handOff` and `takeBack`: the TUI owns the session. */
+  private cli = false
+  /** A `/clear` was just shown: the session id that follows is its new conversation. */
+  private clearing = false
+  /** Turns started since the canvas last started over: the hint goes with the first. */
+  private turnCount = 0
+  models: NativeModel[] = []
+  private capabilities: string[] = []
   private pid = 0
   private liveText = ''
   private liveReq = 0
@@ -92,7 +135,8 @@ export class NativeClaude {
   constructor(
     private readonly tabId: string,
     private readonly cwd: string | undefined,
-    private readonly ctx: NativeContext
+    private readonly ctx: NativeContext,
+    resume?: string
   ) {
     this.asks = new Asks({
       answer: (id, response) => window.ember.claude.answer(this.tabId, id, response),
@@ -120,13 +164,19 @@ export class NativeClaude {
         return list.map((s) => String(s['path'] ?? s['displayText'] ?? '')).filter(Boolean)
       },
       submit: (text, images) => this.submit(text, images),
+      cycleMode: () => this.cycleMode(),
       sendNow: (uuid) => this.sendNow(uuid),
       cancel: (uuid) => void this.cancelQueued(uuid),
       toast: (t) => ctx.toast(t),
       relayout: () => ctx.relayout(),
     })
     this.unsubs.push(window.ember.claude.onEvent((e) => e.tabId === this.tabId && this.onEvent(e)))
-    void this.start()
+    if (resume) {
+      // A session from before the restart: it has a transcript, and it is this tab's.
+      this.sessionId = resume
+      this.hasTranscript = true
+    }
+    void this.start(resume)
   }
 
   get input(): HTMLTextAreaElement {
@@ -137,7 +187,11 @@ export class NativeClaude {
 
   private async start(resume?: string): Promise<void> {
     this.set({ phase: 'starting' })
-    const r = await window.ember.claude.start(this.tabId, { ...(this.cwd ? { cwd: this.cwd } : {}), ...(resume ? { resume } : {}) })
+    this.resuming = resume ?? ''
+    this.everReady = false
+    this.stderr = ''
+    const cwd = this.workDir || this.cwd
+    const r = await window.ember.claude.start(this.tabId, { ...(cwd ? { cwd } : {}), ...(resume ? { resume } : {}) })
     if (!r.ok) {
       this.ctx.feed.notice(r.error ?? 'Claude Code could not start', true)
       this.set({ phase: 'exited' })
@@ -145,6 +199,140 @@ export class NativeClaude {
     }
     this.sessionId = r.sessionId ?? ''
     this.pid = r.pid ?? 0
+    this.report()
+  }
+
+  /** Tell the tab which session it holds (remembered across restarts). */
+  private report(): void {
+    this.ctx.session(this.resumableId, this.folder)
+  }
+
+  /** The session id to resume: '' while it has no transcript yet (a new tab that never sent anything). */
+  get resumableId(): string {
+    return this.hasTranscript ? this.sessionId : ''
+  }
+
+  get folder(): string {
+    return this.workDir || this.cwd || ''
+  }
+
+  get turns(): number {
+    return this.turnCount
+  }
+
+  /** The canvas started over (`/clear`): the hint may show again until the next turn. */
+  cleared(): void {
+    this.turnCount = 0
+  }
+
+  // ------------------------------------------------------------- the CLI view
+
+  /**
+   * Give the session to Claude Code's own screen: finish (or, asked first, stop) the turn,
+   * then stop this process and wait until it has gone. False when the person said no.
+   */
+  async handOff(): Promise<boolean> {
+    if (this.cli) return true
+    if (this.state.phase === 'working' || this.state.phase === 'asking') {
+      const yes = await this.asks.confirm('Stop the current turn and open the CLI?', 'Stop and open the CLI', 'Keep working')
+      if (!yes) return false
+      // What was queued goes back into the box; questions still open are answered no on the way out (ClaudeHost.stop).
+      const queued = this.queue.splice(0)
+      if (queued.length) {
+        this.composer.setQueue(this.queue)
+        for (const q of queued) this.mine.delete(q.uuid)
+        this.composer.append(queued.map((q) => q.text).join('\n'))
+      }
+      if (this.state.phase === 'working') await window.ember.claude.control(this.tabId, { subtype: 'interrupt', ...(queued.length ? { cancel_queued: true } : {}) })
+    }
+    this.cli = true
+    this.stopped = true
+    this.asks.closeAll()
+    this.flushLive('')
+    await window.ember.claude.stop(this.tabId)
+    this.set({ phase: 'cli' })
+    return true
+  }
+
+  /** The TUI has exited: pick the session up again, on the id it ended on. */
+  takeBack(sessionId: string): void {
+    if (!this.cli) return
+    this.cli = false
+    this.stopped = false
+    if (sessionId && UUID.test(sessionId) && sessionId !== this.sessionId) {
+      this.sessionId = sessionId
+      this.hasTranscript = true
+    }
+    void this.start(this.resumableId || undefined)
+  }
+
+  get inCli(): boolean {
+    return this.cli
+  }
+
+  // ------------------------------------------------------------- the bar
+
+  /** The order Shift+Tab goes through, as in Claude Code; auto only where the model offers it. Never bypass. */
+  get modes(): string[] {
+    const auto = this.currentModel()?.supportsAutoMode === true || this.state.permissionMode === 'auto'
+    return ['default', 'acceptEdits', 'plan', ...(auto ? ['auto'] : [])]
+  }
+
+  cycleMode(): void {
+    if (this.state.phase === 'cli' || this.state.phase === 'exited' || this.state.phase === 'starting') return
+    const list = this.modes
+    const at = list.indexOf(this.state.permissionMode)
+    // From a mode the canvas does not cycle through (bypass, chosen at launch): back to default.
+    const next = at < 0 ? 'default' : list[(at + 1) % list.length]!
+    this.set({ permissionMode: next })
+    void window.ember.claude.control(this.tabId, { subtype: 'set_permission_mode', mode: next }).then((r) => {
+      if (!r.ok) this.ctx.toast(`Could not switch the mode: ${r.error ?? 'no answer'}`)
+    })
+  }
+
+  /** The model row the session is on: the one picked, else the one whose id the session reports. */
+  currentModel(): NativeModel | undefined {
+    const pick = this.state.picked
+    if (pick) return this.models.find((m) => m.value === pick)
+    const id = this.state.model
+    return this.models.find((m) => m.value === id || m.resolvedModel === id) ?? this.models.find((m) => m.value === 'default')
+  }
+
+  setModel(value: string): void {
+    if (!this.models.some((m) => m.value === value)) return
+    if (this.state.phase === 'cli' || this.state.phase === 'exited') return
+    this.set({ picked: value })
+    void window.ember.claude.control(this.tabId, { subtype: 'set_model', model: value === 'default' ? null : value }).then((r) => {
+      if (!r.ok) this.ctx.toast(`Could not switch the model: ${r.error ?? 'no answer'}`)
+      else if (typeof r.response?.['model'] === 'string') this.set({ model: r.response['model'] as string })
+    })
+  }
+
+  /** The effort levels the current model takes; empty when it takes none. */
+  get efforts(): string[] {
+    const m = this.currentModel()
+    return m?.supportsEffort && Array.isArray(m.supportedEffortLevels) ? m.supportedEffortLevels : []
+  }
+
+  setEffort(level: string): void {
+    if (!this.efforts.includes(level)) return
+    if (this.state.phase === 'cli' || this.state.phase === 'exited') return
+    this.set({ effort: level })
+    void window.ember.claude.control(this.tabId, { subtype: 'apply_flag_settings', settings: { effortLevel: level } }).then((r) => {
+      if (!r.ok) this.ctx.toast(`Could not set the effort: ${r.error ?? 'no answer'}`)
+    })
+  }
+
+  /** How full the context is, asked after each turn. */
+  private async refreshContext(): Promise<void> {
+    const r = await window.ember.claude.control(this.tabId, { subtype: 'get_context_usage' })
+    const p = r.ok ? Number(r.response?.['percentage']) : NaN
+    if (Number.isFinite(p)) this.set({ context: Math.max(0, Math.min(100, p)) })
+  }
+
+  /** Something of the input's is open over the canvas: a menu, a card, the queue. */
+  get menuOpen(): boolean {
+    return !!this.composer.menuOpen || this.asks.size > 0 || this.queue.length > 0
   }
 
   /** Enter in the composer. */
@@ -153,9 +341,8 @@ export class NativeClaude {
       void this.runBang(text.slice(1).trim())
       return
     }
-    const cli = tuiOnly(text)
-    if (cli) {
-      this.ctx.toast(`/${cli} opens in the CLI view — the CLI view comes in a later phase`)
+    if (tuiOnly(text)) {
+      this.ctx.openCli(text.trim())
       return
     }
     this.send(text, images.map((a) => a.image))
@@ -168,7 +355,8 @@ export class NativeClaude {
    */
   send(text: string, images: ClaudeImage[] = []): void {
     if (!text && !images.length) return
-    if (this.state.phase === 'exited') void this.start(this.sessionId || undefined)
+    if (this.cli) return
+    if (this.state.phase === 'exited') void this.start(this.resumableId || undefined)
     const uuid = crypto.randomUUID()
     const context = this.bangContext.splice(0)
     const busy = this.state.phase === 'working' || this.state.phase === 'asking'
@@ -189,6 +377,9 @@ export class NativeClaude {
     if (!m || m.shown) return
     m.shown = true
     const slash = /^\/([\w:.-]+)(?:\s+([\s\S]*))?$/.exec(m.text)
+    // The feed starts the canvas over for it; the new conversation's id follows in system/init.
+    if (slash && /^(clear|reset|new)$/.test(slash[1]!)) this.clearing = true
+    else this.turnCount++
     const content: unknown =
       slash && !m.images.length
         ? `<command-name>/${slash[1]}</command-name><command-args>${slash[2] ?? ''}</command-args>`
@@ -311,7 +502,10 @@ export class NativeClaude {
     switch (e.kind) {
       case 'ready': {
         const mode = String(e.info['permissionMode'] ?? '')
+        this.everReady = true
         if (Array.isArray(e.info['commands'])) this.commands = e.info['commands'] as SlashCommand[]
+        if (Array.isArray(e.info['models'])) this.models = (e.info['models'] as NativeModel[]).filter((m) => m && typeof m.value === 'string')
+        if (Array.isArray(e.info['capabilities'])) this.capabilities = (e.info['capabilities'] as unknown[]).map(String)
         this.set({ phase: this.state.phase === 'starting' ? 'idle' : this.state.phase, ...(mode ? { permissionMode: mode } : {}) })
         return
       }
@@ -332,12 +526,22 @@ export class NativeClaude {
         this.ctx.feed.notice(e.text, true)
         return
       case 'exit': {
+        // `--resume` of a session that is gone (deleted, another folder): start a new one.
+        if (this.resuming && !this.everReady && !this.stopped && !this.cli) {
+          const why = this.stderr.trim().split('\n').filter(Boolean).slice(-1)[0] ?? ''
+          this.ctx.feed.notice(`Could not pick up the last session${why ? ` (${why.slice(0, 200)})` : ''}. Started a new one.`, true)
+          this.hasTranscript = false
+          this.sessionId = ''
+          void this.start()
+          return
+        }
         this.asks.closeAll()
         this.flushLive('')
         const lost = this.queue.splice(0)
         this.composer.setQueue(this.queue)
         for (const q of lost) this.mine.delete(q.uuid)
         if (lost.length) this.composer.append(lost.map((q) => q.text).join('\n'))
+        if (this.cli) return
         if (!this.stopped) {
           const why = this.stderr.trim().split('\n').filter(Boolean).slice(-3).join(' · ')
           this.ctx.feed.notice(`Claude Code stopped${e.code ? ` (exit code ${e.code})` : ''}${why ? ` — ${why}` : ''}. Send a message to pick the session up again.`, !!e.code)
@@ -352,6 +556,12 @@ export class NativeClaude {
     const type = msg['type']
     const kind = `${String(type)}${msg['subtype'] ? `/${String(msg['subtype'])}` : ''}`
     this.counts[kind] = (this.counts[kind] ?? 0) + 1
+    if (type === 'conversation_reset') {
+      // A new conversation not started from this input: the canvas starts over too.
+      if (!this.clearing) this.ctx.feed.switchSession(false, true)
+      this.clearing = false
+      return
+    }
     if (type === 'command_lifecycle') {
       const uuid = String(msg['command_uuid'] ?? '')
       const st = msg['state']
@@ -368,7 +578,12 @@ export class NativeClaude {
     if (type === 'system') {
       const sub = msg['subtype']
       if (sub === 'init') {
-        this.set({ model: String(msg['model'] ?? ''), permissionMode: String(msg['permissionMode'] ?? this.state.permissionMode) })
+        this.set({
+          model: String(msg['model'] ?? ''),
+          permissionMode: String(msg['permissionMode'] ?? this.state.permissionMode),
+          ...(typeof msg['effort'] === 'string' && !this.state.effort ? { effort: msg['effort'] } : {}),
+        })
+        this.sessionSaid(String(msg['session_id'] ?? ''), typeof msg['cwd'] === 'string' ? msg['cwd'] : '')
         if (Array.isArray(msg['terminal_slash_commands'])) this.terminalOnly = new Set((msg['terminal_slash_commands'] as unknown[]).map((c) => String(c).replace(/^\//, '')))
       } else if (sub === 'status') {
         if (typeof msg['permissionMode'] === 'string') this.set({ permissionMode: msg['permissionMode'] })
@@ -429,7 +644,27 @@ export class NativeClaude {
       for (const u of [msg['user_message_uuid'], ...(Array.isArray(msg['user_message_uuids']) ? (msg['user_message_uuids'] as unknown[]) : [])])
         if (typeof u === 'string' && this.mine.get(u)?.shown) this.mine.delete(u)
       this.idle()
+      void this.refreshContext()
     }
+  }
+
+  /**
+   * The session id (and folder) Claude Code reports at the start of each turn. A new id
+   * means a new conversation: `/clear`, which the feed has already started over for.
+   */
+  private sessionSaid(id: string, cwd: string): void {
+    let changed = false
+    if (cwd && cwd !== this.workDir) {
+      this.workDir = cwd
+      changed = true
+    }
+    if (id && UUID.test(id) && (id !== this.sessionId || !this.hasTranscript)) {
+      this.sessionId = id
+      this.hasTranscript = true
+      this.clearing = false
+      changed = true
+    }
+    if (changed) this.report()
   }
 
   /** A stream message in the transcript's shape, which is what the feed reads. */
@@ -493,6 +728,8 @@ export class NativeClaude {
         ? 'Starting Claude Code… you can type already'
         : next.phase === 'exited'
           ? 'Claude Code stopped — send to pick the session up again'
+          : next.phase === 'cli'
+            ? 'The session is open in the CLI view — Ctrl+` to come back'
           : next.phase === 'working'
             ? 'Queue a message for when this turn ends'
             : 'Ask Claude…   / commands   @ files   ! shell'
@@ -523,6 +760,16 @@ export class NativeClaude {
     queue: QueuedMessage[]
     bangContext: number
     input: string
+    cli: boolean
+    resumable: string
+    cwd: string
+    models: string[]
+    picked: string
+    effort: string
+    efforts: string[]
+    modes: string[]
+    context: number | null
+    capabilities: string[]
   } {
     return {
       phase: this.state.phase,
@@ -540,6 +787,16 @@ export class NativeClaude {
       queue: [...this.queue],
       bangContext: this.bangContext.length,
       input: this.composer.input.value,
+      cli: this.cli,
+      resumable: this.resumableId,
+      cwd: this.folder,
+      models: this.models.map((m) => m.value),
+      picked: this.state.picked,
+      effort: this.state.effort,
+      efforts: this.efforts,
+      modes: this.modes,
+      context: this.state.context,
+      capabilities: [...this.capabilities],
     }
   }
 
