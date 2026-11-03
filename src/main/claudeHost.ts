@@ -4,7 +4,7 @@ import { existsSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, extname } from 'node:path'
 import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
-import type { ClaudeEvent, ClaudeImage, ClaudeStartOptions, ClaudeStartResult } from '../shared/types.js'
+import type { ClaudeControlRequest, ClaudeEvent, ClaudeImage, ClaudeSendOptions, ClaudeStartOptions, ClaudeStartResult } from '../shared/types.js'
 import { killTree, resolveBin } from './agents.js'
 import { bridgeEnv } from './bridge.js'
 import { loadConfig, resolveHome } from './config.js'
@@ -47,8 +47,8 @@ class ClaudeHost {
   /** Messages sent before `initialize` was answered: Claude Code must hear that first. */
   private held: string[] = []
   private readonly pending = new Map<string, Pending>()
-  /** Questions Claude Code is waiting on, so a stop can answer them rather than leave them. */
-  private readonly asked = new Set<string>()
+  /** Questions Claude Code is waiting on, by kind, so a stop can answer them rather than leave them. */
+  private readonly asked = new Map<string, 'can_use_tool' | 'elicitation'>()
   private stopping = false
   sessionId = ''
 
@@ -175,15 +175,21 @@ class ClaudeHost {
     return { ok: true, sessionId: this.sessionId, ...(child.pid ? { pid: child.pid } : {}) }
   }
 
-  send(text: string, images?: ClaudeImage[]): void {
+  send(text: string, images?: ClaudeImage[], opts?: ClaudeSendOptions): void {
+    const pics = (images ?? []).filter((i) => IMAGE_TYPES.has(i?.mediaType) && typeof i.data === 'string' && i.data.length > 0)
+    const context = (opts?.context ?? []).filter((c): c is string => typeof c === 'string' && c.length > 0)
     const content: unknown =
-      images && images.length
+      pics.length || context.length
         ? [
+            ...context.map((t) => ({ type: 'text', text: t })),
             ...(text ? [{ type: 'text', text }] : []),
-            ...images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.mediaType, data: i.data } })),
+            ...pics.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.mediaType, data: i.data } })),
           ]
         : text
-    const line = JSON.stringify({ type: 'user', uuid: randomUUID(), parent_tool_use_id: null, message: { role: 'user', content } })
+    // The canvas's own uuid when it gave one: Claude Code echoes it back, which is how the
+    // message it already shows is matched to the echo and to the queue's lifecycle.
+    const uuid = typeof opts?.uuid === 'string' && UUID_RE.test(opts.uuid) ? opts.uuid : randomUUID()
+    const line = JSON.stringify({ type: 'user', uuid, parent_tool_use_id: null, message: { role: 'user', content } })
     if (this.ready) this.write(line)
     else this.held.push(line)
   }
@@ -191,6 +197,14 @@ class ClaudeHost {
   interrupt(): Promise<{ ok: boolean; error?: string }> {
     if (!this.alive) return Promise.resolve({ ok: false, error: 'Claude Code is not running' })
     return this.control({ subtype: 'interrupt' }, CONTROL_TIMEOUT_MS).then((r) => (r.ok ? { ok: true } : { ok: false, error: r.error ?? 'no answer' }))
+  }
+
+  /** A control request from the canvas: only the kinds it needs, each with only its own fields. */
+  ask(req: ClaudeControlRequest): Promise<{ ok: boolean; response?: Json; error?: string }> {
+    if (!this.alive) return Promise.resolve({ ok: false, error: 'Claude Code is not running' })
+    const clean = sanitizeControl(req)
+    if (!clean) return Promise.resolve({ ok: false, error: 'not a request the canvas may send' })
+    return this.control(clean, CONTROL_TIMEOUT_MS)
   }
 
   answer(requestId: string, response: Json): void {
@@ -204,7 +218,7 @@ class ClaudeHost {
     if (!child || this.stopping) return
     this.stopping = true
     // A question left open would hold the turn; say no to it on the way out.
-    for (const id of [...this.asked]) this.answer(id, { behavior: 'deny', message: 'The tab was closed.' })
+    for (const [id, kind] of [...this.asked]) this.answer(id, kind === 'elicitation' ? { action: 'decline' } : { behavior: 'deny', message: 'The tab was closed.' })
     if (now) {
       killTreeNow(child)
       return
@@ -305,15 +319,13 @@ class ClaudeHost {
   private request(id: string, req: Json): void {
     if (!id) return
     const subtype = String(req['subtype'] ?? '')
-    if (subtype === 'can_use_tool') {
-      this.asked.add(id)
+    // A tool permission, Claude's question or plan (they come as tool permissions), or an
+    // MCP server asking for input: each is a card on the canvas, answered from there.
+    if (subtype === 'can_use_tool' || subtype === 'elicitation') {
+      this.asked.set(id, subtype)
       this.emit({ tabId: this.tabId, kind: 'ask', requestId: id, request: req })
       return
     }
-    const reply = (response: Json) =>
-      this.write(JSON.stringify({ type: 'control_response', response: { subtype: 'success', request_id: id, response } }))
-    // An MCP server asking for input: not drawn yet, so declined rather than left waiting.
-    if (subtype === 'elicitation') return reply({ action: 'decline' })
     this.write(
       JSON.stringify({ type: 'control_response', response: { subtype: 'error', request_id: id, error: `Ember does not handle ${subtype} yet` } })
     )
@@ -323,11 +335,48 @@ class ClaudeHost {
 /** The parts of the `initialize` answer the canvas uses, not the whole command list. */
 function summarise(r: Json): Json {
   const account = (r['account'] ?? {}) as Json
+  const commands = Array.isArray(r['commands'])
+    ? (r['commands'] as Json[])
+        .filter((c) => c && typeof c['name'] === 'string')
+        .slice(0, 500)
+        .map((c) => ({
+          name: String(c['name']),
+          description: String(c['description'] ?? '').slice(0, 300),
+          argumentHint: String(c['argumentHint'] ?? ''),
+          ...(Array.isArray(c['aliases']) ? { aliases: (c['aliases'] as unknown[]).map(String).slice(0, 8) } : {}),
+        }))
+    : []
   return {
     version: r['claude_code_version'] ?? '',
     permissionMode: r['current_permission_mode'] ?? '',
     subscription: account['subscriptionType'] ?? '',
     models: Array.isArray(r['models']) ? (r['models'] as Json[]).slice(0, 20) : [],
+    commands,
+    capabilities: Array.isArray(r['capabilities']) ? (r['capabilities'] as unknown[]).map(String) : [],
+  }
+}
+
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MODES = new Set(['default', 'acceptEdits', 'plan', 'dontAsk', 'auto'])
+
+/** Rebuilds a canvas control request from its known fields only; null for anything else. */
+function sanitizeControl(req: ClaudeControlRequest): Json | null {
+  if (!req || typeof req !== 'object') return null
+  switch (req.subtype) {
+    case 'file_suggestions':
+      return { subtype: 'file_suggestions', query: String(req.query ?? '').slice(0, 300) }
+    case 'cancel_async_message':
+      return UUID_RE.test(String(req.message_uuid)) ? { subtype: 'cancel_async_message', message_uuid: req.message_uuid } : null
+    case 'interrupt':
+      return { subtype: 'interrupt', ...(req.cancel_queued === true ? { cancel_queued: true } : {}) }
+    case 'set_permission_mode':
+      // Bypass is never switched on from the canvas: that stays a choice made at launch.
+      return MODES.has(String(req.mode)) ? { subtype: 'set_permission_mode', mode: req.mode } : null
+    case 'get_context_usage':
+      return { subtype: 'get_context_usage' }
+    default:
+      return null
   }
 }
 
@@ -387,8 +436,13 @@ export function registerClaudeHost(extraBin: string[]): void {
     }
     return h.start(opts ?? {}, extraBin)
   })
-  ipcMain.on('ember:claude:send', (_e, tabId: string, text: string, images?: ClaudeImage[]) => hosts.get(tabId)?.send(String(text ?? ''), images))
+  ipcMain.on('ember:claude:send', (_e, tabId: string, text: string, images?: ClaudeImage[], opts?: ClaudeSendOptions) =>
+    hosts.get(tabId)?.send(String(text ?? ''), Array.isArray(images) ? images : undefined, opts && typeof opts === 'object' ? opts : undefined)
+  )
   ipcMain.handle('ember:claude:interrupt', (_e, tabId: string) => hosts.get(tabId)?.interrupt() ?? { ok: false, error: 'no Claude in this tab' })
+  ipcMain.handle('ember:claude:control', (_e, tabId: string, request: ClaudeControlRequest) =>
+    hosts.get(tabId)?.ask(request) ?? { ok: false, error: 'no Claude in this tab' }
+  )
   ipcMain.on('ember:claude:answer', (_e, tabId: string, requestId: string, response: Json) => hosts.get(tabId)?.answer(String(requestId), response ?? {}))
   ipcMain.on('ember:claude:stop', (_e, tabId: string) => {
     hosts.get(tabId)?.stop()

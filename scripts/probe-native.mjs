@@ -118,7 +118,7 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
   rmSync(log, { force: true })
   const folder = join(process.env.TEMP ?? '.', 'ember-native-fake')
   mkdirSync(folder, { recursive: true })
-  const e = await ember('fake', 9411, { EMBER_CLAUDE_BIN: join(REPO, 'scripts', 'fake-claude.mjs'), FAKE_CLAUDE_LOG: log })
+  const e = await ember('fake', Number(process.env.PROBE_PORT) || 9441, { EMBER_CLAUDE_BIN: join(REPO, 'scripts', 'fake-claude.mjs'), FAKE_CLAUDE_LOG: log })
   try {
     const tab = await claudeTab(e, folder)
     const ready = await e.until(async () => (await loom(e, tab))?.native?.phase === 'idle', 15000)
@@ -165,7 +165,7 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
     const asked = await e.until(async () => ((await loom(e, tab))?.native?.asks === 1 ? true : null), 8000)
     check('permission card shown', !!asked)
     console.log('      shots:', await e.shot('native-fake-ask'))
-    await e.ev(`document.querySelector('.loom-ask-card button[data-a="allow"]').click()`)
+    await e.ev(`document.querySelector('.loom-ask-card button[data-a="yes"]').click()`)
     const allowed = await e.until(async () => {
       const l = await loom(e, tab)
       return l?.native?.phase === 'idle' && l.text.includes('you said allow') ? l : null
@@ -194,7 +194,7 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
 if (!FAKE_ONLY) {
   const folder = join(process.env.TEMP ?? '.', `ember-native-real-${Date.now()}`)
   mkdirSync(folder, { recursive: true })
-  const e = await ember('real', 9412, { EMBER_CLAUDE_ARGS: '--model haiku' })
+  const e = await ember('real', (Number(process.env.PROBE_PORT) || 9441) + 1, { EMBER_CLAUDE_ARGS: '--model haiku' })
   try {
     const tab = await claudeTab(e, folder)
     const t0 = Date.now()

@@ -141,7 +141,8 @@ const bridge: EmberBridge = {
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
     start: (tabId, opts) => ipcRenderer.invoke('ember:claude:start', tabId, opts) as Promise<ClaudeStartResult>,
-    send: (tabId, text, images) => ipcRenderer.send('ember:claude:send', tabId, text, images),
+    send: (tabId, text, images, opts) => ipcRenderer.send('ember:claude:send', tabId, text, images, opts),
+    control: (tabId, request) => ipcRenderer.invoke('ember:claude:control', tabId, request) as Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>,
     interrupt: (tabId) => ipcRenderer.invoke('ember:claude:interrupt', tabId) as Promise<{ ok: boolean; error?: string }>,
     answer: (tabId, requestId, response) => ipcRenderer.send('ember:claude:answer', tabId, requestId, response),
     stop: (tabId) => ipcRenderer.send('ember:claude:stop', tabId),

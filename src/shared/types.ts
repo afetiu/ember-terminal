@@ -294,13 +294,33 @@ export interface ClaudeImage {
   data: string
 }
 
+/** How a message is sent (native canvas). */
+export interface ClaudeSendOptions {
+  /** The message's uuid, chosen by the canvas so it can show the message before Claude Code echoes it. */
+  uuid?: string
+  /**
+   * Text blocks that go before the message: what `!` commands printed since the last
+   * message, as `<bash-input>`/`<bash-stdout>` — the way Claude Code's own bash mode
+   * hands them to the model.
+   */
+  context?: string[]
+}
+
+/** Control requests the canvas may send to its tab's Claude Code. Main refuses any other. */
+export type ClaudeControlRequest =
+  | { subtype: 'file_suggestions'; query: string }
+  | { subtype: 'cancel_async_message'; message_uuid: string }
+  | { subtype: 'interrupt'; cancel_queued?: boolean }
+  | { subtype: 'set_permission_mode'; mode: string }
+  | { subtype: 'get_context_usage' }
+
 /** What a tab's Claude Code process said, as main passes it on. */
 export type ClaudeEvent =
   /** `initialize` answered: Claude Code is up and taking messages. */
   | { tabId: string; kind: 'ready'; info: Record<string, unknown> }
   /** One stdout message that is not part of a control exchange: assistant, user, system, stream_event, result… */
   | { tabId: string; kind: 'message'; msg: Record<string, unknown> }
-  /** Claude Code asks before a tool runs (`can_use_tool`). Must be answered. */
+  /** Claude Code asks before a tool runs (`can_use_tool`), or an MCP server asks for input (`elicitation`). Must be answered. */
   | { tabId: string; kind: 'ask'; requestId: string; request: Record<string, unknown> }
   /** It withdrew a question it asked (after an interrupt, say). */
   | { tabId: string; kind: 'cancel'; requestId: string }
@@ -825,9 +845,11 @@ export interface EmberBridge {
     /** Native canvas: start this tab's Claude Code process (structured mode). */
     start(tabId: string, opts: ClaudeStartOptions): Promise<ClaudeStartResult>
     /** One message from the person, with pictures if any. Held until Claude Code is up. */
-    send(tabId: string, text: string, images?: ClaudeImage[]): void
+    send(tabId: string, text: string, images?: ClaudeImage[], opts?: ClaudeSendOptions): void
     /** Stop the turn in progress. Resolves with Claude Code's answer, or an error. */
     interrupt(tabId: string): Promise<{ ok: boolean; error?: string }>
+    /** One of the control requests the canvas is allowed (menus, the queue, the mode). */
+    control(tabId: string, request: ClaudeControlRequest): Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>
     /** Answer a question Claude Code asked (an `ask` event), by its request id. */
     answer(tabId: string, requestId: string, response: Record<string, unknown>): void
     /** End the process: stdin closed, then killed if it lingers. */

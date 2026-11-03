@@ -5865,3 +5865,392 @@ body.is-light .loom-zoom {
   font-size: 0.8em;
   color: var(--l-faint);
 }
+
+/* ---------------------------------------------------------------- native: the composer (phase 2) */
+
+/* A picture waiting to go: the overlay's thumbnail, with a way to take it back. */
+.loom-attach-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font: 600 13px / 20px var(--l-prose);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.loom-attach-item:hover .loom-attach-x,
+.loom-attach-x:focus-visible {
+  opacity: 1;
+}
+.loom-attach-x:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+/* Queued messages, each with its own Send now and x. */
+.loom-native-queue .loom-queue-item {
+  align-items: center;
+}
+.loom-native-queue .loom-queue-text {
+  flex: 1;
+  min-width: 0;
+}
+.loom-native-queue .loom-queue-text i {
+  font-style: normal;
+  color: var(--l-faint);
+}
+.loom-queue-acts {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.loom-queue-acts button {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 7px;
+  font: 600 0.8em var(--l-prose);
+  color: var(--c-bg);
+  background: var(--l-accent);
+  cursor: pointer;
+}
+.loom-queue-acts button.is-x {
+  padding: 3px 8px;
+  color: var(--l-dim);
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.loom-queue-acts button:hover {
+  filter: brightness(1.12);
+}
+
+/* The / and @ menus: Claude Code's own list, drawn as a card over the input. */
+.loom-native-menu {
+  display: none;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 12px;
+  background: var(--c-bg);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+  overflow: hidden;
+  animation: loom-rise 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-native-menu.is-on {
+  display: flex;
+}
+.loom-native-menu-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px 5px;
+  font: 600 0.78em var(--l-prose);
+  color: var(--l-faint);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-fg) 7%, transparent);
+}
+.loom-native-menu-head span {
+  font-weight: 400;
+}
+.loom-native-menu-list {
+  max-height: 264px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+}
+.loom-native-menu-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.loom-native-menu-row {
+  overflow: hidden;
+}
+.loom-native-menu-row .n {
+  flex: none;
+  min-width: 132px;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 0.92em var(--l-mono);
+  color: var(--c-fg);
+}
+.loom-native-menu-row .n i {
+  font-style: normal;
+  color: var(--l-faint);
+}
+.loom-native-menu-row .d {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.86em;
+  color: var(--l-faint);
+}
+.loom-native-menu-row.is-dir .n {
+  color: var(--l-accent);
+}
+.loom-native-menu-row:hover {
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+}
+.loom-native-menu-row.is-sel {
+  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+}
+.loom-native-menu-row.is-sel .n {
+  color: var(--l-accent);
+}
+.loom-native-menu-row.is-sel .d {
+  color: var(--l-dim);
+}
+
+/* ---------------------------------------------------------------- native: the asks (phase 3) */
+
+.loom-ask-card {
+  outline: 0;
+}
+.loom-ask-card:focus-within {
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+.loom-ask-card-sub {
+  color: var(--l-faint);
+  font-size: 0.9em;
+}
+.loom-ask-card-acts {
+  flex-wrap: wrap;
+}
+.loom-ask-card-acts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.loom-ask-card-acts button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+.loom-ask-card kbd {
+  font: 600 0.8em var(--l-mono);
+  opacity: 0.55;
+}
+.loom-ask-card-file {
+  margin-top: 8px;
+  font: 0.86em var(--l-mono);
+  color: var(--l-dim);
+}
+.loom-ask-card-file + .loom-ask-card-what {
+  margin-top: 4px;
+}
+.loom-ask-card-what.is-diff {
+  max-height: 220px;
+}
+.loom-ask-card-what .del {
+  color: var(--l-red, #e2676f);
+}
+.loom-ask-card-what .ins {
+  color: var(--l-green, #5fbf8f);
+}
+.loom-ask-card-what .sep {
+  color: var(--l-faint);
+}
+.loom-ask-card-why.is-err {
+  color: var(--l-err, #e2676f);
+}
+.loom-ask-card-msg {
+  margin-top: 8px;
+  color: var(--c-fg);
+  white-space: pre-wrap;
+}
+.loom-ask-card-say,
+.loom-ask-other,
+.loom-ask-field input[type='text'],
+.loom-ask-field input[type='number'],
+.loom-ask-field select {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  outline: 0;
+  font: 0.92em var(--l-prose);
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.loom-ask-card-say::placeholder,
+.loom-ask-other::placeholder {
+  color: var(--l-faint);
+}
+.loom-ask-card-say:focus,
+.loom-ask-other:focus,
+.loom-ask-field input:focus,
+.loom-ask-field select:focus {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+
+/* Claude's questions: each with its options as chips, numbered as their keys. */
+.loom-ask-qs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.loom-ask-q-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--c-fg);
+}
+.loom-ask-q-tag {
+  padding: 1px 7px;
+  border-radius: 6px;
+  font: 600 0.72em var(--l-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--l-accent);
+  background: color-mix(in srgb, var(--c-accent) 13%, transparent);
+}
+.loom-ask-q-text {
+  font-weight: 600;
+}
+.loom-ask-q-multi {
+  font-size: 0.8em;
+  color: var(--l-faint);
+}
+.loom-ask-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.loom-ask-chip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 9px;
+  text-align: left;
+  font: 0.92em var(--l-prose);
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 8%, transparent);
+  cursor: pointer;
+}
+.loom-ask-chip .l {
+  font-weight: 600;
+}
+.loom-ask-chip .d {
+  grid-column: 2;
+  font-size: 0.86em;
+  color: var(--l-faint);
+}
+.loom-ask-chip:hover {
+  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
+}
+.loom-ask-chip:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+.loom-ask-chip.is-on {
+  background: color-mix(in srgb, var(--c-accent) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+.loom-ask-chip.is-on .l {
+  color: var(--l-accent);
+}
+
+/* The plan, as it will be followed. */
+.loom-ask-plan {
+  margin-top: 10px;
+  padding: 4px 14px;
+  max-height: 46vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
+  color: var(--c-fg);
+  scrollbar-width: thin;
+}
+.loom-ask-plan h1,
+.loom-ask-plan h2,
+.loom-ask-plan h3 {
+  margin: 12px 0 6px;
+  font-size: 1.02em;
+  font-weight: 600;
+}
+.loom-ask-plan p,
+.loom-ask-plan ul,
+.loom-ask-plan ol {
+  margin: 6px 0;
+}
+.loom-ask-plan ul,
+.loom-ask-plan ol {
+  padding-left: 20px;
+}
+.loom-ask-plan code {
+  font: 0.9em var(--l-mono);
+}
+
+/* An MCP server's form. */
+.loom-ask-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.loom-ask-field {
+  display: flex;
+  flex-direction: column;
+  color: var(--c-fg);
+}
+.loom-ask-field .l {
+  font-weight: 600;
+  font-size: 0.92em;
+}
+.loom-ask-field .l i {
+  font-style: normal;
+  color: var(--l-accent);
+}
+.loom-ask-field .d {
+  font-size: 0.84em;
+  color: var(--l-faint);
+}
+.loom-ask-field input,
+.loom-ask-field select {
+  margin-top: 4px !important;
+}
+.loom-ask-field input[type='checkbox'] {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 6px 0 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 18%, transparent);
+  cursor: pointer;
+}
+.loom-ask-field input[type='checkbox']:checked {
+  background: var(--l-accent);
+  box-shadow: none;
+}
+.loom-ask-field input[type='checkbox']:checked::after {
+  content: '';
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border: solid var(--c-bg);
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+}

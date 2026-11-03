@@ -389,11 +389,12 @@ export class Feed {
   }
 
   /** One plain line in the turn from Ember itself: how a turn ended, why the session stopped. */
-  notice(text: string, error = false): void {
+  notice(text: string, error = false): HTMLElement {
     const n = el('div', `loom-notice${error ? ' is-error' : ''}`, escapeHtml(text))
     const activity = this.turn.querySelector(':scope > .loom-activity')
     this.turn.insertBefore(n, activity)
     this.ctx.grew()
+    return n
   }
 
   /** Where a pushed piece of `tool` should go, or the end of the current turn. */

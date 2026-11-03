@@ -334,7 +334,25 @@ export class LoomView {
         relayout: () => this.schedule(),
         grew: () => this.grew(),
         toast: (t) => this.hooks.toast(t),
+        shell: (cmd) => this.runInShell(cmd),
+        interruptShell: () => window.ember.write(this.session.id, '\x03'),
       })
+      // Files dropped anywhere on the tab: pictures attach to the message, others are
+      // mentioned by path. Handled here, so the window's own drop (typing paths into the
+      // shell) leaves them alone.
+      const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
+      for (const target of [this.el, this.frame, this.above]) {
+        target.addEventListener('dragover', (e) => {
+          if (!hasFiles(e)) return
+          e.preventDefault()
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+        })
+        target.addEventListener('drop', (e) => {
+          if (!hasFiles(e) || e.defaultPrevented) return
+          e.preventDefault()
+          this.native?.dropFiles([...(e.dataTransfer?.files ?? [])])
+        })
+      }
       const input = this.native.input
       session.focusInstead = () => input.focus()
       if (document.activeElement === session.term.textarea) input.focus()
@@ -1069,6 +1087,66 @@ export class LoomView {
       `<button type="button" class="loom-bar-mode ${cls}" title="Permission mode">${escapeHtml(label)}</button>` +
       `<span class="loom-bar-model">${escapeHtml(s?.model || 'Claude Code')}</span>` +
       `<span class="loom-bar-rest">${escapeHtml(phase)}</span>`
+  }
+
+  private bang: { token: string; done: (code: number | null, output: string) => void } | null = null
+  private bangOsc: { dispose(): void } | null = null
+
+  /**
+   * Native mode's `!command`: run in the tab's own shell (the plain shell under the
+   * canvas), and give back what it printed. The shell captures the output itself and
+   * hands it back, base64, inside a private OSC mark (7771) — not read off the screen,
+   * where ConPTY does not keep a passed-through mark in order with the text around it.
+   * PowerShell and POSIX shells only: what Ember tabs run.
+   */
+  private runInShell(command: string): Promise<import('./NativeClaude').ShellResult> {
+    const term = this.session.term
+    const shellName = (this.session.profile.command || '').toLowerCase()
+    const ps = /pwsh|powershell/.test(shellName)
+    const sh = /(^|[\\/])(bash|zsh|sh|wsl|fish)(\.exe)?$/.test(shellName) || /\b(bash|zsh|wsl)\b/.test(shellName)
+    const fail = (error: string) => Promise.resolve({ output: '', code: null, timedOut: false, error })
+    if (!ps && !sh) return fail(`! runs in PowerShell or a POSIX shell; this tab's shell is ${this.session.profile.command}`)
+    if (/[\r\n]/.test(command)) return fail('! takes one line')
+    if (this.bang) return fail('A command is still running in the shell')
+    if (!this.bangOsc) {
+      this.bangOsc = term.parser.registerOscHandler(7771, (data) => {
+        const [token, code, b64] = data.split(';')
+        const b = this.bang
+        if (!b || token !== b.token) return true
+        let output = ''
+        try {
+          output = new TextDecoder().decode(Uint8Array.from(atob(b64 ?? ''), (c) => c.charCodeAt(0)))
+        } catch {
+          output = ''
+        }
+        b.done(code === undefined || code === '' ? null : Number(code), output)
+        return true
+      })
+      this.unsubs.push(() => this.bangOsc?.dispose())
+    }
+    const token = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+    // PowerShell: dot-sourced, so `cd` and variables stick as they would typed; errors
+    // go with the output; at most 200 kB comes back.
+    const line = ps
+      ? `$global:LASTEXITCODE=0; $__en=$Error.Count; $__o=''; try { $__o = (. { ${command} } 2>&1 | Out-String -Width 160) } finally { ` +
+        `$__c = if ($LASTEXITCODE) { $LASTEXITCODE } elseif ($Error.Count -gt $__en) { 1 } else { 0 }; if ($__o.Length -gt 200000) { $__o = $__o.Substring(0, 200000) }; ` +
+        `Write-Host -NoNewline "$([char]27)]7771;${token};$__c;$([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([string]$__o)))$([char]7)" }\r`
+      : `__o=$( { ${command}\n} 2>&1 ); __c=$?; printf '\\033]7771;${token};%s;%s\\007' "$__c" "$(printf %s "$__o" | head -c 200000 | base64 | tr -d '\\n')"\r`
+    return new Promise((resolve) => {
+      const timer = window.setTimeout(() => {
+        this.bang = null
+        resolve({ output: '', code: null, timedOut: true })
+      }, 120_000)
+      this.bang = {
+        token,
+        done: (code, output) => {
+          window.clearTimeout(timer)
+          this.bang = null
+          resolve({ output: output.replace(/\r\n/g, '\n').replace(/\s+$/, ''), code, timedOut: false })
+        },
+      }
+      window.ember.write(this.session.id, line)
+    })
   }
 
   /** Words for the session, as the person: typed into the CLI, or sent straight to it in native mode. */

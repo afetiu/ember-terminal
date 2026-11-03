@@ -1,6 +1,8 @@
 # Canvas, native: Ember drives Claude Code instead of reading its screen
 
-Status: approved 2026-11-03, in progress on branch `canvas-native`.
+Status: approved 2026-11-03, in progress on branch `canvas-native`. Phases 1–3 done
+(`claudeHost.ts`, `canvas/NativeClaude.ts`, `canvas/Composer.ts`, `canvas/Asks.ts`; probes
+`scripts/probe-native.mjs`, `scripts/probe-native-composer.mjs`).
 Protocol facts: [claude-protocol-reference.md](claude-protocol-reference.md).
 
 ## Why
@@ -81,6 +83,11 @@ renderer:  NativeClaude (per tab)     state machine: idle / working / asking / w
    out; interrupt. Behind the setting.
 2. **Composer** — Ember's input with images, `/` menu from `commands`, `@` from
    `file_suggestions`, queue and send now, `!` in the shell.
+   `!` output is captured by the shell itself and returned base64 in a private OSC (7771),
+   not read off the screen (ConPTY reorders passed-through marks); it rides on the next
+   message as `<bash-input>`/`<bash-stdout>` text blocks. Send now = `interrupt` without
+   `cancel_queued` (the queue runs next); Esc = `interrupt` with `cancel_queued`, and the
+   queued text goes back into the input.
 3. **Asks** — permission, question and plan cards; elicitation.
 4. **Bar and switches** — model, permission mode, effort, context %, CLI view hand-off
    (stop → `--resume` in the TUI → back).

@@ -1,19 +1,18 @@
-import type { ClaudeEvent } from '@shared/types'
+import type { ClaudeEvent, ClaudeImage } from '@shared/types'
 import type { Feed } from './Feed'
-import { escapeHtml } from './markdown'
+import { Asks } from './Asks'
+import { Composer, tuiOnly, type Attachment, type QueuedMessage, type SlashCommand } from './Composer'
 
 /**
  * A Claude tab the canvas drives itself (Settings › Agent › "Canvas drives Claude directly").
  *
  * Main runs Claude Code in its structured mode (src/main/claudeHost.ts) and passes on what
- * it says. This is the tab's end of that: the input box, the messages fed to the canvas as
- * the transcript would have fed them, the reply drawn as it is written, the questions
- * Claude Code asks before a tool runs. Nothing is read off a screen and nothing is typed
- * into one; the tab's shell stays a plain shell underneath.
+ * it says. This is the tab's end of that: the messages fed to the canvas as the transcript
+ * would have fed them, the reply drawn as it is written, Ember's own input (Composer) and
+ * the questions Claude Code asks (Asks). Nothing is read off a screen and nothing is typed
+ * into one; the tab's shell stays a plain shell underneath, and `!command` runs there.
  *
- * Phase 1 of docs/specs/canvas-native.md: plain text in, replies out, interrupt, and a
- * minimal Allow / Deny for permissions. Menus, pictures, the queue and the bar's switches
- * come later.
+ * Phases 1–3 of docs/specs/canvas-native.md. The bar's switches and the CLI view come later.
  */
 
 type Json = Record<string, unknown>
@@ -29,11 +28,19 @@ export interface NativeState {
   detail: string
 }
 
+export interface ShellResult {
+  output: string
+  code: number | null
+  /** Still running when Ember stopped waiting: the output is what it printed so far. */
+  timedOut: boolean
+  error?: string
+}
+
 export interface NativeContext {
   feed: Feed
   /** Where the input goes: the frame the TUI's prompt sat in. */
   frame: HTMLElement
-  /** Where questions go: right above the input. */
+  /** Where questions, the queue, pictures and menus go: right above the input. */
   above: HTMLElement
   /** Something about the session changed: phase, model, the working line. */
   changed(state: NativeState): void
@@ -42,16 +49,24 @@ export interface NativeContext {
   /** The feed got something to show. */
   grew(): void
   toast(text: string): void
+  /** `!command`: run it in the tab's own shell and give back what it printed. */
+  shell(command: string): Promise<ShellResult>
+  /** Ctrl+C to that shell. */
+  interruptShell(): void
 }
 
-/** Tools whose question the canvas cannot draw yet (Phase 3): turned down with a reason, so the turn moves on. */
-const NOT_YET: Record<string, string> = {
-  AskUserQuestion: "Ember's canvas cannot show multiple-choice questions yet. Ask the user in plain text instead.",
+/** What a `!command` hands Claude, at most: Claude Code's bash mode trims long output too. */
+const BANG_CONTEXT_MAX = 30_000
+
+interface Mine {
+  text: string
+  images: ClaudeImage[]
+  shown: boolean
 }
 
 export class NativeClaude {
-  readonly input: HTMLTextAreaElement
-  private readonly asks = document.createElement('div')
+  private readonly composer: Composer
+  private readonly asks: Asks
   private readonly unsubs: Array<() => void> = []
   private state: NativeState = { phase: 'starting', model: '', permissionMode: '', detail: '' }
   private sessionId = ''
@@ -62,7 +77,15 @@ export class NativeClaude {
   private tick = 0
   private stderr = ''
   private stopped = false
-  private readonly cards = new Map<string, HTMLElement>()
+  private commands: SlashCommand[] = []
+  /** Commands bound to Claude Code's own screen (`system/init.terminal_slash_commands`): not offered. */
+  private terminalOnly = new Set<string>()
+  /** Messages sent from here, by uuid: shown at once, the echo matched to them. */
+  private readonly mine = new Map<string, Mine>()
+  private queue: QueuedMessage[] = []
+  /** What `!` commands printed since the last message, for the next one. */
+  private bangContext: string[] = []
+  private bangRunning = false
   /** For probes: what this tab's process has said, by kind. */
   private readonly counts: Record<string, number> = {}
 
@@ -71,33 +94,43 @@ export class NativeClaude {
     private readonly cwd: string | undefined,
     private readonly ctx: NativeContext
   ) {
-    this.input = document.createElement('textarea')
-    this.input.className = 'loom-native-input'
-    this.input.rows = 1
-    this.input.spellcheck = false
-    this.input.placeholder = 'Ask Claude…'
-    this.input.setAttribute('aria-label', 'Message Claude')
-    ctx.frame.appendChild(this.input)
-    this.asks.className = 'loom-asks'
-    ctx.above.prepend(this.asks)
-
-    this.input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.isComposing) {
-        e.preventDefault()
-        this.submit()
-      }
+    this.asks = new Asks({
+      answer: (id, response) => window.ember.claude.answer(this.tabId, id, response),
+      setMode: (mode) => {
+        void window.ember.claude.control(this.tabId, { subtype: 'set_permission_mode', mode })
+        this.set({ permissionMode: mode })
+      },
+      relayout: () => ctx.relayout(),
+      closed: () => {
+        if (!this.asks.size && this.state.phase === 'asking') this.working()
+        // After the key that answered has finished: focused now, its character would land in the box.
+        requestAnimationFrame(() => {
+          if (!this.asks.size || !document.activeElement?.closest('.loom-ask-card')) this.composer.focus()
+        })
+      },
     })
-    this.input.addEventListener('input', () => this.fit())
-    // A click anywhere in the frame is a click in the input.
-    const toInput = (e: MouseEvent) => {
-      if (e.target === this.input) return
-      e.preventDefault()
-      this.input.focus()
-    }
-    ctx.frame.addEventListener('mousedown', toInput)
-    this.unsubs.push(() => ctx.frame.removeEventListener('mousedown', toInput))
+    ctx.above.prepend(this.asks.el)
+    this.composer = new Composer({
+      frame: ctx.frame,
+      above: ctx.above,
+      commands: () => this.commands.filter((c) => !this.terminalOnly.has(c.name)),
+      files: async (query) => {
+        const r = await window.ember.claude.control(this.tabId, { subtype: 'file_suggestions', query })
+        const list = r.ok && Array.isArray(r.response?.['suggestions']) ? (r.response['suggestions'] as Json[]) : []
+        return list.map((s) => String(s['path'] ?? s['displayText'] ?? '')).filter(Boolean)
+      },
+      submit: (text, images) => this.submit(text, images),
+      sendNow: (uuid) => this.sendNow(uuid),
+      cancel: (uuid) => void this.cancelQueued(uuid),
+      toast: (t) => ctx.toast(t),
+      relayout: () => ctx.relayout(),
+    })
     this.unsubs.push(window.ember.claude.onEvent((e) => e.tabId === this.tabId && this.onEvent(e)))
     void this.start()
+  }
+
+  get input(): HTMLTextAreaElement {
+    return this.composer.input
   }
 
   // ------------------------------------------------------------- process
@@ -114,33 +147,161 @@ export class NativeClaude {
     this.pid = r.pid ?? 0
   }
 
-  /** Enter: one message to Claude. A session that stopped is picked up again first. */
-  private submit(): void {
-    const text = this.input.value.trim()
-    if (!text) return
-    this.send(text)
-    this.input.value = ''
-    this.fit()
+  /** Enter in the composer. */
+  private submit(text: string, images: Attachment[]): void {
+    if (text.startsWith('!') && !images.length) {
+      void this.runBang(text.slice(1).trim())
+      return
+    }
+    const cli = tuiOnly(text)
+    if (cli) {
+      this.ctx.toast(`/${cli} opens in the CLI view — the CLI view comes in a later phase`)
+      return
+    }
+    this.send(text, images.map((a) => a.image))
   }
 
-  send(text: string): void {
+  /**
+   * One message to Claude. Shown in the turn at once; while a turn runs it waits in the
+   * queue above the input instead, and moves into the turn when Claude Code takes it.
+   * A session that stopped is picked up again first.
+   */
+  send(text: string, images: ClaudeImage[] = []): void {
+    if (!text && !images.length) return
     if (this.state.phase === 'exited') void this.start(this.sessionId || undefined)
-    window.ember.claude.send(this.tabId, text)
-    if (this.state.phase !== 'asking') this.working()
+    const uuid = crypto.randomUUID()
+    const context = this.bangContext.splice(0)
+    const busy = this.state.phase === 'working' || this.state.phase === 'asking'
+    this.mine.set(uuid, { text, images, shown: false })
+    if (busy) {
+      this.queue.push({ uuid, text, images: images.length })
+      this.composer.setQueue(this.queue)
+    } else {
+      this.show(uuid)
+      this.working()
+    }
+    window.ember.claude.send(this.tabId, text, images, { uuid, ...(context.length ? { context } : {}) })
   }
 
-  /** Esc: say no to an open question, or stop the turn. False when there was nothing to stop. */
+  /** The person's message in the turn, as the transcript would have it. */
+  private show(uuid: string): void {
+    const m = this.mine.get(uuid)
+    if (!m || m.shown) return
+    m.shown = true
+    const slash = /^\/([\w:.-]+)(?:\s+([\s\S]*))?$/.exec(m.text)
+    const content: unknown =
+      slash && !m.images.length
+        ? `<command-name>/${slash[1]}</command-name><command-args>${slash[2] ?? ''}</command-args>`
+        : m.images.length
+          ? [
+              ...(m.text ? [{ type: 'text', text: m.text }] : []),
+              ...m.images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.mediaType, data: i.data } })),
+            ]
+          : m.text
+    this.ctx.feed.add([{ type: 'user', uuid, timestamp: new Date().toISOString(), message: { role: 'user', content } }])
+  }
+
+  private dequeue(uuid: string): boolean {
+    const i = this.queue.findIndex((q) => q.uuid === uuid)
+    if (i < 0) return false
+    this.queue.splice(i, 1)
+    this.composer.setQueue(this.queue)
+    return true
+  }
+
+  /**
+   * Send now: stop the turn and let the queue go. Claude Code runs what is queued as soon
+   * as an interrupt (without cancel_queued) ends the turn — protocol reference §5.5.
+   */
+  private sendNow(uuid: string): void {
+    if (!this.queue.some((q) => q.uuid === uuid)) return
+    void window.ember.claude.control(this.tabId, { subtype: 'interrupt' }).then((r) => {
+      if (!r.ok) this.ctx.toast(`Could not send now: ${r.error ?? 'no answer'}`)
+    })
+  }
+
+  private async cancelQueued(uuid: string): Promise<void> {
+    const r = await window.ember.claude.control(this.tabId, { subtype: 'cancel_async_message', message_uuid: uuid })
+    if (!r.ok || r.response?.['cancelled'] === false) {
+      if (this.queue.some((q) => q.uuid === uuid)) this.ctx.toast('Too late — Claude already took that one')
+      return
+    }
+    this.dequeue(uuid)
+    this.mine.delete(uuid)
+  }
+
+  /**
+   * Esc, innermost first: a menu, a question (no), a `!` command (Ctrl+C), the turn
+   * (interrupt — the queue goes with it, back into the input). False when there was nothing.
+   */
   escape(): boolean {
-    const open = [...this.cards.keys()].pop()
-    if (open) {
-      this.deny(open, 'The user said no.')
+    if (this.composer.escape()) return true
+    if (this.asks.escape()) return true
+    if (this.bangRunning) {
+      this.ctx.interruptShell()
       return true
     }
     if (this.state.phase !== 'working') return false
-    void window.ember.claude.interrupt(this.tabId).then((r) => {
+    const queued = this.queue.splice(0)
+    if (queued.length) this.composer.setQueue(this.queue)
+    void window.ember.claude.control(this.tabId, { subtype: 'interrupt', ...(queued.length ? { cancel_queued: true } : {}) }).then((r) => {
       if (!r.ok) this.ctx.toast(`Could not interrupt: ${r.error ?? 'no answer'}`)
     })
+    // What was waiting goes back into the box, as Claude Code does with its own queue.
+    const back = queued.map((q) => this.mine.get(q.uuid)?.text ?? q.text).filter(Boolean)
+    for (const q of queued) this.mine.delete(q.uuid)
+    if (back.length) this.composer.append(back.join('\n'))
     return true
+  }
+
+  // ------------------------------------------------------------- `!` in the shell
+
+  /**
+   * `!command`: not Claude's. It runs in the tab's own shell, its output shows in the turn,
+   * and the next message carries both to Claude as `<bash-input>` / `<bash-stdout>`, the
+   * way Claude Code's bash mode adds them to the conversation.
+   */
+  private async runBang(command: string): Promise<void> {
+    if (!command) return
+    if (this.bangRunning) {
+      this.ctx.toast('A command is still running in the shell — Esc stops it')
+      return
+    }
+    this.bangRunning = true
+    const id = crypto.randomUUID()
+    const feed = this.ctx.feed
+    feed.add([{ type: 'user', uuid: `${id}-in`, timestamp: new Date().toISOString(), message: { role: 'user', content: `<bash-input>${command}</bash-input>` } }])
+    const running = feed.notice("running in this tab's shell · esc to stop")
+    let r: ShellResult
+    try {
+      r = await this.ctx.shell(command)
+    } catch (err) {
+      r = { output: '', code: null, timedOut: false, error: err instanceof Error ? err.message : String(err) }
+    }
+    running.remove()
+    this.bangRunning = false
+    if (r.error) {
+      feed.notice(r.error, true)
+      return
+    }
+    const out = r.output.replace(/\s+$/, '')
+    feed.add([{ type: 'user', uuid: `${id}-out`, timestamp: new Date().toISOString(), message: { role: 'user', content: `<bash-stdout>${out}</bash-stdout><bash-stderr></bash-stderr>` } }])
+    if (r.timedOut) feed.notice("Still running in the tab's shell. What it printed so far goes to Claude with your next message.")
+    else if (r.code) feed.notice(`exit code ${r.code}`, true)
+    else if (!out) feed.notice('(no output)')
+    const kept = out.length > BANG_CONTEXT_MAX ? `${out.slice(0, BANG_CONTEXT_MAX)}\n… (${out.length - BANG_CONTEXT_MAX} more characters)` : out
+    this.bangContext.push(`<bash-input>${command}</bash-input>`, `<bash-stdout>${kept}</bash-stdout><bash-stderr></bash-stderr>`)
+    this.ctx.grew()
+  }
+
+  /** Files dropped on the canvas: pictures attach, anything else is mentioned by path. */
+  dropFiles(files: File[]): void {
+    void this.composer.addFiles(files, (f) => window.ember.platform.pathForFile(f))
+  }
+
+  /** Text put in the box without sending it (a canvas action). */
+  put(text: string): void {
+    this.composer.append(text)
   }
 
   // ------------------------------------------------------------- what it says
@@ -150,6 +311,7 @@ export class NativeClaude {
     switch (e.kind) {
       case 'ready': {
         const mode = String(e.info['permissionMode'] ?? '')
+        if (Array.isArray(e.info['commands'])) this.commands = e.info['commands'] as SlashCommand[]
         this.set({ phase: this.state.phase === 'starting' ? 'idle' : this.state.phase, ...(mode ? { permissionMode: mode } : {}) })
         return
       }
@@ -157,10 +319,11 @@ export class NativeClaude {
         this.message(e.msg)
         return
       case 'ask':
-        this.ask(e.requestId, e.request)
+        this.asks.open(e.requestId, e.request)
+        this.set({ phase: 'asking' })
         return
       case 'cancel':
-        this.closeCard(e.requestId)
+        this.asks.close(e.requestId)
         return
       case 'stderr':
         this.stderr = (this.stderr + '\n' + e.text).slice(-1500)
@@ -169,8 +332,12 @@ export class NativeClaude {
         this.ctx.feed.notice(e.text, true)
         return
       case 'exit': {
-        for (const id of [...this.cards.keys()]) this.closeCard(id)
+        this.asks.closeAll()
         this.flushLive('')
+        const lost = this.queue.splice(0)
+        this.composer.setQueue(this.queue)
+        for (const q of lost) this.mine.delete(q.uuid)
+        if (lost.length) this.composer.append(lost.map((q) => q.text).join('\n'))
         if (!this.stopped) {
           const why = this.stderr.trim().split('\n').filter(Boolean).slice(-3).join(' · ')
           this.ctx.feed.notice(`Claude Code stopped${e.code ? ` (exit code ${e.code})` : ''}${why ? ` — ${why}` : ''}. Send a message to pick the session up again.`, !!e.code)
@@ -185,15 +352,31 @@ export class NativeClaude {
     const type = msg['type']
     const kind = `${String(type)}${msg['subtype'] ? `/${String(msg['subtype'])}` : ''}`
     this.counts[kind] = (this.counts[kind] ?? 0) + 1
+    if (type === 'command_lifecycle') {
+      const uuid = String(msg['command_uuid'] ?? '')
+      const st = msg['state']
+      if (!this.mine.has(uuid)) return
+      if (st === 'started') {
+        this.dequeue(uuid)
+        this.show(uuid)
+        if (this.state.phase !== 'asking') this.working()
+      } else if (st === 'cancelled') {
+        if (this.dequeue(uuid)) this.mine.delete(uuid)
+      }
+      return
+    }
     if (type === 'system') {
       const sub = msg['subtype']
       if (sub === 'init') {
         this.set({ model: String(msg['model'] ?? ''), permissionMode: String(msg['permissionMode'] ?? this.state.permissionMode) })
+        if (Array.isArray(msg['terminal_slash_commands'])) this.terminalOnly = new Set((msg['terminal_slash_commands'] as unknown[]).map((c) => String(c).replace(/^\//, '')))
       } else if (sub === 'status') {
         if (typeof msg['permissionMode'] === 'string') this.set({ permissionMode: msg['permissionMode'] })
         if (msg['status'] === 'requesting' && this.state.phase !== 'asking') this.working()
       } else if (sub === 'compact_boundary') {
         this.ctx.feed.add([this.line(msg)])
+      } else if (sub === 'commands_changed' && Array.isArray(msg['commands'])) {
+        this.commands = (msg['commands'] as Json[]).filter((c) => typeof c['name'] === 'string') as unknown as SlashCommand[]
       }
       return
     }
@@ -211,6 +394,16 @@ export class NativeClaude {
         }
       }
       return
+    }
+    if (type === 'user' && msg['isReplay'] === true) {
+      // The echo of a message sent from here: it is already on the canvas (or waiting in
+      // the queue, and Claude has now taken it).
+      const uuid = String(msg['uuid'] ?? '')
+      if (this.mine.has(uuid)) {
+        this.dequeue(uuid)
+        this.show(uuid)
+        return
+      }
     }
     if (type === 'assistant' || type === 'user') {
       if (!msg['parent_tool_use_id']) this.flushLive('')
@@ -232,6 +425,9 @@ export class NativeClaude {
         const text = errors.join(' · ') || (typeof msg['result'] === 'string' ? msg['result'] : '') || String(msg['subtype'] ?? 'error').replace(/_/g, ' ')
         this.ctx.feed.notice(`The turn ended with an error: ${text}`, true)
       }
+      // Messages of this turn are done with; their uuids need no matching any more.
+      for (const u of [msg['user_message_uuid'], ...(Array.isArray(msg['user_message_uuids']) ? (msg['user_message_uuids'] as unknown[]) : [])])
+        if (typeof u === 'string' && this.mine.get(u)?.shown) this.mine.delete(u)
       this.idle()
     }
   }
@@ -264,63 +460,6 @@ export class NativeClaude {
     this.ctx.feed.live(text)
   }
 
-  // ------------------------------------------------------------- permission
-
-  /**
-   * Claude Code wants to run a tool and the person's settings say to ask. A plain card
-   * over the input: what it wants to do, Allow or Deny. It stays until answered — an
-   * unanswered question holds the turn — and Esc is Deny.
-   */
-  private ask(requestId: string, req: Json): void {
-    const tool = String(req['tool_name'] ?? '')
-    const notYet = NOT_YET[tool]
-    if (notYet) {
-      window.ember.claude.answer(this.tabId, requestId, { behavior: 'deny', message: notYet })
-      return
-    }
-    const input = (req['input'] ?? {}) as Json
-    const name = String(req['display_name'] ?? req['title'] ?? tool)
-    const what = describe(input, String(req['description'] ?? ''))
-    const why = String(req['decision_reason'] ?? '')
-    const card = document.createElement('div')
-    card.className = 'loom-ask-card'
-    card.dataset['req'] = requestId
-    card.innerHTML =
-      `<div class="loom-ask-card-head"><span class="loom-ask-card-dot"></span>Claude wants to use <b>${escapeHtml(name)}</b></div>` +
-      (what ? `<pre class="loom-ask-card-what">${escapeHtml(what)}</pre>` : '') +
-      (why ? `<div class="loom-ask-card-why">${escapeHtml(why.slice(0, 300))}</div>` : '') +
-      `<div class="loom-ask-card-acts"><button type="button" data-a="allow" class="is-primary">Allow</button><button type="button" data-a="deny">Deny</button><span class="loom-ask-card-keys">Esc to deny</span></div>`
-    card.addEventListener('click', (e) => {
-      const a = (e.target as HTMLElement).closest<HTMLElement>('button[data-a]')?.dataset['a']
-      if (a === 'allow') this.allow(requestId, input)
-      else if (a === 'deny') this.deny(requestId, 'The user said no.')
-    })
-    this.cards.set(requestId, card)
-    this.asks.appendChild(card)
-    this.asks.classList.add('has-items')
-    this.set({ phase: 'asking' })
-    this.ctx.relayout()
-  }
-
-  private allow(requestId: string, input: Json): void {
-    window.ember.claude.answer(this.tabId, requestId, { behavior: 'allow', updatedInput: input })
-    this.closeCard(requestId)
-  }
-
-  private deny(requestId: string, message: string): void {
-    window.ember.claude.answer(this.tabId, requestId, { behavior: 'deny', message })
-    this.closeCard(requestId)
-  }
-
-  private closeCard(requestId: string): void {
-    this.cards.get(requestId)?.remove()
-    this.cards.delete(requestId)
-    this.asks.classList.toggle('has-items', this.cards.size > 0)
-    if (!this.cards.size && this.state.phase === 'asking') this.working()
-    this.ctx.relayout()
-    this.input.focus()
-  }
-
   // ------------------------------------------------------------- state
 
   private working(): void {
@@ -332,7 +471,7 @@ export class NativeClaude {
   private idle(): void {
     if (this.tick) window.clearInterval(this.tick)
     this.tick = 0
-    this.set({ phase: this.cards.size ? 'asking' : 'idle', detail: '' })
+    this.set({ phase: this.asks.size ? 'asking' : 'idle', detail: '' })
   }
 
   private detail(): string {
@@ -349,28 +488,59 @@ export class NativeClaude {
       this.tick = 0
     }
     this.state = next
-    this.input.placeholder = next.phase === 'starting' ? 'Starting Claude Code… you can type already' : next.phase === 'exited' ? 'Claude Code stopped — send to pick the session up again' : 'Ask Claude…'
+    this.composer.input.placeholder =
+      next.phase === 'starting'
+        ? 'Starting Claude Code… you can type already'
+        : next.phase === 'exited'
+          ? 'Claude Code stopped — send to pick the session up again'
+          : next.phase === 'working'
+            ? 'Queue a message for when this turn ends'
+            : 'Ask Claude…   / commands   @ files   ! shell'
     this.ctx.changed(next)
   }
 
-  /** The input grows with what is written, up to a point, then scrolls. */
-  private fit(): void {
-    this.input.style.height = 'auto'
-    const line = parseFloat(getComputedStyle(this.input).lineHeight) || 20
-    this.input.style.height = `${Math.min(this.input.scrollHeight, line * 8)}px`
-    this.ctx.relayout()
-  }
-
   get height(): number {
-    return this.input.offsetHeight
+    return this.composer.input.offsetHeight
   }
 
   get current(): NativeState {
     return this.state
   }
 
-  debug(): { phase: NativePhase; sessionId: string; pid: number; model: string; asks: number; counts: Record<string, number>; live: string } {
-    return { phase: this.state.phase, sessionId: this.sessionId, pid: this.pid, model: this.state.model, asks: this.cards.size, counts: { ...this.counts }, live: this.liveText }
+  debug(): {
+    phase: NativePhase
+    sessionId: string
+    pid: number
+    model: string
+    permissionMode: string
+    asks: number
+    askKinds: string[]
+    counts: Record<string, number>
+    live: string
+    commands: number
+    menu: { kind: string; items: string[]; index: number } | null
+    attachments: number
+    queue: QueuedMessage[]
+    bangContext: number
+    input: string
+  } {
+    return {
+      phase: this.state.phase,
+      sessionId: this.sessionId,
+      pid: this.pid,
+      model: this.state.model,
+      permissionMode: this.state.permissionMode,
+      asks: this.asks.size,
+      askKinds: this.asks.kinds(),
+      counts: { ...this.counts },
+      live: this.liveText,
+      commands: this.commands.length,
+      menu: this.composer.menuOpen,
+      attachments: this.composer.attachmentCount,
+      queue: [...this.queue],
+      bangContext: this.bangContext.length,
+      input: this.composer.input.value,
+    }
   }
 
   dispose(): void {
@@ -379,23 +549,7 @@ export class NativeClaude {
     if (this.tick) window.clearInterval(this.tick)
     if (this.liveReq) cancelAnimationFrame(this.liveReq)
     window.ember.claude.stop(this.tabId)
-    this.input.remove()
-    this.asks.remove()
-  }
-}
-
-/** What a tool is about to do, in a line or a few: the command, the file, the address. */
-function describe(input: Json, description: string): string {
-  const s = (k: string) => (typeof input[k] === 'string' ? (input[k] as string) : '')
-  if (s('command')) return s('command').slice(0, 1200)
-  if (s('file_path')) return s('file_path')
-  if (s('url')) return s('url')
-  if (s('plan')) return s('plan').slice(0, 1200)
-  if (description) return description
-  try {
-    const json = JSON.stringify(input, null, 2)
-    return json === '{}' ? '' : json.slice(0, 800)
-  } catch {
-    return ''
+    this.composer.dispose()
+    this.asks.el.remove()
   }
 }
