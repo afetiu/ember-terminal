@@ -128,7 +128,9 @@ to each target and dips on every click.
 - `point` shows you where something is, with a short note beside it, and never clicks.
 
 **STOP** is on screen whenever an agent acts. `Ctrl+K` › **Computer use: on / off** turns
-it off altogether. Computer use needs Python 3 and an unlocked session.
+it off altogether. Computer use needs Python 3, Python packages you install yourself
+(Ember prints the `pip` command) and an unlocked session. Its screenshots are kept in
+`%TEMP%\ember-desk-shots` and deleted when Ember quits.
 
 ## Everything else
 
@@ -140,6 +142,23 @@ it off altogether. Computer use needs Python 3 and an unlocked session.
   backdrop, motion, agents, sound.
 - Notes, todos and settings are plain files in your user folder. Your work goes where your
   agent CLI already sends it; Ember adds no account and no telemetry.
+
+## Network
+
+Ember makes these calls itself. Everything else is the agent CLI you run in it.
+
+- **Update check:** asks GitHub's releases API for the latest version at start and every
+  6 hours. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check
+  for updates turns it off; clicking the version in the sidebar still checks.
+- **Plan usage:** polls `api.anthropic.com` every minute with Claude Code's own login, only
+  while Settings › Agent › Plan usage is on. Off by default.
+- **Phone link:** only after you pair a phone. Messages are end-to-end encrypted; the relay
+  sees timing, sizes and IP addresses. The key sits in plain text in `~/.ember/account.json`.
+- **Images in agent replies:** an image from the internet loads only when you click it.
+- **Computer use:** Ember never installs Python packages for you.
+
+Pasted and pushed images live in `%TEMP%\ember-<pid>` and are deleted when Ember quits.
+More in the [privacy policy](CODE_SIGNING.md#privacy-policy).
 
 The full guide is at [ember.deepanswerlabs.com/docs](https://ember.deepanswerlabs.com/docs).
 

@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { readdirSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadConfig } from './config.js'
 import { registerIpc } from './ipc.js'
@@ -44,6 +45,68 @@ if (!app.isPackaged) {
   }
 }
 
+/**
+ * Ember's own files in %TEMP%: `ember-<pid>` (pasted and pushed images, the status line
+ * wrapper, the MCP config) and `ember-desk-shots` (computer-use screenshots). Both go
+ * on quit. A crash skips that, so startup clears the folders of runs that are no longer
+ * alive and shots older than a day.
+ * Names are matched exactly and nothing outside the temp folder is touched.
+ */
+const TEMP = tmpdir()
+const SHOTS = join(TEMP, 'ember-desk-shots')
+const DAY_MS = 86_400_000
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (err) {
+    // EPERM: it exists, it just isn't ours to signal.
+    return (err as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+function sweepTemp(): void {
+  const remove = (path: string) => {
+    try {
+      rmSync(path, { recursive: true, force: true })
+    } catch {
+      // A file still held open. Housekeeping only; the next start tries again.
+    }
+  }
+  try {
+    for (const name of readdirSync(TEMP)) {
+      const m = /^ember-(\d+)$/.exec(name)
+      if (!m) continue
+      const pid = Number(m[1])
+      // A live pid keeps its folder however old: Ember runs for days, and its open
+      // sessions still point at the status line wrapper in there.
+      if (pid === process.pid || alive(pid)) continue
+      remove(join(TEMP, name))
+    }
+  } catch {
+    // Temp folder unreadable: nothing to sweep.
+  }
+  try {
+    for (const name of readdirSync(SHOTS)) {
+      const file = join(SHOTS, name)
+      if (Date.now() - statSync(file).mtimeMs >= DAY_MS) remove(file)
+    }
+  } catch {
+    // No shots folder yet.
+  }
+}
+
+function clearOwnTemp(): void {
+  for (const dir of [join(TEMP, `ember-${process.pid}`), SHOTS]) {
+    try {
+      rmSync(dir, { recursive: true, force: true })
+    } catch {
+      // A file still held open; the next start sweeps it.
+    }
+  }
+}
+
 const host = new ConPtyHost()
 
 // Only the installed app claims the single-instance lock. A dev run shares the same
@@ -68,6 +131,7 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
       return
     }
     const config = loadConfig()
+    sweepTemp()
     // Before the window: a restored tab spawns its shell almost immediately, and a
     // shell that starts before the bridge is listening never learns where its panel is.
     await startBridge()
@@ -94,4 +158,6 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
     host.killAll()
     stopBridge()
   })
+
+  app.on('will-quit', () => clearOwnTemp())
 }

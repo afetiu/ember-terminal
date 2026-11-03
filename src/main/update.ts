@@ -3,7 +3,8 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { app, shell } from 'electron'
-import type { UpdateState } from '../shared/types.js'
+import type { EmberConfig, UpdateState } from '../shared/types.js'
+import { loadConfig, watchConfig } from './config.js'
 
 /**
  * Ember updates itself from its own GitHub releases.
@@ -15,6 +16,9 @@ import type { UpdateState } from '../shared/types.js'
  * `--force-run` so the new version starts by itself, and quits to let it replace the
  * files. A portable copy (unzipped, no installer of its own) cannot be replaced that way:
  * for it the button opens the download page instead.
+ *
+ * `updates.check: false` stops the background look. Clicking the version still checks,
+ * because that is a request.
  *
  * No dependency: electron-updater would need extra files in every release and the release
  * workflow publishes with `--publish never`.
@@ -43,12 +47,27 @@ function newer(a: string, b: string): boolean {
 export class Updater {
   state: UpdateState
   private timer: NodeJS.Timeout | null = null
+  private auto = false
+  private unwatch: (() => void) | null = null
 
   constructor(private readonly emit: (s: UpdateState) => void) {
     this.state = { current: app.getVersion(), latest: null, available: false, installed: Updater.installedCopy(), phase: 'idle', error: '', checkedAt: 0 }
     // A dev build is not a release: it never offers to replace itself.
     if (!app.isPackaged) return
-    this.timer = setTimeout(() => void this.check(), FIRST_MS)
+    this.setAuto(Updater.wanted(loadConfig()), FIRST_MS)
+    this.unwatch = watchConfig((config) => this.setAuto(Updater.wanted(config), FIRST_MS))
+  }
+
+  private static wanted(config: EmberConfig): boolean {
+    return config.updates?.check !== false
+  }
+
+  /** Start or stop the background look. Turning it on waits `delay` before the first one. */
+  private setAuto(on: boolean, delay: number): void {
+    if (on === this.auto) return
+    this.auto = on
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = on ? setTimeout(() => void this.check(), delay) : null
   }
 
   /** Installed by the NSIS installer (it leaves its uninstaller next to the exe), not unzipped. */
@@ -64,7 +83,7 @@ export class Updater {
   /** Ask which release is latest. Quiet on failure: the next look tries again. */
   async check(): Promise<UpdateState> {
     if (this.timer) clearTimeout(this.timer)
-    this.timer = setTimeout(() => void this.check(), EVERY_MS)
+    this.timer = this.auto ? setTimeout(() => void this.check(), EVERY_MS) : null
     if (this.state.phase === 'downloading' || this.state.phase === 'installing') return this.state
     this.set({ phase: 'checking', error: '' })
     try {
@@ -109,5 +128,6 @@ export class Updater {
 
   dispose(): void {
     if (this.timer) clearTimeout(this.timer)
+    this.unwatch?.()
   }
 }

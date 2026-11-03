@@ -22,6 +22,15 @@
  * sitting quietly is exactly that. The heartbeat is not liveness decoration; without it the
  * link dies every minute. It doubles as what stops the dyno idling to sleep, since a desk
  * holds its socket open around the clock.
+ *
+ * WHY THE ENVELOPE. The seal stops the relay reading a message; it does not stop the relay
+ * keeping one and handing it back later, and "type this into tab 3" means the same thing an
+ * hour on. So every message travels inside an envelope — who sent it, who it is for, when,
+ * and its place in the sender's sequence — sealed with it, so the relay cannot edit any of
+ * that. A receiver drops a message that is stale, not newer than the last one from that
+ * sender, not addressed to it, or claiming a sender other than the one the relay says it
+ * came from. A device on an older copy of this file is not understood, and does not
+ * understand: both ends are updated together.
  */
 
 const enc = new TextEncoder()
@@ -124,6 +133,10 @@ export function parseAccountUrl(text, defaultRelay) {
 
 const PING_MS = 25_000
 const MAX_BACKOFF_MS = 10_000
+/** How far a message's time may sit from the receiver's clock, either way, before it is refused. */
+const MAX_SKEW_MS = 120_000
+/** The envelope's shape; see WHY THE ENVELOPE above. */
+const ENVELOPE = 2
 
 /**
  * This device's link to the account.
@@ -154,8 +167,45 @@ export class AccountLink {
     this.timer = null
     this.ping = null
     this.devices = []
-    /** Sealed, addressed messages queued while the socket was down. */
+    /**
+     * Messages queued while the socket was down, as {to, msg}. Sealed when they go, not
+     * when they were written, so the envelope's time is the time they actually leave.
+     */
     this.outbox = []
+    /** This device's place in its own sequence. */
+    this.seq = 0
+    /** The last sequence number accepted from each sender. */
+    this.lastSeq = new Map()
+    /** Incoming frames, opened one at a time so they are judged in the order they came. */
+    this.inbox = Promise.resolve()
+    /** Outgoing messages, sealed and sent one at a time, so they leave in sequence order. */
+    this.sending = Promise.resolve()
+  }
+
+  /**
+   * The next sequence number: one more than the last, and never behind the clock in
+   * microseconds, so it keeps rising across a restart of the app without being stored.
+   */
+  nextSeq() {
+    this.seq = Math.max(this.seq + 1, Date.now() * 1000)
+    return this.seq
+  }
+
+  /** One message to one device, enveloped and sealed, as the frame the relay carries. */
+  async frameFor(to, msg) {
+    const env = { v: ENVELOPE, from: this.opts.deviceId, to, ts: Date.now(), seq: this.nextSeq(), m: msg }
+    return JSON.stringify({ to, e: await seal(this.key, env) })
+  }
+
+  /** The message inside an opened envelope, or null if the envelope does not hold up. */
+  accept(env, from) {
+    if (!env || typeof env !== 'object' || env.v !== ENVELOPE) return null
+    if (env.from !== from || env.to !== this.opts.deviceId) return null
+    if (typeof env.ts !== 'number' || Math.abs(Date.now() - env.ts) > MAX_SKEW_MS) return null
+    if (typeof env.seq !== 'number' || env.seq <= (this.lastSeq.get(from) ?? 0)) return null
+    if (!env.m || typeof env.m !== 'object') return null
+    this.lastSeq.set(from, env.seq)
+    return env.m
   }
 
   async start() {
@@ -217,33 +267,15 @@ export class AccountLink {
       // The name goes up sealed, so the roster the relay keeps is a list of ciphertext it
       // cannot read but can hand to the other devices, which can.
       ws.send(JSON.stringify({ c: 'name', name: await seal(this.key, this.opts.name) }))
-      for (const frame of this.outbox.splice(0)) ws.send(frame)
+      this.sending = this.sending.then(async () => {
+        for (const { to, msg } of this.outbox.splice(0)) ws.send(await this.frameFor(to, msg))
+      })
     }
 
-    ws.onmessage = async (ev) => {
-      let frame
-      try {
-        frame = JSON.parse(ev.data)
-      } catch {
-        return
-      }
-
-      if (frame.c === 'roster') {
-        const named = await Promise.all(
-          (frame.devices ?? []).map(async (d) => ({
-            id: d.id,
-            kind: d.kind,
-            online: !!d.online,
-            self: d.id === this.opts.deviceId,
-            name: d.name ? ((await open(this.key, d.name)) ?? 'Unknown device') : 'Unnamed device',
-          }))
-        )
-        return this.setRoster(named)
-      }
-      if (frame.c) return
-      if (!frame.e || !frame.from) return
-      const msg = await open(this.key, frame.e)
-      if (msg) this.opts.onMessage(msg, frame.from)
+    ws.onmessage = (ev) => {
+      this.inbox = this.inbox.then(() => this.receive(ev)).catch(() => {
+        /* one bad frame must not stop the ones behind it */
+      })
     }
 
     ws.onclose = () => {
@@ -261,6 +293,33 @@ export class AccountLink {
         /* onclose will follow */
       }
     }
+  }
+
+  /** One frame from the relay: the roster, or a message for this device. */
+  async receive(ev) {
+    let frame
+    try {
+      frame = JSON.parse(ev.data)
+    } catch {
+      return
+    }
+
+    if (frame.c === 'roster') {
+      const named = await Promise.all(
+        (frame.devices ?? []).map(async (d) => ({
+          id: d.id,
+          kind: d.kind,
+          online: !!d.online,
+          self: d.id === this.opts.deviceId,
+          name: d.name ? ((await open(this.key, d.name)) ?? 'Unknown device') : 'Unnamed device',
+        }))
+      )
+      return this.setRoster(named)
+    }
+    if (frame.c) return
+    if (!frame.e || !frame.from) return
+    const msg = this.accept(await open(this.key, frame.e), frame.from)
+    if (msg) this.opts.onMessage(msg, frame.from)
   }
 
   setRoster(devices) {
@@ -283,14 +342,23 @@ export class AccountLink {
    * Queued rather than dropped when the socket is down: on the phone this is a message
    * typed while the signal was gone, and losing it silently is worse than delivering it
    * late. Bounded, so a device that never reconnects does not accumulate a backlog it will
-   * one day deliver all at once.
+   * one day deliver all at once. Late means within MAX_SKEW_MS of being sealed, which is
+   * why the queue holds the message and seals it on the way out.
    */
-  async send(to, msg) {
-    const frame = JSON.stringify({ to, e: await seal(this.key, msg) })
-    if (this.online) this.ws.send(frame)
-    else {
-      this.outbox.push(frame)
-      if (this.outbox.length > 50) this.outbox.shift()
-    }
+  send(to, msg) {
+    // One at a time: sealing is asynchronous, and two in flight could reach the socket in
+    // the opposite order to their sequence numbers, which the receiver would rightly refuse.
+    this.sending = this.sending
+      .then(async () => {
+        if (this.online) this.ws.send(await this.frameFor(to, msg))
+        else {
+          this.outbox.push({ to, msg })
+          if (this.outbox.length > 50) this.outbox.shift()
+        }
+      })
+      .catch(() => {
+        /* a socket that died mid-send; the next send or reconnect carries on */
+      })
+    return this.sending
   }
 }

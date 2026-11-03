@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, type WebContents } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { EmberConfig } from '../shared/types.js'
@@ -70,6 +70,51 @@ export function applyGlass(win: BrowserWindow, config: EmberConfig): void {
   fadeTo(win, wanted)
 }
 
+/**
+ * Ember's own windows never leave the page they were opened on.
+ *
+ * Left to Chromium, a file dropped anywhere the page does not handle it navigates the
+ * window to file:///that-file — and the preload runs again on whatever loads, handing
+ * `window.ember` (spawn, write, everything) to a document nobody vetted. The renderer
+ * swallows drops itself; this is the version that holds even if it does not. Same page
+ * still goes through, so a reload works, and in dev anything from the Vite server does,
+ * so HMR's full reload keeps working.
+ *
+ * Hooked on every web contents rather than per window so the desk overlay is covered
+ * too. Panel <webview>s are left alone: browsing inside a panel is their job, and they
+ * have no preload to hand over.
+ */
+const samePage = (a: string, b: string): boolean => {
+  try {
+    const x = new URL(a)
+    const y = new URL(b)
+    return x.origin === y.origin && x.pathname === y.pathname
+  } catch {
+    return false
+  }
+}
+const allowedNavigation = (wc: WebContents, url: string): boolean => {
+  const devUrl = process.env['ELECTRON_RENDERER_URL']
+  if (devUrl && !app.isPackaged) {
+    try {
+      if (new URL(url).origin === new URL(devUrl).origin) return true
+    } catch {
+      /* fall through to the same-page check */
+    }
+  }
+  return samePage(url, wc.getURL())
+}
+app.on('web-contents-created', (_e, wc) => {
+  if (wc.getType() !== 'window') return
+  // Only the top frame is held: the page's own iframes (the bridge on 127.0.0.1) may
+  // redirect inside themselves without taking the window anywhere.
+  const guard = (e: Electron.Event, url: string, _inPlace: boolean, isMainFrame: boolean) => {
+    if (isMainFrame && !allowedNavigation(wc, url)) e.preventDefault()
+  }
+  wc.on('will-navigate', guard)
+  wc.on('will-redirect', guard)
+})
+
 export function createWindow(config: EmberConfig): BrowserWindow {
   // See applyGlass: a backdrop window is a real window with alpha, a 'none' window is
   // a transparent one. Only the second can carry per-pixel transparency, and only the
@@ -98,6 +143,9 @@ export function createWindow(config: EmberConfig): BrowserWindow {
     ...(systemBackdrop ? { backgroundMaterial: config.window.material } : { transparent: true }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
+      // Not sandboxed: the preload is an ES module and reads the home directory from
+      // node:os, and a sandboxed preload can have neither. contextIsolation is what keeps
+      // node out of the page.
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,

@@ -3,7 +3,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebLinksAddon } from '@xterm/addon-web-links'
-import { ClipboardAddon } from '@xterm/addon-clipboard'
+import { BrowserClipboardProvider, ClipboardAddon } from '@xterm/addon-clipboard'
 import { SearchAddon } from '@xterm/addon-search'
 import { SerializeAddon } from '@xterm/addon-serialize'
 import type { ShellProfile, EmberConfig } from '@shared/types'
@@ -248,7 +248,14 @@ export class Session implements ActivitySource {
     // the link — which Windows answers with the "find an app in the Store" dialog.
     // Passing the real URI through window.open lands it in the system browser.
     this.term.loadAddon(new WebLinksAddon((_e, uri) => window.open(uri, '_blank')))
-    this.term.loadAddon(new ClipboardAddon())
+    // OSC 52 may write the clipboard (that is how a remote shell's yank reaches you) but
+    // never read it: anything that can print to this terminal — a file being cat'ed, a
+    // web page curl'ed, a model's output — could otherwise ask for whatever you last
+    // copied and have it typed back into the shell as input. Ctrl+V is unaffected.
+    const browser = new BrowserClipboardProvider()
+    this.term.loadAddon(
+      new ClipboardAddon(undefined, { readText: () => '', writeText: (sel, text) => browser.writeText(sel, text) }),
+    )
 
     const unicode = new Unicode11Addon()
     this.term.loadAddon(unicode)

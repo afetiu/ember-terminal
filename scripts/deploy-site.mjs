@@ -12,10 +12,16 @@
  *
  * The project is not connected to the repository — a push changes nothing on the site.
  * Needs `wrangler login` on this machine.
+ *
+ * Uploads a copy of site/ without site/app/dev: the phone app's local mock and server are
+ * for testing on this machine and have no business on the public site.
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const root = new URL('../', import.meta.url)
 const { version } = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'))
@@ -42,13 +48,29 @@ const tag = `${version}-${hash.digest('hex').slice(0, 8)}`
 for (const page of ['site/index.html', 'site/docs.html']) stamp(page, [[/\?v=[0-9][0-9a-z.-]*/g, `?v=${tag}`]])
 console.log(`site is v${version} (assets ${tag})`)
 
+/** Paths under site/ that stay local. */
+const LOCAL_ONLY = [join('app', 'dev')]
+
 if (!process.argv.includes('--dry')) {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
-  // Through the shell, because npx is a .cmd on Windows — so an argument with a space in
-  // it carries its own quotes.
-  execFileSync(
-    'npx',
-    ['--yes', 'wrangler@4', 'pages', 'deploy', 'site', '--project-name=ember', '--branch=main', `--commit-hash=${commit}`, `"--commit-message=Ember ${version}"`],
-    { cwd: root, stdio: 'inherit', shell: true }
-  )
+  const site = fileURLToPath(new URL('site', root))
+  const stage = mkdtempSync(join(tmpdir(), 'ember-site-'))
+  cpSync(site, stage, {
+    recursive: true,
+    filter: (src) => {
+      const rel = relative(site, src)
+      return !LOCAL_ONLY.some((p) => rel === p || rel.startsWith(p + sep))
+    },
+  })
+  try {
+    // Through the shell, because npx is a .cmd on Windows — so an argument with a space in
+    // it carries its own quotes.
+    execFileSync(
+      'npx',
+      ['--yes', 'wrangler@4', 'pages', 'deploy', `"${stage}"`, '--project-name=ember', '--branch=main', `--commit-hash=${commit}`, `"--commit-message=Ember ${version}"`],
+      { cwd: root, stdio: 'inherit', shell: true }
+    )
+  } finally {
+    rmSync(stage, { recursive: true, force: true })
+  }
 }

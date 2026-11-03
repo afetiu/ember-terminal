@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { homedir } from 'node:os'
 import type {
   NoteMeta,
@@ -147,6 +147,8 @@ const bridge: EmberBridge = {
   },
   platform: {
     homedir: homedir(),
+    // A dropped File no longer carries .path; this is the supported way to get it.
+    pathForFile: (file: File) => webUtils.getPathForFile(file),
   },
   cmd: {
     onRun: (cb) => on<{ reqId: string; words: string[]; tabId: string }>('ember:cmd', cb),

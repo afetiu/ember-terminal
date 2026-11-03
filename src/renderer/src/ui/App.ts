@@ -204,11 +204,11 @@ export class App {
 
     // The phone: the account link it talks over, and the tabs it drives (PhoneHost).
     this.remote = new Remote({
-      onPanelAct: (text, submit) => {
-        // Routed to the tab the phone is acting on, which is the active one — the same
-        // place the desk's own panel buttons land.
-        const group = this.activeGroup
-        if (group) this.sendToSession(group, text, submit)
+      onPanelAct: (tabId, text, submit) => {
+        // Routed to the tab whose panel the phone was sent, which Remote checked the act
+        // against — the same place the desk's own panel buttons land.
+        const group = this.groups.find((g) => g.id === tabId)
+        if (group) this.actToSession(group, text, submit)
       },
       onPhone: (m, from) => this.phone?.handle(m, from) ?? false,
       onChange: () => {
@@ -231,6 +231,10 @@ export class App {
       type: (tabId, text, submit) => {
         const g = this.groups.find((x) => x.id === tabId)
         if (g) this.sendToSession(g, text, submit)
+      },
+      act: (tabId, text, submit) => {
+        const g = this.groups.find((x) => x.id === tabId)
+        if (g) this.actToSession(g, text, submit)
       },
       keys: (tabId, data) => {
         const s = this.groups.find((x) => x.id === tabId)?.focused
@@ -286,6 +290,7 @@ export class App {
     this.wirePty()
     this.wirePanel()
     this.wireLinks()
+    this.wireDrop()
     this.wireConfigReload()
     this.exposeDiagnostics()
 
@@ -1446,6 +1451,64 @@ export class App {
   private static readonly SUBMIT_GAP_MS = 140
 
   /**
+   * Type what a panel document asked for — a page the model wrote, not the user.
+   *
+   * Three things a press on Ember's own UI does not need. Control characters go: a byte
+   * below space is a keystroke to a terminal (Ctrl+C, Escape, an arrow), not text. Enter is
+   * pressed only when an agent's prompt is what is listening; a plain shell gets the words
+   * and the user presses Enter, because there they would run as a command. And a line
+   * starting with `!` is refused while an agent runs, since Claude Code (and Gemini's CLI)
+   * run that as a shell command without asking anyone.
+   */
+  private actToSession(group: Group, raw: string, submit: boolean): void {
+    // eslint-disable-next-line no-control-regex
+    const text = raw.replace(/\s*\r?\n\s*/g, ' ').replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()
+    const session = group.focused
+    if (!session || !text) return
+    const agent = session.activity.current.isClaude
+    if (agent && text.startsWith('!')) {
+      this.flashToast('A panel tried to run a shell command in the session; ignored.')
+      return
+    }
+    this.sendToSession(group, text, submit && agent)
+  }
+
+  /**
+   * Is the user in the document that sent this act, and did they just press something?
+   *
+   * The act secret only proves which document spoke. Its scripts can speak whenever they
+   * like, so the act must also follow a real press in that document's frame. For the
+   * panel's webview main saw the press itself and says so (`gesture`). For a frame in a
+   * Loom canvas this window does: pressing inside a frame focuses it here and hands this
+   * window a user activation too, neither of which a script in the frame can fake.
+   */
+  private actHasGesture(act: { doc?: string; gesture?: boolean }): boolean {
+    const el = document.activeElement
+    if (!act.doc || !el) return false
+    const shows = (url: string): boolean => {
+      try {
+        const u = new URL(url)
+        return u.hostname === '127.0.0.1' && u.pathname === `/doc/${act.doc}`
+      } catch {
+        return false
+      }
+    }
+    if (el.tagName === 'WEBVIEW') {
+      let url = ''
+      try {
+        url = (el as unknown as { getURL(): string }).getURL()
+      } catch {
+        return false
+      }
+      return act.gesture === true && shows(url)
+    }
+    if (el instanceof HTMLIFrameElement) {
+      return shows(el.src) && document.hasFocus() && navigator.userActivation?.isActive === true
+    }
+    return false
+  }
+
+  /**
    * Route pushes from the bridge to the tab that asked for them.
    *
    * A push can arrive for a tab that is not on screen — that is the useful case, not an
@@ -1504,7 +1567,11 @@ export class App {
     window.ember.panel.onAct((act) => {
       const group = this.groups.find((g) => g.id === act.tabId)
       if (!group) return
-      this.sendToSession(group, act.text ?? '', act.submit !== false)
+      if (!this.actHasGesture(act)) {
+        console.warn('[ember] panel act refused: no press in that document')
+        return
+      }
+      this.actToSession(group, act.text ?? '', act.submit !== false)
     })
   }
 
@@ -2085,6 +2152,48 @@ export class App {
     if (!group) return
     const targets = this.broadcasting ? group.panes : [group.focused]
     for (const t of targets) if (t) window.ember.write(t.id, text)
+  }
+
+  /**
+   * Files dropped on a terminal are typed into it as paths, the way Windows Terminal does.
+   *
+   * Every file drop is caught here, on the document, whether or not it lands on a pane:
+   * one the page leaves alone is one Chromium answers by opening the file in the window
+   * itself, and that page would get `window.ember`. Main refuses the navigation as well;
+   * this is what makes it never come up. Each path is quoted for PowerShell — single
+   * quotes, with any quote inside doubled — so a space or a `$` in a name stays a name.
+   * Text dragged between inputs is not a file drop and goes through untouched, as do the
+   * drops that a part of the page handles itself (the todo list's rows).
+   */
+  private wireDrop(): void {
+    const files = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
+    const paneAt = (target: EventTarget | null): { group: Group; session: Session } | null => {
+      if (!(target instanceof Node)) return null
+      for (const group of this.groups) {
+        const session = group.panes.find((s) => s.el.contains(target))
+        if (session) return { group, session }
+        if (group.el.contains(target) && group.focused) return { group, session: group.focused }
+      }
+      return null
+    }
+    document.addEventListener('dragover', (e) => {
+      if (!files(e)) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = paneAt(e.target) ? 'copy' : 'none'
+    })
+    document.addEventListener('drop', (e) => {
+      if (!files(e)) return
+      const handled = e.defaultPrevented
+      e.preventDefault()
+      if (handled) return
+      const hit = paneAt(e.target)
+      if (!hit) return
+      const paths = [...(e.dataTransfer?.files ?? [])].map((f) => window.ember.platform.pathForFile(f)).filter(Boolean)
+      if (!paths.length) return
+      hit.group.focus(hit.session.id)
+      hit.session.focus()
+      window.ember.write(hit.session.id, `${paths.map((p) => `'${p.replace(/'/g, "''")}'`).join(' ')} `)
+    })
   }
 
   private async loadThemes(): Promise<ThemeConfig[]> {

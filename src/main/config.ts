@@ -141,6 +141,9 @@ export const DEFAULT_CONFIG: EmberConfig = {
   labs: {
     enabled: false,
   },
+  updates: {
+    check: true,
+  },
   appearance: { night: HOUSE_NIGHT, day: HOUSE_DAY },
 }
 

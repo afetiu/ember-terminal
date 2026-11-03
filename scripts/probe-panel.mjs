@@ -161,7 +161,7 @@ try {
   })
   if (noToken.status !== 401) fail(`bridge accepted a push with no token (${noToken.status})`)
 
-  await push({ title: 'Estate', format: 'markdown', content: '# Estate\n\n- pika\n- neutron\n' })
+  await push({ title: 'Estate', format: 'markdown', content: '# Estate\n\n- acme-web\n- acme-api\n' })
 
   const opened = await until(
     cdp,
@@ -280,7 +280,7 @@ try {
     content:
       '# Estate\n\nWhat a session can put here.\n\n' +
       '```mermaid\ngraph LR\n  A[Claude in a tab] -->|show_panel| B[Bridge]\n  B --> C[Panel]\n```\n\n' +
-      '| Repo | State |\n| --- | --- |\n| pika | scaled to 0 |\n| neutron | scaled to 0 |\n',
+      '| Repo | State |\n| --- | --- |\n| acme-web | scaled to 0 |\n| acme-api | scaled to 0 |\n',
   })
   const finalSrc = await until(
     cdp,

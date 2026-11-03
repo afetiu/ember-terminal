@@ -7,9 +7,12 @@
  * Outside an Ember tab there is no port and no token, and the command says so — the
  * tool is part of the app, not a thing installed on the machine.
  *
- * `halt`, `resume` and `status` go to the bridge instead: they are Ember's decisions
- * (the Stop button in the sidebar is the same switch), and `halt` has to work when the
- * daemon is busy or gone.
+ * `halt` and `status` go to the bridge instead: they are Ember's decisions (the Stop
+ * button in the sidebar is the same switch), and `halt` has to work when the daemon is
+ * busy or gone. There is no `resume`: Stop is the person's brake on the session, so only
+ * the person lifts it, with Resume in Ember. And what the daemon will do — look only, or
+ * click and type too — is Ember's Hands setting, which the daemon hears from Ember, not
+ * from here.
  */
 import { connect } from 'node:net'
 
@@ -78,7 +81,9 @@ async function main() {
   const first = argv[0] ?? ''
   if (first === 'halt' || first === 'resume' || first === 'status' || first === 'daemon') {
     const verb = first === 'daemon' ? (argv[1] ?? 'status') : first
+    if (verb === 'resume') fail('desk resume is not available: only the person at the machine can lift Stop, with Resume in Ember.', 3)
     const r = await bridge(`/desk/${verb === 'stop' ? 'stop' : verb === 'start' ? 'start' : verb}`)
+    if (r.ok === false && r.error) fail(`desk: ${r.error}`, 2)
     const s = r.state ?? r
     if (verb === 'status' || verb === 'start' || verb === 'stop') {
       const parts = [s.halted ? 'HALTED' : s.running ? 'running' : 'off']
@@ -86,7 +91,7 @@ async function main() {
       if (s.last?.label) parts.push(`· last: ${s.last.label}`)
       process.stdout.write(`${parts.join(' ')}\n`)
     } else {
-      process.stdout.write(`${verb === 'halt' ? 'halted: computer use stopped until `desk resume`' : 'resumed'}\n`)
+      process.stdout.write('halted: computer use stopped until Resume is pressed in Ember\n')
     }
     return
   }
@@ -99,11 +104,13 @@ async function main() {
     // Stop button killed it). Ember answers with the state, which says why if it cannot.
     let state
     try {
-      state = (await bridge('/desk/start')).state
+      const r = await bridge('/desk/start')
+      if (r.ok === false && r.error) fail(`desk: ${r.error}`, 2)
+      state = r.state
     } catch (e) {
       fail(`desk: ${e.message}`, 2)
     }
-    if (state.halted) fail('HALTED: the Stop button in Ember was pressed. `desk resume` (or the Resume button) lifts it.', 3)
+    if (state.halted) fail('HALTED: the Stop button in Ember was pressed. Only the person at the machine can lift it, with Resume in Ember.', 3)
     if (!state.running) fail(`desk: computer use is unavailable (${state.ready}${state.message ? `: ${state.message}` : ''})`, 2)
     reply = await call(argv)
   }

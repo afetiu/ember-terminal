@@ -2,9 +2,9 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, extname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, webContents, type WebContents } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
-import { renderPanelDocument, setViewLoader } from './panelDoc.js'
+import { renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
 import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, rebindFromStatus, unbindSession } from './transcript.js'
@@ -13,7 +13,7 @@ import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedi
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { homedir } from 'node:os'
-import { deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskState, haltDesk, onActivity, resumeDesk, setDeskBridge, startDesk, stopDesk } from './desk.js'
+import { deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskState, haltDesk, hands, HANDS_OFF, HANDS_SHOW, onActivity, setDeskBridge, startDesk, stopDesk } from './desk.js'
 import type { DeskActivity } from '../shared/types.js'
 
 /**
@@ -440,7 +440,12 @@ function readOptions(raw: unknown): PanelOption[] {
     .filter((o): o is PanelOption => o !== null)
 }
 
-function handlePush(body: Record<string, unknown>): { ok: true; push: PanelPush } | { ok: false; error: string } {
+/**
+ * `act: false` makes a document that cannot talk back: no secret is minted, so it is
+ * rendered without the runtime and its buttons type nothing. For a file shown from disk —
+ * a page that arrived in a clone or a download is not the session's to speak through.
+ */
+function handlePush(body: Record<string, unknown>, opts: { act?: boolean } = {}): { ok: true; push: PanelPush } | { ok: false; error: string } {
   const tabId = String(body['tabId'] ?? '')
   if (!tabId) return { ok: false, error: 'tabId is required' }
 
@@ -469,7 +474,7 @@ function handlePush(body: Record<string, unknown>): { ok: true; push: PanelPush 
     at: Date.now(),
     // What the rendered page will present to prove it is the page we served, rather
     // than something else on this machine that guessed a document id.
-    act: randomBytes(16).toString('hex'),
+    ...(opts.act === false ? {} : { act: randomBytes(16).toString('hex') }),
   }
 
   const canvas = canvasTabs.has(tabId)
@@ -607,6 +612,7 @@ function splitRow(line: string, sep: string): string[] {
 function pushForFile(tabId: string, path: string, title: string): PanelPush {
   const ext = extname(path).toLowerCase()
   const size = statSync(path).size
+  const isTodo = path.toLowerCase() === join(NOTES_DIR, TODO_FILE).toLowerCase()
   let body: Record<string, unknown>
   if (ext === '.pdf') {
     const m = registerMedia(path)
@@ -617,7 +623,6 @@ function pushForFile(tabId: string, path: string, title: string): PanelPush {
   } else {
     if (size > 4 * 1024 * 1024) throw new Error('file is larger than 4 MB')
     const text = readFileSync(path, 'utf8')
-    const isTodo = path.toLowerCase() === join(NOTES_DIR, TODO_FILE).toLowerCase()
     if (isTodo) {
       const items = text
         .split(/\r?\n/)
@@ -643,7 +648,10 @@ function pushForFile(tabId: string, path: string, title: string): PanelPush {
       body = { format: 'view', content: JSON.stringify({ view: 'json', data: { value } }) }
     } else body = { format: 'code', content: text || ' ', language: CODE_LANGS[ext] ?? ext.slice(1) }
   }
-  const result = handlePush({ tabId, title, file: path, ...body })
+  // Only the todo view talks back ("do it here"), and that page is Ember's own drawing of
+  // the list. Every other file is shown as something to read: whatever is in it, buttons
+  // included, came from wherever the file came from.
+  const result = handlePush({ tabId, title, file: path, ...body }, { act: isTodo })
   if (!result.ok) throw new Error(result.error)
   return result.push
 }
@@ -693,6 +701,72 @@ function findByAct(secret: string): PanelPush | null {
   return null
 }
 
+/**
+ * When each webContents last saw the user press something: a key, a button, a tap.
+ *
+ * These are input events as the browser process delivered them, so a script in a page
+ * cannot make one — which is what makes them worth asking about before a panel types into
+ * a terminal. A press and the act it causes arrive tens of milliseconds apart; the window
+ * is wide enough for a slow machine and too narrow to be ridden later.
+ */
+const gestures = new Map<number, number>()
+const GESTURE_MS = 1500
+const GESTURE_TYPES = new Set(['mouseDown', 'mouseUp', 'keyDown', 'rawKeyDown', 'char', 'touchStart', 'touchEnd', 'gestureTap', 'pointerDown', 'pointerUp'])
+const watchedContents = new WeakSet<WebContents>()
+
+function watchGestures(wc: WebContents): void {
+  if (watchedContents.has(wc)) return
+  watchedContents.add(wc)
+  const id = wc.id
+  wc.on('input-event', (_e, input) => {
+    if (GESTURE_TYPES.has(input.type)) gestures.set(id, Date.now())
+  })
+  wc.once('destroyed', () => gestures.delete(id))
+}
+
+/**
+ * Did the user just press something in the page showing this document?
+ *
+ * True or false when the document is a page of its own — the panel's webview, whose input
+ * main sees directly. Null when no webContents shows it as its page: then it is a frame
+ * inside Ember's window (a Loom canvas), and the renderer, which owns that frame and its
+ * focus, judges instead.
+ */
+function gestureOn(docId: string): boolean | null {
+  const origin = bridgeOrigin()
+  let hosted = false
+  for (const wc of webContents.getAllWebContents()) {
+    if (wc.isDestroyed()) continue
+    let path = ''
+    try {
+      const u = new URL(wc.getURL())
+      if (u.origin === origin) path = u.pathname
+    } catch {
+      continue
+    }
+    if (path !== `/doc/${docId}`) continue
+    hosted = true
+    if (Date.now() - (gestures.get(wc.id) ?? 0) < GESTURE_MS) return true
+  }
+  return hosted ? false : null
+}
+
+/**
+ * What a panel may type. One line, no control characters: a C0 or C1 byte reaching a
+ * terminal is a keystroke or an escape sequence, not text — Ctrl+C, an arrow, the end of
+ * a bracketed paste — and a page has no business pressing those.
+ */
+function actText(raw: unknown): string {
+  return (
+    String(raw ?? '')
+      .replace(/\s*\r?\n\s*/g, ' ')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
+      .trim()
+      .slice(0, 4000)
+  )
+}
+
 function route(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`)
 
@@ -713,7 +787,12 @@ function route(req: IncomingMessage, res: ServerResponse): void {
       const palette = accent && fg && bg ? { accent, fg, bg } : undefined
       // ?target=phone: the phone's version (answers by postMessage, not a POST to this bridge).
       const target = url.searchParams.get('target') === 'phone' ? 'phone' : 'bridge'
-      if (found) return send(res, 200, renderPanelDocument(found, target, url.searchParams.get('tone') === 'light', paper, palette), 'text/html; charset=utf-8')
+      // The runtime (and its one-time address) only goes into a document something is
+      // opening as a page — the webview, a canvas frame. A page that fetch()es its own
+      // document to read it as text gets the document without one.
+      const opened = ['document', 'iframe', 'frame'].includes(String(req.headers['sec-fetch-dest'] ?? ''))
+      const doc = found && target === 'bridge' && !opened ? { ...found, act: undefined } : found
+      if (doc) return send(res, 200, renderPanelDocument(doc, target, url.searchParams.get('tone') === 'light', paper, palette), 'text/html; charset=utf-8')
     }
     return send(res, 404, '<!doctype html><title>gone</title>', 'text/html; charset=utf-8')
   }
@@ -754,6 +833,17 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return send(res, 200, JSON.stringify({ ok: true }))
   }
 
+  // A document's runtime, by the one-time address written into it (see panelDoc). It holds
+  // the document's act secret, which is why it is a script of its own rather than text in
+  // the page, and why the address works once.
+  if (req.method === 'GET' && url.pathname === '/panel/runtime.js') {
+    // As a script tag asks for it, never as text a fetch() could read.
+    if (req.headers['sec-fetch-dest'] !== 'script') return send(res, 404, '// gone', 'text/javascript; charset=utf-8')
+    const js = takeRuntime(url.searchParams.get('n') ?? '')
+    if (js === null) return send(res, 404, '// gone', 'text/javascript; charset=utf-8')
+    return send(res, 200, js, 'text/javascript; charset=utf-8')
+  }
+
   // The way back: a panel document reporting that the user pressed something on it.
   //
   // Above the token gate on purpose. The bridge token belongs to the session, and
@@ -767,6 +857,13 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const owner = secret ? findByAct(secret) : null
         if (!owner) return send(res, 403, JSON.stringify({ error: 'stale panel' }))
 
+        // The secret proves which document is speaking; it does not prove anyone pressed
+        // anything. A page's own script can POST here as easily as a button can, so the
+        // user must have just pressed something in the page showing it. Where main cannot
+        // see that page (a frame in a Loom canvas) the renderer checks instead.
+        const gesture = gestureOn(owner.id)
+        if (gesture === false) return send(res, 403, JSON.stringify({ error: 'no user gesture' }))
+
         // Only one kind now. There used to be a `focus` kind as well, reporting when a
         // field inside a panel document had the caret so a dictated sentence could land
         // there instead of in the prompt — that went out with dictation itself.
@@ -775,10 +872,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           kind: 'send',
           // One line, always. The prompt is a line editor, and a pasted newline in a TUI
           // that treats Enter as submit sends half a sentence.
-          text: String(body['text'] ?? '')
-            .replace(/\s*\r?\n\s*/g, ' ')
-            .slice(0, 4000),
+          text: actText(body['text']),
           submit: body['submit'] !== false,
+          doc: owner.id,
+          gesture: gesture === true,
         }
         if (!act.text) return send(res, 400, JSON.stringify({ error: 'text is required' }))
         broadcast('ember:panel:act', act)
@@ -811,13 +908,15 @@ function route(req: IncomingMessage, res: ServerResponse): void {
             return send(res, 200, JSON.stringify({ ok: true }))
           }
           case 'start':
+            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF, state: deskState() }))
             return send(res, 200, JSON.stringify({ ok: true, state: await startDesk() }))
           case 'stop':
             return send(res, 200, JSON.stringify({ ok: true, state: stopDesk() }))
           case 'halt':
             return send(res, 200, JSON.stringify({ ok: true, state: haltDesk() }))
-          case 'resume':
-            return send(res, 200, JSON.stringify({ ok: true, state: resumeDesk() }))
+          // No `resume` here, on purpose. Stop is the person's brake on the session, and a
+          // brake the session can release is not one: Resume is a button in Ember (the strip,
+          // the overlay's pill), reached over IPC, never over this socket.
           case 'status':
             return send(res, 200, JSON.stringify({ ok: true, state: deskState() }))
           // Ember Hands. Pointing shows and explains, and never clicks; acting clicks and
@@ -835,7 +934,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
               })
               return send(res, 200, JSON.stringify(r))
             }
-            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
+            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
             const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
             const r = await deskPoint({
               window: body['window'] ? String(body['window']) : undefined,
@@ -850,12 +949,15 @@ function route(req: IncomingMessage, res: ServerResponse): void {
             return send(res, 200, JSON.stringify(r))
           }
           case 'act': {
-            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
+            // Clicking and typing need 'act'. 'show' is the default and means exactly what it
+            // says: Ember may point and look, never press.
+            const mode = hands()
+            if (mode !== 'act') return send(res, 200, JSON.stringify({ ok: false, error: mode === 'off' ? HANDS_OFF : HANDS_SHOW }))
             const r = await deskAct(String(body['script'] ?? ''))
             return send(res, 200, JSON.stringify(r))
           }
           case 'look': {
-            if (loadConfig().hands === 'off') return send(res, 200, JSON.stringify({ ok: false, error: 'Computer use is off in Ember (Ctrl+K → Computer use).' }))
+            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
             const r = await deskLook(body['window'] ? String(body['window']) : undefined, typeof body['depth'] === 'number' ? body['depth'] : 4)
             return send(res, 200, JSON.stringify(r))
           }
@@ -1337,6 +1439,9 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 export async function startBridge(): Promise<void> {
   if (server) return
   token = randomBytes(24).toString('hex')
+  // Every webContents, the panel's webviews included, reports its input from birth.
+  app.on('web-contents-created', (_e, wc) => watchGestures(wc))
+  for (const wc of webContents.getAllWebContents()) watchGestures(wc)
   server = createServer(route)
   await new Promise<void>((resolve) => {
     server!.on('error', (err) => {

@@ -10,8 +10,14 @@ draw Claude's cursor and show what it is doing in the sidebar.
 
 Protocol: one JSON line per connection: {"argv": [...], "token": "...", "tab": "..."}
           reply {"ok": bool, "out": "..."}.
+
+What it may do is Ember's to say, not the shell's. The first line on stdin, written by
+Ember as it starts the daemon, is {"control": "...", "mode": "off|show|act", "halted": bool};
+afterwards Ember sends the same shape over the socket whenever the setting or Stop changes.
+The control token never reaches a shell, so a session holding the shell token can ask for
+work but cannot change what work is allowed. Until Ember says otherwise the mode is "off".
 """
-import argparse, contextlib, ctypes, ctypes.wintypes as wt, io, json, math, os, re, shlex, shutil, socket, subprocess, sys, threading, time, traceback
+import argparse, contextlib, ctypes, ctypes.wintypes as wt, hmac, io, json, math, os, re, shlex, shutil, socket, subprocess, sys, threading, time, traceback
 
 DEPS = ("pyautogui", "pywinauto", "mss", "PIL", "pyperclip")
 PORT = int(os.environ.get("EMBER_DESK_PORT", "0") or 0)
@@ -48,7 +54,8 @@ HELP = """desk - Claude drives the desktop (screenshots, mouse, keys, UI Automat
   desk point TITLE NAME [--say TEXT] | desk point --xy X Y [--say TEXT]   show where something is (never clicks)
   desk bench                                              time the read-only paths (no mouse, no keys)
   desk sleep S                                            pause inside a batch
-  desk halt | desk resume | desk status                   the same Stop button Ember shows in its sidebar
+  desk halt | desk status                                 the same Stop button Ember shows in its sidebar
+                                                          (only you can lift it, with Resume in Ember)
 """
 
 # ----------------------------------------------------------------------------- helpers
@@ -197,8 +204,50 @@ def _win(title, timeout=3):
 def _rect(h):
     r = wt.RECT(); _u32.GetWindowRect(h, ctypes.byref(r)); return r.left, r.top, r.right, r.bottom
 
-def _check_halt():
-    if os.path.exists(HALT): raise SystemExit("HALTED: the Stop button in Ember was pressed. `desk resume` (or the Resume button) lifts it.")
+# Set by Ember (see the header): the control token, the Hands setting, the Stop switch.
+CONTROL = ""
+MODE = "off"
+HALTED = False
+
+def _halted():
+    # The file is a mirror for anyone looking from outside; what Ember told this process is
+    # the authority, so deleting the file lifts nothing.
+    return HALTED or os.path.exists(HALT)
+
+# What 'show' allows: looking, and Ember's own pointer. Nothing that moves the real mouse,
+# presses a key, changes a window or the clipboard, or starts a program.
+_LOOKS = {"shot", "windows", "wait", "sleep", "tree", "find", "read", "point", "bench"}
+
+def _is_look(argv):
+    if not argv: return True
+    if argv[0] == "clip": return len(argv) == 1   # reading the clipboard is a look; setting it is not
+    return argv[0] in _LOOKS
+
+def _check_allowed(argv):
+    if _halted(): raise SystemExit("HALTED: the Stop button in Ember was pressed. Only the person at the machine can lift it, with Resume in Ember.")
+    if MODE == "off": raise SystemExit("Computer use is off in Ember (Ctrl+K -> Computer use).")
+    if MODE != "act" and not _is_look(argv):
+        raise SystemExit(f"Computer use is set to Show in Ember: pointing and looking only, no {argv[0]}. Clicking and typing need it set to Act (Ctrl+K -> Computer use).")
+
+def _take_control(req):
+    """A settings change from Ember. Ignored unless it carries the control token."""
+    global MODE, HALTED
+    if not CONTROL or not hmac.compare_digest(str(req.get("control", "")).encode(), CONTROL.encode()): return False
+    m = req.get("mode")
+    if m in ("off", "show", "act"): MODE = m
+    if "halted" in req: HALTED = bool(req.get("halted"))
+    return True
+
+def _read_control():
+    """The first line on stdin, from Ember. Nothing there (started by hand) leaves it off."""
+    try:
+        line = sys.stdin.readline() if sys.stdin else ""
+        req = json.loads(line) if line.strip() else {}
+    except Exception:
+        req = {}
+    global CONTROL
+    CONTROL = str(req.get("control", ""))
+    _take_control(req)
 
 # ----------------------------------------------------------------------------- commands
 
@@ -687,7 +736,7 @@ def dispatch(argv):
     buf = io.StringIO(); ok = True
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
         try:
-            _check_halt(); _check_locked()
+            _check_allowed(argv); _check_locked()
             a = _parser.parse_args(argv); a.f(a)
         except SystemExit as e:
             ok = e.code in (0, None)
@@ -733,7 +782,7 @@ def run_batch(script):
     for st in steps:
         ok, out = dispatch(st); outs.append(out.rstrip())
         if not ok: outs.append(f"!! batch stopped at: {' '.join(st)}"); break
-    if any(st[0] in _ACTIONS for st in steps if st) and not os.path.exists(HALT):
+    if any(st[0] in _ACTIONS for st in steps if st) and not _halted():
         outs.append(_now())
     return ok, "\n".join(o for o in outs if o)
 
@@ -767,8 +816,17 @@ def serve():
     try: ctypes.windll.shcore.SetProcessDpiAwareness(2)
     except Exception: pass
     _watch_parent()
-    srv = socket.socket(); srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(("127.0.0.1", PORT)); srv.listen(5)
+    _read_control()
+    # Exclusive: if anything else already holds this port, fail here and say so, rather than
+    # share it (SO_REUSEADDR on Windows lets a second socket bind the same port) and leave
+    # shells talking to whichever socket Windows picks. Ember then moves to another port.
+    srv = socket.socket()
+    excl = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+    if excl is not None: srv.setsockopt(socket.SOL_SOCKET, excl, 1)
+    try:
+        srv.bind(("127.0.0.1", PORT)); srv.listen(5)
+    except OSError as e:
+        print(f"PORT_IN_USE {PORT}: {e}", flush=True); sys.exit(4)
     try: _pg(); _uia(); import mss, PIL.Image  # warm up
     except Exception: traceback.print_exc()
     print("READY", flush=True)
@@ -785,7 +843,10 @@ def serve():
             if not data.strip(): continue   # a connection probe (the shell client checks before it talks)
             req = json.loads(data.decode("utf-8"))
             raw = bool(req.get("raw"))   # the shell client wants "OK|ERR\n" + text, not JSON
-            if req.get("token") != TOKEN:
+            if "control" in req:
+                ok = _take_control(req)
+                conn.sendall(b'{"ok":true}\n' if ok else b'{"ok":false}\n'); continue
+            if not hmac.compare_digest(str(req.get("token", "")).encode(), TOKEN.encode()):
                 conn.sendall(b'ERR\ndesk only works inside an Ember shell\n' if raw else b'{"ok":false,"out":"desk only works inside an Ember shell"}\n'); continue
             argv = req.get("argv", []); _current_tab = str(req.get("tab", ""))
             global _acted

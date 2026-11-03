@@ -1,4 +1,5 @@
 import { join, basename } from 'node:path'
+import { homedir } from 'node:os'
 /**
  * End-to-end smoke test driven over the Chrome DevTools Protocol.
  *
@@ -171,7 +172,7 @@ try {
   const sid = await cdp.eval(`document.querySelector('.ember-group.is-active .ember-pane').dataset.sessionId`)
   await cdp.send('Page.bringToFront')
   await sleep(300)
-  await cdp.eval(`window.ember.write(${JSON.stringify(sid)}, 'Get-ChildItem C:\\\\Users\\\\afeti -Name | Select-Object -First 6')`)
+  await cdp.eval(`window.ember.write(${JSON.stringify(sid)}, ${JSON.stringify(`Get-ChildItem "${homedir()}" -Name | Select-Object -First 6`)})`)
   await sleep(55)
   await shoot(out.replace(/\.png$/, '-trail.png'))
   await sleep(400)

@@ -26,7 +26,7 @@ writeFileSync(join(NOTES, 'Release checklist.md'), '# Release checklist\n\n- bum
 writeFileSync(join(NOTES, 'Ideas.md'), 'Ideas\n\nA notes command instead of an MCP tool. Park background tabs.\n')
 writeFileSync(
   join(NOTES, 'Todo.md'),
-  '# Todo\n\n- [ ] Reply to Alex about the mockups [Mail](https://mail.google.com/mail/#all/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in radix-platform#551 (EN-19669 Intelligence scatter plot and map), rebase onto #550, make the four conflicting files agree on the module union, and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Park background tabs sooner [GitHub](https://github.com/afetiu/ember/issues/12)\n- [ ] Answer Noah on DE-862 [Jira](https://org.atlassian.net/browse/DE-862)\n- [ ] Send Kabashi the sizes [Slack](https://kabashi.slack.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Slack and mail triage routine\n',
+  '# Todo\n\n- [ ] Reply to Sam about the mockups [Mail](https://mail.example.com/inbox/18f2c3a9b1)\n- [ ] Resolve the merge conflicts in acme-web#42 (WEB-128 pricing table and map), rebase onto #41, make the four conflicting files agree on the module union, and push so CI runs again before the v0.31.0 release\n- [x] Sign the installer\n- [ ] Park background tabs sooner [GitHub](https://github.com/acme/acme-web/issues/12)\n- [ ] Answer Priya on WEB-131 [Tracker](https://tracker.example.com/browse/WEB-131)\n- [ ] Send the client the sizes [Chat](https://chat.example.com/archives/C0123/p1693820000)\n\nLater\n- [ ] Chat and mail triage routine\n',
 )
 
 const userCfg = join(homedir(), '.ember', 'config.json')

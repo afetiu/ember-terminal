@@ -39,11 +39,34 @@ function safeHref(raw: string): string {
   return ''
 }
 
+/** An inline picture: carried in the reply itself, so showing it asks nothing of anyone. */
 function safeImage(raw: string): string {
   const url = raw.trim()
-  if (/^https?:\/\//i.test(url)) return url
   if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(url)) return url
   return ''
+}
+
+/**
+ * A picture on someone else's server is not fetched until it is asked for.
+ *
+ * Loading it is a request to that server, and the URL is whatever the model wrote — which
+ * can be whatever a web page or a file it read told it to write, with your data in the
+ * query string. So it arrives as a button naming the host, and the view swaps in the real
+ * image on a click (LoomView.click). Until then nothing on the page has the URL as a src.
+ */
+function remoteImage(alt: string, raw: string): string {
+  const url = raw.trim()
+  if (!/^https?:\/\//i.test(url)) return ''
+  let host = ''
+  try {
+    host = new URL(url).host
+  } catch {
+    return ''
+  }
+  return (
+    `<button type="button" class="loom-img-remote" data-src="${escapeHtml(url)}" data-alt="${alt}" title="${escapeHtml(url)}">` +
+    `Image from ${escapeHtml(host)} — click to load</button>`
+  )
 }
 
 class Inline {
@@ -58,6 +81,18 @@ class Inline {
       codes.push(code)
       return `\u0000${codes.length - 1}\u0000`
     })
+    // A code span inside a button's payload goes back to being backticked text: the
+    // button has to send exactly what was written.
+    const withCode = (s: string) => s.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `\`${codes[Number(i)] ?? ''}\``)
+
+    // Finished elements whose attributes carry the model's text (a button's payload, an
+    // image's address) are set aside the same way, so the link and emphasis passes below
+    // cannot reach into them: an `*` in a command must not turn into <em> in data-send.
+    const kept: string[] = []
+    const stash = (html: string) => {
+      kept.push(html)
+      return `\u0001${kept.length - 1}\u0001`
+    }
 
     out = out.replace(/!\[([^\]]*)\]\(([^)]+?)\)/g, (m, alt: string, href: string) => {
       const raw = unescapeHtml(href.trim()).replace(/^<|>$/g, '')
@@ -66,20 +101,36 @@ class Inline {
         return `<img class="loom-img" alt="${alt}" data-local="${this.images.length - 1}">`
       }
       const url = safeImage(raw)
-      return url ? `<img class="loom-img" alt="${alt}" src="${escapeHtml(url)}">` : m
+      if (url) return `<img class="loom-img" alt="${alt}" src="${escapeHtml(url)}">`
+      const remote = remoteImage(withCode(alt), raw)
+      return remote ? stash(remote) : m
     })
 
     // `[Do it](ember:npm test)` is a button that speaks for the user; `ember-type:` only
     // fills the prompt. The same convention the panel has, so one habit works in both.
     out = out.replace(/\[([^\]]+)\]\((ember(?:-type)?):([^)]*)\)/g, (_m, label: string, scheme: string, arg: string) => {
-      let value = unescapeHtml(arg.trim())
+      let value = unescapeHtml(withCode(arg.trim()))
       try {
         value = decodeURIComponent(value)
       } catch {
         /* a literal % */
       }
       const submit = scheme === 'ember' ? '1' : '0'
-      return `<button type="button" class="loom-act" data-send="${escapeHtml(value || unescapeHtml(label))}" data-submit="${submit}">${label}</button>`
+      const shown = unescapeHtml(withCode(label))
+      // No payload sends the label itself, as plain text: code styling is not part of it.
+      const send = value || shown.replace(/`/g, '')
+      // The button speaks for the user, so its label cannot be all they see: when the
+      // text it sends is not the text it shows, that text is on the button as well, and
+      // in its tooltip. Backticks aside — `npm test` labelled npm test is the same thing.
+      const differs = send.replace(/`/g, '').trim() !== shown.replace(/`/g, '').trim()
+      const verb = submit === '1' ? 'Sends' : 'Types'
+      return stash(
+        `<button type="button" class="loom-act${differs ? ' has-sends' : ''}" data-send="${escapeHtml(send)}" data-submit="${submit}"` +
+          (differs ? ` title="${escapeHtml(`${verb}: ${send}`)}">` : '>') +
+          `<span class="loom-act-label">${label}</span>` +
+          (differs ? `<span class="loom-act-sends">${escapeHtml(send)}</span>` : '') +
+          `</button>`,
+      )
     })
 
     out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label: string, href: string) => {
@@ -98,6 +149,7 @@ class Inline {
     out = out.replace(/(^|[^_\w])_([^_\n]+)_(?!\w)/g, '$1<em>$2</em>')
     out = out.replace(/~~([^~]+)~~/g, '<del>$1</del>')
 
+    out = out.replace(/\u0001(\d+)\u0001/g, (_m, i: string) => kept[Number(i)] ?? '')
     return out.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `<code>${codes[Number(i)] ?? ''}</code>`)
   }
 }

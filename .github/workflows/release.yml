@@ -5,6 +5,10 @@
 # repository secret SIGNPATH_API_TOKEN and the variable SIGNPATH_ORGANIZATION_ID; without
 # them the same build runs unsigned. Every signing request waits for manual approval in
 # SignPath. See CODE_SIGNING.md.
+#
+# Two jobs so the one holding write access runs no build code: `build` reads the repo,
+# builds and signs, and hands the files over as an artifact; `release` only publishes
+# them. Third-party actions are pinned to commit SHAs.
 name: Release
 
 on:
@@ -17,9 +21,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  actions: read
+permissions: {}
 
 env:
   SIGN: ${{ secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' }}
@@ -29,14 +31,37 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      # SignPath fetches the uploaded artifacts through the Actions API.
+      actions: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      # First, so a bad tag fails before an hour of building. Passed through env, never
+      # pasted into the script.
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag like v1.2.3"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -51,7 +76,7 @@ jobs:
       - name: Upload the unsigned app
         id: upload-app
         if: env.SIGN == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ember-app-unsigned
           path: release/win-unpacked
@@ -59,7 +84,7 @@ jobs:
 
       - name: Sign Ember.exe
         if: env.SIGN == 'true'
-        uses: signpath/github-action-submit-signing-request@v2
+        uses: signpath/github-action-submit-signing-request@c92b958760219087e01f8d67a1669ed57afe2627 # v2.3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -84,7 +109,7 @@ jobs:
       - name: Upload the unsigned installer
         id: upload-installer
         if: env.SIGN == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ember-installer-unsigned
           path: release/Ember-Setup-win-x64.exe
@@ -92,7 +117,7 @@ jobs:
 
       - name: Sign the installer
         if: env.SIGN == 'true'
-        uses: signpath/github-action-submit-signing-request@v2
+        uses: signpath/github-action-submit-signing-request@c92b958760219087e01f8d67a1669ed57afe2627 # v2.3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -113,17 +138,31 @@ jobs:
         shell: bash
         run: cd release && sha256sum Ember-Setup-win-x64.exe Ember-win-x64.zip Ember-win-x64.tar.gz | tee SHA256SUMS.txt
 
-      - name: Resolve release tag
-        id: tag
-        shell: bash
-        run: |
-          TAG="${{ inputs.tag }}"
-          if [ -z "$TAG" ]; then TAG="$GITHUB_REF_NAME"; fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - uses: softprops/action-gh-release@v2
+      - name: Hand the release files to the release job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ember-release
+          path: |
+            release/Ember-Setup-win-x64.exe
+            release/Ember-win-x64.zip
+            release/Ember-win-x64.tar.gz
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ember-release
+          path: release
+
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
           files: |
             release/Ember-Setup-win-x64.exe
             release/Ember-win-x64.zip

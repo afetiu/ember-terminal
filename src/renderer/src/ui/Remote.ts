@@ -1,6 +1,7 @@
 // @ts-expect-error - plain ES shared verbatim with the phone bundle; see the file header
 import { AccountLink } from '../../../../resources/relay/protocol.js'
 import type { Account, PanelPush, RemoteDevice } from '@shared/types'
+import { phoneActs } from '../phone/PhoneHost'
 
 /**
  * This machine's link to the Ember account: the sealed channel the phone reaches the desk
@@ -9,8 +10,8 @@ import type { Account, PanelPush, RemoteDevice } from '@shared/types'
  */
 
 export interface RemoteHooks {
-  /** A button pressed on a panel document shown on a phone. */
-  onPanelAct: (text: string, submit: boolean) => void
+  /** A button pressed on a panel document shown on a phone, for the tab that document is from. */
+  onPanelAct: (tabId: string, text: string, submit: boolean) => void
   /** Anything worth repainting: link state, which devices are here. */
   onChange: () => void
   /** Ember on the phone (docs/specs/phone.md): true when the message was its. */
@@ -90,11 +91,14 @@ export class Remote {
   private receive(m: Record<string, unknown>, from: string): void {
     if (this.hooks.onPhone?.(m, from)) return
     // Someone tapped a button on a panel shown on the phone. It lands in the same place
-    // the desk's own panel acts do — the session the panel belongs to.
+    // the desk's own panel acts do — the session the panel belongs to, which the secret the
+    // panel was sent with says. Without one it is not an act this desk asked for.
     if (m['t'] === 'act') {
+      const tabId = phoneActs.tabFor(m['act'])
+      if (!tabId) return
       this.stats.acts++
       try {
-        this.hooks.onPanelAct(String(m['text'] ?? ''), m['submit'] !== false)
+        this.hooks.onPanelAct(tabId, String(m['text'] ?? ''), m['submit'] !== false)
       } catch (err) {
         const why = `act: ${(err as Error).message}`
         this.stats.errors.push(why)
@@ -117,7 +121,10 @@ export class Remote {
     if (!this.link || !this.phones.length) return
     let html: string
     try {
-      html = await window.ember.panel.render(push)
+      // Rendered with an empty slot for the act secret; this desk fills it in (see PhoneHost).
+      // A non-empty `act` is what tells main the document may talk back at all, and a file
+      // shown from disk may not (bridge.ts, pushForFile).
+      html = phoneActs.fill(await window.ember.panel.render(push.file ? push : { ...push, act: 'phone' }), push.tabId)
     } catch (err) {
       this.stats.errors.push(`panel: ${(err as Error).message}`)
       return

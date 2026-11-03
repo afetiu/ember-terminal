@@ -93,7 +93,7 @@ try {
   // A custom status line of several lines between the box and the mode line.
   await draw('❯ git status', [
     'Opus 5.5 | platform | $0.18 | ▉ 6% 55k/1000k',
-    'radix-platform        ⎇ EN-23519-realrents-single-property-guard ~6 ?3',
+    'acme-web              ⎇ WEB-128-single-property-guard ~6 ?3',
     'renterPortal          ⎇ main ↓73 ~1',
     'renters-portal-api    ⎇ main ~1',
     'ui                    ⎇ main ~1',

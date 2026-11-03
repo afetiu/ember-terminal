@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import type { PanelOption, PanelPush } from '../shared/types.js'
 import { customViewDocument, viewDocument, type ViewTheme } from './panelView.js'
 
@@ -433,15 +434,23 @@ html.ember-picking, html.ember-picking * { cursor: crosshair !important; }
 /**
  * The page's half of the conversation.
  *
- * Two jobs, both of which need to run inside the document rather than out here: press
- * anything carrying `data-ember-send` and it types into the terminal, and tell Ember
- * when the caret is in one of this page's own fields so a dictated sentence lands
- * there instead of in the prompt.
+ * One job, and it has to run inside the document rather than out here: press anything
+ * carrying `data-ember-send` and it types into the terminal.
+ *
+ * Only a press the user made counts. A model-authored page has scripts of its own, and a
+ * script can call `.click()` on a button or dispatch a click at it; neither is the user, so
+ * a click has to be trusted and the page has to be holding a fresh user activation. That is
+ * the page's half of the check and a script in the page could forge the fetch around it, so
+ * it is not the whole check: main and the renderer each test for a real gesture on the
+ * frame the document is in before anything is typed (see /panel/act and App's onAct).
  *
  * On the desk it reaches the app by POSTing to the bridge it was served from — same
- * origin, so no CORS and no preload — carrying the per-document secret written in below.
- * A page on any other origin has neither, which is what keeps a browsed website from
- * typing into the terminal.
+ * origin, so no CORS and no preload — carrying the per-document secret. The secret is not
+ * written into the page: the runtime is a separate script, fetched once by a one-time
+ * address placed ahead of everything else in the document, so it runs before any of the
+ * page's own scripts and keeps the secret in its closure. Asking for that address a second
+ * time gets nothing. A page on any other origin has neither, which is what keeps a browsed
+ * website from typing into the terminal.
  *
  * On the phone there is no bridge to POST to: the document arrived over the relay and is
  * shown in a sandboxed frame with no origin at all. There it talks to its host by
@@ -449,43 +458,52 @@ html.ember-picking, html.ember-picking * { cursor: crosshair !important; }
  * read the app's storage or the account key — the isolation the webview provides on the
  * desk, provided differently.
  *
- * The secret still travels either way. It is meaningless to the phone's host, which knows
- * which machine the panel came from, but it is what the *desk* checks when the act comes
- * back round — so a document cannot act on a tab it does not belong to.
+ * The phone's copy carries no desk secret at all, only `PHONE_ACT_SLOT`. The desk fills
+ * that in with a secret of its own as it sends the document (PhoneHost, Remote), and checks
+ * it when the act comes back round — so a document cannot act on a tab it does not belong
+ * to, and a page on the desk that fetches its own phone version learns nothing.
+ *
+ * A document with no secret at all — a file shown with show_file — gets no runtime: its
+ * buttons are pictures of buttons.
  */
-function runtime(actSecret: string, viaParent = false): string {
-  return `<script>
-(function () {
+export const PHONE_ACT_SLOT = '__EMBER_PHONE_ACT__'
+
+function runtimeJs(actSecret: string, viaParent: boolean): string {
+  return `(function () {
   var ACT = ${JSON.stringify(actSecret)}
   var VIA_PARENT = ${viaParent ? 'true' : 'false'}
+  // Taken now, before any of the page's scripts can replace them.
+  var FETCH = window.fetch ? window.fetch.bind(window) : null
+  var STRINGIFY = JSON.stringify
+  var UA = navigator.userActivation || null
+  var UA_ACTIVE = (function () {
+    try { return Object.getOwnPropertyDescriptor(Object.getPrototypeOf(UA), 'isActive').get } catch (_) { return null }
+  })()
 
-  function post(body) {
-    body.act = ACT
+  // A real press: trusted, and the page holding a user activation that has not run out.
+  function live(e) {
+    if (!e || e.isTrusted !== true) return false
+    if (!UA || !UA_ACTIVE) return true
+    try { return UA_ACTIVE.call(UA) === true } catch (_) { return false }
+  }
+
+  function post(kind, text, submit) {
     if (VIA_PARENT) {
-      body.__emberPanel = true
-      try { parent.postMessage(body, '*') } catch (_) { /* no host to tell */ }
+      try { parent.postMessage({ __emberPanel: true, act: ACT, kind: kind, text: text, submit: submit }, '*') } catch (_) { /* no host to tell */ }
       return
     }
-    return fetch('/panel/act', {
+    if (!FETCH) return
+    return FETCH('/panel/act', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body)
+      body: STRINGIFY({ act: ACT, kind: kind, text: text, submit: submit })
     }).catch(function () { /* A dead bridge means Ember is gone; nothing to report to. */ })
   }
 
   function send(text, submit) {
     text = String(text == null ? '' : text).trim()
     if (!text) return
-    post({ kind: 'send', text: text, submit: submit !== false })
-  }
-
-  function editable(el) {
-    if (!el || el.nodeType !== 1) return false
-    if (el.isContentEditable) return true
-    var tag = el.tagName
-    if (tag === 'TEXTAREA') return !el.disabled && !el.readOnly
-    if (tag !== 'INPUT') return false
-    return !el.disabled && !el.readOnly && !/^(button|submit|reset|checkbox|radio|range|file|color|image|hidden)$/i.test(el.type || 'text')
+    post('send', text, submit !== false)
   }
 
   // Answering a card retires it. The alternative is a panel of buttons that all still
@@ -499,19 +517,21 @@ function runtime(actSecret: string, viaParent = false): string {
     card.appendChild(note)
   }
 
+  function sendFree(t) {
+    var box = document.getElementById(t.getAttribute('data-ember-free'))
+    var typed = box ? box.value : ''
+    if (!String(typed).trim()) { if (box) box.focus(); return }
+    send(typed, true)
+    retire(t.closest('.ember-ask'), typed)
+  }
+
   document.addEventListener('click', function (e) {
     var t = e.target && e.target.closest ? e.target.closest('[data-ember-send], [data-ember-free]') : null
     if (!t) return
     e.preventDefault()
+    if (!live(e)) return
 
-    if (t.hasAttribute('data-ember-free')) {
-      var box = document.getElementById(t.getAttribute('data-ember-free'))
-      var typed = box ? box.value : ''
-      if (!String(typed).trim()) { if (box) box.focus(); return }
-      send(typed, true)
-      retire(t.closest('.ember-ask'), typed)
-      return
-    }
+    if (t.hasAttribute('data-ember-free')) return sendFree(t)
 
     var text = t.getAttribute('data-ember-send')
     var submit = t.getAttribute('data-ember-submit') !== '0'
@@ -525,7 +545,8 @@ function runtime(actSecret: string, viaParent = false): string {
   })
 
   // Enter sends, Shift+Enter is a newline — the same bargain every chat box makes, and
-  // the one a terminal user already has in their fingers.
+  // the one a terminal user already has in their fingers. Sent from here rather than by
+  // clicking the button, because a click made by script is exactly what the check refuses.
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return
     var box = e.target
@@ -533,11 +554,46 @@ function runtime(actSecret: string, viaParent = false): string {
     var btn = document.querySelector('[data-ember-free="' + box.id + '"]')
     if (!btn) return
     e.preventDefault()
-    btn.click()
+    if (live(e)) sendFree(btn)
   })
+})()`
+}
 
-})()
-</script>`
+/**
+ * Runtimes waiting to be fetched, by one-time address. A document asks for its own within
+ * milliseconds of being served, so an entry that has waited a minute was never wanted.
+ */
+const runtimes = new Map<string, { js: string; until: number }>()
+const RUNTIME_TTL_MS = 60_000
+
+/** The runtime behind a one-time address, once; null for an address used or never issued. */
+export function takeRuntime(nonce: string): string | null {
+  const r = runtimes.get(nonce)
+  runtimes.delete(nonce)
+  return r && r.until > Date.now() ? r.js : null
+}
+
+function runtime(actSecret: string, viaParent = false): string {
+  if (!actSecret) return ''
+  // The phone's host fills the slot in; the desk secret never leaves this machine in a page.
+  if (viaParent) return `<script>${runtimeJs(PHONE_ACT_SLOT, true)}</script>`
+  const now = Date.now()
+  for (const [n, r] of runtimes) if (r.until <= now || runtimes.size > 500) runtimes.delete(n)
+  const nonce = randomBytes(16).toString('hex')
+  runtimes.set(nonce, { js: runtimeJs(actSecret, false), until: now + RUNTIME_TTL_MS })
+  return `<script src="/panel/runtime.js?n=${nonce}"></script>`
+}
+
+/**
+ * Put the runtime first in the document, right after the doctype, so ahead of any
+ * script the page brought. A script ahead of `<html>` is legal: the parser opens the head
+ * for it, and it blocks everything after it until it has run.
+ */
+function withRuntime(html: string, tag: string): string {
+  if (!tag) return html
+  const doctype = /^\s*<!doctype[^>]*>/i.exec(html)
+  const cut = doctype ? doctype[0].length : 0
+  return html.slice(0, cut) + tag + html.slice(cut)
 }
 
 /**
@@ -879,14 +935,14 @@ const mermaidBoot = (light: boolean, palette?: DocPalette) => `
   })()
 </script>`
 
-function shell(body: string, act: string, viaParent = false, light = false, palette?: DocPalette): string {
+function shell(body: string, light = false, palette?: DocPalette): string {
   const head = body.includes('class="mermaid"') ? mermaidBoot(light, palette) : ''
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}</style>
-</head><body${light ? ' class="light"' : ''}>${body}${head}${runtime(act, viaParent)}</body></html>`
+</head><body${light ? ' class="light"' : ''}>${body}${head}</body></html>`
 }
 
 /**
@@ -1119,12 +1175,12 @@ function unfence(page: string): string {
  * gets Ember's own document around it instead, styled like a markdown panel, and a full
  * document gets `HTML_BASE` ahead of its own head so an unstyled body still reads.
  */
-function graft(page: string, act: string, viaParent = false, light = false, paper = DEFAULT_PAPER): string {
+function graft(page: string, light = false, paper = DEFAULT_PAPER): string {
   const source = unfence(page)
   // The scrollbars go in too. A model-authored page is still a page inside Ember's
   // panel, and a browser-default bar down the side of it is the one part that gives
   // away that it is a webview.
-  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_INTERACT : ''}</style>${light ? lightGuard(paper) : ''}${runtime(act, viaParent)}`
+  const addition = `<style>${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_INTERACT : ''}</style>${light ? lightGuard(paper) : ''}`
 
   if (!isDocument(source)) {
     return `<!doctype html>
@@ -1256,7 +1312,8 @@ const DEFAULT_PAPER = '#FBF7F2'
 export function renderPanelDocument(push: PanelPush, target: PanelTarget = 'bridge', light = false, paper = DEFAULT_PAPER, palette?: DocPalette): string {
   const act = push.act ?? ''
   const viaParent = target === 'phone'
-  const html = renderFor(push, act, viaParent, light, paper, palette).replace(/<head>|<head\s[^>]*>/i, (h) => `${h}<meta name="ember-doc" content="${push.id}">`)
+  const drawn = renderFor(push, viaParent, light, paper, palette).replace(/<head>|<head\s[^>]*>/i, (h) => `${h}<meta name="ember-doc" content="${push.id}">`)
+  const html = withRuntime(drawn, runtime(act, viaParent))
   // The phone bundles mermaid rather than fetching it from a bridge it cannot see.
   return viaParent ? html.replace('/vendor/mermaid.min.js', 'mermaid.min.js') : withHeightReport(html)
 }
@@ -1275,37 +1332,33 @@ function withHeightReport(html: string): string {
   return at === -1 ? html + HEIGHT_REPORT : html.slice(0, at) + HEIGHT_REPORT + html.slice(at)
 }
 
-function renderFor(push: PanelPush, act: string, viaParent: boolean, light: boolean, paper: string, palette?: DocPalette): string {
+function renderFor(push: PanelPush, viaParent: boolean, light: boolean, paper: string, palette?: DocPalette): string {
   switch (push.format) {
     case 'html':
       // Passed through as its own document. It is untrusted, and it is contained by
       // being on this origin in a webview rather than by being filtered here — a
       // sanitiser that has to be right every time is a worse bet than an isolation
       // boundary that does not.
-      return graft(push.content, act, viaParent, light, paper)
+      return graft(push.content, light, paper)
 
     case 'code':
       return shell(
         `<pre class="code"><code data-lang="${escapeHtml(push.language ?? '')}">${escapeHtml(push.content)}</code></pre>`,
-        act,
-        viaParent,
         light,
         palette
       )
 
     case 'mermaid':
-      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, act, viaParent, light, palette)
+      return shell(`<pre class="mermaid">${escapeHtml(push.content)}</pre>`, light, palette)
 
     case 'ask':
-      return shell(askCard(push), act, viaParent, light, palette)
+      return shell(askCard(push), light, palette)
 
     case 'url':
       // On the desk a url push navigates the webview instead of building a page. The
       // phone has no browser to hand it to, so it gets something it can tap instead.
       return shell(
         `<p>Opening <a href="${escapeHtml(push.content)}" target="_blank" rel="noreferrer">${escapeHtml(push.content)}</a>…</p>`,
-        act,
-        viaParent,
         light,
         palette
       )
@@ -1315,20 +1368,20 @@ function renderFor(push: PanelPush, act: string, viaParent: boolean, light: bool
       try {
         spec = JSON.parse(push.content)
       } catch {
-        return shell(`<p>This view's data is not valid JSON.</p>`, act, viaParent, light, palette)
+        return shell(`<p>This view's data is not valid JSON.</p>`, light, palette)
       }
       const name = String(spec.view ?? '')
       const { theme, bg } = viewTheme(palette, light)
       const own = loadView(name)
-      if (own) return graft(customViewDocument(own, spec.data ?? {}, push.title, theme), act, viaParent, light, paper)
-      return shell(viewDocument(name, spec.data ?? {}, push.title, theme, bg), act, viaParent, light, palette)
+      if (own) return graft(customViewDocument(own, spec.data ?? {}, push.title, theme), light, paper)
+      return shell(viewDocument(name, spec.data ?? {}, push.title, theme, bg), light, palette)
     }
 
     case 'images':
-      return shell(gallery(push.content, viaParent), act, viaParent, light, palette)
+      return shell(gallery(push.content, viaParent), light, palette)
 
     case 'markdown':
     default:
-      return shell(markdownToHtml(push.content), act, viaParent, light, palette)
+      return shell(markdownToHtml(push.content), light, palette)
   }
 }

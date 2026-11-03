@@ -256,6 +256,12 @@ export class Settings {
           kind: 'toggle',
           hint: 'reports cwd + exit status; needed for the git badge and task runner',
         },
+        {
+          path: 'updates.check',
+          label: 'Check for updates',
+          kind: 'toggle',
+          hint: 'asks GitHub for the latest release at start and every 6 hours. Clicking the version still checks',
+        },
       ],
     },
   ]

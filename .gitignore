@@ -17,3 +17,4 @@ mobile/www/
 # Wrangler's local state for the relay.
 relay/.wrangler/
 __pycache__/
+.lavish/

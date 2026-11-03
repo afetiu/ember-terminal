@@ -6,9 +6,11 @@
  */
 const pty = require('@lydell/node-pty')
 const { performance } = require('node:perf_hooks')
+const { homedir } = require('node:os')
+const { join } = require('node:path')
 
 const candidates = [
-  ['alias  pwsh.exe (WindowsApps)', 'C:\\Users\\afeti\\AppData\\Local\\Microsoft\\WindowsApps\\pwsh.exe'],
+  ['alias  pwsh.exe (WindowsApps)', join(homedir(), 'AppData', 'Local', 'Microsoft', 'WindowsApps', 'pwsh.exe')],
   ['package pwsh.exe', 'C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7.6.5.0_x64__8wekyb3d8bbwe\\pwsh.exe'],
   ['powershell.exe 5.1', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'],
 ]

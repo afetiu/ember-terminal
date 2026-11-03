@@ -5696,3 +5696,37 @@ body.is-light .loom-zoom {
   border-radius: 0;
   background: none;
 }
+
+/* A button whose label is not what it sends carries the payload on a second line, so
+   the label can never be the only thing the user reads before pressing it. */
+.loom-act.has-sends {
+  flex-wrap: wrap;
+  max-width: 100%;
+  text-align: left;
+}
+.loom-act-sends {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--l-faint);
+  font-weight: 400;
+  font-size: 0.86em;
+}
+
+/* A remote picture before it is asked for: a quiet stand-in that names the host. */
+.loom-img-remote {
+  display: inline-flex;
+  align-items: center;
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: var(--l-r-ctl);
+  border: 1px dashed var(--l-line-strong);
+  background: var(--l-s1);
+  color: var(--l-faint);
+  font: 0.86em var(--l-mono);
+  cursor: pointer;
+}
+.loom-img-remote:hover {
+  color: var(--l-strong);
+  border-color: color-mix(in srgb, var(--c-accent) 50%, var(--l-line-strong));
+}

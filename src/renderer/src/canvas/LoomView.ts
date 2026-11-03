@@ -1290,6 +1290,20 @@ export class LoomView {
     const t = e.target as HTMLElement
     // The click that opened the menu (⋯) reaches here too; it must not close it again.
     if (!t.closest('.loom-menu, [data-p="more"]')) this.closeMenu()
+    // A picture from another server, held back until asked for (markdown.ts, remoteImage).
+    // This click is the asking: only now does anything request it.
+    const remote = t.closest<HTMLElement>('.loom-img-remote')
+    if (remote) {
+      e.preventDefault()
+      e.stopPropagation()
+      const img = document.createElement('img')
+      img.className = 'loom-img'
+      img.alt = remote.dataset['alt'] ?? ''
+      img.dataset['zoom'] = '1'
+      img.src = remote.dataset['src'] ?? ''
+      remote.replaceWith(img)
+      return
+    }
     const act = t.closest<HTMLElement>('.loom-act')
     if (act) {
       e.preventDefault()

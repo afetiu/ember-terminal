@@ -6,6 +6,24 @@ import type { GitStatus, TaskEntry } from '../shared/types.js'
 
 const run = promisify(execFile)
 
+/**
+ * Flags for every git Ember runs on its own, unasked.
+ *
+ * The directory comes from the shell's cwd reports (OSC 7 / OSC 9;9), and anything that
+ * prints to a terminal can send one — so this may be a repo the person has never trusted,
+ * cloned a minute ago. A repo's own config can make even `git status` run a program:
+ * an fsmonitor command, or a hook fired when status refreshes the index. These switch
+ * both off, keep status from writing the index at all, and refuse any transport, so a
+ * read-only question stays read-only. `-c` also reaches git's child processes, which is
+ * how submodules get the same treatment.
+ */
+const SAFE_GIT = [
+  '--no-optional-locks',
+  '-c', 'core.fsmonitor=false',
+  '-c', `core.hooksPath=${process.platform === 'win32' ? 'NUL' : '/dev/null'}`,
+  '-c', 'protocol.allow=never',
+]
+
 const gitCache = new Map<string, { at: number; value: GitStatus | null }>()
 const GIT_TTL_MS = 4000
 
@@ -24,7 +42,7 @@ export async function gitStatus(cwd: string): Promise<GitStatus | null> {
 
   let value: GitStatus | null = null
   try {
-    const { stdout } = await run('git', ['-C', cwd, 'status', '--porcelain=v2', '--branch'], {
+    const { stdout } = await run('git', [...SAFE_GIT, '-C', cwd, 'status', '--porcelain=v2', '--branch'], {
       timeout: 3000,
       windowsHide: true,
       maxBuffer: 4 * 1024 * 1024,

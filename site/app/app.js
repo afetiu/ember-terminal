@@ -1435,10 +1435,11 @@ window.addEventListener('message', (e) => {
     frame.style.height = `${clampHeight(h)}px`
     frame.classList.toggle('is-clamped', h > clampHeight(h))
   }
-  // An answer from an `ask` card in a document rendered for the phone.
-  if (data.__emberPanel && data.kind === 'send' && S.tab) {
+  // An answer from an `ask` card in a document rendered for the phone. Only a real tap
+  // counts (a tap in the frame activates this page too); the desk checks the doc's secret.
+  if (data.__emberPanel && data.kind === 'send' && S.tab && navigator.userActivation?.isActive !== false) {
     const text = String(data.text ?? '').trim()
-    if (text) sendDesk({ t: 'act', tab: S.tab, text, submit: data.submit !== false })
+    if (text) sendDesk({ t: 'act', tab: S.tab, text, submit: data.submit !== false, act: data.act })
   }
 })
 

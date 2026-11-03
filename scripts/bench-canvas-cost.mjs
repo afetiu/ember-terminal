@@ -33,7 +33,7 @@ const SCENARIOS = [
   { id: 'chart', turns: ['Show me a bar chart of my projects by state: Live 10, In motion 8, Dormant 2, Dead 7.'] },
   { id: 'report', turns: ['Write a short markdown report (about 50 lines) on the pros and cons of MCP servers versus CLIs as tools for coding agents, save it as report.md in this folder, and show it to me on the canvas.'] },
   { id: 'dashboard', turns: ['Show me a small stats dashboard: Projects 27, Live 10, Spend $41, Open PRs 4.', 'Change Spend to $38.'] },
-  { id: 'table', turns: ['Show these as a table on the canvas: ember 812 commits live; shopcast 240 in motion; pika 133 live; krei 54 dead.'] },
+  { id: 'table', turns: ['Show these as a table on the canvas: ember 812 commits live; acme-web 240 in motion; acme-api 133 live; old-site 54 dead.'] },
 ]
 
 function run(cwd, cfg, prompt, resume) {

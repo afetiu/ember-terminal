@@ -379,6 +379,11 @@ export interface EmberConfig {
   /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
   brain?: { sync: boolean }
   /**
+   * Look for a new release on GitHub at start and every 6 hours. On unless turned off.
+   * Clicking the version in the sidebar checks either way.
+   */
+  updates?: { check?: boolean }
+  /**
    * Features that need an API key of their own or reach into one person's
    * accounts. Off in a fresh install: Ember's
    * promise is that it runs on the CLIs you already have and asks for no keys.
@@ -499,6 +504,14 @@ export interface PanelAct {
   text?: string
   /** For `send`: press Enter afterwards. */
   submit?: boolean
+  /** The document that asked, so the renderer can check it is the one the user is in. */
+  doc?: string
+  /**
+   * Main saw the user press something in the page showing `doc` a moment ago. Only main
+   * can see that for a page of its own (the panel's webview); for a frame inside the
+   * window this is false and the renderer judges from the frame's focus instead.
+   */
+  gesture?: boolean
 }
 
 /** main -> renderer */
@@ -771,6 +784,8 @@ export interface EmberBridge {
   }
   platform: {
     homedir: string
+    /** Where a dropped file lives on disk; '' for one that is not a file on disk. */
+    pathForFile(file: File): string
   }
   /** `ember <words>` from a shell, relayed by main; the renderer answers by request id. */
   cmd: {

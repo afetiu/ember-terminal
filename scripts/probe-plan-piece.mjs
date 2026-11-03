@@ -32,7 +32,7 @@ let n = 0
 const at = () => new Date(Date.parse('2026-11-02T09:00:00Z') + n * 1000).toISOString()
 const u = (content) => ({ type: 'user', uuid: `u${++n}`, timestamp: at(), message: { role: 'user', content } })
 const a = (text) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(), message: { role: 'assistant', content: [{ type: 'text', text }] } })
-const todo = (states, steps = ['Merge #4589', 'Switch RealRents to Postgres', 'Turn off the sync functions', 'Point DNS to AWS']) => ({
+const todo = (states, steps = ['Merge #42', 'Switch the billing app to Postgres', 'Turn off the sync functions', 'Point DNS to AWS']) => ({
   type: 'assistant',
   uuid: `t${++n}`,
   timestamp: at(),

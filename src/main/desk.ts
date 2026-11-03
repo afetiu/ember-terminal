@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { BrowserWindow, ipcMain, screen, type Display } from 'electron'
-import { CONFIG_DIR } from './config.js'
+import { CONFIG_DIR, loadConfig } from './config.js'
 import { resourcePath } from './resources.js'
 import type { DeskActivity, DeskOverlayState, DeskState } from '../shared/types.js'
 
@@ -21,9 +21,15 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
  *
  * Two things are Ember's alone. The pointer: the daemon reports each action here and a
  * transparent, click-through window draws Ember's own pointer where it is working,
- * so the person keeps their mouse and can watch. And the Stop switch: a halt file the
- * daemon checks before every command, a killed process, a state the sidebar shows —
- * pressed in the vitals strip, on the overlay's pill, or as `desk halt`.
+ * so the person keeps their mouse and can watch. And the Stop switch: a killed process, a
+ * state the sidebar shows, a daemon that refuses — pressed in the vitals strip, on the
+ * overlay's pill, or as `desk halt`. Lifted only from Ember's own UI.
+ *
+ * What the daemon may do is decided here, not in the shell. The Hands setting and the Stop
+ * switch are held in this process and handed to the daemon under a control token that only
+ * this process and the daemon know (it goes in over stdin, not the environment a shell
+ * inherits). A shell's `desk`, fast path included, talks to the daemon directly; the daemon
+ * refuses what the setting does not allow, and no shell can change the setting.
  */
 
 const HALT_FILE = join(CONFIG_DIR, 'desk.halt')
@@ -37,6 +43,10 @@ const READY_MS = 20_000
 let proc: ChildProcess | null = null
 let port = 0
 let token = ''
+/** Ember's own key to the daemon's settings. Never in a shell's environment. */
+const control = randomBytes(24).toString('hex')
+/** The Hands setting the daemon was last told. */
+let toldMode: Hands | null = null
 let bridgeUrl = ''
 let bridgeToken = ''
 let overlay: BrowserWindow | null = null
@@ -50,6 +60,8 @@ let stopped = false
 const state: DeskState = {
   running: false,
   busy: false,
+  // The file only carries Stop across a restart. While Ember runs this flag is the
+  // authority: deleting the file lifts nothing.
   halted: existsSync(HALT_FILE),
   ready: 'off',
   message: '',
@@ -93,16 +105,59 @@ export function setDeskBridge(url: string, bridgeTok: string): void {
   bridgeUrl = url
   bridgeToken = bridgeTok
   if (!token) token = randomBytes(16).toString('hex')
-  if (!port) {
-    // A synchronous pick would be nicer; net has no such thing, so the listen-and-close
-    // dance runs at startup and the shells that follow inherit its answer.
+  // A synchronous pick would be nicer; net has no such thing, so the listen-and-close
+  // dance runs at startup and the shells that follow inherit its answer. Something else
+  // can take the port in between; the daemon binds it exclusively and says so if it was,
+  // and launch() moves to another.
+  if (!port) void freePort().then((p) => (port ||= p))
+  // A changed setting reaches a running daemon within a second. Checked rather than
+  // watched: the config is cached in memory, and Settings and the file watcher both
+  // update that cache, so this is a comparison, not a read.
+  setInterval(() => {
+    if (state.running && hands() !== toldMode) tellDaemon()
+  }, 1000).unref()
+}
+
+function freePort(): Promise<number> {
+  return new Promise((resolve) => {
     const srv = createServer()
+    srv.once('error', () => resolve(0))
     srv.listen(0, '127.0.0.1', () => {
       const addr = srv.address()
-      port = typeof addr === 'object' && addr ? addr.port : 0
-      srv.close()
+      const p = typeof addr === 'object' && addr ? addr.port : 0
+      srv.close(() => resolve(p))
     })
-  }
+  })
+}
+
+// ---------- Ember Hands: what the session may do ----------
+
+export type Hands = 'off' | 'show' | 'act'
+
+/** The setting, as the user left it. 'show' when unset: point and look, never press. */
+export function hands(): Hands {
+  const h = loadConfig().hands
+  return h === 'off' || h === 'act' ? h : 'show'
+}
+
+export const HANDS_OFF = 'Computer use is off in Ember (Ctrl+K → Computer use).'
+export const HANDS_SHOW = 'Computer use is set to Show in Ember: pointing and looking only. Clicking and typing need it set to Act (Ctrl+K → Computer use).'
+
+/** What the daemon may do right now, in the shape it reads (see desk.py's header). */
+function controlLine(): string {
+  toldMode = hands()
+  return `${JSON.stringify({ control, mode: toldMode, halted: state.halted })}\n`
+}
+
+/** Hand the daemon the current setting and switch. Fire and forget; it is re-sent on change. */
+function tellDaemon(): void {
+  if (!state.running || !port) return
+  const sock = connect({ host: '127.0.0.1', port })
+  sock.setTimeout(5000, () => sock.destroy())
+  sock.on('error', () => {
+    /* the daemon is gone; it will be told again when it comes back */
+  })
+  sock.on('connect', () => sock.end(controlLine()))
 }
 
 /** What every Ember shell carries so `desk` can find the daemon. */
@@ -135,22 +190,6 @@ function findPython(): string[] | null {
   return null
 }
 
-function pipInstall(py: string[], pkgs: string[]): Promise<boolean> {
-  return new Promise((resolve) => {
-    const p = spawn(py[0] as string, [...py.slice(1), '-m', 'pip', 'install', '--user', '--quiet', ...pkgs], {
-      windowsHide: true,
-      stdio: ['ignore', 'ignore', 'pipe'],
-    })
-    let err = ''
-    p.stderr?.on('data', (d: Buffer) => (err += d.toString()))
-    p.on('exit', (code) => {
-      if (code !== 0) log(`pip install failed (${code}): ${err.slice(-400)}`)
-      resolve(code === 0)
-    })
-    p.on('error', () => resolve(false))
-  })
-}
-
 async function launch(): Promise<void> {
   if (state.halted) return
   const py = findPython()
@@ -163,20 +202,23 @@ async function launch(): Promise<void> {
     return
   }
   setReady('starting')
-  // Straight to --serve: it checks its own imports and says NEED_DEPS if one is missing,
-  // which is the one case worth a second, slower round through pip.
-  const outcome = await serve(py)
-  if (outcome.startsWith('NEED_DEPS')) {
-    const missing = outcome.slice('NEED_DEPS'.length).trim().split(/\s+/).filter(Boolean)
-    setReady('installing', `installing ${missing.join(', ')}`)
-    const ok = await pipInstall(py, missing)
-    if (!ok) {
-      setReady('no-deps', `run: python -m pip install ${missing.join(' ')}`)
-      return
+  // Straight to --serve: it checks its own imports and says NEED_DEPS if one is missing.
+  let outcome = await serve(py)
+  if (outcome.startsWith('PORT_IN_USE')) {
+    // Something took the port between the pick and the daemon's bind. Move rather than
+    // share it; shells spawned from now on get the new port.
+    log(`desk port ${port} was taken by another process; moving`)
+    const next = await freePort()
+    if (next) {
+      port = next
+      outcome = await serve(py)
     }
-    setReady('starting')
-    const again = await serve(py)
-    if (again !== 'READY') setReady(again.startsWith('NEED_DEPS') ? 'no-deps' : 'failed', again.startsWith('NEED_DEPS') ? `run: python -m pip install ${missing.join(' ')}` : again)
+  }
+  if (outcome.startsWith('NEED_DEPS')) {
+    // Installing packages is the user's call, not something a `desk` command gets to set
+    // off by itself: say exactly what to run, and run nothing.
+    const missing = outcome.slice('NEED_DEPS'.length).trim().split(/\s+/).filter(Boolean)
+    setReady('no-deps', `missing Python packages — run: ${py.join(' ')} -m pip install --user ${missing.join(' ')}`)
   } else if (outcome !== 'READY') {
     setReady('failed', outcome)
   }
@@ -186,7 +228,8 @@ async function launch(): Promise<void> {
 function serve(py: string[]): Promise<string> {
   const child = spawn(py[0] as string, [...py.slice(1), resourcePath('desk', 'desk.py'), '--serve'], {
     windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    // stdin carries the control line: the one channel to the daemon a shell never shares.
+    stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
       EMBER_DESK_PORT: String(port),
@@ -200,6 +243,10 @@ function serve(py: string[]): Promise<string> {
     },
   })
   proc = child
+  child.stdin?.on('error', () => {
+    /* it exited before reading (NEED_DEPS); the exit handler reports why */
+  })
+  child.stdin?.end(controlLine())
   let err = ''
   let out = ''
   child.stderr?.on('data', (d: Buffer) => {
@@ -234,7 +281,7 @@ function serve(py: string[]): Promise<string> {
       const wasRunning = state.running
       state.running = false
       state.busy = false
-      const need = /NEED_DEPS[^\n]*/.exec(out)?.[0]
+      const need = /NEED_DEPS[^\n]*/.exec(out)?.[0] ?? /PORT_IN_USE[^\n]*/.exec(out)?.[0]
       if (!settled) {
         done(need ?? (lastErr() || `daemon exited (${code})`))
         return
@@ -257,6 +304,8 @@ function serve(py: string[]): Promise<string> {
 /** Bring the daemon up if it is not, and report the state either way. */
 export function startDesk(): Promise<DeskState> {
   if (state.running) return Promise.resolve(snapshot())
+  // Off means not even a daemon: nothing loaded, nothing listening.
+  if (hands() === 'off') return Promise.resolve({ ...snapshot(), message: HANDS_OFF })
   if (starting) return starting
   stopped = false
   starting = (async () => {
@@ -302,6 +351,8 @@ export function haltDesk(): DeskState {
     log(`could not write the halt file: ${(err as Error).message}`)
   }
   state.halted = true
+  // Told before it is killed, so a daemon that somehow survives the kill still refuses.
+  tellDaemon()
   stopped = true
   killDaemon()
   state.ready = 'off'
@@ -314,6 +365,10 @@ export function haltDesk(): DeskState {
   return snapshot()
 }
 
+/**
+ * Lift Stop. Reached only from Ember's own UI over IPC (the strip, the overlay's pill) —
+ * never from the bridge or `desk`, which belong to the session Stop is there to stop.
+ */
 export function resumeDesk(): DeskState {
   try {
     rmSync(HALT_FILE, { force: true })
@@ -515,7 +570,8 @@ function callDaemon(argv: string[], timeoutMs = 120_000): Promise<{ ok: boolean;
 }
 
 async function ensureRunning(): Promise<string | null> {
-  if (state.halted) return 'HALTED: Stop was pressed. Resume it from the pill or `desk resume`.'
+  if (state.halted) return 'HALTED: Stop was pressed. Only the person at the machine can lift it, with Resume in Ember.'
+  if (hands() === 'off') return HANDS_OFF
   if (!state.running) await startDesk()
   if (!state.running) return `computer use is unavailable (${state.ready}${state.message ? `: ${state.message}` : ''})`
   return null
@@ -562,6 +618,7 @@ export async function deskPoint(opts: {
 }): Promise<{ ok: boolean; x?: number; y?: number; found?: string; error?: string; ms?: number }> {
   const t0 = Date.now()
   if (state.halted) return { ok: false, error: 'HALTED: Stop was pressed.' }
+  if (hands() === 'off') return { ok: false, error: HANDS_OFF }
   let x = opts.x
   let y = opts.y
   let rect: Rect | undefined
@@ -611,6 +668,7 @@ export async function deskPoint(opts: {
  */
 export async function deskAct(script: string): Promise<{ ok: boolean; output: string; error?: string; ms: number }> {
   const t0 = Date.now()
+  if (hands() !== 'act') return { ok: false, output: '', error: hands() === 'off' ? HANDS_OFF : HANDS_SHOW, ms: 0 }
   const why = await ensureRunning()
   if (why) return { ok: false, output: '', error: why, ms: Date.now() - t0 }
   pushCallout(null)

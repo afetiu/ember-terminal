@@ -73,9 +73,9 @@ const DOCS = {
 }
 
 const TABS = [
-  { id: 't-shell', title: 'pwsh', cwd: 'C:\\Users\\afeti', working: false, loom: false, active: false },
-  { id: 't-ember', title: 'ember', cwd: 'C:\\Users\\afeti\\ember', working: true, loom: true, active: true },
-  { id: 't-site', title: 'shpia-site', cwd: 'C:\\Users\\afeti\\shpia-site', working: false, loom: true, active: false },
+  { id: 't-shell', title: 'pwsh', cwd: 'C:\\Users\\you', working: false, loom: false, active: false },
+  { id: 't-ember', title: 'ember', cwd: 'C:\\Users\\you\\projects\\ember', working: true, loom: true, active: true },
+  { id: 't-site', title: 'demo-site', cwd: 'C:\\Users\\you\\projects\\demo-site', working: false, loom: true, active: false },
 ]
 
 const EVENTS = {

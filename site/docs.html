@@ -425,7 +425,15 @@ ember diag                   Ember's recent log</code></pre>
     </table>
   </div>
   <p>Set <code>EMBER_HOME</code> to keep Ember's files somewhere other than <code>~/.ember</code>, and <code>EMBER_NOTES_DIR</code> for the notes.</p>
-  <p>Ember has no account and no telemetry. Your work goes wherever your agent CLI already sends it. The calls Ember makes on its own belong to features you can see and turn off: the plan-usage poll and the phone relay (Labs).</p>
+  <p>Computer-use screenshots (<code>%TEMP%\ember-desk-shots</code>) and pasted or pushed images (<code>%TEMP%\ember-&lt;pid&gt;</code>) are deleted when Ember quits. <code>~/.ember/account.json</code> holds the phone-link key in plain text.</p>
+  <p>Ember has no account and no telemetry. Your work goes wherever your agent CLI already sends it. The calls Ember makes on its own:</p>
+  <ul>
+    <li><strong>Update check.</strong> GitHub's releases API, at start and every 6 hours. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check for updates turns it off.</li>
+    <li><strong>Plan usage.</strong> <code>api.anthropic.com</code> every minute with Claude Code's own login, only while the readout is on. Off by default.</li>
+    <li><strong>Phone link.</strong> Only after you pair a phone. Messages are end-to-end encrypted; the relay sees timing, sizes and IP addresses.</li>
+    <li><strong>Images in agent replies.</strong> An image from the internet loads only when you click it.</li>
+  </ul>
+  <p>Computer use needs Python packages you install yourself; Ember prints the command. The full list is in the <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">privacy policy</a>.</p>
 </section>
 
 <section aria-labelledby="troubleshooting">

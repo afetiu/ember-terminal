@@ -38,9 +38,50 @@ export interface PhoneHostHooks {
   deskName: () => string
   /** Type into a tab's session; submit presses Enter. */
   type: (tabId: string, text: string, submit: boolean) => void
+  /**
+   * What a button on a panel document asked for, shown on the phone. The page was written
+   * by the model, not typed by the person, so it goes through the desk's checks for that
+   * (App.actToSession) rather than straight in like `type`.
+   */
+  act: (tabId: string, text: string, submit: boolean) => void
   /** Raw keys into a tab's session. */
   keys: (tabId: string, data: string) => void
 }
+
+/**
+ * Where a phone document's act secret goes. main renders the phone's copy of a document
+ * with this in place of a secret (see panelDoc.ts, PHONE_ACT_SLOT — the same text), and the
+ * desk fills it in as the document leaves for the phone. The desk's own secret never goes in
+ * a page, and a page on the desk that asks for its phone version learns only this.
+ */
+export const PHONE_ACT_SLOT = '__EMBER_PHONE_ACT__'
+
+/**
+ * The secrets written into documents sent to a phone, and the tab each one speaks for.
+ * A phone's act must carry one, which is what ties a button press to the document it was
+ * on rather than to whichever tab happens to be in front.
+ */
+class PhoneActs {
+  private readonly tabs = new Map<string, string>()
+
+  /** The document with its slot filled in, recorded against `tabId`. */
+  fill(html: string, tabId: string): string {
+    if (!tabId || !html.includes(PHONE_ACT_SLOT)) return html
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    const secret = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+    this.tabs.set(secret, tabId)
+    // Old documents fall off the end; their buttons then do nothing, like a stale desk panel.
+    if (this.tabs.size > 300) this.tabs.delete(this.tabs.keys().next().value as string)
+    return html.split(PHONE_ACT_SLOT).join(secret)
+  }
+
+  /** The tab an act's secret belongs to, or null for one this desk never issued. */
+  tabFor(secret: unknown): string | null {
+    return typeof secret === 'string' && secret ? (this.tabs.get(secret) ?? null) : null
+  }
+}
+
+export const phoneActs = new PhoneActs()
 
 const KEEP = 1000
 const SNAP = 400
@@ -123,6 +164,8 @@ export class PhoneHost {
   private lastTabs = ''
   /** Agent tool_use ids, so their result can mark them done. */
   private readonly agents = new Map<string, { tab: string; label: string }>()
+  /** Which tab each pushed document belongs to, so its phone copy's secret speaks for that tab. */
+  private readonly docTabs = new Map<string, string>()
   private origin = ''
   private readonly unsubs: Array<() => void> = []
 
@@ -171,9 +214,14 @@ export class PhoneHost {
       case 'send':
         this.hooks.type(tab, String(m['text'] ?? ''), true)
         return true
-      case 'act':
-        this.hooks.type(tab, String(m['text'] ?? ''), m['submit'] !== false)
+      case 'act': {
+        // A button on a document this desk sent, carrying the secret it was sent with. One
+        // without (an older phone app, or a page's script inventing an act) types nothing.
+        const owner = phoneActs.tabFor(m['act'])
+        if (!owner) return true
+        this.hooks.act(owner, String(m['text'] ?? ''), m['submit'] !== false)
         return true
+      }
       case 'key': {
         const k = KEYS[String(m['key'] ?? '')]
         if (k) this.hooks.keys(tab, k)
@@ -302,6 +350,8 @@ export class PhoneHost {
       this.add(p.tabId, { k: 'link', id: p.id, title: p.title, url: p.content, at })
       return
     }
+    this.docTabs.set(p.id, p.tabId)
+    if (this.docTabs.size > 2000) this.docTabs.delete(this.docTabs.keys().next().value as string)
     this.add(p.tabId, { k: 'obj', id: p.id, title: p.title, format: p.format, path: `/doc/${p.id}`, at })
   }
 
@@ -318,7 +368,14 @@ export class PhoneHost {
       const tone = path.startsWith('/doc/') && !path.includes('?') ? '?target=phone&accent=F2A43A&fg=E8E0D5&bg=16120F' : ''
       const res = await fetch(`${this.origin}${path}${tone}`)
       const type = res.headers.get('content-type') ?? 'application/octet-stream'
-      const bytes = new Uint8Array(await res.arrayBuffer())
+      let bytes = new Uint8Array(await res.arrayBuffer())
+      // A document's buttons get their secret here, on the way out, for the tab it came from
+      // (or, for a canvas document never pushed as a panel, the tab this phone is watching).
+      if (tone && type.startsWith('text/html')) {
+        const docId = path.slice('/doc/'.length)
+        const html = new TextDecoder().decode(bytes)
+        bytes = new TextEncoder().encode(phoneActs.fill(html, this.docTabs.get(docId) ?? this.watching.get(to) ?? ''))
+      }
       const b64 = toB64(bytes)
       const n = Math.max(1, Math.ceil(b64.length / CHUNK))
       for (let i = 0; i < n; i++) {

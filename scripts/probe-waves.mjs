@@ -73,7 +73,7 @@ await sleep(3500)
 await send('Page.bringToFront')
 
 // ---- wave 1: blocks ----
-await ev(`window.__ember.type("cd C:\\\\Users\\\\afeti\\\\ember\\r")`)
+await ev(`window.__ember.type(${JSON.stringify(`cd "${process.cwd()}"\r`)})`)
 await sleep(1500)
 await ev(`window.__ember.type("Write-Output 'BLOCK_ONE'\\r")`)
 await sleep(1600)
