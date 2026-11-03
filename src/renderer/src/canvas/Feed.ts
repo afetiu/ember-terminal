@@ -42,6 +42,8 @@ export interface FeedContext {
   openInline(url: string): void
   /** Something was added; the view decides whether to follow it. */
   grew(): void
+  /** `/clear` started the conversation over: the turns are gone, the view drops what hung on them. */
+  cleared?(): void
 }
 
 const QUIET = new Set([
@@ -295,6 +297,8 @@ export class Feed {
   private readonly anchors: Array<{ name: string; el: HTMLElement; used: boolean }> = []
   private readonly seen = new Set<string>()
   private sessions = 0
+  /** `/clear` just ran: what it printed is not worth a line on the empty canvas. */
+  private clearedOut = false
 
   constructor(private readonly ctx: FeedContext) {
     this.el = el('div', 'loom-flow')
@@ -311,7 +315,7 @@ export class Feed {
   private at = ''
 
   get isEmpty(): boolean {
-    return this.seen.size === 0
+    return !this.el.querySelector(':scope > .loom-turn > *')
   }
 
   /** Every turn that has something in it, oldest first. */
@@ -335,12 +339,29 @@ export class Feed {
   /** The session in the tab changed (a new `claude`, `/clear`, `/resume`). */
   switchSession(first: boolean): void {
     this.sessions++
-    if (!first || this.seen.size) {
+    // Only a seam between two conversations that both have something on screen: after a
+    // `/clear` (recorded at the end of the old log or the top of the new) there is nothing above it.
+    if ((!first || this.seen.size) && !this.isEmpty) {
       const div = el('div', 'loom-seam', '<span>new session</span>')
       this.el.appendChild(div)
     }
     this.newTurn()
     this.anchors.length = 0
+  }
+
+  /**
+   * `/clear` (and its aliases `/reset`, `/new`): Claude Code starts the conversation over in
+   * a new transcript, so the canvas starts over too. Everything turn-derived goes; what you
+   * pinned lives outside the flow and stays.
+   */
+  private restart(): void {
+    this.el.replaceChildren()
+    this.tools.clear()
+    this.anchors.length = 0
+    this.pendingCmd = null
+    this.clearedOut = true
+    this.newTurn()
+    this.ctx.cleared?.()
   }
 
   add(lines: Json[]): void {
@@ -419,6 +440,10 @@ export class Feed {
     // turn when its answer starts; see promoteCommand.
     const cmd = /<command-name>([^<]*)<\/command-name>/.exec(clean)
     if (cmd) {
+      if (/^\/(clear|reset|new)$/.test((cmd[1] ?? '').trim())) {
+        this.restart()
+        return
+      }
       const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(clean)?.[1]?.trim() ?? ''
       const label = `${cmd[1]}${args ? ` ${args}` : ''}`
       const note = el('div', 'loom-note-line is-command', `<span class="loom-caret">❯</span>${escapeHtml(label)}`)
@@ -428,7 +453,10 @@ export class Feed {
       return
     }
     const stdout = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(clean)
+    const afterClear = this.clearedOut
+    this.clearedOut = false
     if (stdout) {
+      if (afterClear) return
       const out = stripAnsi(stdout[1] ?? '').trim()
       if (out) {
         const pre = el('pre', 'loom-note', escapeHtml(out))

@@ -326,6 +326,8 @@ export class App {
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
+      /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
+      loomSwitch: (id: string, first = false) => this.groups.find((g) => g.id === id)?.loom?.switchForProbe(first),
       /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
       loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
       /** Type into a tab's focused pane as the user would, Enter separately. */

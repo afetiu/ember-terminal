@@ -257,6 +257,7 @@ export class LoomView {
       grew: () => this.grew(),
       replay: (tool, input, at) => void this.replay(tool, input as Record<string, unknown>, at),
       agent: (e) => this.onAgentEvent(e),
+      cleared: () => this.onCleared(),
     })
     // Three layers, top to bottom: the plan of the work in progress, the exchange (your
     // words and Claude's latest), and the board — everything Claude has shown, which stays
@@ -1019,6 +1020,32 @@ export class LoomView {
       ag.summary = e.summary
     }
     this.renderAgents()
+  }
+
+  /**
+   * `/clear`: the conversation started over, so does the canvas — the turns (and with them
+   * the rail), the plan, the subagents and the trail. Objects you pinned or snapped are yours,
+   * not the conversation's, and stay where you put them.
+   */
+  private onCleared(): void {
+    this.viewing = null
+    this.shown = null
+    this.liveTurn = null
+    this.trailTurn = null
+    this.trailSeen = 0
+    this.clearTrail()
+    if (this.expanded && !this.expanded.el.isConnected) this.expanded = null
+    for (const [k, p] of this.pieces) {
+      if (this.pinned.has(p) || p.el.isConnected) continue
+      if (p.frame) this.frames.delete(p.frame)
+      this.pieces.delete(k)
+    }
+    for (let i = this.browsers.length - 1; i >= 0; i--) if (!this.browsers[i]!.piece.el.isConnected) this.browsers.splice(i, 1)
+    this.agents.clear()
+    this.renderAgents()
+    this.setTodos([])
+    this.renderRail()
+    this.reportScreen()
   }
 
   private agentTimer = 0
@@ -4195,6 +4222,15 @@ export class LoomView {
   /** Probe-only: hand the canvas transcript lines as if they came from the session's log. */
   feedForProbe(lines: Array<Record<string, unknown>>): void {
     this.feed.add(lines as never)
+    this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
+    this.restage()
+    this.renderNow()
+  }
+
+  /** Probe-only: the tab's session moved to another transcript, as main reports it. */
+  switchForProbe(first = false): void {
+    this.feed.switchSession(first)
+    this.restage()
   }
 
   debug(): { mode: Mode; raw: boolean; working: boolean; dock: Dock | null; todos: number; pieces: number; browsers: number; turns: number; says: number; rows: string[]; sessionId: string } {
