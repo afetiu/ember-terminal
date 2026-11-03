@@ -328,6 +328,12 @@ export class App {
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
       /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
       loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
+      /** From now on, record what would be typed into sessions instead of typing it; `sends()` reads it. */
+      recordSends: () => {
+        this.probeSends = []
+        return true
+      },
+      sends: () => this.probeSends ?? [],
       /** Type into a tab's focused pane as the user would, Enter separately. */
       send: (id: string, text: string, submit = true) => {
         const g = this.groups.find((x) => x.id === id)
@@ -1428,6 +1434,11 @@ export class App {
     const session = group.focused
     const line = text.replace(/\s*\r?\n\s*/g, ' ').trim()
     if (!session || !line) return
+    // A probe that asked to see what would be typed gets it here instead of a terminal.
+    if (this.probeSends) {
+      this.probeSends.push({ tab: group.id, text: line, submit })
+      return
+    }
 
     if (!submit) {
       window.ember.write(session.id, `${line} `)
@@ -1446,6 +1457,9 @@ export class App {
     window.setTimeout(() => window.ember.write(session.id, '\r'), App.SUBMIT_GAP_MS)
     sound.play('toggle')
   }
+
+  /** What canvas buttons would have typed, while a probe records them (`__ember.recordSends`). */
+  private probeSends: Array<{ tab: string; text: string; submit: boolean }> | null = null
 
   /** Gap between typing a line and pressing Enter, so a TUI stops reading it as a paste. */
   private static readonly SUBMIT_GAP_MS = 140

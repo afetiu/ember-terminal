@@ -1,5 +1,6 @@
 import { escapeHtml, renderMarkdown } from './markdown'
 import { diffLines, fromPatch, tally, type DiffLine } from './diff'
+import { answerCard } from './questions'
 
 /**
  * The conversation, drawn from the transcript.
@@ -361,6 +362,7 @@ export class Feed {
         console.warn('[loom] could not render a transcript line', err)
       }
     }
+    this.liveAnswers()
     this.ctx.grew()
   }
 
@@ -519,6 +521,22 @@ export class Feed {
     const div = el('div', 'loom-say', r.html)
     this.turn.appendChild(div)
     this.hydrate(div, r.diagrams, r.images)
+    answerCard(div, (line) => this.ctx.send(line, true))
+  }
+
+  /**
+   * Only the questions the session is waiting on can be answered from the canvas: the
+   * reply that ended the latest turn. Once anything follows it — a step, your own words,
+   * a new session — its card goes, unless it was the one you answered with, which stays
+   * as a record (locked).
+   */
+  private liveAnswers(): void {
+    const live = this.el.lastElementChild === this.turn ? this.turn.lastElementChild : null
+    this.el.querySelectorAll<HTMLElement>('.loom-answers').forEach((card) => {
+      const on = card.parentElement === live && !card.classList.contains('is-sent')
+      card.classList.toggle('is-stale', !on && !card.classList.contains('is-sent'))
+      card.inert = !on
+    })
   }
 
   /** Resolve the placeholders markdown left: diagrams to frames, local paths to media. */
