@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, realpathSync, watch, writeFileSync, type FSWatcher } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { EmberConfig } from '../shared/types.js'
@@ -229,7 +229,16 @@ export function watchConfig(onChange: (config: EmberConfig) => void): () => void
   let watcher: FSWatcher | null = null
   try {
     mkdirSync(CONFIG_DIR, { recursive: true })
-    watcher = watch(CONFIG_DIR, (_event, filename) => {
+    // Watched by its long name. A folder opened by its 8.3 short name (C:\Users\AGON-M~1\…,
+    // which is what %TEMP% often is, so every probe's EMBER_HOME) reports its files by their
+    // short names too — CONFIG~1.JSO — and the filter below never sees config.json change.
+    let dir = CONFIG_DIR
+    try {
+      dir = realpathSync.native(CONFIG_DIR)
+    } catch {
+      /* keep the name it was given */
+    }
+    watcher = watch(dir, (_event, filename) => {
       if (filename && !String(filename).startsWith('config.json')) return
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {

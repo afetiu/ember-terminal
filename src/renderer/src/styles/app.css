@@ -2372,8 +2372,6 @@ body.is-zen .ember-fx {
   max-height: 232px;
   overflow-y: auto;
   padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--c-fg) 22%, transparent) transparent;
 }
 
 .ember-settings-count {

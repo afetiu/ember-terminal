@@ -5443,7 +5443,6 @@ body.is-light .loom-zoom {
   color: var(--c-fg);
   caret-color: var(--c-accent);
   font: 14px / 21px var(--term-font), 'Cascadia Code', Consolas, monospace;
-  scrollbar-width: thin;
 }
 .loom-native-input::placeholder {
   color: color-mix(in srgb, var(--c-fg) 40%, transparent);
@@ -5683,7 +5682,6 @@ body.is-light .loom-zoom {
   max-height: 264px;
   overflow-y: auto;
   padding: 4px;
-  scrollbar-width: thin;
 }
 .loom-native-menu-row {
   display: flex;
@@ -5825,7 +5823,6 @@ body.is-light .loom-zoom {
   margin-top: 10px;
   max-height: 46vh;
   overflow-y: auto;
-  scrollbar-width: thin;
 }
 .loom-ask-q-head {
   display: flex;
@@ -5904,7 +5901,6 @@ body.is-light .loom-zoom {
   border-radius: 8px;
   background: color-mix(in srgb, var(--c-fg) 4%, transparent);
   color: var(--c-fg);
-  scrollbar-width: thin;
 }
 .loom-ask-plan h1,
 .loom-ask-plan h2,
@@ -6164,7 +6160,6 @@ body.is-light .loom-zoom {
   background: var(--c-bg);
   box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
   animation: loom-rise 180ms cubic-bezier(0.22, 1, 0.36, 1);
-  scrollbar-width: thin;
 }
 .loom-bar-pick.is-on {
   display: flex;
