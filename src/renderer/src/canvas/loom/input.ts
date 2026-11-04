@@ -35,7 +35,7 @@ export class CanvasInput {
       return
     }
     // Ctrl+↑ from the input: into the results, onto the newest object.
-    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'ArrowUp' && (v.mode === 'claude' || v.mode === 'agent')) {
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'ArrowUp' && v.mode === 'claude') {
       e.preventDefault()
       e.stopPropagation()
       const list = this.kbdList()
@@ -47,16 +47,16 @@ export class CanvasInput {
     const inLoomInput =
       tgt?.closest?.('.loom-pop, .loom-note-edit, .loom-picker, .loom-menu, .loom-drawer') != null ||
       (!!tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable) && !tgt.closest('.xterm'))
-    if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (v.mode === 'claude' || v.mode === 'agent' || v.mode === 'shell')) {
+    if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (v.mode === 'claude' || v.mode === 'shell')) {
       e.preventDefault()
       e.stopPropagation()
-      if (v.mode === 'claude' || v.mode === 'agent') void v.notebook.newSticky()
+      if (v.mode === 'claude') void v.notebook.newSticky()
       else if (v.hooks.openPlace) v.hooks.openPlace('notes')
       else v.notebook.toggleDrawer('notes')
       return
     }
     if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
-      if (v.mode === 'claude' || v.mode === 'agent' || v.mode === 'raw') {
+      if (v.mode === 'claude' || v.mode === 'raw') {
         e.preventDefault()
         e.stopPropagation()
         v.setRaw(!v.raw)
@@ -76,7 +76,7 @@ export class CanvasInput {
         return
       }
     }
-    if (v.mode !== 'claude' && v.mode !== 'agent') return
+    if (v.mode !== 'claude') return
     if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault()
       e.stopPropagation()

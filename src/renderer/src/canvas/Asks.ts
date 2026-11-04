@@ -20,6 +20,8 @@ export interface AsksContext {
   relayout(): void
   /** A card closed: the keyboard goes back to the input. */
   closed(): void
+  /** Who is asking, as the cards say it (default "Claude"). */
+  who?: string
 }
 
 interface Card {
@@ -162,7 +164,8 @@ export class Asks {
     const why = String(req['decision_reason'] ?? '')
     const suggestions = Array.isArray(req['permission_suggestions']) ? (req['permission_suggestions'] as Json[]) : []
     const always = suggestions.length > 0 && req['suppress_always_allow_rule'] !== true
-    const el = card(`Claude wants to use <b>${escapeHtml(name)}</b>${req['agent_id'] ? ' <span class="loom-ask-card-sub">for a subagent</span>' : ''}`)
+    const who = escapeHtml(this.ctx.who ?? 'Claude')
+    const el = card(`${who} wants to use <b>${escapeHtml(name)}</b>${req['agent_id'] ? ' <span class="loom-ask-card-sub">for a subagent</span>' : ''}`)
     el.insertAdjacentHTML('beforeend', preview(tool, input, String(req['description'] ?? '')))
     if (why) el.insertAdjacentHTML('beforeend', `<div class="loom-ask-card-why">${escapeHtml(why.slice(0, 400))}</div>`)
     const buttons: Array<[string, string, boolean?]> = [['yes', 'Yes', true]]
@@ -171,7 +174,7 @@ export class Asks {
     el.insertAdjacentHTML(
       'beforeend',
       acts(buttons) +
-        `<input class="loom-ask-card-say" type="text" spellcheck="false" placeholder="Or tell Claude what to do instead, then Enter" aria-label="Tell Claude what to do instead">`
+        `<input class="loom-ask-card-say" type="text" spellcheck="false" placeholder="Or tell ${who} what to do instead, then Enter" aria-label="Tell ${who} what to do instead">`
     )
     const allow = () => this.reply(id, { behavior: 'allow', updatedInput: input })
     const allowAlways = () => this.reply(id, { behavior: 'allow', updatedInput: input, updatedPermissions: suggestions })
@@ -215,7 +218,7 @@ export class Asks {
   private question(id: string, req: Json): Card {
     const input = (req['input'] ?? {}) as Json
     const qs = (Array.isArray(input['questions']) ? (input['questions'] as Json[]) : []).slice(0, 4)
-    const el = card(`Claude asks${qs.length > 1 ? ` ${qs.length} questions` : ''}`, 'is-question')
+    const el = card(`${escapeHtml(this.ctx.who ?? 'Claude')} asks${qs.length > 1 ? ` ${qs.length} questions` : ''}`, 'is-question')
     const picked: Array<Set<number>> = qs.map(() => new Set())
     const body = document.createElement('div')
     body.className = 'loom-ask-qs'
@@ -334,7 +337,7 @@ export class Asks {
   private plan(id: string, req: Json): Card {
     const input = (req['input'] ?? {}) as Json
     const text = String(input['plan'] ?? '')
-    const el = card('Claude has a plan', 'is-plan')
+    const el = card(`${escapeHtml(this.ctx.who ?? 'Claude')} has a plan`, 'is-plan')
     const body = document.createElement('div')
     body.className = 'loom-ask-plan'
     body.innerHTML = text.trim() ? renderMarkdown(text).html : '<p>(The plan is empty.)</p>'

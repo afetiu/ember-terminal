@@ -1,29 +1,19 @@
 import { escapeHtml } from '../markdown'
 
 /**
- * What the canvas's parts share: the shapes they pass round (a piece, a dock, an edge),
+ * What the canvas's parts share: the shapes they pass round (a piece, a browser, an edge),
  * the icons, the one curve everything moves on, and a few small helpers. Nothing here
  * holds state.
  */
 
-export type Mode = 'shell' | 'claude' | 'agent' | 'app' | 'raw'
+/**
+ * What the tab shows. 'claude' is an agent on its wrapper (Claude Code, Codex): the canvas
+ * with Ember's composer, none of the agent's screen. 'raw' is a wrapped (or any announced)
+ * agent's own screen, by the switch; 'app' a full-screen program; 'shell' the shell.
+ */
+export type Mode = 'shell' | 'claude' | 'app' | 'raw'
 
 export type Side = 'left' | 'right' | 'top' | 'bottom'
-
-export interface Dock {
-  /** First and last viewport rows that stay visible. */
-  top: number
-  bottom: number
-  /** A dialog or a menu rather than the input box: worth drawing the eye to. */
-  dialog: boolean
-  /** The input box's own rows (the prompt and its continuation lines), when it was found. */
-  box: [number, number] | null
-  /** The rules that open and close the box, -1 when not on screen. */
-  open: number
-  close: number
-  /** First row of the status lines under the box, when there is no closing rule (Codex). */
-  foot?: number
-}
 
 export interface Piece {
   el: HTMLElement
@@ -121,10 +111,6 @@ export const ms = (n: number) => (reduced() ? 0 : n)
 /** The bar under the input box, and the breathing room inside its frame, in px. */
 export const BAR_H = 26
 export const FRAME_PAD = 10
-/** The input is at least this many rows tall, prompt at the top, like a text area. */
-export const INPUT_ROWS = 2
-/** How much of another agent's own screen stays visible under the canvas: its input and status. */
-export const AGENT_ROWS = 10
 
 /** Up to four objects per edge; a fifth does not snap. */
 export const SNAPS_PER_EDGE = 4

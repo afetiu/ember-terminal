@@ -250,6 +250,9 @@ function writeAgentMcpConfigs(dir: string): Record<string, string> {
   // Codex takes -c overrides, and a bare command with no inline table is the only shape
   // that survives cmd.exe's second parse; the launcher carries ELECTRON_RUN_AS_NODE.
   out['EMBER_MCP_LAUNCHER'] = join(CONFIG_DIR, 'bin', 'ember-mcp.cmd')
+  // Ember's hook for Codex (its approvals become the canvas's cards), at a path that
+  // stays put so the trust the person gives it in Codex lasts (notes.ts writes it).
+  out['EMBER_CODEX_HOOK'] = join(CONFIG_DIR, 'bin', 'ember-hook.cmd').replace(/\\/g, '/')
   return out
 }
 
@@ -1185,9 +1188,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
   // session, so the tab follows it (a `/clear` or `/resume` included), and the canvas is
   // told. A PermissionRequest waits here for the person's answer on the canvas.
   if (req.method === 'POST' && url.pathname === '/hook') {
-    // Two shapes: Claude Code's http hook (the event as the body, the tab in a header, the
-    // answer as the whole response), and resources/hook.mjs's ({ tabId, at, input }, the
-    // answer under `output`) where curl.exe is missing.
+    // Two shapes: the direct one (the event as the body, the tab in a header, the answer as
+    // the whole response) from Claude Code's http hooks and from curl.exe (Claude's
+    // SessionStart, every Codex hook), and resources/hook.mjs's ({ tabId, at, agent, input },
+    // the answer under `output`) where curl.exe is missing.
     const headerTab = String(req.headers['x-ember-tab'] ?? '')
     const direct = !!headerTab
     void readJson(req, 40_000_000)
@@ -1206,7 +1210,11 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const sessionId = String(hook['session_id'] ?? '')
         const cwd = String(hook['cwd'] ?? '')
         const file = String(hook['transcript_path'] ?? '')
-        if (sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
+        // Only Claude Code's sessions bind the tab: another agent's hook (Codex) names its
+        // own log, which the canvas finds and reads by that agent's adapter instead.
+        // (The direct shape says so in a header: Codex's ember-hook.cmd posts it with curl.)
+        const agent = (direct ? String(req.headers['x-ember-agent'] ?? '') : typeof body['agent'] === 'string' ? body['agent'] : '') || 'claude'
+        if (agent === 'claude' && sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
         // When Claude Code ran the hook: async hooks can land out of order. An http hook lands
         // as it is sent, so its arrival is its time.
         const at = !direct && typeof body['at'] === 'number' ? body['at'] : Date.now()
