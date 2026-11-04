@@ -133,6 +133,38 @@ try {
     return { questionRow: q, questionVisible: q >= 0 && sr.top - pr.top + (q * sr.height) / t.rows >= clip }
   })()`)))
   await shot('question')
+  // The `/` menu above the input, as 2.1.317 draws it: items indented four spaces, the
+  // selected one `  > /name`, long descriptions wrapped far right. All of it must show.
+  const pad = (name, desc) => `    ${name.padEnd(53)}${desc}`
+  await drawFoot([
+    pad('/claude-in-chrome', 'Let Claude browse and interact with pages in your Chrome'),
+    pad('/studio', "Agon's animation studio, explainer videos (history, science,"),
+    ' '.repeat(57) + 'engineering) made with Remotion and reviewed in the Desk app. Use …',
+    pad('/add-dir', 'Add a new working directory'),
+    pad('/advisor', 'Let Claude consult a stronger model at key moments'),
+    '  > /ember'.padEnd(57) + "How to work inside Ember, the user's terminal - its panel, notes,",
+    ' '.repeat(57) + 'todo list and commands. (user)',
+    'RULE',
+    '> /',
+    'RULE',
+    '  ⏵⏵ auto mode on (shift+tab to cycle)',
+  ])
+  await wait(1500)
+  console.log('slash menu   ', JSON.stringify(await ev(`(() => {
+    const scr = [...document.querySelectorAll('.xterm-screen')].find((x) => x.offsetParent)
+    let pane = scr.parentElement
+    while (pane && !pane.style.clipPath) pane = pane.parentElement
+    const clip = parseFloat(/inset\\(([\\d.]+)px/.exec(pane?.style.clipPath ?? '')?.[1] ?? '0')
+    const t = window.__ember.term(${JSON.stringify(sid)}), buf = t.buffer.active
+    let q = -1
+    for (let y = 0; y < t.rows; y++) if (buf.getLine(buf.viewportY + y)?.translateToString(true).includes('/claude-in-chrome')) q = y
+    const sr = scr.getBoundingClientRect(), pr = pane.getBoundingClientRect()
+    const box = [...document.querySelectorAll('.loom-frame-box')].find((x) => getComputedStyle(x).display !== 'none')
+    return { firstItemVisible: q >= 0 && sr.top - pr.top + (q * sr.height) / t.rows >= clip, framed: !!box, itemRow: q, clip, rowY: Math.round(sr.top + (q * sr.height) / t.rows + 5), cover: (() => { const y = sr.top + (q * sr.height) / t.rows + 5; return document.elementsFromPoint(sr.left + 60, y).slice(0, 4).map((e) => e.className && typeof e.className === 'string' ? e.tagName + '.' + e.className.split(' ').slice(0,2).join('.') : e.tagName) })() }
+  })()`)))
+  // Look at this one: rows uncovered as the menu grew must be drawn, not left blank.
+  await shot('slash-menu')
+
   ws.close()
 } finally {
   spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' })

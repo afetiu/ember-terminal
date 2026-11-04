@@ -165,10 +165,10 @@ const AGENT_ROWS = 10
 const LIFTABLE = '.loom-diagram, .loom-table, .loom-code, .loom-say img.loom-img, .loom-shelf .loom-figure, .loom-tool-peek .loom-figure'
 
 const RULE_CHARS = /[─━▔═╌╍┄┅┈┉]/g
-/** The input box's first line: `❯`, or `!` in shell mode. */
-const PROMPT = /^\s?[❯!]/
+/** The input box's first line: `❯` (`>` in some builds), or `!` in shell mode. */
+const PROMPT = /^\s?[❯>!]/
 /** A dialog's numbered choice, the selected one marked with `❯`. */
-const CHOICE = /^\s*(?:❯\s*)?\d+\.\s/
+const CHOICE = /^\s*(?:[❯>]\s*)?\d+\.\s/
 /** Box junctions: a row with any of these is a table's border, not one of the TUI's rules. */
 const JUNCTIONS = /[┼├┤┬┴│╭╮╰╯┌┐└┘║╔╗╚╝╞╡╪]/
 
@@ -214,6 +214,8 @@ export class LoomView {
   private agentUp = false
   /** The agent last reported to main for this tab, so it is told once per change. */
   private tabAgentSent: string | null = null
+  /** The clip last put on the terminal pane. */
+  private clipCss = ''
   /** When the tab's current agent started, for finding its session log. */
   private tabAgentSince = Date.now()
   private raw: boolean
@@ -707,7 +709,7 @@ export class LoomView {
       box = [prev + 1, low - 1]
       dialog = false
     }
-    if (dialog && /^\s*[❯!]/.test(rows[low + 1] ?? '') && last - low <= 3) {
+    if (dialog && /^\s*[❯>!]/.test(rows[low + 1] ?? '') && last - low <= 3) {
       // A single rule with the prompt under it: an input box whose top rule scrolled off.
       dialog = false
       open = low
@@ -752,12 +754,14 @@ export class LoomView {
     if (box && box[1] < box[0]) box = null
     const close = box && box[1] === low - 1 ? low : -1
     // What hangs off the top of the input box: the slash and @ menus, the effort line.
+    // Measured on 2.1.317: items are indented four spaces, the selected one two with a
+    // `>` before it, and a long description wraps onto lines indented past the names.
     if (!dialog) {
       let n = 0
-      while (top - 1 > 3 && n < 16) {
+      while (top - 1 > 3 && n < 24) {
         const r = rows[top - 1]!
         if (!r.trim()) break
-        const attached = /^\s{2}[/@#]\S/.test(r) || /^\s{2}\S.*\S\s{3,}\S/.test(r) || /^\s{24,}\S/.test(r)
+        const attached = /^\s{1,6}(?:[>❯›]\s+)?[/@#]\S/.test(r) || /^\s{1,6}\S.*\S\s{3,}\S/.test(r) || /^\s{20,}\S/.test(r)
         if (!attached) break
         top--
         n++
@@ -825,7 +829,7 @@ export class LoomView {
     const lines = below.filter((r) => r.trim())
     const modeLast = /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|esc to interrupt/i.test(lines[lines.length - 1] ?? '')
     if (lines.length > (modeLast ? 16 : 4)) return false
-    if (lines.some((r) => /^\s*(?:❯\s*)?\d+\.\s/.test(r) || /Do you want|Esc to cancel|Enter to (?:select|confirm)/i.test(r))) return false
+    if (lines.some((r) => /^\s*(?:[❯>]\s*)?\d+\.\s/.test(r) || /Do you want|Esc to cancel|Enter to (?:select|confirm)/i.test(r))) return false
     return !lines.length || lines.some((r) => /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|bash mode|for agents|esc to interrupt|context\)/i.test(r))
   }
 
@@ -922,7 +926,7 @@ export class LoomView {
         canvasH = Math.max(0, clip + ty - 4)
         frame = { top: boxTopPx + ty - FRAME_PAD, height: frameH }
         // An empty prompt gets a quiet placeholder, set where the caret is.
-        const typed = (rows[b0] ?? '').replace(/^\s*[❯›]\s?/, '').trim()
+        const typed = (rows[b0] ?? '').replace(/^\s*[❯›>]\s?/, '').trim()
         const empty = b0 === b1 && !typed
         this.frame.classList.toggle('is-empty', empty)
         if (empty) {
@@ -978,7 +982,15 @@ export class LoomView {
     // Native mode's CLI view keeps its Canvas | CLI switch, whatever Claude Code's screen looks like.
     if (this.native?.inCli) this.rawPill.classList.add('is-on')
     pane.style.transform = ty ? `translate3d(0, ${ty.toFixed(1)}px, 0)` : ''
-    pane.style.clipPath = clip ? `inset(${clip.toFixed(1)}px 0 0 0)` : ''
+    const clipCss = clip ? `inset(${clip.toFixed(1)}px 0 0 0)` : ''
+    // (Compared with what was set, not with style.clipPath, which the browser rewrites.)
+    if (this.clipCss !== clipCss) {
+      this.clipCss = clipCss
+      pane.style.clipPath = clipCss
+      // Rows just uncovered (a menu growing upward) were drawn while hidden, and the WebGL
+      // buffer did not keep them: draw them again, or they stay blank.
+      requestAnimationFrame(() => this.session.repaint())
+    }
     pane.style.maskImage = mask
     if (showCanvas) {
       const h = `${canvasH.toFixed(1)}px`
@@ -1494,7 +1506,7 @@ export class LoomView {
       const block: string[] = []
       for (let y = hint - 1; y >= 0 && rows[y]!.trim(); y--) block.unshift(rows[y]!)
       for (const line of block) {
-        if (/^❯\s/.test(line)) items.push(line.replace(/^❯\s+/, '').trim())
+        if (/^[❯>]\s/.test(line)) items.push(line.replace(/^[❯>]\s+/, '').trim())
         else if (items.length) items[items.length - 1] += ` ${line.trim()}`
       }
     }
