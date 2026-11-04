@@ -4193,33 +4193,13 @@ body.sidebar-mini .ember-places {
   align-items: center;
 }
 
-/* ---------------------------------------------------------------- vitals: there when you look */
+/* ---------------------------------------------------------------- vitals: always in view */
 
 .ember-vitals {
   gap: 2px;
-  padding: 4px 12px 8px;
+  padding: 10px 12px 8px;
   border-top: 0;
   background: none;
-}
-.ember-vitals-plan,
-.ember-vitals > .ember-vitals-row:not(.ember-vitals-desk) {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition:
-    max-height 250ms var(--ui-ease),
-    opacity 250ms var(--ui-ease);
-}
-.ember-vitals:hover .ember-vitals-plan:not(.is-empty),
-.ember-vitals:hover > .ember-vitals-row:not(.ember-vitals-desk):not(.is-empty) {
-  max-height: 24px;
-  opacity: 1;
-}
-/* A strip to hover on, even while the rows are folded away. */
-.ember-vitals::before {
-  content: '';
-  display: block;
-  height: 6px;
 }
 .ember-vitals-chip,
 .ember-vitals-cap {
