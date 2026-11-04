@@ -183,7 +183,7 @@ const loom = (e, tab) => e.ev(`window.__ember.loom(${JSON.stringify(tab)})`)
     await e.key('`', 'Backquote', 192, 2)
     const inCli = await e.until(async () => {
       const l = await loom(e, tab)
-      return l?.native?.cli && l.mode === 'raw' ? l : null
+      return l?.native?.cli && l.tuiRunning && l.rows.some((r) => r.includes('Claude Code v')) ? l : null
     }, 15000)
     check('Ctrl+` opens the session in the CLI view', !!inCli && !alive(before), inCli?.cliLine)
     await e.key('`', 'Backquote', 192, 2)

@@ -8,6 +8,7 @@
  * for another, and the second within two seconds exits. Enter on `/exit` exits too.
  *
  *   node scripts/fake-claude-tui.mjs --log <file> [--resume <id>]
+ *   (or the log named by FAKE_CLAUDE_TUI_LOG, as the CLI view's `__emberCli -Bin` runs it)
  *
  * The log gets its argv, then one line per key it read and how it exited.
  */
@@ -15,7 +16,7 @@ import { appendFileSync, writeFileSync } from 'node:fs'
 
 const argv = process.argv.slice(2)
 const at = argv.indexOf('--log')
-const LOG = at >= 0 ? argv[at + 1] : ''
+const LOG = at >= 0 ? argv[at + 1] : process.env.FAKE_CLAUDE_TUI_LOG || ''
 const log = (o) => LOG && appendFileSync(LOG, JSON.stringify(o) + '\n')
 if (LOG) writeFileSync(LOG, JSON.stringify({ argv: argv.filter((_, i) => i !== at && i !== at + 1), cwd: process.cwd() }) + '\n')
 

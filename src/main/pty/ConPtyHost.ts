@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { accessSync, constants } from 'node:fs'
 import { delimiter, isAbsolute, join } from 'node:path'
@@ -208,6 +209,48 @@ export function otherAgentShims(): string[] {
   ]
 }
 
+/**
+ * The CLI view of a Claude tab (canvas/LoomView.openCli): Claude Code's own screen on the
+ * tab's session, run by a function rather than a typed `claude` line, so that
+ *
+ * - the screen is cleared before and after it, and the line that started it is not left
+ *   on screen or in the history (PSReadLine is told to skip `__ember` lines);
+ * - its end is a private mark (OSC 7772 with the caller's token and the exit code), sent
+ *   however it ended — not guessed from the shell's next prompt;
+ * - whatever mode it left the terminal in (the alternate screen, mouse and key reporting)
+ *   is undone, so a TUI that was stopped from outside leaves nothing behind.
+ *
+ * `-Bin` runs a stand-in TUI for probes (a .mjs run by node). Flags and paths only.
+ */
+function cliViewShim(): string[] {
+  const esc = '$([char]27)'
+  const bel = '$([char]7)'
+  return [
+    'if (Get-Module PSReadLine) {',
+    '  $global:__emberHist = (Get-PSReadLineOption).AddToHistoryHandler',
+    '  Set-PSReadLineOption -AddToHistoryHandler { param($line) if ($line -like "__ember*") { return $false }; if ($global:__emberHist) { return (& $global:__emberHist $line) }; return $true }',
+    '}',
+    'function global:__emberCli([string]$Tok, [string]$Id = "", [string]$Dir = "", [string]$Bin = "", [string]$BinLog = "") {',
+    `  [Console]::Write("${esc}[2J${esc}[3J${esc}[H")`,
+    '  if ($Dir) { Set-Location -LiteralPath $Dir }',
+    '  $a = @()',
+    "  if ($env:EMBER_MCP_CONFIG) { $a += '--mcp-config', $env:EMBER_MCP_CONFIG }",
+    "  if ($env:EMBER_SETTINGS) { $a += '--settings', $env:EMBER_SETTINGS }",
+    "  if ($Id) { $a += '--resume', $Id }",
+    '  $code = 0',
+    '  try {',
+    "    if ($Bin) { if ($BinLog) { $a = @('--log', $BinLog) + $a }; & node $Bin @a } else {",
+    '      $real = @(Get-Command claude -CommandType Application -ErrorAction SilentlyContinue)[0]',
+    "      if (-not $real) { Write-Error 'claude was not found on PATH'; $code = 127 } else { & $real.Source @a }",
+    '    }',
+    '    if ($LASTEXITCODE) { $code = $LASTEXITCODE }',
+    '  } finally {',
+    `    [Console]::Write("${esc}[?1049l${esc}[?1000l${esc}[?1002l${esc}[?1003l${esc}[?1006l${esc}[?1004l${esc}[?2004l${esc}[<u${esc}[?25h${esc}[0m${esc}[2J${esc}[3J${esc}[H${esc}]7772;$Tok;$code${bel}")`,
+    '  }',
+    '}',
+  ]
+}
+
 function withPanelShim(exePath: string, args: string[]): string[] {
   const exe = exePath.toLowerCase()
   if (!exe.endsWith('pwsh.exe') && !exe.endsWith('powershell.exe')) return args
@@ -228,6 +271,7 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     '  if ($env:EMBER_SETTINGS) { & $real.Source --mcp-config $env:EMBER_MCP_CONFIG --settings $env:EMBER_SETTINGS @args; return }',
     '  & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args',
     '}',
+    ...cliViewShim(),
     ...otherAgentShims(),
   ].join('\n')
 
@@ -438,6 +482,36 @@ ${opts.startup}`
       out[id] = { unacked: e.unacked, paused: e.paused, pauses: e.pauses, pausedMs: e.pausedMs + live }
     }
     return out
+  }
+
+  /**
+   * Stop whatever the shell of this session is running (its child processes, and theirs),
+   * leaving the shell itself alone: how the CLI view's Claude Code is ended from outside.
+   * Resolves with how many were stopped.
+   */
+  stopChildren(sessionId: string): Promise<number> {
+    const entry = this.sessions.get(sessionId)
+    if (!entry || entry.exited || process.platform !== 'win32') return Promise.resolve(0)
+    const pid = entry.pty.pid
+    return new Promise((resolve) => {
+      execFile(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', `Get-CimInstance Win32_Process -Filter "ParentProcessId=${Number(pid)}" | ForEach-Object { $_.ProcessId }`],
+        { windowsHide: true, timeout: 15_000 },
+        (_err, out) => {
+          const kids = String(out ?? '')
+            .split(/\s+/)
+            .map(Number)
+            .filter((n) => Number.isInteger(n) && n > 0 && n !== pid)
+          if (!kids.length) return resolve(0)
+          let left = kids.length
+          for (const k of kids)
+            execFile('taskkill', ['/pid', String(k), '/T', '/F'], { windowsHide: true }, () => {
+              if (--left === 0) resolve(kids.length)
+            })
+        }
+      )
+    })
   }
 
   kill(sessionId: string): void {

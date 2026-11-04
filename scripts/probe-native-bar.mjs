@@ -231,11 +231,13 @@ if (!REAL_ONLY) {
     await ctrlBacktick(e)
     const inCli = await e.until(async () => {
       const x = await loom(e, tab)
-      return x?.native?.cli && x.mode === 'raw' ? x : null
+      return x?.native?.cli && x.tuiRunning && x.rows.some((r) => r.includes('Claude Code v')) ? x : null
     }, 15000)
     const tuiArgv = lines(tuiLog).find((x) => x.argv)?.argv ?? []
     check('Ctrl+`: the canvas\'s process stops', !!pidBefore && !alive(pidBefore))
-    check('Ctrl+`: `claude --resume <id>` runs in the tab\'s shell', !!inCli && inCli.cliLine.endsWith(`--resume ${sessionId}`) && tuiArgv.join(' ') === `--resume ${sessionId}`, inCli?.cliLine)
+    check('Ctrl+`: the TUI runs on the session in the tab\'s shell (__emberCli, --resume <id>, Ember\'s settings)', !!inCli && inCli.cliLine.startsWith('__emberCli ') && inCli.cliLine.includes(`-Id ${sessionId}`) && tuiArgv.join(' ').endsWith(`--resume ${sessionId}`) && tuiArgv.includes('--settings'), `${inCli?.cliLine} | ${tuiArgv.join(' ')}`)
+    const rowsCli = (await loom(e, tab))?.rows ?? []
+    check('…and its line is not left on screen', !rowsCli.some((r) => r.includes('__emberCli')), rowsCli.filter((r) => r.trim()).slice(0, 3).join(' / '))
     check('the sidebar card says CLI', /CLI/.test(await e.ev(`window.__ember.card(${JSON.stringify(tab)})`)))
     console.log('      shots:', await e.shot('cli-view'))
     await ctrlBacktick(e)
@@ -244,7 +246,7 @@ if (!REAL_ONLY) {
       return !x?.native?.cli && x?.native?.phase === 'idle' && x.mode === 'claude' ? x : null
     }, 15000)
     const resumed = argvs().pop()?.argv.join(' ') ?? ''
-    check('Ctrl+` back: the TUI left by Ctrl+C twice', lines(tuiLog).some((x) => x.exit === 'ctrl-c') && back?.tuiRunning === false)
+    check('Ctrl+` back: the TUI stopped from outside (no keys sent to it)', back?.tuiRunning === false && !lines(tuiLog).some((x) => x.key === '\x03'))
     check('…and the canvas resumes the session (--resume <id>)', !!back && resumed.includes(`--resume ${sessionId}`), resumed.slice(-60))
     check('…with the turns still on the canvas', !!back?.text.includes('after clear'))
     const focus = await e.ev(`document.activeElement?.className`)

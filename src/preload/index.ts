@@ -43,6 +43,7 @@ const bridge: EmberBridge = {
   write: (sessionId, data) => ipcRenderer.send('ember:write', sessionId, data),
   resize: (sessionId, cols, rows) => ipcRenderer.send('ember:resize', sessionId, cols, rows),
   kill: (sessionId) => ipcRenderer.send('ember:kill', sessionId),
+  stopChildren: (sessionId) => ipcRenderer.invoke('ember:stopChildren', sessionId) as Promise<number>,
   ack: (sessionId, chars) => ipcRenderer.send('ember:ack', sessionId, chars),
   onData: (cb) => on<PtyDataEvent>('ember:data', cb),
   onExit: (cb) => on<PtyExitEvent>('ember:exit', cb),
@@ -152,6 +153,7 @@ const bridge: EmberBridge = {
     saveTabs: (tabs) => ipcRenderer.send('ember:claude:saveTabs', tabs),
     savedTabs: () => ipcRenderer.invoke('ember:claude:savedTabs') as Promise<NativeTabState[]>,
     boundSession: (tabId) => ipcRenderer.invoke('ember:claude:bound', tabId) as Promise<string>,
+    latestSession: (cwd, since) => ipcRenderer.invoke('ember:claude:latest', cwd, since) as Promise<string>,
   },
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),

@@ -37,8 +37,8 @@ export interface LoomHooks {
   openPlace?(place: 'todo' | 'notes'): void
   /** Remember the view the person chose (canvas or the agent's own screen). */
   saveView?(view: 'canvas' | 'cli'): void
-  /** Native mode: the session the tab holds changed (remembered across restarts). */
-  nativeSession?(sessionId: string, cwd: string): void
+  /** A Claude tab: the session it holds, its folder or its name changed (remembered across restarts). */
+  nativeSession?(): void
 }
 
 /** Canvas | CLI: the two ways to see an agent tab, as one switch. */
@@ -164,13 +164,9 @@ const AGENT_ROWS = 10
 /** What in a reply can be picked up and placed: diagrams, tables, code, pictures. */
 const LIFTABLE = '.loom-diagram, .loom-table, .loom-code, .loom-say img.loom-img, .loom-shelf .loom-figure, .loom-tool-peek .loom-figure'
 
-const RULE_CHARS = /[─━▔═╌╍┄┅┈┉]/g
-/** The input box's first line: `❯` (`>` in some builds), or `!` in shell mode. */
-const PROMPT = /^\s?[❯>!]/
-/** A dialog's numbered choice, the selected one marked with `❯`. */
-const CHOICE = /^\s*(?:[❯>]\s*)?\d+\.\s/
-/** Box junctions: a row with any of these is a table's border, not one of the TUI's rules. */
-const JUNCTIONS = /[┼├┤┬┴│╭╮╰╯┌┐└┘║╔╗╚╝╞╡╪]/
+/** Claude Code's input box, in its own screen (the CLI view): a rule, then the `❯` line. */
+const TUI_RULE = /^[─━]{20,}\s*$/
+const TUI_PROMPT = /^\s?[❯>](?:\s|$)/
 
 export class LoomView {
   readonly el: HTMLElement
@@ -185,12 +181,9 @@ export class LoomView {
   /** What Claude has been saying while it works: the last few sentences, newest at the bottom. */
   private readonly trail: HTMLElement
   private readonly activity: HTMLElement
-  /** Messages you sent while Claude was busy, waiting their turn. */
-  private readonly queue: HTMLElement
   /** The session's subagents, as small pills: what each is on, how long, done or not. */
   private readonly agentsRow: HTMLElement
   private readonly agents = new Map<string, { key: string; agentId?: string; desc: string; type: string; start: number; end?: number; ok?: boolean; action: string; steps: string[]; summary: string }>()
-  private queueKey = ''
   private trailSeen = 0
   /** Objects you pinned: they stay where you put them, turn after turn, until removed. */
   private readonly pinLayer: HTMLElement
@@ -219,7 +212,6 @@ export class LoomView {
   /** When the tab's current agent started, for finding its session log. */
   private tabAgentSince = Date.now()
   private raw: boolean
-  private claudeSeen = false
   private dock: Dock | null = null
   private frameReq = 0
   private disposed = false
@@ -245,11 +237,10 @@ export class LoomView {
     config: EmberConfig,
     private readonly hooks: LoomHooks,
     /**
-     * Native mode (`canvas.native`): Claude Code runs in its structured mode, driven from
-     * here, and the canvas is drawn from what it says rather than from its screen. The
-     * shell under the canvas stays a plain shell. Null for every other tab.
+     * A Claude tab: Claude Code runs in its structured mode, driven from here, and the
+     * canvas is drawn from what it says. Null for every other tab (a shell, another agent).
      */
-    native: { cwd?: string; resume?: string } | null = null
+    native: { cwd?: string; resume?: string; title?: string } | null = null
   ) {
     this.el = document.createElement('div')
     this.el.className = 'loom'
@@ -292,9 +283,6 @@ export class LoomView {
     // What Claude is doing sits in the turn itself, right under its words and above what
     // it showed: it moves with the content and nothing can sit on it.
     this.activity = div('loom-activity')
-    // Messages waiting for the turn to end sit right above the input box, where you typed
-    // them, not up in the turn: placed with the box in layout().
-    this.queue = div('loom-queue')
     this.agentsRow = div('loom-agents')
     this.activity.append(this.trail, this.now, this.agentsRow)
     this.pinLayer = div('loom-pins')
@@ -319,58 +307,12 @@ export class LoomView {
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
     this.el.append(this.scroller, this.rail, this.pinLayer, this.hint, this.sign, this.steps, this.jump, this.chip, this.pop, this.ctxMenu, this.drawer, this.lightbox)
-    // Above the input box, stacked: messages waiting for the turn, then pictures pasted
-    // into the prompt.
-    this.above.append(this.queue, this.attach)
     panes.append(this.el, this.frame, this.above, this.bar, this.barPick, this.rawPill)
-    // Send now: Claude Code's own keys for it (its hint reads "ctrl+x ctrl+s to send now").
-    this.queue.addEventListener('click', (e) => {
-      if (!(e.target as HTMLElement).closest('[data-q="send"]')) return
-      window.ember.write(this.session.id, '\x18\x13')
-      this.session.focus()
-    })
     panes.classList.add('has-loom')
     session.el.classList.add('is-loom')
 
     this.wire()
-    if (native) {
-      this.frame.classList.add('is-native')
-      this.native = new NativeClaude(tabId, native.cwd, {
-        feed: this.feed,
-        frame: this.frame,
-        above: this.above,
-        changed: (s) => this.nativeChanged(s),
-        relayout: () => this.schedule(),
-        grew: () => this.grew(),
-        toast: (t) => this.hooks.toast(t),
-        shell: (cmd) => this.runInShell(cmd),
-        interruptShell: () => window.ember.write(this.session.id, '\x03'),
-        session: (id, cwd) => this.hooks.nativeSession?.(id, cwd),
-        openCli: (command) => void this.openCli(command),
-      }, native.resume)
-      // Files dropped anywhere on the tab: pictures attach to the message, others are
-      // mentioned by path. Handled here, so the window's own drop (typing paths into the
-      // shell) leaves them alone.
-      const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
-      for (const target of [this.el, this.frame, this.above]) {
-        target.addEventListener('dragover', (e) => {
-          if (!hasFiles(e)) return
-          e.preventDefault()
-          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
-        })
-        target.addEventListener('drop', (e) => {
-          if (!hasFiles(e) || e.defaultPrevented) return
-          e.preventDefault()
-          this.native?.dropFiles([...(e.dataTransfer?.files ?? [])])
-        })
-      }
-      const input = this.native.input
-      session.focusInstead = () => input.focus()
-      if (document.activeElement === session.term.textarea) input.focus()
-      const nf = () => this.frame.classList.toggle('is-focus', document.activeElement === this.native?.input)
-      this.native.input.addEventListener('focus', nf)
-      this.native.input.addEventListener('blur', nf)
-    }
+    if (native) this.attachNative(native)
     this.renderSign()
     this.schedule()
     void window.ember.panel.origin().then((o) => (this.origin = o))
@@ -386,6 +328,55 @@ export class LoomView {
     this.renderSign()
     void window.ember.canvas.watch(tabId)
   }
+
+  /**
+   * Claude Code in structured mode, driven from here: the canvas is drawn from what it
+   * says, and the input, menus and cards are Ember's. The shell under it stays a plain shell.
+   */
+  private attachNative(native: { cwd?: string; resume?: string; title?: string }): void {
+    if (this.native) return
+    this.frame.classList.add('is-native')
+    this.native = new NativeClaude(this.tabId, native.cwd, {
+      feed: this.feed,
+      frame: this.frame,
+      above: this.above,
+      changed: (s) => this.nativeChanged(s),
+      relayout: () => this.schedule(),
+      grew: () => this.grew(),
+      toast: (t) => this.hooks.toast(t),
+      shell: (cmd) => this.runInShell(cmd),
+      interruptShell: () => window.ember.write(this.session.id, ''),
+      session: () => this.hooks.nativeSession?.(),
+      openCli: (command) => void this.openCli(command),
+    }, native.resume, native.title)
+    if (!this.dropsWired) {
+      this.dropsWired = true
+      // Files dropped anywhere on the tab: pictures attach to the message, others are
+      // mentioned by path. Handled here, so the window's own drop (typing paths into the
+      // shell) leaves them alone.
+      const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
+      for (const target of [this.el, this.frame, this.above]) {
+        target.addEventListener('dragover', (e) => {
+          if (!hasFiles(e) || !this.native) return
+          e.preventDefault()
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+        })
+        target.addEventListener('drop', (e) => {
+          if (!hasFiles(e) || e.defaultPrevented || !this.native) return
+          e.preventDefault()
+          this.native.dropFiles([...(e.dataTransfer?.files ?? [])])
+        })
+      }
+    }
+    const input = this.native.input
+    this.session.focusInstead = () => input.focus()
+    if (document.activeElement === this.session.term.textarea) input.focus()
+    const nf = () => this.frame.classList.toggle('is-focus', document.activeElement === input)
+    input.addEventListener('focus', nf)
+    input.addEventListener('blur', nf)
+  }
+
+  private dropsWired = false
 
   // ================================================================ wiring
 
@@ -430,15 +421,7 @@ export class LoomView {
       else if ((e.target as HTMLElement).closest('[data-view="cli"]')) this.setRaw(true)
     })
     this.bar.addEventListener('click', (e) => {
-      if (this.native) {
-        this.barClickNative(e.target as HTMLElement)
-        return
-      }
-      // The mode chip cycles the permission mode, as Shift+Tab does.
-      if ((e.target as HTMLElement).closest('.loom-bar-mode')) {
-        window.ember.write(this.session.id, '\x1b[Z')
-        this.session.focus()
-      }
+      if (this.native) this.barClickNative(e.target as HTMLElement)
     })
     this.barPick.addEventListener('mousedown', (e) => e.preventDefault())
     this.barPick.addEventListener('click', (e) => {
@@ -506,6 +489,7 @@ export class LoomView {
         if (c.tabId !== this.tabId) return
         this.cost = c
         this.barKey = ''
+        if (this.native && !this.native.inCli) this.renderBarNative()
       }),
       window.ember.claude.onStatus((s) => {
         if (s.tabId !== this.tabId) return
@@ -661,115 +645,6 @@ export class LoomView {
     return out
   }
 
-  /** Is what is on the alternate screen Claude Code? Its logo, or its input box. */
-  private looksLikeClaude(rows: string[]): boolean {
-    if (rows.slice(0, 8).some((r) => /Claude Code v\d/.test(r))) return true
-    return this.findDock(rows)?.dialog === false
-  }
-
-  /**
-   * One of Claude Code's own rules: a line across the screen and nothing else, bar the
-   * effort indicator that rides inside a picker's top rule. A markdown table drawn in the
-   * conversation has rules too, but always with junctions in them.
-   */
-  private isRule(row: string): boolean {
-    const cols = this.session.term.cols
-    if ((row.match(RULE_CHARS)?.length ?? 0) < cols * 0.6) return false
-    if (JUNCTIONS.test(row)) return false
-    return row.replace(RULE_CHARS, '').trim().length <= 40
-  }
-
-  /**
-   * Which rows of Claude Code's screen are the part you work with.
-   *
-   * Measured against 2.1's full-screen layout (scripts/probe-loom-screens): the input box
-   * is a rule, the `❯` line(s), a rule, and the mode line under it; the slash menu and
-   * the effort indicator sit directly above the first rule. A permission prompt replaces
-   * all of that with a rule followed by the dialog. A picker (/model) starts at a rule of
-   * `▔`. Anything else is not recognised, and the caller shows the whole screen.
-   */
-  private findDock(rows: string[]): Dock | null {
-    const rules: number[] = []
-    for (let y = 1; y < rows.length; y++) if (this.isRule(rows[y]!)) rules.push(y)
-    if (!rules.length) return null
-    let last = rows.length - 1
-    while (last > 0 && !rows[last]!.trim()) last--
-    const low = rules[rules.length - 1]!
-
-    // The input box: a rule, the `❯` line directly under it, its continuation lines,
-    // and the closing rule. The prompt echoes in the conversation start with `❯` too,
-    // but never directly under a rule.
-    let top = low
-    let dialog = true
-    let box: [number, number] | null = null
-    let open = -1
-    const prev = rules.length > 1 ? rules[rules.length - 2]! : -1
-    if (prev >= 0 && low - prev <= 18 && PROMPT.test(rows[prev + 1] ?? '')) {
-      top = open = prev
-      box = [prev + 1, low - 1]
-      dialog = false
-    }
-    if (dialog && /^\s*[❯>!]/.test(rows[low + 1] ?? '') && last - low <= 3) {
-      // A single rule with the prompt under it: an input box whose top rule scrolled off.
-      dialog = false
-      open = low
-      box = [low + 1, last]
-    }
-    if (dialog) {
-      // The `❯` line directly above the lowest rule, with no rule between: the input box,
-      // its top rule not recognised (drawn differently, or not there). A dialog's own `❯`
-      // marks one of its numbered choices, so `❯ 2.` is not a prompt. Without this the
-      // dock would be cropped to the bottom rule and the prompt line hidden.
-      for (let y = low - 1; y > 3 && low - y <= 18 && rows[y]!.trim(); y--) {
-        if (!PROMPT.test(rows[y]!) || CHOICE.test(rows[y]!)) continue
-        open = (rows[y - 1]!.match(RULE_CHARS)?.length ?? 0) >= 8 ? y - 1 : -1
-        top = open >= 0 ? open : y
-        box = [y, low - 1]
-        dialog = false
-        break
-      }
-    }
-    if (dialog && this.isFooter(rows.slice(low + 1, last + 1))) {
-      // Under the lowest rule there is only the mode line and the status line: that rule
-      // closes the input box, whatever its prompt looks like. Keep everything up to the
-      // rule that opens it, or else the block of lines sitting on it. Cropping to the
-      // bottom rule here is what hid the input box entirely.
-      dialog = false
-      if (prev >= 0 && low - prev <= 18) {
-        top = open = prev
-        box = [prev + 1, low - 1]
-      } else {
-        top = low
-        while (top - 1 > 3 && low - top < 18 && rows[top - 1]!.trim()) top--
-        box = [top, low - 1]
-      }
-    }
-    if (dialog && prev >= 0 && low - prev <= 40) {
-      // A question (AskUserQuestion) runs from its own top rule: the tabs, the question,
-      // its choices, then a rule and "Chat about this" under it. Cropped to the lowest
-      // rule, only that last choice showed and the question was hidden.
-      const choices = (a: number, b: number) => rows.slice(a, b).filter((r) => CHOICE.test(r)).length
-      if (choices(low + 1, last + 1) && choices(prev + 1, low) >= 2) top = prev
-    }
-    if (box && box[1] < box[0]) box = null
-    const close = box && box[1] === low - 1 ? low : -1
-    // What hangs off the top of the input box: the slash and @ menus, the effort line.
-    // Measured on 2.1.317: items are indented four spaces, the selected one two with a
-    // `>` before it, and a long description wraps onto lines indented past the names.
-    if (!dialog) {
-      let n = 0
-      while (top - 1 > 3 && n < 24) {
-        const r = rows[top - 1]!
-        if (!r.trim()) break
-        const attached = /^\s{1,6}(?:[>❯›]\s+)?[/@#]\S/.test(r) || /^\s{1,6}\S.*\S\s{3,}\S/.test(r) || /^\s{20,}\S/.test(r)
-        if (!attached) break
-        top--
-        n++
-      }
-    }
-    return { top, bottom: Math.max(last, low), dialog, box, open, close }
-  }
-
   /**
    * Codex's input, as its TUI draws it (scripts/probe-agent-screens.mjs): the `›` line and
    * any continuation lines, a blank line, then its status lines ("GPT-6-Astra high · ~",
@@ -819,20 +694,6 @@ export class LoomView {
     return lines.every((r) => /·|for shortcuts|esc to interrupt|context left|⚠|working|tab to queue/i.test(r) || r.trim().length < 3)
   }
 
-  /**
-   * The lines under the input box: the mode line ("⏵⏵ bypass permissions on (shift+tab
-   * to cycle)", "? for shortcuts") and the status line. A dialog has choices there instead.
-   * A custom status line can run to many lines (a repo list); that many lines count only
-   * with the mode line at the bottom of them.
-   */
-  private isFooter(below: string[]): boolean {
-    const lines = below.filter((r) => r.trim())
-    const modeLast = /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|esc to interrupt/i.test(lines[lines.length - 1] ?? '')
-    if (lines.length > (modeLast ? 16 : 4)) return false
-    if (lines.some((r) => /^\s*(?:[❯>]\s*)?\d+\.\s/.test(r) || /Do you want|Esc to cancel|Enter to (?:select|confirm)/i.test(r))) return false
-    return !lines.length || lines.some((r) => /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|shell mode|bash mode|for agents|esc to interrupt|context\)/i.test(r))
-  }
-
   private layout(): void {
     if (this.disposed) return
     if (this.native && !this.native.inCli) {
@@ -840,7 +701,6 @@ export class LoomView {
       return
     }
     const term = this.session.term
-    const buf = term.buffer.active
     const pane = this.session.el
     const screen = pane.querySelector<HTMLElement>('.xterm-screen')
     const paneH = pane.clientHeight
@@ -851,8 +711,9 @@ export class LoomView {
     const screenTop = sr.top - pr.top
     const rows = this.rowsText()
 
-    // Which agent the shell said it started. Claude Code is read precisely below; any
-    // other agent gets the canvas with the bottom of its own screen under it.
+    // Which agent the shell said it started. Claude Code typed by hand in a shell is shown
+    // as it draws itself (the canvas drives Claude Code itself, in a Claude tab); any other
+    // agent gets the canvas with the bottom of its own screen under it.
     const agent = this.session.announcedAgent
     // Told again once the folder is known: an agent started with the shell runs before
     // the first prompt has said where the shell is.
@@ -863,23 +724,17 @@ export class LoomView {
       if (fresh) this.tabAgentSince = Date.now()
       window.ember.canvas.tabAgent(this.tabId, agent && agent !== 'claude' ? agent : null, this.session.cwd || this.session.initialCwd || '', this.tabAgentSince)
     }
-    const who = agentSpec(agent ?? 'claude').name.replace(/ (CLI|Code)$/, '')
-    const hintText = this.hint.querySelector('.loom-hint-text')
-    if (hintText && !hintText.textContent?.startsWith(who)) hintText.textContent = `${who} is here. Ask below — what it says and shows appears on this canvas.`
-    let mode: Mode
-    if (agent && agent !== 'claude') {
-      mode = 'agent'
-    } else if (buf.type === 'alternate') {
-      if (!this.claudeSeen && this.looksLikeClaude(rows)) this.claudeSeen = true
-      mode = this.claudeSeen ? 'claude' : 'app'
-    } else {
-      this.claudeSeen = false
-      mode = 'shell'
+    const other = !!agent && agent !== 'claude'
+    if (other) {
+      const who = agentSpec(agent).name.replace(/ (CLI|Code)$/, '')
+      const hintText = this.hint.querySelector('.loom-hint-text')
+      if (hintText && !hintText.textContent?.startsWith(who)) hintText.textContent = `${who} is here. Ask below — what it says and shows appears on this canvas.`
     }
+    let mode: Mode = other ? 'agent' : 'shell'
     // An agent tab opened from +: the shell is covered until the agent's screen is up, or
     // until the shell's prompt shows (the agent exited or could not start: show why).
     if (this.session.startAgent && !this.agentUp) {
-      if (mode === 'claude' || mode === 'agent' || this.session.prompts > 0) this.agentUp = true
+      if (mode === 'agent' || this.session.prompts > 0) this.agentUp = true
       if (!this.starting.isConnected) {
         this.starting.innerHTML = `<span class="dot"></span><span>Starting ${escapeHtml(agentSpec(this.session.startAgent).name)}…</span>`
         this.panes.appendChild(this.starting)
@@ -890,7 +745,7 @@ export class LoomView {
       }
       if (this.agentUp) this.starting.remove()
     }
-    if (this.raw && (mode === 'claude' || mode === 'agent')) mode = 'raw'
+    if (this.raw && mode === 'agent') mode = 'raw'
 
     let ty = 0
     let clip = 0
@@ -901,32 +756,28 @@ export class LoomView {
     let foot: string[] | null = null
     const gap = 4
 
-    // An agent with a screen profile is framed the same way as Claude: its own input,
-    // cut out of its screen, in Ember's frame, its status lines said again in the bar.
+    // An agent with a screen profile (Codex) gets its own input cut out of its screen, in
+    // Ember's frame, its status lines said again in the bar.
     const codex = mode === 'agent' && agent === 'codex' ? this.findCodexDock(rows) : null
-    // The shell is left exactly as PowerShell draws it: prompt at the top, output below.
-    if (mode === 'claude' || codex) {
-      dock = codex ?? this.findDock(rows)
-      const under = !dock ? null : dock.close >= 0 ? rows.slice(dock.close + 1) : dock.foot !== undefined ? rows.slice(dock.foot, dock.bottom + 1) : null
-      const footOk = !!under && (codex ? this.isCodexFooter(under) : this.isFooter(under))
-      if (dock && !dock.dialog && dock.box && under && footOk) {
-        // The input box, framed: its rules and the mode and status lines under it are
-        // masked away and said again, tidily, in the bar under the frame. The prompt
-        // itself is the real one, keys and all.
+    if (codex) {
+      dock = codex
+      const under = dock.foot !== undefined ? rows.slice(dock.foot, dock.bottom + 1) : null
+      if (!dock.dialog && dock.box && under && this.isCodexFooter(under)) {
+        // The input, framed: the status lines under it are masked away and said again,
+        // tidily, in the bar under the frame. The prompt itself is the real one, keys and all.
         const [b0, b1] = dock.box
-        const visTop = dock.top === dock.open ? dock.top + 1 : dock.top
         const boxTopPx = screenTop + b0 * cellH
         const bottomPx = screenTop + (b1 + 1) * cellH
         // The frame is at least INPUT_ROWS tall; the rows under the prompt are empty room
         // that the prompt grows into as you write more lines.
         const frameH = Math.max(bottomPx - boxTopPx, INPUT_ROWS * cellH) + FRAME_PAD * 2
         ty = Math.max(0, paneH - BAR_H - 6 - frameH - boxTopPx + FRAME_PAD)
-        const firstPx = Math.min(screenTop + visTop * cellH, boxTopPx)
+        const firstPx = Math.min(screenTop + dock.top * cellH, boxTopPx)
         clip = Math.max(0, firstPx - FRAME_PAD - 4)
         canvasH = Math.max(0, clip + ty - 4)
         frame = { top: boxTopPx + ty - FRAME_PAD, height: frameH }
         // An empty prompt gets a quiet placeholder, set where the caret is.
-        const typed = (rows[b0] ?? '').replace(/^\s*[❯›>]\s?/, '').trim()
+        const typed = (rows[b0] ?? '').replace(/^\s*[›>]\s?/, '').trim()
         const empty = b0 === b1 && !typed
         this.frame.classList.toggle('is-empty', empty)
         if (empty) {
@@ -935,25 +786,16 @@ export class LoomView {
           this.frame.style.setProperty('--ph-top', `${FRAME_PAD}px`)
           this.frame.style.setProperty('--ph-h', `${cellH.toFixed(1)}px`)
         }
-        const stops = ['#000 0']
-        if (dock.open >= 0) {
-          const o0 = screenTop + dock.open * cellH
-          stops.push(`#000 ${o0.toFixed(1)}px`, `transparent ${o0.toFixed(1)}px`, `transparent ${(o0 + cellH).toFixed(1)}px`, `#000 ${(o0 + cellH).toFixed(1)}px`)
-        }
-        stops.push(`#000 ${bottomPx.toFixed(1)}px`, `transparent ${bottomPx.toFixed(1)}px`)
-        mask = `linear-gradient(to bottom, ${stops.join(', ')})`
+        mask = `linear-gradient(to bottom, #000 0, #000 ${bottomPx.toFixed(1)}px, transparent ${bottomPx.toFixed(1)}px)`
         foot = under
-      } else if (dock) {
+      } else {
         const topPx = screenTop + dock.top * cellH
         const bottomPx = screenTop + (dock.bottom + 1) * cellH
         ty = Math.max(0, paneH - gap - bottomPx)
         clip = Math.max(0, topPx - 3)
         canvasH = Math.max(0, clip + ty)
-      } else {
-        // Not a screen we know: show all of it. Nothing of the CLI is ever hidden by guessing.
-        mode = 'app'
       }
-    } else if (mode === 'agent' && !codex) {
+    } else if (mode === 'agent') {
       // Another agent's screen is not guessed at: the last rows it drew — its input and
       // status, whatever they look like — are shown whole under the canvas.
       let last = rows.length - 1
@@ -966,11 +808,10 @@ export class LoomView {
       canvasH = Math.max(0, clip + ty)
     }
 
-    const showCanvas = mode === 'claude' || mode === 'agent'
+    const showCanvas = mode === 'agent'
     if (mode !== this.mode) {
       this.mode = mode
       this.el.classList.toggle('is-on', showCanvas)
-      this.rawPill.classList.toggle('is-on', mode === 'raw')
       this.panes.dataset['loom'] = mode
       if (showCanvas) this.restage()
       this.renderSign()
@@ -979,8 +820,9 @@ export class LoomView {
       // rather than trusting what was there.
       requestAnimationFrame(() => this.session.repaint())
     }
-    // Native mode's CLI view keeps its Canvas | CLI switch, whatever Claude Code's screen looks like.
-    if (this.native?.inCli) this.rawPill.classList.add('is-on')
+    // The Canvas | CLI switch over a screen shown whole: another agent's own view, a Claude
+    // tab's CLI view, or Claude Code typed by hand in a shell (Canvas picks it up there).
+    this.rawPill.classList.toggle('is-on', mode === 'raw' || !!this.native?.inCli || this.handRunClaude())
     pane.style.transform = ty ? `translate3d(0, ${ty.toFixed(1)}px, 0)` : ''
     const clipCss = clip ? `inset(${clip.toFixed(1)}px 0 0 0)` : ''
     // (Compared with what was set, not with style.clipPath, which the browser rewrites.)
@@ -1006,9 +848,7 @@ export class LoomView {
     const left = pane.offsetLeft
     const width = pane.offsetWidth
     this.frame.classList.toggle('is-on', showCanvas && !!frame)
-    // The queue and the pasted pictures ride on top of the input box (their own height
-    // lifts them, in CSS).
-    this.above.classList.toggle('is-on', showCanvas && !!frame)
+    this.above.classList.remove('is-on')
     if (showCanvas && frame) {
       Object.assign(this.frame.style, {
         left: `${left + 10}px`,
@@ -1016,15 +856,7 @@ export class LoomView {
         top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
         height: `${frame.height.toFixed(1)}px`,
       })
-      Object.assign(this.above.style, {
-        left: `${left + 10}px`,
-        width: `${width - 20}px`,
-        top: `${(pane.offsetTop + frame.top).toFixed(1)}px`,
-      })
     }
-    // Pictures follow Claude's own "[Image #n]" marks in the prompt, read only while the
-    // prompt is on screen (a question in its place must not drop them).
-    if (mode === 'claude' && dock?.box && !dock.dialog) this.syncAttach(rows.slice(dock.box[0], dock.box[1] + 1).join(' '))
     this.bar.classList.toggle('is-on', showCanvas && !!foot)
     if (showCanvas && foot) {
       Object.assign(this.bar.style, {
@@ -1035,7 +867,13 @@ export class LoomView {
       })
       this.renderBar(foot)
     }
-    if (mode === 'claude') this.readLive(rows, dock)
+  }
+
+  /** Claude Code run by hand in this plain shell tab (not a Claude tab's CLI view). */
+  private handRunClaude(): boolean {
+    if (this.native) return false
+    const a = this.session.activity.current
+    return a.isClaude && a.agent === 'claude' && !this.session.announcedAgent
   }
 
   /**
@@ -1053,7 +891,6 @@ export class LoomView {
     pane.style.maskImage = ''
     if (this.mode !== 'claude') {
       this.mode = 'claude'
-      this.claudeSeen = true
       this.el.classList.add('is-on')
       this.rawPill.classList.remove('is-on')
       this.panes.dataset['loom'] = 'claude'
@@ -1127,7 +964,7 @@ export class LoomView {
     const n = this.native
     const model = n?.currentModel()
     const efforts = n?.efforts ?? []
-    const key = `native|${s?.phase}|${s?.model}|${s?.permissionMode}|${s?.picked}|${s?.effort}|${s?.context}|${model?.value}|${efforts.join(',')}`
+    const key = `native|${s?.phase}|${s?.model}|${s?.permissionMode}|${s?.picked}|${s?.effort}|${s?.context}|${model?.value}|${efforts.join(',')}|${this.cost?.tokens ?? ''}`
     if (key === this.barKey) return
     this.barKey = key
     const modes: Record<string, [string, string]> = {
@@ -1157,13 +994,17 @@ export class LoomView {
     if (n?.models.length) parts.push(`<button type="button" class="loom-bar-model loom-bar-pickmodel" title="Model — click to switch">${escapeHtml(name)}<span class="loom-bar-caret">▾</span></button>`)
     else parts.push(`<span class="loom-bar-model">${escapeHtml(name)}</span>`)
     if (efforts.length) {
+      // No level set anywhere (not by the bar, a turn or the settings): the model's own default.
       const e = s?.effort && efforts.includes(s.effort) ? s.effort : ''
-      parts.push(`<button type="button" class="loom-bar-effort" title="Effort — click to cycle (${escapeHtml(efforts.join(' · '))})">${escapeHtml(e || 'effort')}</button>`)
+      const tip = `Effort${e ? '' : ": the model's default"} — click to cycle (${efforts.join(' · ')})`
+      parts.push(`<button type="button" class="loom-bar-effort${e ? '' : ' is-default'}" title="${escapeHtml(tip)}">${escapeHtml(e || 'default effort')}</button>`)
     }
     if (s?.context != null) {
       const p = Math.round(s.context)
       parts.push(`<span class="loom-bar-ctx${p >= 80 ? ' is-high' : ''}" title="Context used"><i style="--p:${p}%"></i>${p}%</span>`)
     }
+    const cost = this.emberCost()
+    if (cost) parts.push(cost)
     parts.push(`<span class="loom-bar-rest">${escapeHtml(phase)}</span>`)
     this.bar.innerHTML = parts.join('')
   }
@@ -1214,27 +1055,40 @@ export class LoomView {
     return true
   }
 
-  // ---------------------------------------------------------------- the CLI view (native mode)
+  // ---------------------------------------------------------------- the CLI view (a Claude tab)
 
   /** Between Ctrl+` and the TUI being up (or gone): a second switch waits. */
   private cliBusy = false
   /** What was typed into the shell to open the CLI view, for probes. */
   private cliLine = ''
   private cliSince = 0
-  /**
-   * The shell's prompt count when the CLI view's line was typed: Claude Code runs until the
-   * next prompt. Its screen may be full-screen (the alternate buffer) or drawn inline, so
-   * the prompt is what says it has gone, not the buffer.
-   */
+  /** The CLI view's Claude Code is running in the shell (from its line until its end mark). */
+  private cliRunning = false
+  /** The CLI view's run: its end mark carries this token. */
+  private cliToken = ''
+  /** We stopped it ourselves (back to the canvas): its end is not "it exited by itself". */
+  private cliStopping = false
+  private cliEnded: (() => void) | null = null
+  private cliOsc: { dispose(): void } | null = null
+  /** Non-PowerShell shells only: the prompt count when the line was typed (its end is the next prompt). */
   private cliPrompts = -1
-  /** Probes: what runs as `claude` in the CLI view (a stand-in TUI). */
+  /** Probes: a stand-in TUI (a .mjs run by node) instead of `claude`. */
   static cliBin = 'claude'
+
+  /** PowerShell tabs have Ember's `__emberCli` (pty/ConPtyHost.ts cliViewShim). */
+  private get psShell(): boolean {
+    const shellName = (this.session.profile.command || '').toLowerCase()
+    return /pwsh|powershell/.test(shellName) || !shellName
+  }
 
   /**
    * Hand the session to Claude Code's own screen: the canvas's process stops (the turn
-   * finished or stopped first), and `claude --resume <id>` runs in the tab's shell — the
-   * shell's `claude`, which carries Ember's settings and panel — shown whole. A command
-   * only the TUI has (`/login`) is typed into it once its prompt is up.
+   * finished or stopped first), and Claude Code runs on the same session in the tab's shell
+   * — with Ember's settings and panel — shown whole. A command only the TUI has (`/login`)
+   * is typed into it once its prompt is up.
+   *
+   * In PowerShell it runs through `__emberCli`: a cleared screen, no line left on screen or
+   * in the history, and a private mark (OSC 7772) when it has ended, however it ended.
    */
   private async openCli(command = ''): Promise<void> {
     const n = this.native
@@ -1258,54 +1112,107 @@ export class LoomView {
       this.mode = 'shell'
       this.el.classList.remove('is-on')
       this.panes.dataset['loom'] = 'shell'
+      this.listenCliEnd()
+      this.cliToken = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+      this.cliStopping = false
       this.cliLine = this.cliCommand(id, n.folder)
       this.cliPrompts = this.session.prompts
+      this.cliRunning = true
+      // Anything left on the shell's line goes first (PSReadLine: Esc reverts the line).
+      if (this.psShell) window.ember.write(this.session.id, '\x1b')
       await this.typeLine(this.cliLine)
       this.schedule()
       this.session.focus()
       if (command) {
         if (await this.tuiPrompt(30_000)) {
           await this.typeLine(command)
-        } else this.hooks.toast(`Type ${command} in the CLI`)
+        } else if (this.cliRunning) this.hooks.toast(`Type ${command} in the CLI`)
       }
     } finally {
       this.cliBusy = false
     }
   }
 
+  /** The CLI view's end mark: `ESC ] 7772 ; token ; code BEL`, written by `__emberCli` as Claude Code ends. */
+  private listenCliEnd(): void {
+    if (this.cliOsc) return
+    this.cliOsc = this.session.term.parser.registerOscHandler(7772, (data) => {
+      const [token, code] = data.split(';')
+      if (!token || token !== this.cliToken) return true
+      this.cliToken = ''
+      this.cliRunning = false
+      const done = this.cliEnded
+      this.cliEnded = null
+      done?.()
+      // It ended by itself (`/exit`, "No, exit" on the trust question, a crash): back to
+      // the canvas, which picks the session up again.
+      if (!this.cliStopping && this.native?.inCli) {
+        if (code && code !== '0' && Date.now() - this.cliSince < 4000) this.hooks.toast(`Claude Code's screen ended at once (exit code ${code})`)
+        window.setTimeout(() => void this.backToCanvas(), 0)
+      }
+      return true
+    })
+    this.unsubs.push(() => this.cliOsc?.dispose())
+  }
+
+  /** Is the CLI view's Claude Code still running? */
+  private get tuiUp(): boolean {
+    if (!this.cliRunning) return false
+    if (this.psShell) return true
+    // Another shell: it has gone once the shell's next prompt shows.
+    if (this.session.prompts > this.cliPrompts && this.session.term.buffer.active.type !== 'alternate') this.cliRunning = false
+    return this.cliRunning
+  }
+
   /**
-   * Back from the CLI view: the TUI is asked to exit (Ctrl+C twice, as Claude Code's own
-   * "press again to exit" — the first clears anything half-typed), and once the shell's
-   * prompt is back the canvas's process picks the session up again, on the id the TUI ended
-   * on (it may have moved: `/clear`, `/resume`).
+   * Back from the CLI view: Claude Code's screen is stopped — its processes ended from
+   * outside, so no key is ever sent that a dialog could take as an answer — and once its
+   * end mark is in, the canvas's process picks the session up again, on the session the
+   * TUI ended on (it may have moved: `/clear`, `/resume`). Refused while Claude works there.
    */
   private async backToCanvas(): Promise<void> {
     const n = this.native
     if (!n || !n.inCli || this.cliBusy) return
-    const rows = this.rowsText()
-    const tui = this.session.prompts === this.cliPrompts
-    if (tui && rows.some((r) => /esc to interrupt/i.test(r))) {
+    if (this.tuiUp && this.rowsText().some((r) => /esc to interrupt/i.test(r))) {
       this.hooks.toast('Claude is working in the CLI — Esc to stop it there first, then switch')
       return
     }
     this.cliBusy = true
     try {
-      if (tui) {
-        const gone = () => this.session.prompts > this.cliPrompts && this.session.term.buffer.active.type !== 'alternate'
-        for (let round = 0; round < 3 && !gone(); round++) {
-          window.ember.write(this.session.id, '\x03')
-          await sleep(250)
-          if (gone()) break
-          window.ember.write(this.session.id, '\x03')
-          for (let i = 0; i < 20 && !gone(); i++) await sleep(150)
-        }
-        if (!gone()) {
-          this.hooks.toast('Claude Code did not exit — close it in the CLI (/exit), then switch back')
-          return
+      if (this.tuiUp) {
+        if (this.psShell) {
+          this.cliStopping = true
+          const ended = new Promise<boolean>((resolve) => {
+            this.cliEnded = () => resolve(true)
+            window.setTimeout(() => resolve(false), 10_000)
+          })
+          await window.ember.stopChildren(this.session.id)
+          if (!(await ended)) {
+            this.cliEnded = null
+            this.cliStopping = false
+            this.hooks.toast('Claude Code did not stop — close it in the CLI (/exit), then switch back')
+            return
+          }
+        } else {
+          const gone = () => !this.tuiUp
+          for (let round = 0; round < 3 && !gone(); round++) {
+            window.ember.write(this.session.id, '\x03')
+            await sleep(250)
+            if (gone()) break
+            window.ember.write(this.session.id, '\x03')
+            for (let i = 0; i < 20 && !gone(); i++) await sleep(150)
+          }
+          if (!gone()) {
+            this.hooks.toast('Claude Code did not exit — close it in the CLI (/exit), then switch back')
+            return
+          }
         }
       }
+      // Where the TUI ended: the transcript written last in the folder since the CLI view
+      // opened (a /clear or /resume moves it), else what its status line or panel said.
+      const latest = await window.ember.claude.latestSession(n.folder, this.cliSince).catch(() => '')
       const st = this.status && this.status.at >= this.cliSince ? this.status.sessionId : ''
-      const id = st || (await window.ember.claude.boundSession(this.tabId)) || n.resumableId
+      const id = latest || st || (await window.ember.claude.boundSession(this.tabId)) || n.resumableId
       this.raw = false
       const input = n.input
       this.session.focusInstead = () => input.focus()
@@ -1320,16 +1227,61 @@ export class LoomView {
     }
   }
 
+  /**
+   * Claude Code typed by hand in this shell, taken onto the canvas: the CLI view's way back,
+   * for a tab that was never a Claude tab. Its processes are stopped (the shell stays), and
+   * the session it was on is resumed here, driven by the canvas from then on.
+   */
+  private async adoptTui(): Promise<void> {
+    if (this.native || this.cliBusy || !this.handRunClaude()) return
+    if (this.rowsText().some((r) => /esc to interrupt/i.test(r))) {
+      this.hooks.toast('Claude is working — Esc to stop it first, then open it on the canvas')
+      return
+    }
+    // The session it is on, said by its status line (or the panel server) — before it goes.
+    const id = this.status?.sessionId || (await window.ember.claude.boundSession(this.tabId))
+    if (!id) {
+      this.hooks.toast('Could not tell which session this is — /exit, then open a Claude tab with +')
+      return
+    }
+    this.cliBusy = true
+    try {
+      const from = this.session.prompts
+      const gone = () => this.session.prompts > from && this.session.term.buffer.active.type !== 'alternate'
+      await window.ember.stopChildren(this.session.id)
+      for (let i = 0; i < 40 && !gone(); i++) await sleep(150)
+      if (!gone()) {
+        this.hooks.toast('Claude Code did not exit — close it (/exit), then try again')
+        return
+      }
+      // What a stopped TUI left switched on (the alternate screen, mouse and key reporting).
+      this.session.term.write('\x1b[?1049l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1004l\x1b[?2004l\x1b[<u\x1b[?25h\x1b[0m')
+      this.raw = false
+      this.mode = 'shell'
+      this.attachNative({ cwd: this.session.cwd || this.session.initialCwd || undefined, resume: id })
+      this.hooks.nativeSession?.()
+      this.layout()
+      ;(this.native as NativeClaude | null)?.input.focus()
+    } finally {
+      this.cliBusy = false
+    }
+  }
+
   /** The line that opens the session in the shell: in its folder, on its id. */
   private cliCommand(id: string, folder: string): string {
-    const shellName = (this.session.profile.command || '').toLowerCase()
-    const ps = /pwsh|powershell/.test(shellName) || !shellName
-    const bin = LoomView.cliBin
-    const run = `${bin}${id ? ` --resume ${id}` : ''}`
-    const here = (this.session.cwd || this.session.initialCwd || '').replace(/[\\/]+$/, '').toLowerCase()
+    // Probes: `node "<stand-in>.mjs" --log "<file>"`, or the stand-in's path alone.
+    const stand = /^node\s+"([^"]+)"(?:\s+--log\s+"([^"]+)")?$/.exec(LoomView.cliBin)
+    const bin = stand ? stand[1]! : LoomView.cliBin
+    const log = stand?.[2] ?? ''
+    const q = (s: string) => `'${s.replace(/'/g, "''")}'`
     const there = folder.replace(/[\\/]+$/, '')
+    if (this.psShell) {
+      return `__emberCli -Tok ${this.cliToken}${id ? ` -Id ${id}` : ''}${there ? ` -Dir ${q(there)}` : ''}${bin !== 'claude' ? ` -Bin ${q(bin)}` : ''}${log ? ` -BinLog ${q(log)}` : ''}`
+    }
+    const run = `${bin === 'claude' ? 'claude' : `node '${bin}'${log ? ` --log '${log}'` : ''}`}${id ? ` --resume ${id}` : ''}`
+    const here = (this.session.cwd || this.session.initialCwd || '').replace(/[\\/]+$/, '').toLowerCase()
     if (!there || there.toLowerCase() === here) return run
-    return ps ? `Set-Location -LiteralPath '${there.replace(/'/g, "''")}'; ${run}` : `cd '${there.replace(/'/g, `'\\''`)}' && ${run}`
+    return `cd '${there.replace(/'/g, `'\\''`)}' && ${run}`
   }
 
   /** Words into the tab's terminal as typed, then Enter on its own (a burst ending in Enter reads as a paste). */
@@ -1343,15 +1295,13 @@ export class LoomView {
   private async tuiPrompt(timeoutMs: number): Promise<boolean> {
     const until = Date.now() + timeoutMs
     while (Date.now() < until) {
-      if (this.disposed || !this.native?.inCli) return false
-      // Full-screen or inline, Claude Code's input box is a rule, the `❯` line and a rule.
-      if (this.session.prompts === this.cliPrompts) {
-        const dock = this.findDock(this.rowsText())
-        if (dock && !dock.dialog && dock.box) {
-          // A beat for the prompt to take keys after it is drawn.
-          await sleep(400)
-          return true
-        }
+      if (this.disposed || !this.native?.inCli || !this.tuiUp) return false
+      // Claude Code's input box is a rule with the `❯` line under it.
+      const rows = this.rowsText()
+      if (rows.some((r, y) => y > 0 && TUI_PROMPT.test(r) && TUI_RULE.test(rows[y - 1]!.trim()))) {
+        // A beat for the prompt to take keys after it is drawn.
+        await sleep(400)
+        return true
       }
       await sleep(200)
     }
@@ -1359,12 +1309,25 @@ export class LoomView {
   }
 
   /** A native tab's session, as remembered across restarts: '' until it has a transcript. */
-  get nativeSession(): { sessionId: string; cwd: string } | null {
-    return this.native ? { sessionId: this.native.resumableId, cwd: this.native.folder } : null
+  get nativeSession(): { sessionId: string; cwd: string; title?: string } | null {
+    const n = this.native
+    return n ? { sessionId: n.resumableId, cwd: n.folder, ...(n.title ? { title: n.title } : {}) } : null
+  }
+
+  /** A message to a Claude tab's session, as if typed and sent (a todo's brief). */
+  sendNative(text: string): void {
+    this.native?.send(text)
+  }
+
+  /** The tab was renamed from its card: the session takes the name. False when this is no Claude tab. */
+  renameSession(title: string): boolean {
+    if (!this.native) return false
+    this.native.rename(title)
+    return true
   }
 
   /** For the sidebar card: a native tab is Claude Code, in its folder. */
-  get nativeCard(): { folder: string; cli: boolean; status: ClaudeStatus | null } | null {
+  get nativeCard(): { folder: string; cli: boolean; title: string; status: ClaudeStatus | null } | null {
     const n = this.native
     if (!n) return null
     const s = this.nativeState
@@ -1377,7 +1340,7 @@ export class LoomView {
         : name || s?.context != null
           ? { tabId: this.tabId, sessionId: n.resumableId, model: name, contextPercent: s?.context ?? null, contextSize: null, costUsd: null, durationMs: null, cacheWarm: null, at: 0 }
           : null
-    return { folder: n.folder || this.session.cwd || this.session.initialCwd || '', cli: n.inCli, status }
+    return { folder: n.folder || this.session.cwd || this.session.initialCwd || '', cli: n.inCli, title: n.title, status }
   }
 
   private bang: { token: string; done: (code: number | null, output: string) => void } | null = null
@@ -1453,74 +1416,6 @@ export class LoomView {
       input.focus()
       input.setSelectionRange(input.value.length, input.value.length)
     }
-  }
-
-  /**
-   * Claude Code's own spinner line — "✶ Pondering… (12s · esc to interrupt)" — mirrored
-   * at the foot of the canvas. The transcript only grows when a block is complete; this is
-   * what says the session is alive in between.
-   */
-  private readLive(rows: string[], dock: Dock | null): void {
-    this.readQueue(rows)
-    // Mid-turn, Claude Code keeps a spinner row just above its input box: one verb and an
-    // ellipsis, then the details — "✢ Whisking… (4s · ↓ 88 tokens · thinking)". Finished,
-    // the same row reads "✻ Churned for 3s · done 4:17 PM", with no ellipsis. The mode
-    // line's "esc to interrupt" would say the same, but Ember's status line takes its place.
-    let found = ''
-    const end = dock ? dock.top : rows.length
-    for (let y = end - 1; y >= 0 && y >= end - 16; y--) {
-      const r = rows[y]!.trim()
-      if (/^\S\s+[A-Z][a-z]+(?:-[a-z]+)?…(?:\s|$)/.test(r)) {
-        found = r
-        break
-      }
-    }
-    if (!found && dock && rows.slice(dock.top, dock.bottom + 1).some((r) => /esc to interrupt/i.test(r))) found = '· working…'
-    const was = this.working
-    this.working = !!found
-    if (found) {
-      // "✢ Whisking… (4s · ↓ 88 tokens)": the glyph, the verb, and the details.
-      const m = /^(\S)\s+(\S+…)\s*(.*)$/.exec(found)
-      this.spin = {
-        glyph: m?.[1] ?? '·',
-        verb: m?.[2] ?? 'Working…',
-        detail: (m?.[3] ?? '').replace(/^\(|\)$/g, '').replace(/\s*·\s*esc to interrupt/i, ''),
-      }
-    }
-    this.renderNow()
-    if (was !== this.working) {
-      this.restage()
-      this.trail.classList.toggle('is-on', this.working && this.trail.childElementCount > 0)
-      if (!this.working) this.clearTrail()
-    }
-  }
-
-  /**
-   * Messages queued while Claude works. Claude Code draws each as a `❯ text` line, the
-   * block followed by "ctrl+x ctrl+s to send now"; they leave once the turn picks them up.
-   */
-  private readQueue(rows: string[]): void {
-    const items: string[] = []
-    const hint = rows.findIndex((r) => /^\s+ctrl\+x ctrl\+s to send now/i.test(r))
-    if (hint > 0) {
-      const block: string[] = []
-      for (let y = hint - 1; y >= 0 && rows[y]!.trim(); y--) block.unshift(rows[y]!)
-      for (const line of block) {
-        if (/^[❯>]\s/.test(line)) items.push(line.replace(/^[❯>]\s+/, '').trim())
-        else if (items.length) items[items.length - 1] += ` ${line.trim()}`
-      }
-    }
-    const key = items.join('')
-    if (key === this.queueKey) return
-    this.queueKey = key
-    this.queue.innerHTML =
-      items
-        .map((t) => `<div class="loom-queue-item"><span class="loom-queue-tag">queued</span><span class="loom-queue-text">${escapeHtml(t)}</span></div>`)
-        .join('') +
-      (items.length
-        ? `<div class="loom-queue-foot"><span>Sent when this turn ends</span><button type="button" data-q="send" title="Send now, without waiting for the turn to end (Ctrl+X Ctrl+S)">Send now</button></div>`
-        : '')
-    this.queue.classList.toggle('has-items', items.length > 0)
   }
 
   private onAgentEvent(e: Parameters<NonNullable<import('./Feed').FeedContext['agent']>>[0]): void {
@@ -1717,6 +1612,10 @@ export class LoomView {
       else if (!on && this.native.inCli) void this.backToCanvas()
       return
     }
+    if (!on && this.handRunClaude()) {
+      void this.adoptTui()
+      return
+    }
     this.raw = on
     this.hooks.saveView?.(on ? 'cli' : 'canvas')
     this.schedule()
@@ -1757,6 +1656,12 @@ export class LoomView {
         e.preventDefault()
         e.stopPropagation()
         this.setRaw(!this.native.inCli)
+        return
+      }
+      if (this.handRunClaude()) {
+        e.preventDefault()
+        e.stopPropagation()
+        void this.adoptTui()
         return
       }
       if (this.mode === 'claude' || this.mode === 'agent' || this.mode === 'raw') {
@@ -4632,125 +4537,31 @@ export class LoomView {
   private barKey = ''
   private cost: EmberCost | null = null
 
-  /**
-   * Claude Code's mode line and Ember's status line, said again under the frame: the
-   * permission mode as a chip (click it, or Shift+Tab, to cycle), the model, how full
-   * the context is, the cost. Whatever else the mode line says is kept, dimmed.
-   */
+  /** Another agent's status lines (Codex), said again under the frame. */
   private renderBar(foot: string[]): void {
     const lines = foot.map((r) => r.trim()).filter(Boolean)
-    const modeRe = /shift\+tab|for shortcuts|permissions on|accept edits|plan mode|auto mode|esc to interrupt|for agents/i
-    const modeLine = lines.find((r) => modeRe.test(r)) ?? ''
-    const key = `${modeLine}|${this.status?.at ?? ''}|${this.cost?.tokens ?? ''}|${this.status ? '' : lines.join('|')}`
+    const key = lines.join('|')
     if (key === this.barKey) return
     this.barKey = key
-
-    const modes: Array<[RegExp, string, string]> = [
-      [/bypass permissions on/i, 'bypass', 'is-bypass'],
-      [/accept edits on/i, 'accept edits', 'is-edits'],
-      [/plan mode on/i, 'plan', 'is-plan'],
-      [/auto mode on/i, 'auto', 'is-auto'],
-      [/manual mode on/i, 'manual', 'is-default'],
-    ]
-    const hit = modes.find(([re]) => re.test(modeLine))
-    const rest = modeLine
-      .replace(hit?.[0] ?? /^$/, '')
-      .replace(/\(shift\+tab to cycle\)/i, '')
-      .replace(/^[^\w(←?]+/u, '')
-      .split(/\s+·\s+/)
-      .map((x) => x.trim())
-      .filter((x) => x && !/^[⏵⏸▶►]+$/u.test(x))
-      .join(' · ')
-
-    const parts: string[] = []
-    // Another agent's bar: its own status text, without Claude's permission modes.
-    const other = !!this.session.announcedAgent && this.session.announcedAgent !== 'claude'
-    if (other) {
-      const said = lines.filter((r) => !/for shortcuts|^⚠\s*\d*$/.test(r)).map((r) => r.replace(/\s+⚠\s*\d+\s*$/, ''))
-      const name = agentSpec(this.session.announcedAgent ?? '').name
-      this.bar.innerHTML = `<span class="loom-bar-model">${escapeHtml(name)}</span>${said.length ? `<span class="loom-bar-rest">${escapeHtml(said.join(' · '))}</span>` : ''}`
-      return
-    }
-    parts.push(`<button type="button" class="loom-bar-mode ${hit?.[2] ?? 'is-default'}" title="Permission mode — click or Shift+Tab to cycle"><i></i>${escapeHtml(hit?.[1] ?? 'default')}</button>`)
-    const st = this.status
-    if (st) {
-      const size = st.contextSize && st.contextSize >= 1_000_000 && !/context|1M/i.test(st.model) ? ' 1M' : ''
-      parts.push(`<span class="loom-bar-model">${escapeHtml(st.model)}${size}</span>`)
-      if (st.contextPercent != null) {
-        const p = Math.max(0, Math.min(100, Math.round(st.contextPercent)))
-        parts.push(`<span class="loom-bar-ctx${p >= 80 ? ' is-high' : ''}" title="Context used"><i style="--p:${p}%"></i>${p}%</span>`)
-      }
-      if (st.costUsd != null) parts.push(`<span class="loom-bar-cost" title="This session, all of it">$${st.costUsd.toFixed(2)}</span>`)
-    } else {
-      const other = lines.filter((r) => r !== modeLine).join(' · ')
-      if (other) parts.push(`<span class="loom-bar-model">${escapeHtml(other)}</span>`)
-    }
-    const c = this.cost
-    if (c && c.tokens) {
-      const share = st?.costUsd ? ` · ${Math.round((c.usd / st.costUsd) * 100)}%` : ''
-      const tip =
-        `What Ember's own tools cost this session (estimate):
-` +
-        `  written into them  ${fmtTokens(c.outTokens)}
-` +
-        `  re-read while in context  ${fmtTokens(c.carryTokens)}
-` +
-        `  tool instructions and definitions  ${fmtTokens(c.overheadTokens)}
-` +
-        `over ${c.calls} calls`
-      parts.push(`<span class="loom-bar-ember" title="${escapeHtml(tip)}">Ember ${fmtTokens(c.tokens)} · $${c.usd.toFixed(2)}${share}</span>`)
-    }
-    parts.push(`<span class="loom-bar-rest">${escapeHtml(rest)}</span>`)
-    this.bar.innerHTML = parts.join('')
+    const said = lines.filter((r) => !/for shortcuts|^⚠\s*\d*$/.test(r)).map((r) => r.replace(/\s+⚠\s*\d+\s*$/, ''))
+    const name = agentSpec(this.session.announcedAgent ?? '').name
+    this.bar.innerHTML = `<span class="loom-bar-model">${escapeHtml(name)}</span>${said.length ? `<span class="loom-bar-rest">${escapeHtml(said.join(' · '))}</span>` : ''}`
   }
 
-  /** What this view believes, for probes and for support: `window.__ember.loom()`. */
-  // ================================================================ pasted pictures
+  /** What Ember's own tools cost the session, as a chip on the bar. */
+  private emberCost(): string {
+    const c = this.cost
+    if (!c || !c.tokens) return ''
+    const tip =
+      `What Ember's own tools cost this session (estimate):\n` +
+      `  written into them  ${fmtTokens(c.outTokens)}\n` +
+      `  re-read while in context  ${fmtTokens(c.carryTokens)}\n` +
+      `  tool instructions and definitions  ${fmtTokens(c.overheadTokens)}\n` +
+      `over ${c.calls} calls`
+    return `<span class="loom-bar-ember" title="${escapeHtml(tip)}">Ember ${fmtTokens(c.tokens)} · $${c.usd.toFixed(2)}</span>`
+  }
 
   private readonly above = div('loom-above')
-  private readonly attach = div('loom-attach')
-  /** Pictures pasted into Claude's prompt, each with the number Claude gave it once seen. */
-  private pasted: Array<{ url: string; n: number | null; at: number }> = []
-  private attachKey = ''
-
-  /** Claude Code is in this tab (on the canvas or in its own view): Alt+V pastes a picture. */
-  get isClaude(): boolean {
-    return this.claudeSeen
-  }
-
-  /** A picture was just pasted (App sent Claude Alt+V): show it until it is sent. */
-  pastedImage(url: string): void {
-    this.pasted.push({ url, n: null, at: Date.now() })
-    this.schedule()
-  }
-
-  /**
-   * Match the pasted pictures to the "[Image #n]" marks in Claude's prompt. A new mark
-   * belongs to the oldest paste still waiting for one; a paste Claude never marked (no
-   * picture after all) goes after a few seconds; a mark that left the prompt — deleted,
-   * or sent — takes its thumbnail with it.
-   */
-  private syncAttach(prompt: string): void {
-    const marks = [...prompt.matchAll(/\[Image #(\d+)\]/g)].map((m) => Number(m[1]))
-    for (const n of marks) {
-      if (this.pasted.some((p) => p.n === n)) continue
-      const p = this.pasted.find((x) => x.n === null)
-      if (p) p.n = n
-    }
-    const now = Date.now()
-    this.pasted = this.pasted.filter((p) => {
-      const keep = p.n === null ? now - p.at < 5000 : marks.includes(p.n)
-      if (!keep) URL.revokeObjectURL(p.url)
-      return keep
-    })
-    const key = this.pasted.map((p) => `${p.n ?? '…'}`).join(',')
-    if (key === this.attachKey) return
-    this.attachKey = key
-    this.attach.innerHTML = this.pasted
-      .map((p) => `<figure class="loom-attach-item${p.n === null ? ' is-wait' : ''}"><img src="${p.url}" alt=""><figcaption>${p.n === null ? 'Attaching…' : `Image #${p.n}`}</figcaption></figure>`)
-      .join('')
-    this.attach.classList.toggle('has-items', this.pasted.length > 0)
-  }
 
   /** Probe-only: hand the canvas transcript lines as if they came from the session's log. */
   feedForProbe(lines: Array<Record<string, unknown>>): void {
@@ -4789,7 +4600,7 @@ export class LoomView {
     return {
       hint: !this.hint.classList.contains('is-gone') && this.el.classList.contains('is-on'),
       cliLine: this.cliLine,
-      tuiRunning: this.cliPrompts >= 0 && this.session.prompts === this.cliPrompts,
+      tuiRunning: this.tuiUp,
       bar: this.bar.innerText,
       native: this.native?.debug() ?? null,
       text: this.feed.el.innerText,

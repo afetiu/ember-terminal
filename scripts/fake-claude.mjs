@@ -65,6 +65,8 @@ const MODELS = [
 const FILES = ['src\\', 'src\\main.ts', 'src\\renderer\\', 'scripts\\probe.mjs', 'README.md', 'package.json']
 
 let turn = null
+/** The permission mode, as set_permission_mode leaves it (reported by system/init). */
+let mode = 'default'
 const queue = []
 const asks = new Map()
 
@@ -101,14 +103,24 @@ async function run(m) {
     // A new conversation, as Claude Code starts one: a new id, the command and its (empty) output.
     sid = randomUUID()
     ctxPct = 1
-    out({ type: 'system', subtype: 'init', model, permissionMode: 'default', cwd: process.cwd(), terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
+    out({ type: 'system', subtype: 'init', model, permissionMode: mode, cwd: process.cwd(), terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
     out({ ...m, isReplay: true })
     out({ type: 'user', message: { role: 'user', content: '<local-command-stdout></local-command-stdout>' }, isReplay: true, parent_tool_use_id: null, uuid: randomUUID() })
     out({ type: 'result', subtype: 'success', is_error: false, terminal_reason: 'completed', result: '', local_command: 'clear', user_message_uuid: uuid, uuid: randomUUID() })
     return finish(me, uuid)
   }
+  const named = /^\/(?:name|rename)\s+(.+)$/.exec(said0.trim())
+  if (named) {
+    // As the real one answers /name (2.1.3xx): the new title, init, the command's output as a
+    // synthetic assistant message, a result. Nothing goes to the model.
+    out({ type: 'system', subtype: 'session_title_changed', title: named[1], uuid: randomUUID(), session_id: sid })
+    out({ type: 'system', subtype: 'init', model, permissionMode: mode, cwd: process.cwd(), terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
+    out({ type: 'assistant', message: { id: randomUUID(), model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: `Session renamed to: ${named[1]}` }] }, parent_tool_use_id: null, uuid: randomUUID() })
+    out({ type: 'result', subtype: 'success', is_error: false, terminal_reason: 'completed', result: '', user_message_uuid: uuid, uuid: randomUUID() })
+    return finish(me, uuid)
+  }
   ctxPct += 9
-  out({ type: 'system', subtype: 'init', model, permissionMode: 'default', cwd: process.cwd(), effort: 'medium', terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
+  out({ type: 'system', subtype: 'init', model, permissionMode: mode, cwd: process.cwd(), effort: 'medium', terminal_slash_commands: ['fake-terminal-only'], uuid: randomUUID() })
   out({ ...m, isReplay: true })
   out({ type: 'system', subtype: 'status', status: 'requesting', user_message_uuids: [uuid], uuid: randomUUID() })
   let text = said0
@@ -260,7 +272,19 @@ process.stdin.on('data', (d) => {
         reply({})
       } else if (r.subtype === 'get_context_usage') {
         reply({ percentage: ctxPct, totalTokens: ctxPct * 2000, maxTokens: 200000, categories: [] })
+      } else if (r.subtype === 'get_settings') {
+        // FAKE_CLAUDE_SETTINGS: the effective settings to report (JSON); by default a
+        // defaultMode, so Ember leaves the starting mode alone.
+        let effective = { permissions: { defaultMode: 'default' } }
+        try {
+          if (process.env.FAKE_CLAUDE_SETTINGS) effective = JSON.parse(process.env.FAKE_CLAUDE_SETTINGS)
+        } catch {}
+        reply({ effective, sources: {}, applied: {} })
+      } else if (r.subtype === 'rename_session') {
+        reply({})
+        out({ type: 'system', subtype: 'session_title_changed', title: r.title, uuid: randomUUID(), session_id: sid })
       } else if (r.subtype === 'set_permission_mode') {
+        mode = r.mode
         reply({})
         out({ type: 'system', subtype: 'status', status: null, permissionMode: r.mode, uuid: randomUUID() })
       } else {

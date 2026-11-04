@@ -299,6 +299,8 @@ export interface ClaudeStartOptions {
   cwd?: string
   /** Pick up this session instead of starting a new one. */
   resume?: string
+  /** Back from the CLI view: start in the permission mode the TUI left the session in. */
+  followMode?: boolean
 }
 
 export interface ClaudeStartResult {
@@ -338,6 +340,8 @@ export type ClaudeControlRequest =
   | { subtype: 'set_model'; model: string | null }
   /** Only the effort level: the one flag setting the bar changes. */
   | { subtype: 'apply_flag_settings'; settings: { effortLevel: string } }
+  /** The tab was renamed: the session takes the same name. */
+  | { subtype: 'rename_session'; title: string }
 
 /**
  * A native tab, as remembered across restarts (`native-tabs.json` under EMBER_HOME): the
@@ -347,6 +351,8 @@ export type ClaudeControlRequest =
 export interface NativeTabState {
   sessionId: string
   cwd: string
+  /** The session's name (`/rename`, `/name`, the tab's rename), when it has one. */
+  title?: string
 }
 
 /** What a tab's Claude Code process said, as main passes it on. */
@@ -477,12 +483,6 @@ export interface EmberConfig {
   agent: AgentConfig
   /** How an agent tab shows by default: Ember's canvas, or the agent's own screen. Remembered. */
   agentView?: 'canvas' | 'cli'
-  /**
-   * `native`: a Claude tab on the canvas runs Claude Code in its structured mode and the
-   * canvas draws it from data, instead of reading its screen. Off by default while it is
-   * a preview (docs/specs/canvas-native.md).
-   */
-  canvas?: { native?: boolean }
   /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
   brain?: { sync: boolean }
   /**
@@ -723,6 +723,8 @@ export interface EmberBridge {
   write(sessionId: string, data: string): void
   resize(sessionId: string, cols: number, rows: number): void
   kill(sessionId: string): void
+  /** Stop what the session's shell is running (its child processes), not the shell. */
+  stopChildren(sessionId: string): Promise<number>
   /**
    * Ack-based flow control: the renderer reports how many chars xterm has actually
    * flushed, so main can pause the pty before the renderer drowns in a firehose.
@@ -906,6 +908,8 @@ export interface EmberBridge {
     savedTabs(): Promise<NativeTabState[]>
     /** The session a tab's Claude last reported (panel server or status line): '' if none. */
     boundSession(tabId: string): Promise<string>
+    /** The session in `cwd` whose transcript changed last, at or after `since` (ms): '' if none. */
+    latestSession(cwd: string, since: number): Promise<string>
   }
   window: {
     minimize(): void

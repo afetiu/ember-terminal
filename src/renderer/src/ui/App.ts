@@ -325,7 +325,7 @@ export class App {
       newTab: () => this.newGroup().then((g) => g.id),
       /** A Loom tab, and what its canvas believes. */
       newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
-      /** A Claude tab, as + opens one: native when canvas.native is on (scripts/probe-native.mjs). */
+      /** A Claude tab, as + opens one: the canvas drives Claude Code (scripts/probe-native.mjs). */
       newClaude: (cwd?: string) => this.newGroup(undefined, cwd, { agent: 'claude' }).then((g) => g.id),
       /** Probes: what the CLI view runs as `claude` (a stand-in TUI). */
       cliBin: (bin: string) => {
@@ -342,8 +342,6 @@ export class App {
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
       /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
       loomSwitch: (id: string, first = false, fresh = false) => this.groups.find((g) => g.id === id)?.loom?.switchForProbe(first, fresh),
-      /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
-      loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
       /** From now on, record what would be typed into sessions instead of typing it; `sends()` reads it. */
       recordSends: () => {
         this.probeSends = []
@@ -598,11 +596,11 @@ export class App {
       this.startFirstRun()
       return
     }
-    // Native canvas: the Claude tabs open at the last quit come back, each on its own
-    // session (`--resume`), in its folder. Live sessions, not a replay of old text.
-    const saved = this.config.canvas?.native === true ? await window.ember.claude.savedTabs().catch(() => []) : []
+    // The Claude tabs open at the last quit come back, each on its own session
+    // (`--resume`), in its folder, with its name. Live sessions, not a replay of old text.
+    const saved = await window.ember.claude.savedTabs().catch(() => [])
     if (saved.length) {
-      for (const t of saved) await this.newGroup(undefined, t.cwd || undefined, { agent: 'claude', ...(t.sessionId ? { resume: t.sessionId } : {}) })
+      for (const t of saved) await this.newGroup(undefined, t.cwd || undefined, { agent: 'claude', ...(t.sessionId ? { resume: t.sessionId } : {}), ...(t.title ? { title: t.title } : {}) })
       this.scheduleSpare()
       return
     }
@@ -860,7 +858,7 @@ export class App {
     this.sidebar.setProvider(AGENTS[id].name)
   }
 
-  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId; resume?: string }): Promise<Group> {
+  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId; resume?: string; title?: string }): Promise<Group> {
     const marks: Record<string, number> = {}
     let last = performance.now()
     const lap = (k: string) => {
@@ -888,9 +886,9 @@ export class App {
 
     const session = warm?.session ?? this.makeSession(profileId)
     if (cwd) session.initialCwd = cwd
-    // Native canvas (canvas.native): a Claude tab's Claude Code is started by the canvas,
-    // in structured mode, not by the shell. The shell stays a plain shell underneath.
-    const native = opts?.agent === 'claude' && opts?.loom !== false && this.config.canvas?.native === true
+    // A Claude tab's Claude Code is started by the canvas, in structured mode, not by the
+    // shell. The shell stays a plain shell underneath.
+    const native = opts?.agent === 'claude' && opts?.loom !== false
     if (opts?.agent && !native) session.startAgent = opts.agent
     session.tabId = group.id
     if (!warm) group.add(session)
@@ -909,8 +907,11 @@ export class App {
           this.config = { ...this.config, agentView: view }
           window.ember.saveConfig(this.config)
         },
-        nativeSession: () => this.saveNativeTabs(),
-      }, native ? { ...(cwd ? { cwd } : {}), ...(opts?.resume ? { resume: opts.resume } : {}) } : null)
+        nativeSession: () => {
+          this.saveNativeTabs()
+          this.syncTabs()
+        },
+      }, native ? { ...(cwd ? { cwd } : {}), ...(opts?.resume ? { resume: opts.resume } : {}), ...(opts?.title ? { title: opts.title } : {}) } : null)
     }
     lap('session')
     sound.play('open')
@@ -1687,13 +1688,19 @@ export class App {
    * it. Coming up takes several seconds; the brief goes in when the agent is on screen.
    */
   private async startSession(task: string, cwd: string, name: string): Promise<void> {
+    const agent = AGENTS[this.config.agent.default] ?? AGENTS.claude
+    if (agent.id === 'claude') {
+      // A Claude tab: the brief goes in as its first message, queued until Claude Code is up.
+      const group = await this.newGroup(undefined, cwd || undefined, { agent: 'claude', ...(name ? { title: name.slice(0, 40) } : {}) })
+      group.loom?.sendNative(task)
+      return
+    }
     const group = await this.newGroup(undefined, cwd || undefined)
     if (name) group.customTitle = name.slice(0, 40)
     const session = group.focused
     if (!session) return
     // Start the chosen agent, then wait for it to come up before briefing it. Typing the
     // brief at a shell prompt would run it as a command.
-    const agent = AGENTS[this.config.agent.default] ?? AGENTS.claude
     window.ember.write(session.id, `${[agent.bin, ...(agent.unattended ?? [])].join(' ')}\r`)
     void this.briefWhenOnScreen(group.id, session.id, task)
   }
@@ -1873,7 +1880,9 @@ export class App {
   private renameGroup(id: string, title: string): void {
     const group = this.groups.find((g) => g.id === id)
     if (!group) return
-    group.customTitle = title || null
+    // A Claude tab's name is its session's: Claude Code is told, and the card follows it.
+    if (group.loom?.renameSession(title)) group.customTitle = null
+    else group.customTitle = title || null
     this.syncTabs()
   }
 
@@ -2084,7 +2093,8 @@ export class App {
       const folder = native ? folderName(native.folder) : ''
       return {
         id: g.id,
-        title: native && !g.customTitle ? `Claude Code${folder ? ` · ${folder}` : ''}${native.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        // Its name when the session has one (`/rename`, the card's rename), else Claude Code in its folder.
+        title: native ? `${native.title || g.customTitle || `Claude Code${folder ? ` · ${folder}` : ''}`}${native.cli ? ' (CLI)' : ''}` : g.displayTitle,
         subtitle: native ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
@@ -2180,33 +2190,11 @@ export class App {
   private swallowPasteUntil = 0
 
   /**
-   * Paste with terminal semantics: LF becomes CR, as xterm's own paste does.
-   *
-   * An image, though, cannot travel as text. When the clipboard holds one (a screenshot,
-   * a copied picture) and Claude Code is in the tab, Claude is sent its own image-paste
-   * key, Alt+V on Windows: it reads the clipboard itself and attaches the picture as
-   * "[Image #n]", exactly as it would natively. The canvas shows a thumbnail of it above
-   * the input until the message goes.
+   * Paste with terminal semantics: LF becomes CR, as xterm's own paste does. (A Claude
+   * tab's own input takes pictures itself; the terminal only ever gets text.)
    */
   private pasteClipboard(): void {
     void (async () => {
-      const group = this.activeGroup
-      const session = group?.focused
-      if (session && group?.loom?.isClaude) {
-        try {
-          const items = await navigator.clipboard.read()
-          const text = items.some((i) => i.types.includes('text/plain'))
-          const img = items.find((i) => i.types.some((t) => t.startsWith('image/')))
-          if (img && !text) {
-            const blob = await img.getType(img.types.find((t) => t.startsWith('image/'))!)
-            window.ember.write(session.id, '\x1bv')
-            group.loom.pastedImage(URL.createObjectURL(blob))
-            return
-          }
-        } catch {
-          /* no clipboard access: fall back to text */
-        }
-      }
       const text = await navigator.clipboard.readText()
       if (text) this.sendInput(text.replace(/\r?\n/g, '\r'))
     })()

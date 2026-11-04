@@ -1,6 +1,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, openSync, readFileSync, readSync, realpathSync, statSync, writeFileSync } from 'node:fs'
+import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { delimiter, extname, join } from 'node:path'
 import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
@@ -10,7 +11,7 @@ import { bridgeEnv } from './bridge.js'
 import { CONFIG_DIR, loadConfig, resolveHome } from './config.js'
 import { NOTES_DIR } from './notes.js'
 import { cleanEnv } from './pty/ConPtyHost.js'
-import { boundSession } from './transcript.js'
+import { boundSession, projectSlug, transcriptFile } from './transcript.js'
 
 /**
  * Claude Code in its structured mode, one process per canvas tab.
@@ -163,15 +164,31 @@ class ClaudeHost {
     })
 
     // `initialize` goes first, before anything else is written.
-    void this.control({ subtype: 'initialize', hooks: {}, supportedDialogKinds: [] }, INIT_TIMEOUT_MS).then((r) => {
+    void this.control({ subtype: 'initialize', hooks: {}, supportedDialogKinds: [] }, INIT_TIMEOUT_MS).then(async (r) => {
       if (this.child !== child) return
       if (!r.ok) {
         this.emit({ tabId: this.tabId, kind: 'error', text: `Claude Code did not start: ${r.error ?? 'no answer'}` })
         return
       }
+      const info = summarise(r.response ?? {})
+      // Before the first message goes: the mode the TUI would start in, the effort the
+      // settings give, the name the session already has.
+      const said = opts.resume ? sessionFacts(transcriptFile(opts.resume, cwd)) : { title: '', mode: '' }
+      const settings = await this.control({ subtype: 'get_settings' }, CONTROL_TIMEOUT_MS)
+      if (this.child !== child) return
+      const eff = (settings.ok ? ((settings.response?.['effective'] ?? {}) as Json) : {}) as Json
+      const level = String(eff['effortLevel'] ?? '')
+      if (EFFORTS.has(level)) info['effort'] = level
+      if (said.title) info['title'] = said.title
+      const want = startMode(opts.followMode ? said.mode : '', !!((eff['permissions'] ?? {}) as Json)['defaultMode'])
+      if (want && want !== info['permissionMode']) {
+        const m = await this.control({ subtype: 'set_permission_mode', mode: want }, CONTROL_TIMEOUT_MS)
+        if (this.child !== child) return
+        if (m.ok) info['permissionMode'] = want
+      }
       this.ready = true
       for (const line of this.held.splice(0)) this.write(line)
-      this.emit({ tabId: this.tabId, kind: 'ready', info: summarise(r.response ?? {}) })
+      this.emit({ tabId: this.tabId, kind: 'ready', info })
     })
     return { ok: true, sessionId: this.sessionId, ...(child.pid ? { pid: child.pid } : {}) }
   }
@@ -393,6 +410,11 @@ function sanitizeControl(req: ClaudeControlRequest): Json | null {
       // A model id or alias as `initialize.models` lists them ('default', 'sonnet[1m]', 'claude-haiku-5-5'), or null.
       if (req.model === null) return { subtype: 'set_model', model: null }
       return typeof req.model === 'string' && MODEL_RE.test(req.model) ? { subtype: 'set_model', model: req.model } : null
+    case 'rename_session': {
+      // A name from the tab's own rename: one line, as /rename takes it.
+      const title = String(req.title ?? '').replace(/[\0-\x1f]/g, ' ').trim().slice(0, 120)
+      return title ? { subtype: 'rename_session', title, source: 'host' } : null
+    }
     case 'apply_flag_settings': {
       const level = String(req.settings?.effortLevel ?? '')
       return EFFORTS.has(level) ? { subtype: 'apply_flag_settings', settings: { effortLevel: level } } : null
@@ -429,6 +451,128 @@ function killTreeNow(child: ChildProcess): void {
   else child.kill('SIGKILL')
 }
 
+// ------------------------------------------------------------------ what a session starts with
+
+/**
+ * What the transcript knows that structured mode does not say on `--resume`: the name the
+ * session was given (`/rename`, `/name`, a rename from the tab) and the permission mode it
+ * was last in. Read once per start; a transcript is a few MB at most.
+ */
+function sessionFacts(file: string): { title: string; mode: string } {
+  let title = ''
+  let mode = ''
+  try {
+    if (!existsSync(file) || statSync(file).size > 64 * 1024 * 1024) return { title, mode }
+    for (const line of readFileSync(file, 'utf8').split('\n')) {
+      if (line.includes('"custom-title"')) {
+        try {
+          const o = JSON.parse(line) as Json
+          if (o['type'] === 'custom-title' && typeof o['customTitle'] === 'string') title = o['customTitle']
+        } catch {
+          /* a torn line */
+        }
+      }
+      const m = /"permissionMode":"([a-zA-Z]+)"/.exec(line)
+      if (m) mode = m[1]!
+    }
+  } catch {
+    /* unreadable: nothing known */
+  }
+  return { title: title.slice(0, 120), mode }
+}
+
+/**
+ * The permission mode Claude Code's own screen starts in, so a Claude tab starts the same.
+ *
+ * Structured mode applies `permissions.defaultMode` from the settings itself; without one
+ * it starts in `default`, while the TUI may start elsewhere (on accounts where auto mode is
+ * the default, it starts in auto). Neither the protocol nor the settings say which, so it
+ * is read off the newest session the TUI itself started (`"entrypoint":"cli"`): the mode
+ * of its first message. Back from the CLI view the session goes on in the mode the TUI
+ * left it in. Bypass is never chosen here: only a launch flag or the settings start it.
+ */
+function startMode(followed: string, settingsSay: boolean): string {
+  if (MODES.has(followed)) return followed
+  if (settingsSay) return ''
+  void refreshTuiMode()
+  return MODES.has(tuiMode) ? tuiMode : ''
+}
+
+const PROJECTS_DIR = join(homedir(), '.claude', 'projects')
+let tuiMode = ''
+let tuiModeAt = 0
+let tuiModeRun: Promise<void> | null = null
+
+/** Find the TUI's starting mode in the background; at most every ten minutes. */
+function refreshTuiMode(): Promise<void> {
+  if (tuiModeRun) return tuiModeRun
+  if (Date.now() - tuiModeAt < 10 * 60_000) return Promise.resolve()
+  tuiModeRun = (async () => {
+    try {
+      const files: Array<{ path: string; at: number }> = []
+      for (const dir of await readdir(PROJECTS_DIR).catch(() => [] as string[])) {
+        const names = await readdir(join(PROJECTS_DIR, dir)).catch(() => [] as string[])
+        for (const n of names) {
+          if (!n.endsWith('.jsonl')) continue
+          const path = join(PROJECTS_DIR, dir, n)
+          const st = await stat(path).catch(() => null)
+          if (st) files.push({ path, at: st.mtimeMs })
+        }
+      }
+      files.sort((a, b) => b.at - a.at)
+      for (const f of files.slice(0, 60)) {
+        const head = readHead(f.path, 256 * 1024)
+        if (!head.includes('"entrypoint":"cli"')) continue
+        const line = head.split('\n').find((l) => l.includes('"entrypoint":"cli"') && l.includes('"permissionMode"'))
+        const m = line ? /"permissionMode":"([a-zA-Z]+)"/.exec(line) : null
+        if (m) {
+          tuiMode = m[1]!
+          break
+        }
+      }
+    } finally {
+      tuiModeAt = Date.now()
+      tuiModeRun = null
+    }
+  })()
+  return tuiModeRun
+}
+
+function readHead(file: string, bytes: number): string {
+  let fd = -1
+  try {
+    fd = openSync(file, 'r')
+    const buf = Buffer.alloc(bytes)
+    const n = readSync(fd, buf, 0, bytes, 0)
+    return buf.subarray(0, n).toString('utf8')
+  } catch {
+    return ''
+  } finally {
+    if (fd >= 0) closeSync(fd)
+  }
+}
+
+/**
+ * The session in a folder whose transcript was written last, at or after `since`: where
+ * the CLI view's Claude Code ended up (`/clear` and `/resume` move it to another file).
+ */
+async function latestSession(cwd: string, since: number): Promise<string> {
+  if (!cwd || /[\0\r\n]/.test(cwd)) return ''
+  const dir = join(PROJECTS_DIR, projectSlug(cwd))
+  let best = ''
+  let at = since - 1500
+  for (const n of await readdir(dir).catch(() => [] as string[])) {
+    const m = /^([0-9a-f-]{36})\.jsonl$/i.exec(n)
+    if (!m || !UUID_RE.test(m[1]!)) continue
+    const st = await stat(join(dir, n)).catch(() => null)
+    if (st && st.mtimeMs >= at) {
+      at = st.mtimeMs
+      best = m[1]!
+    }
+  }
+  return best
+}
+
 // ------------------------------------------------------------------ tabs across restarts
 
 /**
@@ -447,7 +591,8 @@ function cleanTabs(raw: unknown): NativeTabState[] {
     const r = t as Record<string, unknown>
     const sessionId = typeof r['sessionId'] === 'string' && UUID_RE.test(r['sessionId']) ? r['sessionId'] : ''
     const cwd = typeof r['cwd'] === 'string' && r['cwd'].length < 1000 && !/[\0\r\n]/.test(r['cwd']) ? r['cwd'] : ''
-    out.push({ sessionId, cwd })
+    const title = typeof r['title'] === 'string' ? r['title'].replace(/[\0-\x1f]/g, ' ').trim().slice(0, 120) : ''
+    out.push({ sessionId, cwd, ...(title ? { title } : {}) })
   }
   return out
 }
@@ -474,6 +619,8 @@ const hosts = new Map<string, ClaudeHost>()
 
 /** @param extraBin folders put first on the process's PATH — `notes`, `ember` — as a tab's shell has. */
 export function registerClaudeHost(extraBin: string[]): void {
+  // Ready before the first tab asks (see startMode).
+  setTimeout(() => void refreshTuiMode(), 3_000)
   const broadcast = (e: ClaudeEvent) => {
     for (const win of BrowserWindow.getAllWindows()) if (!win.isDestroyed()) win.webContents.send('ember:claude:event', e)
   }
@@ -513,6 +660,7 @@ export function registerClaudeHost(extraBin: string[]): void {
   ipcMain.on('ember:claude:saveTabs', (_e, tabs: unknown) => saveNativeTabs(tabs))
   ipcMain.handle('ember:claude:savedTabs', () => loadNativeTabs())
   ipcMain.handle('ember:claude:bound', (_e, tabId: string) => boundSession(String(tabId)))
+  ipcMain.handle('ember:claude:latest', (_e, cwd: string, since: number) => latestSession(String(cwd ?? ''), Number(since) || 0))
   app.on('before-quit', () => {
     for (const h of hosts.values()) void h.stop(true)
     hosts.clear()

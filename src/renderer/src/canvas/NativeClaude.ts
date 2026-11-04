@@ -4,7 +4,7 @@ import { Asks } from './Asks'
 import { Composer, tuiOnly, type Attachment, type QueuedMessage, type SlashCommand } from './Composer'
 
 /**
- * A Claude tab the canvas drives itself (Settings › Agent › "Canvas drives Claude directly").
+ * A Claude tab: the canvas drives Claude Code itself.
  *
  * Main runs Claude Code in its structured mode (src/main/claudeHost.ts) and passes on what
  * it says. This is the tab's end of that: the messages fed to the canvas as the transcript
@@ -73,10 +73,10 @@ export interface NativeContext {
   /** Ctrl+C to that shell. */
   interruptShell(): void
   /**
-   * The session this tab holds, whenever it is known or changes: its id (only once it has a
-   * transcript, i.e. a turn started) and its folder. Remembered across restarts.
+   * The session this tab holds changed: its id (only once it has a transcript, i.e. a turn
+   * started), its folder or its name (`resumableId`, `folder`, `title`). Remembered across restarts.
    */
-  session(sessionId: string, cwd: string): void
+  session(): void
   /** A command that only exists in Claude Code's own screen (`/login`): open the CLI view with it. */
   openCli(command: string): void
 }
@@ -98,6 +98,8 @@ export class NativeClaude {
   private readonly unsubs: Array<() => void> = []
   private state: NativeState = { phase: 'starting', model: '', permissionMode: '', detail: '', picked: '', effort: '', context: null }
   private sessionId = ''
+  /** The session's name: `/rename`, `/name`, a rename from the tab ('' = none). */
+  private name = ''
   /** The session has a transcript on disk: it can be resumed. */
   private hasTranscript = false
   /** The folder Claude Code says it runs in (long path). */
@@ -136,7 +138,8 @@ export class NativeClaude {
     private readonly tabId: string,
     private readonly cwd: string | undefined,
     private readonly ctx: NativeContext,
-    resume?: string
+    resume?: string,
+    title?: string
   ) {
     this.asks = new Asks({
       answer: (id, response) => window.ember.claude.answer(this.tabId, id, response),
@@ -176,6 +179,7 @@ export class NativeClaude {
       this.sessionId = resume
       this.hasTranscript = true
     }
+    if (title) this.name = title
     void this.start(resume)
   }
 
@@ -185,13 +189,14 @@ export class NativeClaude {
 
   // ------------------------------------------------------------- process
 
-  private async start(resume?: string): Promise<void> {
+  /** @param followMode back from the CLI view: go on in the mode the TUI left the session in. */
+  private async start(resume?: string, followMode = false): Promise<void> {
     this.set({ phase: 'starting' })
     this.resuming = resume ?? ''
     this.everReady = false
     this.stderr = ''
     const cwd = this.workDir || this.cwd
-    const r = await window.ember.claude.start(this.tabId, { ...(cwd ? { cwd } : {}), ...(resume ? { resume } : {}) })
+    const r = await window.ember.claude.start(this.tabId, { ...(cwd ? { cwd } : {}), ...(resume ? { resume } : {}), ...(followMode ? { followMode: true } : {}) })
     if (!r.ok) {
       this.ctx.feed.notice(r.error ?? 'Claude Code could not start', true)
       this.set({ phase: 'exited' })
@@ -204,7 +209,23 @@ export class NativeClaude {
 
   /** Tell the tab which session it holds (remembered across restarts). */
   private report(): void {
-    this.ctx.session(this.resumableId, this.folder)
+    this.ctx.session()
+  }
+
+  /** The session's name, as Claude Code knows it ('' = none given). */
+  get title(): string {
+    return this.name
+  }
+
+  /** Name the session from the tab (its card's rename): Claude Code takes the same name. */
+  rename(title: string): void {
+    const t = title.replace(/\s+/g, ' ').trim().slice(0, 120)
+    this.name = t
+    this.report()
+    if (!t || this.cli || this.state.phase === 'exited') return
+    void window.ember.claude.control(this.tabId, { subtype: 'rename_session', title: t }).then((r) => {
+      if (!r.ok && this.state.phase !== 'starting') this.ctx.toast(`Could not rename the session: ${r.error ?? 'no answer'}`)
+    })
   }
 
   /** The session id to resume: '' while it has no transcript yet (a new tab that never sent anything). */
@@ -263,7 +284,7 @@ export class NativeClaude {
       this.sessionId = sessionId
       this.hasTranscript = true
     }
-    void this.start(this.resumableId || undefined)
+    void this.start(this.resumableId || undefined, true)
   }
 
   get inCli(): boolean {
@@ -506,7 +527,18 @@ export class NativeClaude {
         if (Array.isArray(e.info['commands'])) this.commands = e.info['commands'] as SlashCommand[]
         if (Array.isArray(e.info['models'])) this.models = (e.info['models'] as NativeModel[]).filter((m) => m && typeof m.value === 'string')
         if (Array.isArray(e.info['capabilities'])) this.capabilities = (e.info['capabilities'] as unknown[]).map(String)
-        this.set({ phase: this.state.phase === 'starting' ? 'idle' : this.state.phase, ...(mode ? { permissionMode: mode } : {}) })
+        // The name the transcript holds (the session was renamed in the CLI view, or before).
+        const title = typeof e.info['title'] === 'string' ? e.info['title'] : ''
+        if (title && title !== this.name) {
+          this.name = title
+          this.report()
+        } else if (!title && this.name) {
+          // Named here (a todo's session, a rename before the restart) but not in Claude Code yet.
+          this.rename(this.name)
+        }
+        // The effort the settings give, until the bar or a turn says otherwise.
+        const effort = typeof e.info['effort'] === 'string' && !this.state.effort ? { effort: e.info['effort'] } : {}
+        this.set({ phase: this.state.phase === 'starting' ? 'idle' : this.state.phase, ...(mode ? { permissionMode: mode } : {}), ...effort })
         return
       }
       case 'message':
@@ -588,6 +620,12 @@ export class NativeClaude {
       } else if (sub === 'status') {
         if (typeof msg['permissionMode'] === 'string') this.set({ permissionMode: msg['permissionMode'] })
         if (msg['status'] === 'requesting' && this.state.phase !== 'asking') this.working()
+      } else if (sub === 'session_title_changed' && typeof msg['title'] === 'string') {
+        // `/rename`, `/name`, or a rename from the tab coming back.
+        if (msg['title'] !== this.name) {
+          this.name = String(msg['title']).slice(0, 120)
+          this.report()
+        }
       } else if (sub === 'compact_boundary') {
         this.ctx.feed.add([this.line(msg)])
       } else if (sub === 'commands_changed' && Array.isArray(msg['commands'])) {
@@ -763,6 +801,7 @@ export class NativeClaude {
     cli: boolean
     resumable: string
     cwd: string
+    title: string
     models: string[]
     picked: string
     effort: string
@@ -790,6 +829,7 @@ export class NativeClaude {
       cli: this.cli,
       resumable: this.resumableId,
       cwd: this.folder,
+      title: this.name,
       models: this.models.map((m) => m.value),
       picked: this.state.picked,
       effort: this.state.effort,

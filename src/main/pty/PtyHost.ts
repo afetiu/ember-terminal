@@ -48,6 +48,8 @@ export interface PtyHost {
   write(sessionId: string, data: string): void
   resize(sessionId: string, cols: number, rows: number): void
   kill(sessionId: string): void
+  /** Stop what the session's shell is running, not the shell (the CLI view's Claude Code). */
+  stopChildren?(sessionId: string): Promise<number>
   /** Report chars the frontend has flushed, for backpressure. */
   ack(sessionId: string, chars: number): void
   killAll(): void

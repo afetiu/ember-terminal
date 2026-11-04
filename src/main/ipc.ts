@@ -232,6 +232,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.on('ember:write', (_e, sessionId: string, data: string) => host.write(sessionId, data))
   ipcMain.on('ember:resize', (_e, sessionId: string, cols: number, rows: number) => host.resize(sessionId, cols, rows))
   ipcMain.on('ember:kill', (_e, sessionId: string) => host.kill(sessionId))
+  ipcMain.handle('ember:stopChildren', (_e, sessionId: string) => host.stopChildren?.(String(sessionId)) ?? 0)
   ipcMain.on('ember:ack', (_e, sessionId: string, chars: number) => host.ack(sessionId, chars))
 
   const windowOf = (e: Electron.IpcMainEvent) => BrowserWindow.fromWebContents(e.sender)

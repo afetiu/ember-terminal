@@ -134,9 +134,6 @@ export const DEFAULT_CONFIG: EmberConfig = {
     usageLimits: false,
     statusLine: true,
   },
-  canvas: {
-    native: false,
-  },
   agent: {
     default: 'claude',
     onboarded: false,

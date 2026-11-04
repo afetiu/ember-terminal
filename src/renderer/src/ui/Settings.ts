@@ -232,12 +232,6 @@ export class Settings {
           kind: 'toggle',
           hint: 'context and cost under the session, and on its card. New sessions only',
         },
-        {
-          path: 'canvas.native',
-          label: 'Canvas drives Claude directly (preview)',
-          kind: 'toggle',
-          hint: 'a Claude tab runs Claude Code in its structured mode and the canvas draws it, instead of reading its screen. Plain messages and replies only for now. New tabs only',
-        },
       ],
     },
     {
