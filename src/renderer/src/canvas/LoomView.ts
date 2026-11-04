@@ -786,6 +786,7 @@ export class LoomView {
     const left = pane.offsetLeft
     const width = pane.offsetWidth
     this.frame.classList.remove('is-native')
+    this.bar.classList.remove('is-native')
     this.frame.classList.toggle('is-on', showCanvas && !!frame)
     this.above.classList.remove('is-on')
     if (showCanvas && frame) {
@@ -878,7 +879,7 @@ export class LoomView {
       this.session.focusInstead = null
       this.frame.classList.remove('is-on', 'is-native')
       this.above.classList.remove('is-on')
-      this.bar.classList.remove('is-on')
+      this.bar.classList.remove('is-on', 'is-native')
       this.closeBarPick()
       // Back to the shell: the keyboard goes to its prompt.
       if (this.hooks.isActive()) requestAnimationFrame(() => this.session.term.focus())
@@ -915,7 +916,7 @@ export class LoomView {
     this.frame.classList.add('is-on', 'is-native')
     this.frame.classList.remove('is-empty')
     this.above.classList.add('is-on')
-    this.bar.classList.add('is-on')
+    this.bar.classList.add('is-on', 'is-native')
     Object.assign(this.frame.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px`, height: `${frameH.toFixed(1)}px` })
     Object.assign(this.above.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px` })
     Object.assign(this.bar.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${(pane.offsetTop + paneH - BAR_H - 2).toFixed(1)}px`, height: `${BAR_H}px` })

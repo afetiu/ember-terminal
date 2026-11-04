@@ -6520,3 +6520,65 @@ body.is-light .loom-zoom {
   content: '  ✓';
   color: var(--l-accent);
 }
+
+/* ---------------------------------------------------------------- the composer, as a prompt */
+
+/* Ember's input reads like a terminal prompt: the terminal's own font and background, a
+   rule above and below instead of a rounded card, the caret and `❯` in the accent, and
+   the bar under it written like a status line. */
+.loom-frame-box.is-native {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--c-bg) 86%, #000);
+  box-shadow: none;
+}
+.loom-frame-box.is-native.is-focus {
+  border-top-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  box-shadow: none;
+}
+.loom-frame-box.is-native::before {
+  opacity: 1;
+  color: var(--c-accent);
+  font-weight: 700;
+}
+.loom-frame-box.is-native::after {
+  content: '⏎ send';
+  font: 12px var(--term-font), 'Cascadia Code', Consolas, monospace;
+  opacity: 0.55;
+}
+.loom-native-input {
+  caret-color: var(--c-accent);
+  caret-shape: block;
+}
+.loom-native-input::placeholder {
+  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+}
+.loom-bar.is-native,
+.loom-bar.is-native button,
+.loom-bar.is-native span {
+  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+}
+.loom-bar.is-native > button,
+.loom-bar.is-native > span {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0 2px;
+}
+.loom-bar.is-native > * + *::before {
+  content: '·';
+  margin-right: 8px;
+  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+}
+.loom-bar.is-native > .loom-bar-rest::before {
+  content: none;
+}
+.loom-bar.is-native > button:hover {
+  color: var(--c-accent);
+}
