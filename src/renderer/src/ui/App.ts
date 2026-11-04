@@ -2017,7 +2017,8 @@ export class App {
         git: this.gitByCwd.get(cwd) ?? null,
         url: focused?.urls[focused.urls.length - 1] ?? null,
         unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
-        claude: this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null,
+        // Only while Claude Code runs there: once it exits the tab is a terminal again.
+        claude: this.config.claude.statusLine && (!g.loom || g.loom.isClaude) ? (this.claudeByTab.get(g.id) ?? null) : null,
       }
     })
     this.sidebar.render(models, this.activeId)
