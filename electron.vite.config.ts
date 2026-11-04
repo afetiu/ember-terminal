@@ -73,8 +73,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
-        // `overlay` is the cursor window's preload: three calls, none of `window.ember`.
-      input: { index: resolve('src/preload/index.ts'), overlay: resolve('src/preload/overlay.ts') },
+        input: { index: resolve('src/preload/index.ts') },
       },
     },
   },

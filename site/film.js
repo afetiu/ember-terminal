@@ -25,8 +25,6 @@ function start() {
   const keysEl = q('[data-keys]')
   const ptr = q('[data-ptr]')
   const tag = q('[data-tag]')
-  const sheet = q('[data-sheet]')
-  const stop = q('[data-stop]')
   const cards = q('[data-cards]')
   const todoN = q('[data-todo-n]')
   const cap = document.querySelector('[data-cap]')
@@ -820,120 +818,6 @@ function start() {
     await wait(4200)
   }
 
-  // ================================================================ 4 · work another app
-  const CSV = [
-    ['EMEA', '412,300'],
-    ['North America', '655,900'],
-    ['LATAM', '128,400'],
-    ['APAC', '301,750'],
-  ]
-  function buildSheet() {
-    const rows = [['Region', 'Q3 revenue', 'Target'], ...CSV.map(([r], i) => [r, '', ['400,000', '700,000', '120,000', '280,000'][i]]), [], ['Total', '', '1,500,000']]
-    let g = '<span class="rh"></span>' + 'ABC'.split('').map((c) => `<span class="colh">${c}</span>`).join('')
-    for (let r = 0; r < 12; r++) {
-      const row = rows[r] || []
-      g += `<span class="rh">${r + 1}</span>`
-      for (let c = 0; c < 3; c++) {
-        const cls = [r === 0 && 'th', c > 0 && r > 0 && 'num', r === 6 && 'tot'].filter(Boolean).join(' ')
-        const n = c === 1 && r >= 1 && r <= 4 ? ` data-n="#${20 + r}"` : c === 1 && r === 6 ? ' data-n="#41"' : ''
-        g += `<span data-c="${'ABC'[c]}${r + 1}" class="${cls}"${n}>${row[c] ?? ''}</span>`
-      }
-    }
-    sheet.innerHTML =
-      `<div class="sheet__t"><b>Q3 revenue.xlsx<i data-dirty></i></b><span class="sheet__share" data-n="#9" data-share>Share</span><span>— ▢ ✕</span></div>` +
-      `<div class="sheet__tabs"><span class="is-on">Home</span><span>Insert</span><span>Data</span><span>View</span></div>` +
-      `<div class="sheet__fx"><span data-ref>A1</span><i>fx</i><span data-fx></span></div>` +
-      `<div class="sheet__g">${g}</div>`
-  }
-
-  async function appStory() {
-    buildSheet()
-    await beat(0)
-    await ask('put the Q3 totals from invoices.csv into the finance sheet')
-    think('Reading invoices.csv…')
-    await wait(1300)
-    await line('Four regions. I’ll fill them in; you can watch.')
-    busy(false)
-    await wait(900)
-
-    await beat(1)
-    sheet.classList.add('is-on')
-    stop.classList.add('is-on')
-    if (!narrow) {
-      // the window opens beside the reply, and the words make room for it
-      col.style.width = `${cv.offsetWidth - 540}px`
-    }
-    busy(true)
-    await wait(600)
-    // what look hands back: every control, numbered
-    const look = tool('look', 'Q3 revenue.xlsx')
-    await wait(500)
-    sheet.classList.add('is-numbered')
-    look.textContent = 'Q3 revenue.xlsx · 64 controls'
-    await wait(2400)
-    sheet.classList.remove('is-numbered')
-
-    await beat(2)
-    const act = tool('act', '')
-    const add = (s) => (act.textContent += `${act.textContent ? ' · ' : ''}${s}`)
-    ember(true)
-    P.x = narrow ? 200 : 700
-    P.y = 300
-    placePtr()
-    const ref = sheet.querySelector('[data-ref]')
-    const fx = sheet.querySelector('[data-fx]')
-    const select = (cell, r) => {
-      sheet.querySelectorAll('.is-sel').forEach((c) => c.classList.remove('is-sel'))
-      cell.classList.add('is-sel')
-      ref.textContent = r
-    }
-    for (let i = 0; i < CSV.length; i++) {
-      const cell = sheet.querySelector(`[data-c="B${i + 2}"]`)
-      tag.textContent = `#${21 + i}`
-      add(`#${21 + i}`)
-      await glide(mid(cell))
-      ripple(mid(cell))
-      select(cell, `B${i + 2}`)
-      await typeInto(cell, CSV[i][1], 30)
-      fx.textContent = CSV[i][1]
-      await wait(150)
-    }
-    const b7 = sheet.querySelector('[data-c="B7"]')
-    tag.textContent = '#41'
-    add('#41')
-    await glide(mid(b7))
-    ripple(mid(b7))
-    select(b7, 'B7')
-    await typeInto(b7, '=SUM(B2:B5)', 40)
-    fx.textContent = '=SUM(B2:B5)'
-    await wait(250)
-    b7.textContent = '1,498,350'
-    b7.classList.add('is-new')
-    tag.textContent = ''
-    await wait(500)
-    await line('Done. The total matches the invoices.')
-    await wait(1000)
-
-    await beat(3)
-    await choose('Share it with finance?', 'Share it')
-    ember(true)
-    P.x = narrow ? 300 : 760
-    P.y = 400
-    placePtr()
-    tag.textContent = '#9'
-    await click(sheet.querySelector('[data-share]'))
-    tag.textContent = ''
-    await wait(500)
-    stop.classList.remove('is-on')
-    ptr.classList.remove('is-on')
-    ember(false)
-    // a phone's canvas is all window: it steps back so the answer can be read
-    if (narrow) sheet.classList.remove('is-on')
-    await line('Shared. STOP is gone: it is done with your computer.')
-    busy(false)
-    await wait(4000)
-  }
-
   // ================================================================ the scenes
   const SCENES = [
     {
@@ -978,17 +862,6 @@ function start() {
         ['Walk through', 11500, 'It scrolls the PDF and points at each clause, one step at a time.'],
         ['Ask about it', 9000, 'Right-click a clause to ask about it, right there.'],
         ['Draft', 8500, 'It drafts the email, and keeps it in your notes.'],
-      ],
-    },
-    {
-      tab: 'Use another app',
-      session: ['Q3 close', 'Opus 5.5 · 15%'],
-      story: appStory,
-      moments: [
-        ['Ask', 7500, 'Ask for work that happens in another app.'],
-        ['Look', 4500, 'It reads the window as text, every control numbered. No screenshots.'],
-        ['Act', 11000, 'It works the app with its own pointer. STOP is always on screen.'],
-        ['Share', 8000, 'It asks before anything leaves your machine.'],
       ],
     },
   ]
@@ -1045,8 +918,6 @@ function start() {
     zone.classList.remove('is-on')
     menu.classList.remove('is-on')
     toast.classList.remove('is-on')
-    sheet.classList.remove('is-on', 'is-numbered')
-    stop.classList.remove('is-on')
     keysEl.innerHTML = ''
     inpT.textContent = ''
     ptr.classList.remove('is-on')

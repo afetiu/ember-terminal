@@ -43,16 +43,9 @@ provider, as it would in any terminal. These are the only calls Ember makes itse
 | `github.com` release download | Only when you click Update | Your IP address | Don't click it |
 | `api.anthropic.com` usage | Every minute, only while the plan-usage readout is on (off by default) | Claude Code's own login token | Settings › Agent › Plan usage in the sidebar |
 | The architecture map | Only for repos and URLs you add to a map | Requests to those addresses | Remove them from the map |
-| Phone relay (Deep Answer Labs) | Only after you pair a phone | Message content is end-to-end encrypted; the relay sees timing, sizes and IP addresses | Leave the account, or Settings › Labs |
 | Images in agent replies | Only when you click one | A request to the image's address | Don't click it |
-
-Computer use needs Python packages that you install yourself; Ember prints the `pip`
-command and never runs it for you.
 
 Files that stay on your computer:
 
-- Screenshots from computer use (`%TEMP%\ember-desk-shots`) and pasted or pushed images
-  (`%TEMP%\ember-<pid>`) are deleted when Ember quits, and leftovers from a crash at the
-  next start.
-- `~/.ember/account.json` holds the phone-link key in plain text. Anyone who can read
-  your user folder can read it. Leaving the account on this computer clears it.
+- Pasted or pushed images (`%TEMP%\ember-<pid>`) are deleted when Ember quits, and
+  leftovers from a crash at the next start.

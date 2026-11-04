@@ -159,17 +159,7 @@ const CANVAS_INSTRUCTIONS = [
   'Default to no visual. Show something only when seeing it is clearly the best way to understand or decide ',
   '(a structure, a comparison, numbers, a choice); routine status, small facts and confirmations are words. ',
   'At most one new visual per turn unless asked; prefer updating what is already up. ',
-  'To point at something on the canvas (a node in your diagram, a bar, a row), use point with object (its title) and ',
-  'text (the label) — the canvas is not visible to look. Never draw again something already on the canvas in order ',
-  'to point at it or explain it: point at the one that is there (titles from on_screen). ',
-  'Computer use — the user\'s real screen: to show them anything there, look (the screen as text) then point at it ',
-  'on their screen with a short note; walk through steps with point step/steps. Never take a screenshot to explain ',
-  'something to the user and never draw the screen on the canvas — they are looking at the real thing. Screenshots ',
-  'are only for when you yourself must see pixels. Act (click, type) only when they asked. Plan the whole task as ONE ' +
-  'act call — steps by control name, with wait after anything that opens or loads and expect where it must have ' +
-  'worked — and come back only if it fails: the failure says which step, why, and the screen. ' +
-  'A task they will want again: save it as a recipe and run it next time. ',
-  'Never described afterwards. open_url + annotate to point at a live page; show_media for images and video.\n',
+  'open_url + annotate to point at a live page; show_media for images and video.\n',
   "The user's notes and todo list: the notes and todo tools (show them on the canvas, add, tick). When a turn leaves something only they can do, add a todo once; when you finish something on their list, tick it.",
 ].join('')
 
@@ -425,82 +415,6 @@ const CANVAS_TOOLS = [
       type: 'object',
       properties: { name: { type: 'string', description: 'a-z, 0-9, -' }, html: { type: 'string' } },
       required: ['name', 'html'],
-    },
-  },
-  {
-    name: 'look',
-    description:
-      "Computer use: read the user's screen as text, fast, no screenshot. No window: the open windows. A window " +
-      "title: its controls, numbered — #N [Type] 'name' (x,y). Act on them by number (press #N, click #N, " +
-      'settext #N text) and point with name "#N": no second search, no guessing names.',
-    inputSchema: { type: 'object', properties: { window: { type: 'string' }, depth: { type: 'number' } } },
-  },
-  {
-    name: 'point',
-    description:
-      "Computer use: show the user something — Ember's pointer glides to it and a short note appears beside it. On the " +
-      'canvas (a node in a diagram, a bar, a row): object + text. On the desktop: ' +
-      'beside it. Never clicks. Target a control by number (name "#N" from look or act), by window title + its ' +
-      'visible name (and type, e.g. Button), or screen x,y. ' +
-      'Use it whenever you explain where something is in an app. For a walkthrough pass step and steps.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        object: { type: 'string', description: 'On the canvas: the object\'s title (from on_screen). Then text = the label to point at inside it.' },
-        text: { type: 'string', description: 'With object: the visible text to point at (a node, a bar, a row).' },
-        window: { type: 'string', description: 'On the desktop: window title, or part of it.' },
-        name: { type: 'string', description: 'The control\'s visible name, or its number "#N" from the last look or act.' },
-        ctype: { type: 'string' },
-        x: { type: 'number' },
-        y: { type: 'number' },
-        say: { type: 'string', description: 'One or two short sentences shown beside it.' },
-        step: { type: 'number' },
-        steps: { type: 'number' },
-      },
-    },
-  },
-  {
-    name: 'act',
-    description:
-      'Computer use: click and type on the desktop, with the pointer visible and STOP on screen. Ember steps aside ' +
-      'while you work in another app. Write the whole task as ONE plan, one step per line or ";"-separated; it runs ' +
-      'on the machine without coming back to you, and stops at the first step that fails.\n' +
-      'Do: focus "<window>"; press "<name>" or press [Button] "<name>"; click [ListItem] "<name>"; ' +
-      'settext [Edit] "<name>" "<text>"; type "<text>"; key ctrl+s; scroll -3; run <program>. ' +
-      'Add in "<window>" to look in a window other than the one in front. #N numbers from look also work, but ' +
-      'names survive a changed screen.\n' +
-      'Check: wait <condition> [5s] after anything that opens, loads or saves (polls, no fixed sleeps); ' +
-      'expect <condition> where the plan must have worked; if <condition> [2s] then <step> [else <step>]. ' +
-      'Conditions: "<window title>" (a window), title "<text>" (the window in front), [Type] "<name>", ' +
-      'gone "<name>", value [Edit] "<name>" = "<text>"; not before any of them.\n' +
-      'Example: focus "Notepad"; key ctrl+s; wait "Save as"; settext [Edit] "File name:" "C:\\\\tmp\\\\a.txt"; ' +
-      'press [Button] "Save"; wait not window "Save as"; expect title "a.txt"\n' +
-      'The reply ends with the screen afterwards, numbered. On failure: the step, why, and the screen; repair ' +
-      'from there. save: ["name", values…] keeps a plan that worked as a recipe; the values given become $1 $2… ' +
-      'so recipe run can pass others.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        script: { type: 'string' },
-        save: { type: 'array', items: { type: 'string' }, description: 'Keep it as a recipe once it works: ["name", value1, …].' },
-      },
-      required: ['script'],
-    },
-  },
-  {
-    name: 'recipe',
-    description:
-      'Computer use: plans that worked before, kept by name (saved with act save). list them, show one, or run one ' +
-      'with arguments for its $1 $2… It runs on the machine and comes back only when done or failed. Check list ' +
-      'before planning a task you may have done before.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        op: { type: 'string', enum: ['list', 'show', 'run'] },
-        name: { type: 'string' },
-        args: { type: 'array', items: { type: 'string' } },
-      },
-      required: ['op'],
     },
   },
   {
@@ -780,40 +694,6 @@ async function call(name, args) {
       const r = await post('/canvas/notes', { op: op === 'add' ? 'todo_add' : 'todo_done', text: String(args.text ?? '') })
       return op === 'add' ? 'Added to the todo list.' : `Ticked: ${r.done}`
     }
-    case 'look': {
-      const r = await post('/desk/look', { ...(args.window ? { window: String(args.window) } : {}), ...(typeof args.depth === 'number' ? { depth: args.depth } : {}) })
-      if (!r.ok) throw new Error(r.error || 'could not read the screen')
-      return r.out || '(nothing found)'
-    }
-    case 'point': {
-      const r = await post('/desk/point', {
-        ...(args.object ? { object: String(args.object), text: String(args.text ?? '') } : {}),
-        ...(args.window ? { window: String(args.window) } : {}),
-        ...(args.name ? { name: String(args.name) } : {}),
-        ...(args.ctype ? { ctype: String(args.ctype) } : {}),
-        ...(typeof args.x === 'number' ? { x: args.x } : {}),
-        ...(typeof args.y === 'number' ? { y: args.y } : {}),
-        ...(args.say ? { say: String(args.say) } : {}),
-        ...(typeof args.step === 'number' ? { step: args.step, steps: args.steps } : {}),
-      })
-      if (!r.ok) throw new Error(r.error || 'could not point there')
-      return `Pointing at ${r.found || `${r.x},${r.y}`}${args.say ? ' with the note shown' : ''}.`
-    }
-    case 'act': {
-      const save = Array.isArray(args.save) ? args.save.map(String) : args.save ? [String(args.save)] : undefined
-      const r = await post('/desk/act', { script: String(args.script ?? ''), ...(save?.length ? { save } : {}) })
-      if (!r.ok) throw new Error(String(r.error || 'the actions did not complete').slice(0, 6000))
-      return `Done in ${r.ms}ms.${r.output ? `\n${String(r.output).slice(0, 6000)}` : ''}`
-    }
-    case 'recipe': {
-      const r = await post('/desk/recipe', {
-        op: String(args.op ?? 'list'),
-        ...(args.name ? { name: String(args.name) } : {}),
-        ...(Array.isArray(args.args) ? { args: args.args.map(String) } : {}),
-      })
-      if (!r.ok) throw new Error(String(r.error || 'the recipe did not complete').slice(0, 6000))
-      return `${args.op === 'run' ? `Done in ${r.ms}ms.\n` : ''}${String(r.output ?? '').slice(0, 6000)}`
-    }
     case 'edit_panel': {
       if (!CANVAS) throw new Error('edit_panel is only available in an Ember canvas tab')
       const r = await post('/panel/edit', { title: String(args.title ?? ''), edits: Array.isArray(args.edits) ? args.edits : [] })
@@ -909,9 +789,7 @@ async function handle(msg) {
         const text = await call(params?.name, params?.arguments ?? {})
         return reply(id, { content: [{ type: 'text', text }] })
       } catch (err) {
-        // Computer use reports its own failures (a plan's failed step, why, the screen): as is.
-        const desk = ['act', 'recipe', 'look', 'point'].includes(params?.name)
-        return fail(id, desk ? err.message : `Panel unavailable: ${err.message}`)
+        return fail(id, `Panel unavailable: ${err.message}`)
       }
     default:
       if (id !== undefined && id !== null) {

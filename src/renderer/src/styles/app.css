@@ -776,81 +776,9 @@ body.sidebar-mini .ember-card-badge canvas {
   }
 }
 
-/* Computer use: a third row while a Claude is (or was) driving the desktop. The state
-   chip on the left of the values, what it is doing in the middle (given all the room
-   and cut with an ellipsis), and the switch on the right — red while it can stop
-   something, quiet green once it has. */
-.ember-vitals-desk .ember-vitals-chip {
-  width: auto;
-}
-
-.ember-vitals-chip.is-desk-what {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: right;
-  letter-spacing: 0.3px;
-  text-transform: none;
-}
-
-.ember-vitals-chip.is-desk-state {
-  flex: none;
-}
-
-.ember-vitals-chip.is-desk-busy {
-  color: #ff8a2a;
-  animation: ember-live-pulse 1.2s ease-in-out infinite;
-}
-
-.ember-vitals-chip.is-desk-halted {
-  color: #8bd17c;
-}
-
-.ember-vitals-chip.is-desk-switch {
-  flex: none;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-weight: 700;
-  letter-spacing: 0.9px;
-  color: #fff;
-  background: #c8383d;
-  cursor: pointer;
-  transition:
-    background 130ms var(--ease-move),
-    transform 130ms var(--ease-move);
-}
-
-.ember-vitals-chip.is-desk-switch:hover {
-  background: #e5484d;
-  transform: translateY(-1px);
-}
-
-.ember-vitals-chip.is-desk-switch.is-resume {
-  background: color-mix(in srgb, #8bd17c 28%, var(--c-bg));
-  color: #bfe7b4;
-}
-
-.ember-vitals-chip.is-desk-switch.is-resume:hover {
-  background: color-mix(in srgb, #8bd17c 45%, var(--c-bg));
-}
-
-/* The desk chips' oranges and greens are lamps on a dark strip; on paper they are their
-   deep versions, and the resume pill takes dark text on its pale green. */
+/* The live chip's red is a lamp on a dark strip; on paper it is the deep version. */
 body.is-light .ember-vitals-chip.is-live {
   color: var(--c-danger);
-}
-
-body.is-light .ember-vitals-chip.is-desk-busy {
-  color: #b04a00;
-}
-
-body.is-light .ember-vitals-chip.is-desk-halted {
-  color: #2f7a2a;
-}
-
-body.is-light .ember-vitals-chip.is-desk-switch.is-resume {
-  color: #24601f;
 }
 
 
@@ -4244,12 +4172,6 @@ body.sidebar-mini .ember-places {
   font-size: 11px;
   letter-spacing: 0;
   white-space: nowrap;
-}
-.ember-vitals-desk .ember-vitals-chip:not(.is-desk-switch) {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------------------------------------------------------------- the provider chip */

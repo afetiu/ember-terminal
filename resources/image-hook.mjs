@@ -9,7 +9,7 @@
  * and it runs `async`: Claude never waits for it.
  *
  *   PostToolUse  Read of an image file → its path; any other tool whose result carries
- *                image data (Playwright and Chrome screenshots, desk shots via MCP) →
+ *                image data (Playwright and Chrome screenshots via MCP) →
  *                the bytes, written to a file.
  *   Stop         images pasted into the prompt. They exist only in the transcript, so the
  *                part written since the last turn is swept for user-pasted image blocks.

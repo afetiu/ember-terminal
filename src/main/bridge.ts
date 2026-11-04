@@ -9,12 +9,10 @@ import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, boundSession, rebindFromStatus, unbindSession } from './transcript.js'
 import { forget, recall, remember, skills } from './brain.js'
-import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedia } from './canvas.js'
+import { registerMedia, requestAnnotate, screenOf, serveMedia } from './canvas.js'
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { homedir } from 'node:os'
-import { asideState, deskAct, deskEnv, deskHideCallout, deskLook, deskPoint, deskRecipe, deskState, haltDesk, hands, HANDS_OFF, HANDS_SHOW, onActivity, setDeskBridge, startDesk, stopDesk } from './desk.js'
-import type { DeskActivity } from '../shared/types.js'
 
 /**
  * The bridge: how a Claude session inside a tab reaches that tab's panel.
@@ -299,8 +297,6 @@ export function bridgeEnv(tabId: string): Record<string, string> {
     // Where the notes are, so the MCP server can say so in its instructions and a
     // session that would rather grep the folder than call a tool can do that instead.
     EMBER_NOTES_DIR: NOTES_DIR,
-    // Computer use: the port and token `desk` needs. Only a shell Ember spawned has them.
-    ...deskEnv(),
     // Full screen always, and the status line when the setting is on. Read at spawn time
     // so a change in Settings applies to the next shell without a restart.
     ...(settingsFile && loadConfig().claude.statusLine
@@ -931,106 +927,6 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 
   if (!tokenOk(req)) return send(res, 401, JSON.stringify({ error: 'bad token' }))
 
-  // Computer use. The daemon reports what it just did (cursor + strip); the `desk`
-  // client asks for the daemon, or throws the switch.
-  if (req.method === 'POST' && url.pathname.startsWith('/desk/')) {
-    const verb = url.pathname.slice('/desk/'.length)
-    void readJson(req)
-      .then(async (body) => {
-        switch (verb) {
-          case 'activity': {
-            const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-            const a: DeskActivity = {
-              action: String(body['action'] ?? 'move').slice(0, 20),
-              x: num(body['x']),
-              y: num(body['y']),
-              label: String(body['label'] ?? '').slice(0, 120),
-              tab: String(body['tab'] ?? ''),
-              at: Date.now(),
-              ...(body['app'] ? { app: String(body['app']).slice(0, 40) } : {}),
-              ...(body['exe'] ? { exe: String(body['exe']).slice(0, 60) } : {}),
-              ...(body['win'] ? { win: String(body['win']).slice(0, 80) } : {}),
-              ...(typeof body['own'] === 'boolean' ? { own: body['own'] } : {}),
-            }
-            onActivity(a)
-            return send(res, 200, JSON.stringify({ ok: true }))
-          }
-          case 'start':
-            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF, state: deskState() }))
-            return send(res, 200, JSON.stringify({ ok: true, state: await startDesk() }))
-          case 'stop':
-            return send(res, 200, JSON.stringify({ ok: true, state: stopDesk() }))
-          case 'halt':
-            return send(res, 200, JSON.stringify({ ok: true, state: haltDesk() }))
-          // No `resume` here, on purpose. Stop is the person's brake on the session, and a
-          // brake the session can release is not one: Resume is a button in Ember (the strip,
-          // the overlay's pill), reached over IPC, never over this socket.
-          case 'status':
-            return send(res, 200, JSON.stringify({ ok: true, state: deskState(), aside: asideState() }))
-          // Ember Hands. Pointing shows and explains, and never clicks; acting clicks and
-          // types. Each is allowed only as far as the user's setting says.
-          case 'point': {
-            // Something on the canvas itself: Ember knows where it drew it, so the canvas points.
-            if (body['object']) {
-              const r = await requestCanvasPoint(broadcast, {
-                tabId: String(body['tabId'] ?? ''),
-                object: String(body['object']),
-                text: body['text'] ? String(body['text']) : '',
-                say: body['say'] ? String(body['say']).slice(0, 400) : '',
-                step: typeof body['step'] === 'number' ? body['step'] : undefined,
-                steps: typeof body['steps'] === 'number' ? body['steps'] : undefined,
-              })
-              return send(res, 200, JSON.stringify(r))
-            }
-            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
-            const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
-            const r = await deskPoint({
-              window: body['window'] ? String(body['window']) : undefined,
-              name: body['name'] ? String(body['name']) : undefined,
-              ctype: body['ctype'] ? String(body['ctype']) : undefined,
-              x: num(body['x']),
-              y: num(body['y']),
-              say: body['say'] ? String(body['say']).slice(0, 400) : undefined,
-              step: num(body['step']),
-              steps: num(body['steps']),
-            })
-            return send(res, 200, JSON.stringify(r))
-          }
-          case 'act': {
-            // Clicking and typing need 'act'. 'show' is the default and means exactly what it
-            // says: Ember may point and look, never press.
-            const mode = hands()
-            if (mode !== 'act') return send(res, 200, JSON.stringify({ ok: false, error: mode === 'off' ? HANDS_OFF : HANDS_SHOW }))
-            // save: keep the plan as a recipe once it has worked ([name, value1, value2…]:
-            // those values become the recipe's $1 $2…).
-            const save = Array.isArray(body['save']) ? body['save'].map(String).slice(0, 10) : body['save'] ? [String(body['save'])] : undefined
-            const r = await deskAct(String(body['script'] ?? ''), save)
-            return send(res, 200, JSON.stringify(r))
-          }
-          case 'recipe': {
-            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
-            const op = String(body['op'] ?? 'list')
-            if (!['list', 'show', 'run'].includes(op)) return send(res, 200, JSON.stringify({ ok: false, error: 'recipe: op is list, show or run' }))
-            const args = Array.isArray(body['args']) ? body['args'].map(String).slice(0, 9) : []
-            const r = await deskRecipe(op, body['name'] ? String(body['name']) : '', args)
-            return send(res, 200, JSON.stringify(r))
-          }
-          case 'look': {
-            if (hands() === 'off') return send(res, 200, JSON.stringify({ ok: false, error: HANDS_OFF }))
-            const r = await deskLook(body['window'] ? String(body['window']) : undefined, typeof body['depth'] === 'number' ? body['depth'] : 4)
-            return send(res, 200, JSON.stringify(r))
-          }
-          case 'hide':
-            deskHideCallout()
-            return send(res, 200, JSON.stringify({ ok: true }))
-          default:
-            return send(res, 404, JSON.stringify({ error: 'no such route' }))
-        }
-      })
-      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
-    return
-  }
-
   // Images onto the panel: from the image hook (auto) or show_image (chosen). One image
   // or several (`paths`); base64 bytes for ones that were never a file.
   if (req.method === 'POST' && url.pathname === '/image') {
@@ -1558,8 +1454,6 @@ export async function startBridge(): Promise<void> {
     server!.listen(0, '127.0.0.1', () => {
       const addr = server!.address()
       port = typeof addr === 'object' && addr ? addr.port : 0
-      // Computer use learns where to report, and picks its own port before any shell spawns.
-      setDeskBridge(`http://127.0.0.1:${port}`, token)
       try {
         mcpConfig = writeMcpConfig()
         try {

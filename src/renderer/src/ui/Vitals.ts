@@ -1,4 +1,4 @@
-import type { ClaudeLimit, ClaudeUsage, DeskState, VitalsState } from '@shared/types'
+import type { ClaudeLimit, ClaudeUsage, VitalsState } from '@shared/types'
 
 /** The subset of the Battery Status API this widget reads; not in lib.dom. */
 interface BatteryLike extends EventTarget {
@@ -18,12 +18,6 @@ export class Vitals {
   private readonly bat: HTMLElement
   /** The plan's windows, on the left so they read as a different kind of number. */
   private readonly plan: HTMLElement
-  /** Computer use: shown only once a Claude has driven the desktop in this run. */
-  private readonly desk: HTMLElement
-  private readonly deskState: HTMLElement
-  private readonly deskWhat: HTMLElement
-  private readonly deskSwitch: HTMLElement
-  private deskHalted = false
   private readonly unsubs: (() => void)[] = []
   private battery: BatteryLike | null = null
   private usage: ClaudeUsage | null = null
@@ -46,71 +40,12 @@ export class Vitals {
     this.bat = this.chip('is-hidden', '', 'Battery')
     machine.append(Vitals.caption('MACHINE'), this.cpu, this.mem, this.bat)
 
-    // Computer use, under the machine: state, what Claude is doing, and the switch.
-    // The switch is the same one the overlay's pill and `desk halt` throw.
-    this.desk = document.createElement('div')
-    this.desk.className = 'ember-vitals-row ember-vitals-desk is-empty'
-    this.deskState = this.chip('is-desk-state', '', 'Computer use')
-    this.deskWhat = this.chip('is-desk-what', '', '')
-    this.deskSwitch = this.chip('is-desk-switch', 'STOP', 'Stop Claude using the computer')
-    this.deskSwitch.setAttribute('role', 'button')
-    this.deskSwitch.addEventListener('click', () => {
-      if (this.deskHalted) window.ember.desk.resume()
-      else window.ember.desk.halt()
-    })
-    this.desk.append(Vitals.caption('COMPUTER'), this.deskState, this.deskWhat, this.deskSwitch)
-    this.el.append(this.plan, machine, this.desk)
+    this.el.append(this.plan, machine)
 
     this.unsubs.push(window.ember.vitals.onState((s) => this.renderVitals(s)))
     void window.ember.vitals.state().then((s) => this.renderVitals(s))
-    this.unsubs.push(window.ember.desk.onState((s) => this.renderDesk(s)))
-    void window.ember.desk.state().then((s) => this.renderDesk(s))
     this.wireBattery()
     this.wireUsage()
-  }
-
-  // ---------- computer use ----------
-
-  private renderDesk(s: DeskState): void {
-    this.deskHalted = s.halted
-    // Nothing to say until something has happened: a fresh app shows two rows, not three.
-    const show = s.halted || s.running || !!s.last || (s.ready !== 'off' && s.ready !== 'ok')
-    this.desk.classList.toggle('is-empty', !show)
-    if (!show) return
-
-    const text = s.halted
-      ? 'HALTED'
-      : s.busy
-        ? '● BUSY'
-        : s.running
-          ? 'IDLE'
-          : s.ready === 'installing'
-            ? 'SETUP…'
-            : s.ready === 'starting'
-              ? 'STARTING'
-              : s.ready === 'off'
-                ? 'OFF'
-                : 'N/A'
-    if (this.deskState.textContent !== text) this.deskState.textContent = text
-    this.deskState.classList.toggle('is-desk-busy', s.busy && !s.halted)
-    this.deskState.classList.toggle('is-desk-halted', s.halted)
-    this.deskState.classList.toggle('is-low', s.ready === 'no-python' || s.ready === 'no-deps' || s.ready === 'failed')
-    this.deskState.title = s.halted
-      ? 'Computer use is stopped. Press RESUME to allow it again'
-      : s.message
-        ? `Computer use: ${s.message}`
-        : s.running
-          ? 'A Claude in one of the tabs can drive the desktop'
-          : 'Computer use'
-
-    const what = s.halted ? '' : (s.last?.label ?? s.message ?? '')
-    if (this.deskWhat.textContent !== what) this.deskWhat.textContent = what
-    this.deskWhat.title = what
-
-    const label = s.halted ? 'RESUME' : 'STOP'
-    if (this.deskSwitch.textContent !== label) this.deskSwitch.textContent = label
-    this.deskSwitch.classList.toggle('is-resume', s.halted)
-    this.deskSwitch.title = s.halted ? 'Allow computer use again' : 'Stop Claude using the computer, now'
   }
 
   // ---------- the plan's limits ----------

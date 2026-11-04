@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ember docs</title>
-<meta name="description" content="How to use Ember on Windows: install, pick an agent, sessions, the canvas, keyboard, sticky notes, notes and todos, shared knowledge between agents, computer use, settings and themes.">
+<meta name="description" content="How to use Ember on Windows: install, pick an agent, sessions, the canvas, keyboard, sticky notes, notes and todos, shared knowledge between agents, settings and themes.">
 <meta name="theme-color" content="#16120F" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#FAF6EF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="https://ember.deepanswerlabs.com/docs">
@@ -15,7 +15,7 @@
 <meta property="og:url" content="https://ember.deepanswerlabs.com/docs">
 <meta property="og:site_name" content="Ember by Deep Answer Labs">
 <meta property="og:title" content="Ember documentation">
-<meta property="og:description" content="Every part of Ember explained: sessions, the canvas, the keyboard, notes and todos, shared knowledge, computer use and settings.">
+<meta property="og:description" content="Every part of Ember explained: sessions, the canvas, the keyboard, notes and todos, shared knowledge and settings.">
 <meta property="og:image" content="https://ember.deepanswerlabs.com/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 
@@ -76,13 +76,11 @@
       <li><a href="#notes">Notes</a></li>
       <li><a href="#todo">Todo</a></li>
       <li><a href="#knowledge">Shared knowledge</a></li>
-      <li><a href="#computer-use">Computer use</a></li>
       <li class="toc__group">Everything else</li>
       <li><a href="#palette">Ctrl+K and the ember command</a></li>
       <li><a href="#shortcuts">Keyboard shortcuts</a></li>
       <li><a href="#terminal">Terminal tools</a></li>
       <li><a href="#settings">Settings and themes</a></li>
-      <li><a href="#phone">Phone link (Labs)</a></li>
       <li><a href="#files">Files and privacy</a></li>
       <li><a href="#troubleshooting">Troubleshooting</a></li>
     </ol>
@@ -297,27 +295,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
   </ul>
 </section>
 
-<section aria-labelledby="computer-use">
-  <h2 id="computer-use">Computer use <a class="anchor" href="#computer-use" aria-label="Link to this section">#</a></h2>
-  <p>Agents in Ember can use your Windows desktop: read what is on screen, point at things and click and type. A pointer of Ember's own shows where the agent is working. It glides to each target and dips on every click.</p>
-  <ul>
-    <li><b>look</b> reads the screen as text, with no screenshot. Without a window it lists the open windows. With one, it lists that window's controls with numbers, like <code>#7 [Button] 'Save' (412,88)</code>.</li>
-    <li><b>act</b> runs a whole sequence in one go, one step per line: <code>focus "Notepad"</code>, <code>press #7</code>, <code>click #12</code>, <code>settext #3 "hello"</code>, <code>type "text"</code>, <code>key ctrl+s</code>, <code>scroll -3</code>, <code>run calc</code>, <code>wait "Calculator"</code>. Its reply ends with what is on screen afterwards, numbered again, so the agent can plan its next step from it.</li>
-    <li><b>point</b> shows you where something is, with a short note beside it, and never clicks. It can step through a walkthrough with <b>Next</b> and <b>Done</b>.</li>
-  </ul>
-  <p class="callout"><b>STOP</b> is on screen whenever an agent acts. Pressing it halts computer use at once, until you resume it. To turn computer use off altogether, choose <b>Computer use: on / off</b> in <kbd>Ctrl</kbd><kbd>K</kbd>.</p>
-  <p>Computer use needs Python 3. Ember installs the few libraries it uses the first time. A locked screen hides every window's controls, so it works only while you are signed in and unlocked.</p>
-  <ul class="prompts">
-    <li>"Open Calculator and work out 12 × 7."</li>
-    <li>"Show me where the Bluetooth settings are."</li>
-  </ul>
-</section>
-
 <!-- ============================ EVERYTHING ELSE ============================ -->
 
 <section aria-labelledby="palette">
   <h2 id="palette">Ctrl+K and the ember command <a class="anchor" href="#palette" aria-label="Link to this section">#</a></h2>
-  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens the command line at the bottom of the window. Type to filter, <kbd>Enter</kbd> to run. It holds everything Ember can do: new session, new terminal, notes, todo, themes, settings, computer use, and the tools below.</p>
+  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens the command line at the bottom of the window. Type to filter, <kbd>Enter</kbd> to run. It holds everything Ember can do: new session, new terminal, notes, todo, themes, settings, and the tools below.</p>
   <p>The same commands work from any shell in Ember as <code>ember</code>:</p>
 <pre><code>ember                        every command, from the running app
 ember new [dir]              new session, in a folder
@@ -329,7 +311,7 @@ ember settings [tab]         open Settings
 ember set &lt;path&gt; &lt;value&gt;     write one setting, e.g. ember set window.opacity 60
 ember get &lt;path&gt;             read one setting
 ember diag                   Ember's recent log</code></pre>
-  <p><code>notes</code>, <code>todo</code> and <code>desk</code> are there as commands too, so scripts and agents can use your notes, your list and computer use from a plain shell.</p>
+  <p><code>notes</code> and <code>todo</code> are there as commands too, so scripts and agents can use your notes and your list from a plain shell.</p>
 </section>
 
 <section aria-labelledby="shortcuts">
@@ -395,18 +377,11 @@ ember diag                   Ember's recent log</code></pre>
         <tr><td>Motion</td><td>One speed preset for all animation, the caret, session switching, scrolling.</td></tr>
         <tr><td>Agent</td><td>Your agent CLIs, the default agent, shared knowledge, plan usage in the sidebar, the status line on Claude sessions.</td></tr>
         <tr><td>Behaviour</td><td>Shell integration and sound.</td></tr>
-        <tr><td>Labs</td><td>Experimental features, such as the phone link.</td></tr>
       </tbody>
     </table>
   </div>
   <h3>Day and night</h3>
   <p>The sun and moon in the title bar switch between <b>Ember Night</b> and <b>Ember Day</b>, a light theme on warm paper. Everything in Ember follows: the canvas, objects, sticky notes, the Todo and Notes pages, menus and setup. More themes are in Settings › Look and in <b>Change theme…</b> in <kbd>Ctrl</kbd><kbd>K</kbd>. Diagrams and documents the agent draws take the theme's colours.</p>
-</section>
-
-<section aria-labelledby="phone">
-  <h2 id="phone">Phone link (Labs) <a class="anchor" href="#phone" aria-label="Link to this section">#</a></h2>
-  <p>Off by default, and experimental. Turn on Labs in Settings, then choose <b>Connect your phone</b> in <kbd>Ctrl</kbd><kbd>K</kbd> and scan the QR code with the Ember phone app.</p>
-  <p>The phone then shows your sessions, lets you read the replies, zoom into diagrams and send messages. One phone can be linked to more than one computer. Traffic goes through a relay that Deep Answer Labs runs, encrypted between your devices. Unless you're trying it out, leave Labs off.</p>
 </section>
 
 <section aria-labelledby="files">
@@ -417,23 +392,21 @@ ember diag                   Ember's recent log</code></pre>
       <tbody>
         <tr><td><code>~/.ember/config.json</code></td><td>All settings.</td></tr>
         <tr><td><code>~/.ember/brain/</code></td><td>Shared knowledge: instructions, memory, skills.</td></tr>
-        <tr><td><code>~/.ember/bin/</code></td><td>The <code>ember</code>, <code>notes</code>, <code>todo</code> and <code>desk</code> commands, rewritten at every start.</td></tr>
-        <tr><td><code>~/.ember/desk.log</code>, <code>desk.halt</code></td><td>Computer-use log, and the marker that holds STOP.</td></tr>
+        <tr><td><code>~/.ember/bin/</code></td><td>The <code>ember</code>, <code>notes</code> and <code>todo</code> commands, rewritten at every start.</td></tr>
         <tr><td><code>~/.ember/diag.log</code></td><td>Diagnostics. Read the end with <code>ember diag</code>.</td></tr>
         <tr><td><code>Documents\Ember Notes\</code></td><td>Your notes, <code>Todo.md</code> and <code>Todo.archive.md</code>.</td></tr>
       </tbody>
     </table>
   </div>
   <p>Set <code>EMBER_HOME</code> to keep Ember's files somewhere other than <code>~/.ember</code>, and <code>EMBER_NOTES_DIR</code> for the notes.</p>
-  <p>Computer-use screenshots (<code>%TEMP%\ember-desk-shots</code>) and pasted or pushed images (<code>%TEMP%\ember-&lt;pid&gt;</code>) are deleted when Ember quits. <code>~/.ember/account.json</code> holds the phone-link key in plain text.</p>
+  <p>Pasted or pushed images (<code>%TEMP%\ember-&lt;pid&gt;</code>) are deleted when Ember quits.</p>
   <p>Ember has no account and no telemetry. Your work goes wherever your agent CLI already sends it. The calls Ember makes on its own:</p>
   <ul>
     <li><strong>Update check.</strong> GitHub's releases API, at start and every 6 hours. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check for updates turns it off.</li>
     <li><strong>Plan usage.</strong> <code>api.anthropic.com</code> every minute with Claude Code's own login, only while the readout is on. Off by default.</li>
-    <li><strong>Phone link.</strong> Only after you pair a phone. Messages are end-to-end encrypted; the relay sees timing, sizes and IP addresses.</li>
     <li><strong>Images in agent replies.</strong> An image from the internet loads only when you click it.</li>
   </ul>
-  <p>Computer use needs Python packages you install yourself; Ember prints the command. The full list is in the <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">privacy policy</a>.</p>
+  <p>The full list is in the <a href="https://github.com/afetiu/ember-terminal/blob/main/CODE_SIGNING.md#privacy-policy">privacy policy</a>.</p>
 </section>
 
 <section aria-labelledby="troubleshooting">
@@ -458,10 +431,6 @@ ember diag                   Ember's recent log</code></pre>
     <details>
       <summary>Ember feels slow or the laptop runs hot.</summary>
       <p>Choose the fast preset in Settings › Motion and keep <b>Shed effects when slow</b> on. A 4K display at a high refresh rate costs the most.</p>
-    </details>
-    <details>
-      <summary>Computer use says it's unavailable.</summary>
-      <p>Install Python 3 from python.org and try again. <b>HALTED</b> means STOP is on: resume it from the STOP button or with <code>desk resume</code>. A locked screen hides every window's controls.</p>
     </details>
     <details>
       <summary>Stray characters appear when I move the mouse.</summary>

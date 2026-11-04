@@ -47,14 +47,12 @@ if (!app.isPackaged) {
 
 /**
  * Ember's own files in %TEMP%: `ember-<pid>` (pasted and pushed images, the status line
- * wrapper, the MCP config) and `ember-desk-shots` (computer-use screenshots). Both go
- * on quit. A crash skips that, so startup clears the folders of runs that are no longer
- * alive and shots older than a day.
+ * wrapper, the MCP config). It goes on quit. A crash skips that, so startup clears the
+ * folders of runs that are no longer alive. `ember-desk-shots` is what the removed
+ * computer-use feature left behind; startup deletes it if it is still there.
  * Names are matched exactly and nothing outside the temp folder is touched.
  */
 const TEMP = tmpdir()
-const SHOTS = join(TEMP, 'ember-desk-shots')
-const DAY_MS = 86_400_000
 
 function alive(pid: number): boolean {
   try {
@@ -87,23 +85,14 @@ function sweepTemp(): void {
   } catch {
     // Temp folder unreadable: nothing to sweep.
   }
-  try {
-    for (const name of readdirSync(SHOTS)) {
-      const file = join(SHOTS, name)
-      if (Date.now() - statSync(file).mtimeMs >= DAY_MS) remove(file)
-    }
-  } catch {
-    // No shots folder yet.
-  }
+  remove(join(TEMP, 'ember-desk-shots'))
 }
 
 function clearOwnTemp(): void {
-  for (const dir of [join(TEMP, `ember-${process.pid}`), SHOTS]) {
-    try {
-      rmSync(dir, { recursive: true, force: true })
-    } catch {
-      // A file still held open; the next start sweeps it.
-    }
+  try {
+    rmSync(join(TEMP, `ember-${process.pid}`), { recursive: true, force: true })
+  } catch {
+    // A file still held open; the next start sweeps it.
   }
 }
 

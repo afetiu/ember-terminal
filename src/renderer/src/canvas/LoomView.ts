@@ -419,10 +419,6 @@ export class LoomView {
       window.ember.canvas.onAnnotate((a) => {
         if (a.tabId === this.tabId) void this.annotate(a)
       }),
-      window.ember.canvas.onPoint((p) => {
-        if (p.tabId && p.tabId !== this.tabId) return
-        void this.pointAt(p)
-      }),
       window.ember.canvas.onSteps((s) => {
         if (s.tabId !== this.tabId) return
         this.stepsTitle = s.title
@@ -468,11 +464,6 @@ export class LoomView {
       const zoomed = (e.data as { emberZoomed?: number } | null)?.emberZoomed
       if (typeof zoomed === 'number') {
         if (this.full?.piece.frame?.contentWindow === e.source) this.showZoom(zoomed)
-        return
-      }
-      const found = (e.data as { emberFound?: { id: string; rect: { x: number; y: number; w: number; h: number } | null } } | null)?.emberFound
-      if (found) {
-        this.findWaiters.get(found.id)?.(found.rect)
         return
       }
       const status = (e.data as { emberDocStatus?: { id: string; ok: boolean; error: string; repaired: boolean } } | null)?.emberDocStatus
@@ -3217,110 +3208,6 @@ export class LoomView {
       else this.kbdLeave()
       return
     }
-  }
-
-  // ================================================================ pointing inside the canvas
-
-  private guide: HTMLElement | null = null
-  private guideTimer = 0
-  private readonly findWaiters = new Map<string, (r: { x: number; y: number; w: number; h: number } | null) => void>()
-
-  /** Ask a document frame where some text of its is: the smallest thing that holds it. */
-  private findInFrame(f: HTMLIFrameElement, text: string): Promise<{ x: number; y: number; w: number; h: number } | null> {
-    const id = Math.random().toString(36).slice(2)
-    return new Promise((resolve) => {
-      const t = window.setTimeout(() => {
-        this.findWaiters.delete(id)
-        resolve(null)
-      }, 1500)
-      this.findWaiters.set(id, (r) => {
-        window.clearTimeout(t)
-        this.findWaiters.delete(id)
-        resolve(r)
-      })
-      f.contentWindow?.postMessage({ emberFind: { id, text } }, '*')
-    })
-  }
-
-  /**
-   * Point at something on the canvas — a node in a diagram, a bar in a chart, a row in a
-   * table — with Ember's own pointer, drawn here: it glides there on a gentle curve, a
-   * short note appears beside it. The session hears whether it was found.
-   */
-  private async pointAt(p: { reqId: string; object: string; text: string; say: string; step?: number; steps?: number }): Promise<void> {
-    const reply = (r: { ok: boolean; error?: string; found?: string }) => window.ember.canvas.pointed(p.reqId, r)
-    const piece = this.findPiece(p.object)
-    const inline = piece ? null : [...this.el.querySelectorAll<HTMLElement>('.loom-diagram[data-title], .loom-liftable[data-title]')].find((d) => sameTitle(d.dataset['title'] ?? '', p.object))
-    const host = piece?.el ?? inline
-    if (!host) return reply({ ok: false, error: `Nothing called "${p.object}" is on the canvas. Call on_screen for the titles.` })
-    // Bring it into view: its turn, unfolded, scrolled to.
-    const turn = host.closest<HTMLElement>('.loom-turn')
-    if (turn && turn !== this.shown && !this.pinned.has(piece!)) {
-      const turns = this.feed.turns()
-      this.viewing = turn === turns[turns.length - 1] ? null : turn
-      this.restage()
-    }
-    if (piece) {
-      this.minimize(piece, false)
-      if (!this.pinned.has(piece)) this.focusOn(piece)
-    }
-    this.reveal(host, 'nearest')
-    await new Promise((r) => window.setTimeout(r, 380))
-    let target = host.getBoundingClientRect()
-    let found = p.object
-    const frame = host.querySelector<HTMLIFrameElement>('iframe')
-    if (p.text && frame) {
-      const r = await this.findInFrame(frame, p.text)
-      if (!r) return reply({ ok: false, error: `"${p.text}" was not found in "${p.object}".` })
-      const fr = frame.getBoundingClientRect()
-      target = new DOMRect(fr.left + r.x, fr.top + r.y, r.w, r.h)
-      found = `${p.text} in ${p.object}`
-    } else if (p.text) {
-      const el = [...host.querySelectorAll<HTMLElement>('*')].filter((e) => (e.textContent ?? '').toLowerCase().includes(p.text.toLowerCase())).sort((a, b) => (a.textContent ?? '').length - (b.textContent ?? '').length)[0]
-      if (!el) return reply({ ok: false, error: `"${p.text}" was not found in "${p.object}".` })
-      target = el.getBoundingClientRect()
-      found = `${p.text} in ${p.object}`
-    }
-    this.drawGuide(target, p.say, p.step, p.steps)
-    reply({ ok: true, found })
-  }
-
-  /** Ember's pointer and its note, on the canvas. */
-  private drawGuide(target: DOMRect, say: string, step?: number, steps?: number): void {
-    const box = this.el.getBoundingClientRect()
-    if (!this.guide) {
-      this.guide = div('loom-guide', `<svg class="loom-guide-arrow" viewBox="0 0 28 32" width="26" height="30"><defs><linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7B652"/><stop offset=".55" stop-color="#F2A43A"/><stop offset="1" stop-color="#E07A1F"/></linearGradient></defs><path d="M3 2.5 L24 17.5 L14.2 18.6 L19.6 28.4 L15.4 30.2 L10.2 20.3 L3.4 26.6 Z" fill="url(#lgA)" stroke="rgba(20,12,4,.85)" stroke-width="1.4" stroke-linejoin="round"/></svg><span class="loom-guide-tag">Ember</span><div class="loom-guide-note"></div>`)
-      this.el.appendChild(this.guide)
-    }
-    const g = this.guide
-    const tx = target.left - box.left + Math.min(target.width * 0.5, 40)
-    const ty = target.top - box.top + target.height * 0.62
-    const from = g.classList.contains('is-on') ? { x: Number(g.dataset['x']), y: Number(g.dataset['y']) } : { x: tx - 140, y: ty - 90 }
-    g.dataset['x'] = String(tx)
-    g.dataset['y'] = String(ty)
-    g.classList.add('is-on')
-    const dist = Math.hypot(tx - from.x, ty - from.y)
-    const ms = reduced() ? 1 : Math.round(Math.max(220, Math.min(650, 180 + dist * 0.45)))
-    const mx = (from.x + tx) / 2 + (ty - from.y) * 0.12
-    const my = (from.y + ty) / 2 - (tx - from.x) * 0.12
-    g.animate(
-      [
-        { transform: `translate(${from.x}px, ${from.y}px)` },
-        { transform: `translate(${mx}px, ${my}px)`, offset: 0.5 },
-        { transform: `translate(${tx + 3}px, ${ty + 2}px)`, offset: 0.9 },
-        { transform: `translate(${tx}px, ${ty}px)` },
-      ],
-      { duration: ms, easing: 'cubic-bezier(0.45, 0, 0.2, 1)', fill: 'forwards' }
-    )
-    const note = g.querySelector<HTMLElement>('.loom-guide-note')!
-    note.classList.remove('is-on')
-    note.innerHTML = (steps ? `<div class="h">Step ${step ?? 1} of ${steps}</div>` : '') + (say ? `<div>${escapeHtml(say)}</div>` : '')
-    // The note sits to the right, or the left when there is no room, never on the target.
-    const right = tx + 300 < box.width
-    note.classList.toggle('is-left', !right)
-    window.setTimeout(() => note.classList.toggle('is-on', !!(say || steps)), ms)
-    window.clearTimeout(this.guideTimer)
-    this.guideTimer = window.setTimeout(() => g.classList.remove('is-on'), ms + 4000 + (say?.length ?? 0) * 60 + (steps ? 8000 : 0))
   }
 
   /** In the turn on screen, a link to an object that was changed in the turn it belongs to. */

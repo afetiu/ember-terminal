@@ -68,7 +68,7 @@ function cdp(target) {
   }
   return { ws, ready, send, ev, on }
 }
-const appTarget = await findPage((t) => !t.url.includes('desk-overlay') && !t.url.includes('realtime'))
+const appTarget = await findPage((t) => !t.url.includes('realtime'))
 if (!appTarget) throw new Error('no app window')
 const tWindow = Date.now() - t0
 const app = cdp(appTarget)

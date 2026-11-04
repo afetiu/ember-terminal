@@ -148,67 +148,6 @@ export interface VitalsState {
   mem: number
 }
 
-/** One thing the computer-use daemon just did, as it reports it to the bridge. */
-export interface DeskActivity {
-  /** 'move' | 'click' | 'drag' | 'type' | 'look' | 'focus' | 'run' | 'scroll' */
-  action: string
-  /** Screen position in physical pixels, when the action has one. */
-  x: number | null
-  y: number | null
-  /** "press Seven in Calculator", "type 12 chars", "look at Chrome" */
-  label: string
-  /** The tab whose Claude did it. */
-  tab: string
-  at: number
-  /** The app the action landed in, in words ("Notepad"), and its executable. */
-  app?: string
-  exe?: string
-  /** The window acted on, by title. */
-  win?: string
-  /** The window is one of Ember's own. */
-  own?: boolean
-}
-
-/** The step-aside card: Ember out of the way while an agent works in another app. */
-export interface DeskCard {
-  /** What it is doing now. */
-  now: string
-  /** The steps before it, newest first (at most three). */
-  trail: string[]
-  /** The app it is working in. */
-  app: string
-  /** Distance from the overlay's bottom-right corner to the work area's, in CSS px. */
-  inset: { right: number; bottom: number }
-}
-
-export type DeskReady = 'off' | 'starting' | 'ok' | 'installing' | 'no-python' | 'no-deps' | 'failed'
-
-/** Computer use, as the sidebar shows it. */
-export interface DeskState {
-  /** The daemon is up and taking commands. */
-  running: boolean
-  /** An action landed in the last couple of seconds. */
-  busy: boolean
-  /** The Stop switch is on: the daemon is dead and `desk` refuses until Resume. */
-  halted: boolean
-  ready: DeskReady
-  /** Why `ready` is not 'ok', in words for the strip's tooltip. */
-  message: string
-  last: DeskActivity | null
-}
-
-/** What main tells the cursor overlay page. Point is in the overlay window's CSS pixels. */
-export interface DeskOverlayState {
-  point?: { x: number; y: number }
-  label?: string
-  action?: string
-  visible: boolean
-  halted: boolean
-  showStop?: boolean
-  /** The step-aside card; null takes it down. Absent leaves it as it is. */
-  card?: DeskCard | null
-}
-
 /** One of the plan's rate-limit windows, as Anthropic's usage endpoint reports it. */
 export interface ClaudeLimit {
   /** 'session' for the five-hour window, 'weekly' for the seven-day one, else the model it is scoped to. */
@@ -378,17 +317,6 @@ export interface RemoteDevice {
 }
 
 export interface EmberConfig {
-  /**
-   * Ember Hands — Ember's own pointer on the desktop. 'show' (the default): Claude may
-   * point at things and explain them, never click. 'act': it may also click and type,
-   * with STOP always on screen. 'off': neither.
-   */
-  hands?: 'off' | 'show' | 'act'
-  /**
-   * When an agent starts acting in another app, Ember minimises itself and leaves a small
-   * card with STOP at the bottom-right, and comes back when the work ends. On unless false.
-   */
-  deskStepAside?: boolean
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
@@ -727,9 +655,6 @@ export interface EmberBridge {
     showFile(tabId: string, path: string, title?: string): Promise<{ ok?: boolean; title?: string; error?: string }>
     onMedia(cb: (m: CanvasMedia) => void): () => void
     onAnnotate(cb: (a: CanvasAnnotate) => void): () => void
-    /** Point at something on this canvas with Ember's pointer; answer with pointed(). */
-    onPoint(cb: (p: { tabId: string; reqId: string; object: string; text: string; say: string; step?: number; steps?: number }) => void): () => void
-    pointed(reqId: string, result: { ok: boolean; error?: string; found?: string }): void
     annotated(reqId: string, result: CanvasAnnotateResult): void
     onSteps(cb: (s: CanvasSteps) => void): () => void
     /** Tell main what the user has placed on this tab's canvas, for the session's on_screen tool. */
@@ -812,15 +737,6 @@ export interface EmberBridge {
   vitals: {
     state(): Promise<VitalsState>
     onState(cb: (s: VitalsState) => void): () => void
-  }
-  /** Computer use: is a Claude driving the desktop, what is it doing, and the Stop switch. */
-  desk: {
-    state(): Promise<DeskState>
-    halt(): void
-    resume(): void
-    onState(cb: (s: DeskState) => void): () => void
-    /** Whether an agent's turn is in flight in any tab: the step-aside card waits for it to end. */
-    agentsWorking(on: boolean): void
   }
   /** The coding-agent CLIs on this machine: which are installed, and whether one answers. */
   agents: {

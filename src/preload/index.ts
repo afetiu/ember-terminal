@@ -17,7 +17,6 @@ import type {
   TaskEntry,
   ThemeConfig,
   VitalsState,
-  DeskState,
   ClaudeStatus,
   ClaudeUsage,
   UpdateState,
@@ -70,8 +69,6 @@ const bridge: EmberBridge = {
     showFile: (tabId, path, title) => ipcRenderer.invoke('ember:canvas:showFile', tabId, path, title) as Promise<{ ok?: boolean; title?: string; error?: string }>,
     onMedia: (cb) => on<CanvasMedia>('ember:canvas:media', cb),
     onAnnotate: (cb) => on<CanvasAnnotate>('ember:canvas:annotate', cb),
-    onPoint: (cb) => on<{ tabId: string; reqId: string; object: string; text: string; say: string; step?: number; steps?: number }>('ember:canvas:point', cb),
-    pointed: (reqId, result) => ipcRenderer.send('ember:canvas:pointed', reqId, result),
     annotated: (reqId: string, result: CanvasAnnotateResult) => ipcRenderer.send('ember:canvas:annotated', reqId, result),
     onSteps: (cb) => on<CanvasSteps>('ember:canvas:steps', cb),
     onCost: (cb) => on<EmberCost>('ember:canvas:cost', cb),
@@ -116,13 +113,6 @@ const bridge: EmberBridge = {
   vitals: {
     state: () => ipcRenderer.invoke('ember:vitals:state') as Promise<VitalsState>,
     onState: (cb) => on<VitalsState>('ember:vitals:state', cb),
-  },
-  desk: {
-    state: () => ipcRenderer.invoke('ember:desk:state') as Promise<DeskState>,
-    halt: () => ipcRenderer.send('ember:desk:halt'),
-    resume: () => ipcRenderer.send('ember:desk:resume'),
-    onState: (cb) => on<DeskState>('ember:desk:state', cb),
-    agentsWorking: (on) => ipcRenderer.send('ember:desk:agentsWorking', on === true),
   },
   agents: {
     detect: (withVersions?: boolean) => ipcRenderer.invoke('ember:agents:detect', !!withVersions),

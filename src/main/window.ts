@@ -80,7 +80,7 @@ export function applyGlass(win: BrowserWindow, config: EmberConfig): void {
  * still goes through, so a reload works, and in dev anything from the Vite server does,
  * so HMR's full reload keeps working.
  *
- * Hooked on every web contents rather than per window so the desk overlay is covered
+ * Hooked on every web contents rather than per window so any future window is covered
  * too. Panel <webview>s are left alone: browsing inside a panel is their job, and they
  * have no preload to hand over.
  */

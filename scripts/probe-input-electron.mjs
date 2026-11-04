@@ -57,7 +57,7 @@ function cdp(target) {
   return { ws, ready, ev }
 }
 
-const appTarget = await findPage((t) => !t.url.includes('desk-overlay') && !t.url.includes('realtime'))
+const appTarget = await findPage((t) => !t.url.includes('realtime'))
 if (!appTarget) { child.kill(); throw new Error('no app window') }
 const app = cdp(appTarget)
 await app.ready
@@ -93,9 +93,9 @@ await type('\r')
 const streaming = await until((sc) => sc.some((l) => l.includes('lorem ipsum')), 45000)
 console.log(`[${tag}] streaming: ${streaming}`)
 // While the letters go in, watch both event loops: a main-process invoke round trip
-// (desk.state is a cheap IPC) and the renderer's own timer drift.
+// (vitals.state is a cheap IPC) and the renderer's own timer drift.
 await app.ev(`window.__probeLag = { mainMax: 0, mainOver100: 0, rendMax: 0, rendOver100: 0, samples: 0, stop: false };
-(async () => { const L = window.__probeLag; while (!L.stop) { const t = performance.now(); try { await window.ember.desk.state() } catch {} const rt = performance.now() - t; L.samples++; if (rt > L.mainMax) L.mainMax = rt; if (rt > 100) L.mainOver100++; await new Promise((r) => setTimeout(r, 50)) } })();
+(async () => { const L = window.__probeLag; while (!L.stop) { const t = performance.now(); try { await window.ember.vitals.state() } catch {} const rt = performance.now() - t; L.samples++; if (rt > L.mainMax) L.mainMax = rt; if (rt > 100) L.mainOver100++; await new Promise((r) => setTimeout(r, 50)) } })();
 (() => { const L = window.__probeLag; let last = performance.now(); const tick = () => { if (L.stop) return; const now = performance.now(); const drift = now - last - 20; if (drift > L.rendMax) L.rendMax = drift; if (drift > 100) L.rendOver100++; last = now; setTimeout(tick, 20) }; setTimeout(tick, 20) })(); true`)
 const lat = []
 let typed = ''

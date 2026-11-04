@@ -749,33 +749,10 @@ All found empirically, all load-bearing:
    TUIs draw their status line on exactly that row, which reads as clipped. Hence the
    22px default bottom padding.
 
-## Computer use: plans, stepping aside, recipes
+## Computer use
 
-- **One call per task.** A model round trip costs seconds; a UI Automation check costs
-  milliseconds. So `act` takes a whole plan and the daemon runs it (`run_batch` in
-  `resources/desk/desk.py`): `wait <condition> [5s]` polls every 60 ms, `expect` gives the UI
-  half a second and stops the plan, `if … then … else …` branches, and the model hears back
-  only at the end, or at the first failure with the step, the reason and the screen as
-  text. The probe's Save As round (9 steps) runs in about 4 s, 1 s of it an `if` that waits
-  for a confirm dialog; step by step it would be nine model turns.
-- **Names, not numbers.** `press [Button] "Save" in "Save As"` resolves when the step runs
-  (exact name in any case beats starts-with beats contains; on screen beats off), retrying
-  for `EMBER_DESK_FIND_TIMEOUT` while a dialog opens. The control found becomes `#0`, so the
-  old `#N` code paths do the clicking. The old forms (`press TITLE NAME`,
-  `settext TITLE NAME TEXT`, `click X Y`) are told apart by their argument count.
-- **Stepping aside.** Each report from the daemon names the app it landed in (`_app_of`; a
-  dialog counts as its owner's) and whether that is Ember. The first action into another
-  app minimises Ember, and the overlay (already a see-through, never-activated window over
-  the screen) draws a card at the bottom-right of the work area: the step, the trail, STOP.
-  The daemon leaves Ember's never-activated windows out of every list it reads, so the card
-  is invisible to `look`. Ember comes back after 4 s without an action and no agent turn in
-  flight (the renderer tells main, from the same activity monitor the sidebar uses), at
-  most 2 min after the last action, or on STOP. `deskStepAside: false` turns it off
-  (`Ctrl+K` › Computer use: step aside).
-- **Recipes.** `act` with `save: [name, values…]` keeps a plan that worked in
-  `~/.ember/recipes/<exe>/<name>.txt`, the given values turned into `$1 $2…`;
-  `recipe run name args` replays it on the machine. A recipe is a plan, so it fails the
-  same way, with the screen.
+Removed in November 2026 (the `desk` daemon, the cursor overlay, the look/act/point/recipe
+tools). Ember is a terminal for agents, not a desktop driver; the history has the code.
 
 ## Scripts
 
@@ -789,7 +766,6 @@ All found empirically, all load-bearing:
 - `scripts/probe-standalone.mjs` — runs the app with ~/voice hidden and takes it through to real Azure synthesis
 - `scripts/probe-narration.mjs` — a decoy transcript written last, and a background tab that must stay silent
 - `scripts/probe-panel.mjs` — drives the v2 panel over the real bridge: env inheritance, the `claude` shim, auto-open, mermaid actually drawing, browser mode, collapse
-- `scripts/probe-desk-plan.mjs` — one checked plan through `/desk/act` against a test window it opens (`scripts/desk-test-window.ps1`), the step-aside card, a failing expect, a recipe replay
 - `scripts/prepare-resources.mjs` — stages mermaid out of node_modules for the panel to load
 - `scripts/bench.mjs` — the head-to-head above, with a per-5s drain readout and `--profile-main`
 - `scripts/bench-pty.cjs` — the same firehose through node-pty alone: ConPTY's floor

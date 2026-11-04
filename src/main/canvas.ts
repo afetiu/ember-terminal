@@ -600,28 +600,6 @@ export function requestAnnotate(
   })
 }
 
-const pointWaiters = new Map<string, (r: { ok: boolean; error?: string; found?: string }) => void>()
-
-/** Point at something on a Loom canvas (a node in a diagram, a row in a table) with Ember's pointer, drawn in the canvas. */
-export function requestCanvasPoint(
-  broadcast: (channel: string, payload: unknown) => void,
-  payload: Json
-): Promise<{ ok: boolean; error?: string; found?: string }> {
-  const reqId = randomBytes(8).toString('hex')
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      pointWaiters.delete(reqId)
-      resolve({ ok: false, error: 'the canvas did not answer — is this a canvas tab with that object on it?' })
-    }, 6000)
-    pointWaiters.set(reqId, (r) => {
-      clearTimeout(timer)
-      pointWaiters.delete(reqId)
-      resolve(r)
-    })
-    broadcast('ember:canvas:point', { ...payload, reqId })
-  })
-}
-
 // ---------------------------------------------------------------- wiring
 
 export interface CanvasDeps {
@@ -684,9 +662,6 @@ export function registerCanvas(deps: CanvasDeps): void {
   ipcMain.handle('ember:canvas:doc', (_e, tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string) =>
     deps.hostDoc(tabId, title, format, content)
   )
-  ipcMain.on('ember:canvas:pointed', (_e, reqId: string, result: { ok: boolean; error?: string; found?: string }) => {
-    pointWaiters.get(reqId)?.(result)
-  })
   ipcMain.on('ember:canvas:annotated', (_e, reqId: string, result: CanvasAnnotateResult) => {
     annotateWaiters.get(reqId)?.(result)
   })

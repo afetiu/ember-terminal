@@ -14,7 +14,6 @@ import { UsageWatcher } from './usage.js'
 import { Updater } from './update.js'
 import { detectAgents, pingAgent } from './agents.js'
 import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
-import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resumeDesk, setAgentsWorking, setOverlayInteractive, stopDesk, toggleDesk } from './desk.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
@@ -65,8 +64,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   })
   const broadcast = (channel: string, payload: unknown) => {
     for (const win of BrowserWindow.getAllWindows()) {
-      // The cursor overlay is a window too, but not one of ours to talk to this way.
-      if (!win.isDestroyed() && !isOverlayWindow(win)) win.webContents.send(channel, payload)
+      if (!win.isDestroyed()) win.webContents.send(channel, payload)
     }
   }
 
@@ -110,17 +108,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   ipcMain.handle('ember:update:state', () => updater.state)
   ipcMain.handle('ember:update:check', () => updater.check())
   ipcMain.on('ember:update:install', () => void updater.install())
-
-  // Computer use: the strip's indicator and Stop switch, and the overlay's pill.
-  onDeskState((s) => broadcast('ember:desk:state', s))
-  ipcMain.handle('ember:desk:state', () => deskState())
-  ipcMain.on('ember:desk:halt', () => haltDesk())
-  ipcMain.on('ember:desk:resume', () => resumeDesk())
-  ipcMain.on('ember:desk:toggle', () => toggleDesk())
-  ipcMain.on('ember:desk:overlay:interactive', (_e, on: boolean) => setOverlayInteractive(on === true))
-  ipcMain.on('ember:desk:agentsWorking', (_e, on: boolean) => setAgentsWorking(on === true))
-  ipcMain.handle('ember:desk:overlay:state', () => overlayState())
-  app.on('before-quit', () => stopDesk())
 
   ipcMain.handle('ember:config', () => loadConfig())
 

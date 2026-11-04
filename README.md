@@ -27,8 +27,6 @@ Free · MIT · no account · no telemetry · Windows 10/11 x64
   is always the way back, and `Ctrl+K` does the rest.
 - **Notes and a todo list, outside sessions.** A sticky note with `Ctrl+Shift+N`, a todo
   list in the sidebar. Every agent can read them, add to them and tick things off.
-- **Computer use you can watch.** The agent reads your screen as text, with every control
-  numbered, and acts with a pointer of its own. STOP is always on screen.
 - **One memory for all your agents.** What one agent learns about you and your projects,
   the others know too. Shared instructions, shared skills.
 
@@ -125,27 +123,6 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
   in `~/.ember/brain/memory`, and shared skills, handed to every agent Ember finds. Settings
   › Agent › Shared knowledge shows what is shared and turns it off.
 
-## Computer use
-
-Agents in Ember can use your Windows desktop, with a pointer of Ember's own that glides
-to each target and dips on every click.
-
-- `look` reads a window as text, with its controls numbered: `#7 [Button] 'Save' (412,88)`.
-- `act` runs a whole task as one plan, on your machine, without going back to the model
-  between steps: `key ctrl+s; wait "Save As"; settext [Edit] "File name:" "notes.txt";
-  press [Button] "Save"; expect title "notes.txt"`. It stops at the first step that fails
-  and says which, why, and what is on screen.
-- `point` shows you where something is, with a short note beside it, and never clicks.
-- A plan that worked can be kept as a recipe and run again with other values.
-
-While an agent works in another app, Ember steps aside: its window minimises and a small
-card in the corner says what it is doing, with STOP. It comes back when the work is done.
-
-**STOP** is on screen whenever an agent acts. `Ctrl+K` › **Computer use: on / off** turns
-it off altogether. Computer use needs Python 3, Python packages you install yourself
-(Ember prints the `pip` command) and an unlocked session. Its screenshots are kept in
-`%TEMP%\ember-desk-shots` and deleted when Ember quits.
-
 ## Everything else
 
 - `Ctrl+K` is the command line for everything Ember can do. The same commands work from
@@ -166,10 +143,7 @@ Ember makes these calls itself. Everything else is the agent CLI you run in it.
   for updates turns it off; clicking the version in the sidebar still checks.
 - **Plan usage:** polls `api.anthropic.com` every minute with Claude Code's own login, only
   while Settings › Agent › Plan usage is on. Off by default.
-- **Phone link:** only after you pair a phone. Messages are end-to-end encrypted; the relay
-  sees timing, sizes and IP addresses. The key sits in plain text in `~/.ember/account.json`.
 - **Images in agent replies:** an image from the internet loads only when you click it.
-- **Computer use:** Ember never installs Python packages for you.
 
 Pasted and pushed images live in `%TEMP%\ember-<pid>` and are deleted when Ember quits.
 More in the [privacy policy](CODE_SIGNING.md#privacy-policy).
@@ -198,11 +172,11 @@ after a `wrangler login`.
 from the website's own demo (needs Edge and `ffmpeg`).
 
 ```
-src/main/       Electron main: ConPTY host, agents, the bridge and MCP tools, computer use
+src/main/       Electron main: ConPTY host, agents, the bridge and MCP tools
 src/preload/    contextBridge -> window.ember
 src/renderer/   the canvas, sessions, sidebar, notes, todo, settings
 resources/      the MCP servers and CLIs Ember hands to every agent and shell
-site/           the website and the phone app's page
+site/           the website
 ```
 
 How session status is read off the terminal, what the window glass costs, performance
