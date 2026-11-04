@@ -45,8 +45,6 @@ export interface ComposerContext {
   cancel(uuid: string): void
   toast(text: string): void
   relayout(): void
-  /** Whether a queued message has its own × (the TUI's queue cannot drop one). */
-  queueCancel?: boolean
 }
 
 /**
@@ -425,6 +423,15 @@ export class Composer {
     this.input.focus()
   }
 
+  /** Pictures given back (a queued message Esc returned): new thumbnails from their data. */
+  restoreAttachments(list: Attachment[]): void {
+    for (const a of list) {
+      const bytes = Uint8Array.from(atob(a.image.data), (c) => c.charCodeAt(0))
+      this.attachments.push({ image: a.image, url: URL.createObjectURL(new Blob([bytes], { type: a.image.mediaType })) })
+    }
+    this.renderAttachments()
+  }
+
   private removeAttachment(i: number): void {
     const [a] = this.attachments.splice(i, 1)
     if (a) URL.revokeObjectURL(a.url)
@@ -458,7 +465,7 @@ export class Composer {
             `<div class="loom-queue-item" data-uuid="${escapeHtml(q.uuid)}"><span class="loom-queue-tag">queued</span>` +
             `<span class="loom-queue-text">${escapeHtml(q.text || '(picture)')}${q.images ? ` <i>+${q.images} image${q.images > 1 ? 's' : ''}</i>` : ''}</span>` +
             `<span class="loom-queue-acts"><button type="button" data-q="now" title="Stop the turn and send this now">Send now</button>` +
-            (this.ctx.queueCancel === false ? '' : `<button type="button" data-q="x" class="is-x" title="Don't send" aria-label="Cancel">×</button>`) +
+            `<button type="button" data-q="x" class="is-x" title="Don't send this" aria-label="Remove from the queue">×</button>` +
             `</span></div>`
         )
         .join('') + (items.length ? `<div class="loom-queue-foot"><span>Sent when this turn ends · Esc stops the turn and gives them back</span></div>` : '')

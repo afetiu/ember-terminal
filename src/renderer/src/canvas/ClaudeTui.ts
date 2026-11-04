@@ -11,7 +11,14 @@ import type { AgentWrapper, WrapperHost, WrapperState } from './AgentWrapper'
  * bracketed paste (newlines stay newlines, nothing submits early), then Enter on its own.
  * Pictures go first, each put on the clipboard and attached with Claude Code's own Alt+V
  * ("[Image #n]"). `!cmd` is `!` (the TUI's bash mode) and then the command. Esc
- * interrupts, Shift+Tab cycles the mode, Ctrl+X Ctrl+S sends a queued message now.
+ * interrupts, Shift+Tab cycles the mode.
+ *
+ * The queue is Ember's. A message written while a turn runs is held here, not typed: the
+ * TUI's own queue can only be edited by pulling messages back into its prompt one by one
+ * (Up), which is not something to drive blind. Held here, each queued message has its own
+ * ×; they are typed (joined, as Claude Code joins its own) when the turn ends. "Send now"
+ * types that one into the TUI mid-turn (Claude Code queues it) and presses its "send now"
+ * (Ctrl+X Ctrl+S). Esc stops the turn and gives the held messages back to the composer.
  *
  * Text left in the TUI's prompt (typed in the CLI view) is not sent by surprise and not
  * thrown away: coming back to the canvas, or sending, moves it into the composer and
@@ -24,8 +31,9 @@ import type { AgentWrapper, WrapperHost, WrapperState } from './AgentWrapper'
  * Ember's cards, and the card's answer is the hook's decision, which resolves the TUI's
  * own dialog (Claude Code draws it beside the hook; it is simply never shown here).
  * One row of the screen is read as text: the spinner line, for the working line. The
- * screen also says when Claude Code shows something no hook describes (a picker, the
- * trust dialog, /login): the canvas then offers the CLI view instead of guessing.
+ * screen also says when Claude Code shows something no hook describes (a picker, /login):
+ * the canvas then offers the CLI view instead of guessing. One such screen is Ember's
+ * card: "trust this folder?" when Claude starts in a folder it has not been trusted in.
  */
 
 const RULE = /^\s*[─━]{20,}\s*$/
@@ -34,6 +42,11 @@ const PROMPT_LINE = /^\s?[❯>!]\s?/
 const SPINNER = /^(\S)\s+([A-Z][a-z]+(?:[- ][a-z]+)?…)\s*(.*)$/
 /** Lines a dialog draws that the input box never does. */
 const DIALOG = /Do you want to|Esc to cancel|Enter to (?:select|confirm)|❯\s*\d+\.\s|^\s*\d+\.\s+(?:Yes|No)\b/i
+/** Claude Code's "Accessing workspace" dialog: its two lines no other screen has. */
+const TRUST_YES = /Yes, I trust this folder/
+const TRUST_HEAD = /Accessing workspace|Quick safety check/
+const TRUST_ID = 'tui-trust'
+const trustShown = (rows: string[]) => rows.some((r) => TRUST_YES.test(r)) && rows.some((r) => TRUST_HEAD.test(r))
 
 const sleep = (ms: number) => new Promise((r) => window.setTimeout(r, ms))
 
@@ -57,8 +70,13 @@ export class ClaudeTui implements AgentWrapper {
   private readonly unsubs: Array<() => void> = []
   /** Cards open for permission requests, by the bridge's id for the held hook. */
   private readonly cards = new Map<string, { tool: string; input: string; at: number }>()
+  /** Ember's queue: messages held until the turn ends, each with its pictures. */
   private queue: QueuedMessage[] = []
-  private queueSeen = 0
+  private readonly queuedImages = new Map<string, Attachment[]>()
+  /** When the last send finished typing: its UserPromptSubmit may not have come yet. */
+  private sentAt = 0
+  /** The trust dialog: none on screen, its card up, or Ember answering it. */
+  private trust: 'none' | 'asking' | 'answering' = 'none'
   private commands: SlashCommandInfo[] = []
   private modelList: Array<{ value: string; displayName: string; description: string }> = []
   /** Sends go one after another: each waits for the prompt the one before left. */
@@ -73,6 +91,7 @@ export class ClaudeTui implements AgentWrapper {
   private spinnerAt = 0
   private elsewhere = false
   private disposed = false
+  private recheck = 0
   /** For probes: hook events seen, by name. */
   private readonly counts: Record<string, number> = {}
   private readonly log: string[] = []
@@ -99,11 +118,10 @@ export class ClaudeTui implements AgentWrapper {
       files: (query) => window.ember.files.search(host.cwd(), query),
       submit: (text, images) => this.submit(text, images),
       cycleMode: () => this.cycleMode(),
-      sendNow: () => this.write('\x18\x13'),
-      cancel: () => host.toast('Esc stops the turn and gives queued messages back'),
+      sendNow: (uuid) => this.sendNow(uuid),
+      cancel: (uuid) => this.unqueue(uuid),
       toast: (t) => host.toast(t),
       relayout: () => host.relayout(),
-      queueCancel: false,
     })
     this.banner.className = 'loom-elsewhere'
     this.banner.innerHTML =
@@ -158,7 +176,14 @@ export class ClaudeTui implements AgentWrapper {
     window.ember.hooks.hooked(this.host.tabId, false)
     this.closeCards()
     this.setQueue([])
+    if (this.trust !== 'none') {
+      this.trust = 'none'
+      this.asks.close(TRUST_ID)
+    }
     this.promptAt = this.stopAt = 0
+    // The banner belonged to that run: a next `claude` in the tab starts without it.
+    this.elsewhere = false
+    this.banner.classList.remove('is-on')
     this.set({ phase: 'exited', live: null })
   }
 
@@ -212,6 +237,13 @@ export class ClaudeTui implements AgentWrapper {
     const box = this.findBox(rows)
     this.box = box
     const now = Date.now()
+    const trusting = trustShown(rows)
+    if (trusting && this.trust === 'none') this.askTrust()
+    else if (!trusting && this.trust === 'asking') {
+      // Answered in the CLI view.
+      this.trust = 'none'
+      this.asks.close(TRUST_ID)
+    }
     if (box) {
       this.noBoxSince = 0
       if (!this.boxSeen) {
@@ -243,13 +275,23 @@ export class ClaudeTui implements AgentWrapper {
       this.stopAt = now
       this.set({ phase: 'idle' })
     } else if (live && this.state.phase === 'idle' && !this.cards.size) this.set({ phase: 'working' })
-    // Queued messages leave the screen when Claude takes them.
-    if (this.queue.length) {
-      if (rows.some((r) => /to send now/i.test(r))) this.queueSeen = now
-      else if (now - this.queueSeen > 1500 && now - Math.max(...this.queue.map((q) => Number(q.uuid.split(':')[0]))) > 1500) this.setQueue([])
+    this.flushQueue()
+    // screen() runs when the screen changes, and an interrupted turn leaves it still: look
+    // again shortly while a turn may have ended unseen or a queued message waits.
+    if (!this.recheck && box && ((this.turnOn && !live) || this.queue.length)) {
+      this.recheck = window.setTimeout(() => {
+        this.recheck = 0
+        this.screen()
+      }, 600)
     }
-    // Something on Claude Code's screen no hook describes: offer its own view.
-    const away = this.boxSeen && !box && !this.cards.size && !!this.noBoxSince && now - this.noBoxSince > 700 && !this.sending
+    // Something on Claude Code's screen no hook describes: offer its own view. Before the
+    // first prompt, only a dialog counts (a fresh `claude` draws nothing for a moment).
+    const away =
+      !box &&
+      !this.cards.size &&
+      this.trust === 'none' &&
+      !this.sending &&
+      (this.boxSeen ? !!this.noBoxSince && now - this.noBoxSince > 700 : this.state.phase === 'starting' && rows.some((r) => DIALOG.test(r)))
     if (away !== this.elsewhere) {
       this.elsewhere = away
       this.banner.classList.toggle('is-on', away)
@@ -280,9 +322,49 @@ export class ClaudeTui implements AgentWrapper {
 
   private submit(text: string, images: Attachment[]): void {
     if (!text && !images.length) return
-    const busy = this.turnOn || this.state.phase === 'working'
-    if (busy && !text.startsWith('/') && !text.startsWith('!')) this.setQueue([...this.queue, { uuid: `${Date.now()}:${Math.random()}`, text, images: images.length }])
+    const busy = this.turnOn || this.state.phase === 'working' || this.state.phase === 'asking' || this.sending > 0 || this.queue.length > 0
+    if (busy && !text.startsWith('/') && !text.startsWith('!')) {
+      const uuid = `${Date.now()}:${Math.random()}`
+      this.queuedImages.set(uuid, images)
+      this.setQueue([...this.queue, { uuid, text, images: images.length }])
+      return
+    }
     this.deliver(text, images)
+  }
+
+  /** The turn is over (and nothing is being typed): what was queued goes, as one message. */
+  private flushQueue(): void {
+    if (!this.queue.length || this.turnOn || this.sending || this.cards.size || this.disposed) return
+    if (this.state.phase !== 'idle' || !this.box) return
+    // A send that just finished typing may not have its UserPromptSubmit yet.
+    if (Date.now() - this.sentAt < 2500 && this.stopAt < this.sentAt) return
+    const q = this.queue
+    const images = q.flatMap((m) => this.queuedImages.get(m.uuid) ?? [])
+    this.queuedImages.clear()
+    this.setQueue([])
+    this.deliver(q.map((m) => m.text).filter(Boolean).join('\n\n'), images)
+  }
+
+  /** × on a queued message. */
+  private unqueue(uuid: string): void {
+    this.queuedImages.delete(uuid)
+    this.setQueue(this.queue.filter((q) => q.uuid !== uuid))
+  }
+
+  /** "Send now": typed into the TUI mid-turn (Claude Code queues it), then its send-now key. */
+  private sendNow(uuid: string): void {
+    const m = this.queue.find((q) => q.uuid === uuid)
+    if (!m) return
+    const images = this.queuedImages.get(uuid) ?? []
+    this.unqueue(uuid)
+    if (!(this.turnOn || this.state.live)) {
+      this.deliver(m.text, images)
+      return
+    }
+    this.deliver(m.text, images, async () => {
+      await sleep(150)
+      this.write('\x18\x13')
+    })
   }
 
   /** A message from a canvas action (the answer card, "ask about this"). */
@@ -298,13 +380,17 @@ export class ClaudeTui implements AgentWrapper {
     void this.composer.addFiles(files, (f) => window.ember.platform.pathForFile(f))
   }
 
-  private deliver(text: string, images: Attachment[]): void {
+  private deliver(text: string, images: Attachment[], after?: () => Promise<void>): void {
     this.sending++
     this.chain = this.chain
-      .then(() => this.type(text, images))
+      .then(async () => {
+        await this.type(text, images)
+        await after?.()
+      })
       .catch((err) => this.host.toast(`Could not send: ${err instanceof Error ? err.message : String(err)}`))
       .finally(() => {
         this.sending--
+        this.sentAt = Date.now()
       })
   }
 
@@ -389,17 +475,76 @@ export class ClaudeTui implements AgentWrapper {
     if (!(this.turnOn || this.state.live)) return false
     this.write('\x1b')
     if (this.queue.length) {
-      // Claude Code puts what was queued back into its prompt: it comes back into the composer.
+      // Esc gives what was queued back, as Claude Code's own Esc does: into the composer.
+      const q = this.queue
+      const pics = q.flatMap((m) => this.queuedImages.get(m.uuid) ?? [])
       this.setQueue([])
-      window.setTimeout(() => void this.pullLeftover(), 600)
+      this.composer.append(q.map((m) => m.text).filter(Boolean).join('\n\n'))
+      if (pics.length) this.composer.restoreAttachments(pics)
     }
+    // Text Claude Code gives back after an interrupt comes into the composer too, rather
+    // than waiting in the hidden prompt.
+    window.setTimeout(() => void this.pullLeftover(), 600)
     return true
   }
 
   private setQueue(q: QueuedMessage[]): void {
     this.queue = q
-    if (q.length) this.queueSeen = Date.now()
+    for (const k of [...this.queuedImages.keys()]) if (!q.some((m) => m.uuid === k)) this.queuedImages.delete(k)
     this.composer.setQueue(q)
+  }
+
+  // ------------------------------------------------------------- trust
+
+  /** Claude Code asks whether to trust the folder: Ember's card, answered with its keys. */
+  private askTrust(): void {
+    this.trust = 'asking'
+    this.elsewhere = false
+    this.banner.classList.remove('is-on')
+    void this.asks
+      .confirm(`Trust ${this.host.cwd()}?`, 'Yes', 'No', { id: TRUST_ID, detail: 'Claude Code will be able to read and run files here.' })
+      .then((yes) => this.answerTrust(yes))
+  }
+
+  /**
+   * Yes: the selection is moved onto "Yes, I trust this folder" (the dialog opens on "No,
+   * exit"), checked on the screen, and only then Enter. No: Esc, the dialog's own cancel.
+   * Either way the dialog must leave the screen; an answer Claude Code did not take is
+   * tried again, and if it still stands the CLI view is opened rather than guessed at.
+   */
+  private async answerTrust(yes: boolean): Promise<void> {
+    if (this.trust !== 'asking') return
+    this.trust = 'answering'
+    let gone = false
+    try {
+      for (let attempt = 0; attempt < 3 && !gone; attempt++) {
+        if (yes) {
+          let onYes = false
+          for (let i = 0; i < 4 && !onYes; i++) {
+            const sel = this.rows().find((r) => /❯/.test(r) && /No, |Yes, I trust/.test(r))
+            onYes = !!sel && TRUST_YES.test(sel)
+            if (!onYes) {
+              this.write('\x1b[B')
+              await sleep(150)
+            }
+          }
+          if (!onYes) continue
+          this.write('\r')
+        } else this.write('\x1b')
+        for (let i = 0; i < 20 && !gone; i++) {
+          await sleep(100)
+          gone = !trustShown(this.rows())
+        }
+      }
+    } finally {
+      this.trust = 'none'
+    }
+    if (gone) {
+      this.screen()
+      return
+    }
+    this.host.toast('Claude Code did not take the answer: it is in the CLI view')
+    this.host.openCli()
   }
 
   // ------------------------------------------------------------- hooks
@@ -428,8 +573,6 @@ export class ClaudeTui implements AgentWrapper {
         return
       case 'UserPromptSubmit': {
         this.promptAt = Math.max(this.promptAt, e.at)
-        const p = String(i['prompt'] ?? '')
-        if (this.queue.length) this.setQueue(this.queue.filter((q) => !p.includes(q.text.trim())))
         if (this.turnOn && !this.cards.size) this.set({ phase: 'working' })
         return
       }
@@ -505,6 +648,7 @@ export class ClaudeTui implements AgentWrapper {
     if (!changed) return
     if ('phase' in patch) this.placeholder()
     this.host.changed()
+    if (patch.phase === 'idle') queueMicrotask(() => this.flushQueue())
   }
 
   private placeholder(): void {
@@ -528,6 +672,7 @@ export class ClaudeTui implements AgentWrapper {
       askKinds: this.asks.kinds(),
       queue: this.queue.map((q) => q.text),
       elsewhere: this.elsewhere,
+      trust: this.trust,
       turnOn: this.turnOn,
       counts: { ...this.counts },
       hooks: [...this.log],
@@ -543,6 +688,7 @@ export class ClaudeTui implements AgentWrapper {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    window.clearTimeout(this.recheck)
     this.closeCards()
     window.ember.hooks.hooked(this.host.tabId, false)
     for (const u of this.unsubs) u()
@@ -574,7 +720,7 @@ export function prettyModel(id: string): string {
 /** An attachment as a PNG or JPEG data URL: what the clipboard takes. */
 async function asPng(a: Attachment): Promise<string> {
   if (a.image.mediaType === 'image/png' || a.image.mediaType === 'image/jpeg') return `data:${a.image.mediaType};base64,${a.image.data}`
-  const blob = await (await fetch(a.url)).blob()
+  const blob = await (await fetch(`data:${a.image.mediaType};base64,${a.image.data}`)).blob()
   const bmp = await createImageBitmap(blob)
   const c = document.createElement('canvas')
   c.width = bmp.width

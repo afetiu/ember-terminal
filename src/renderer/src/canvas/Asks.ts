@@ -91,10 +91,11 @@ export class Asks {
    * One of Ember's own questions, as a card like Claude's (nothing is sent to Claude Code):
    * yes or no, Esc = no. Resolves with the answer.
    */
-  confirm(question: string, yes: string, no: string): Promise<boolean> {
+  confirm(question: string, yes: string, no: string, opts: { id?: string; detail?: string } = {}): Promise<boolean> {
     return new Promise((resolve) => {
-      const id = `ember-confirm-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+      const id = opts.id ?? `ember-confirm-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
       const el = card(escapeHtml(question), 'is-confirm')
+      if (opts.detail) el.insertAdjacentHTML('beforeend', `<div class="loom-ask-card-why">${escapeHtml(opts.detail)}</div>`)
       el.insertAdjacentHTML('beforeend', acts([['yes', yes, true], ['no', no]], 'Enter yes · Esc no'))
       const done = (answer: boolean) => {
         if (!this.cards.has(id)) return
