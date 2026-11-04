@@ -161,6 +161,8 @@ try {
       src: p.querySelector('iframe.loom-frame')?.getAttribute('src') ?? '',
       web: p.querySelector('webview')?.getAttribute('src') ?? '',
       min: p.classList.contains('is-min'),
+      // Unloaded by the canvas while off screen (loom/frames.ts); it loads again on approach.
+      asleep: p.querySelector('iframe.loom-frame')?.getAttribute('src') === 'about:blank' && !!p.querySelector('iframe.loom-frame')?.dataset.slept,
     }
   })()`
 
@@ -226,8 +228,12 @@ try {
       '```mermaid\ngraph LR\n  A[Claude in a tab] -->|show_panel| B[Bridge]\n  B --> C[Canvas]\n```\n\n' +
       '| Repo | State |\n| --- | --- |\n| acme-web | scaled to 0 |\n| acme-api | scaled to 0 |\n',
   })
-  const final = await until(cdp, piece('Estate'), (v) => !!v?.src.includes('/doc/') && !v.min, 'the changed Estate never came back open')
-  await inspectDoc(final.src)
+  // Estate lives in an earlier turn than the one on screen: changed, it is open again
+  // there, and — off screen, as a static document — may already be asleep (loom/frames.ts),
+  // in which case there is no page to look inside until that turn is shown.
+  const final = await until(cdp, piece('Estate'), (v) => !!v && !v.min && (v.src.includes('/doc/') || v.asleep), 'the changed Estate never came back open')
+  const looked = final.asleep ? null : await inspectDoc(final.src, async () => !!(await cdp.eval(piece('Estate')))?.asleep)
+  if (!looked) console.log('the changed Estate is off screen and asleep; not inspected')
 
   await cdp.send('Page.bringToFront')
   const shot = await cdp.send('Page.captureScreenshot', { format: 'png' })
@@ -286,8 +292,9 @@ async function readToken(cdp) {
  * not load" on a build where mermaid loads perfectly well. A probe that reports a
  * regression that is really its own stopwatch costs more than no probe.
  */
-async function inspectDoc(url) {
+async function inspectDoc(url, slept = async () => false) {
   for (let i = 0; i < 75; i++) {
+    if (await slept()) return null
     const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
     const guest = list.find((t) => t.url === url)
     if (guest?.webSocketDebuggerUrl) {

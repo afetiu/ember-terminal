@@ -144,8 +144,12 @@ async function press(cdp, g, selector) {
   if (!inner || !frame) return false
   const x = frame.x + inner.x
   const y = frame.y + inner.y
+  // At a person's pace: a frame takes the focus on the press, and its piece settles a
+  // couple of pixels as it does; a release in the same instant can miss the button.
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+  await sleep(120)
   await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 })
+  await sleep(80)
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
   return true
 }

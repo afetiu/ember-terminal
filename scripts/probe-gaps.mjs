@@ -15,7 +15,7 @@
  *   npm run build; PROBE_PORT=9521 node scripts/probe-gaps.mjs [out-dir]
  */
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -35,6 +35,27 @@ const check = (name, ok, extra = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? `  ${extra}` : ''}`)
 }
 const claudeJson = join(homedir(), '.claude.json')
+/** A folder's newest Claude session, from its transcript under ~/.claude/projects: who said what, in order. */
+function transcript(folder) {
+  const dir = join(homedir(), '.claude', 'projects', folder.replace(/[^A-Za-z0-9]/g, '-'))
+  if (!existsSync(dir)) return []
+  const file = readdirSync(dir)
+    .filter((f) => f.endsWith('.jsonl'))
+    .map((f) => join(dir, f))
+    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0]
+  if (!file) return []
+  const out = []
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    try {
+      const m = JSON.parse(line)
+      if (m.type !== 'assistant' && m.type !== 'user') continue
+      const c = m.message?.content
+      const text = typeof c === 'string' ? c : (c ?? []).filter((x) => x.type === 'text').map((x) => x.text).join('')
+      if (text) out.push({ who: m.type, text })
+    } catch {}
+  }
+  return out
+}
 const key = (dir) => dir.replace(/\\/g, '/')
 const trusted = (dir) => {
   try {
@@ -173,7 +194,9 @@ try {
   }
   const items = () => ev(`[...document.querySelectorAll('.loom-queue-item')].map((e) => ({ text: e.querySelector('.loom-queue-text').innerText, x: !!e.querySelector('button[data-q="x"]') }))`)
   const prompts = () => ev(`window.__ember.loom(${JSON.stringify(t.tab)}).text`)
-  await say('Use the Bash tool to run exactly `sleep 40` once, then reply with exactly: SLEPT')
+  // A long reply, not a long tool call: Claude Code's shell tool refuses `sleep` (alone or
+  // chained), and anything else that waits would ask for permission.
+  await say('Without using any tool, write the numbers from 1 to 600 in English words, one per line, then a last line with exactly: SLEPT')
   const working = await until(async () => (await t.w())?.turnOn && (await t.w())?.live && (await t.w()), 45_000)
   check('a long turn runs', !!working, working ? working.live.verb : '')
   await say('Reply with exactly: QONE')
@@ -191,8 +214,18 @@ try {
   check('× removes that one only', q.length === 2 && /QONE/.test(q[0].text) && /QTHREE/.test(q[1].text), JSON.stringify(q.map((i) => i.text)))
   const sentNowAt = Date.now()
   await ev(`[...document.querySelectorAll('.loom-queue-item')].find((e) => /QTHREE/.test(e.innerText)).querySelector('button[data-q="now"]').click()`)
-  const now3 = await until(async () => /QTHREE[\s\S]*QTHREE/.test(await prompts()), 35_000)
-  check('Send now: that message is answered without waiting for the turn', !!now3, `${Math.round((Date.now() - sentNowAt) / 1000)} s`)
+  // Claude Code's send-now cuts the running turn and runs it again with the message joined
+  // to it (what the model then replies is the model's): the message is in the session
+  // before the turn's reply is, and answered soon after. Read from the session's transcript:
+  // the feed shows one turn at a time, and QONE's can follow QTHREE's before a look sees it.
+  const joined = async () => {
+    const tr = transcript(YES_DIR)
+    const u3 = tr.findIndex((m) => m.who === 'user' && /QTHREE/.test(m.text))
+    const reply = tr.findIndex((m) => m.who === 'assistant')
+    return u3 >= 0 && (reply < 0 || u3 < reply) && tr.slice(u3 + 1).some((m) => m.who === 'assistant') ? tr : null
+  }
+  const now3 = await until(joined, 60_000)
+  check('Send now: that message joins the running turn and is answered without waiting for it', !!now3, `${Math.round((Date.now() - sentNowAt) / 1000)} s ${JSON.stringify(transcript(YES_DIR).map((m) => `${m.who}:${m.text.slice(0, 18)}`))}`)
   // Claude Code's send-now may end the running turn to make way; what stays queued in
   // Ember then goes when that turn ends, after the one sent now. (The feed shows one turn
   // at a time, so the order is read from what was typed into the TUI.)
@@ -210,7 +243,7 @@ try {
   check('the queue is empty after', (await items()).length === 0)
 
   // Esc: what is queued comes back to the composer.
-  await say('Use the Bash tool to run exactly `sleep 30` once, then reply with exactly: SLEPT2')
+  await say('Without using any tool, write the numbers from 1 to 600 in English words, one per line, then a last line with exactly: SLEPT2')
   await until(async () => (await t.w())?.turnOn && (await t.w())?.live, 45_000)
   await say('Reply with exactly: QFOUR')
   await wait(300)

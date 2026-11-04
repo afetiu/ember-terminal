@@ -186,7 +186,8 @@ export function otherAgentShims(): string[] {
     '  if ($env:EMBER_MCP_LAUNCHER -and -not ($args.Count -gt 0 -and $bare -contains $args[0])) {',
     `    $pre = @('-c', "mcp_servers.ember-panel.command='$env:EMBER_MCP_LAUNCHER'", '-c', "mcp_servers.ember-panel.env_vars=['EMBER_BRIDGE_URL','EMBER_BRIDGE_TOKEN','EMBER_TAB_ID','EMBER_NOTES_DIR','EMBER_SESSION_AGENT']")`,
     '  }',
-    // Ember's hook (resources/hook.mjs): when a turn starts and ends, and every approval
+    // Ember's hook (~/.ember/bin/ember-hook.cmd: curl.exe posting to the bridge, else
+    // resources/hook.mjs): when a turn starts and ends, and every approval
     // Codex would ask for, which becomes the canvas's card (CodexTui). Codex runs hooks only
     // once the person has trusted them (its own "Hooks need review" screen, or /hooks);
     // until then it asks in its own screen, and the canvas says so. Spaces in each value,

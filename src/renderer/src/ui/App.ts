@@ -300,6 +300,10 @@ export class App {
     window.addEventListener('focus', () => {
       if (this.palette.isOpen || this.search.isOpen) return
       if (document.querySelector('.ember-card-rename')) return
+      // A click into a document (a canvas frame, the panel's webview) is what brought the
+      // window back: the focus is where it was put, and the document's press needs it there.
+      const at = document.activeElement
+      if (at instanceof HTMLIFrameElement || at?.tagName === 'WEBVIEW') return
       this.activeGroup?.focusFirst()
     })
   }

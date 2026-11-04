@@ -568,8 +568,11 @@ export class ClaudeTui implements AgentWrapper {
         } else this.write('\x1b')
         for (let i = 0; i < 20 && !gone; i++) {
           await sleep(100)
-          gone = !trustShown(this.rows())
+          // No exits Claude Code: its last screen (the dialog) stays in the shell's scrollback,
+          // but the session is over (ended() let go of the trust), and that is the answer taken.
+          gone = this.trust !== 'answering' || !trustShown(this.rows())
         }
+        if (this.trust !== 'answering') break
       }
     } finally {
       this.trust = 'none'
