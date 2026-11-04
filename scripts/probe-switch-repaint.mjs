@@ -19,6 +19,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 // Start from one tab every run; a restored session from the last run changes what the
@@ -26,6 +27,7 @@ const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process
 rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 const PORT = 9351
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: { ...process.env, EMBER_HOME },

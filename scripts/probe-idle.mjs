@@ -14,10 +14,12 @@
  *
  *   node scripts/probe-idle.mjs [seconds]
  *
- * Launch Ember with --remote-debugging-port=9222 first. Nothing here writes to the app,
+ * It launches its own dev Ember (EMBER_CDP_PORT=n attaches to a running one instead). Nothing here writes to the app,
  * so it is safe to point at a session you are using, though an idle one is the point.
  */
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+import { emberPage } from './probelib.mjs'
+const ember = await emberPage('probe-idle', 9494)
+const PORT = ember.port
 const SECONDS = Number(process.argv[2] ?? 6)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -74,13 +76,7 @@ function selfTime(profile) {
   return rows.sort((a, b) => b.pct - a.pct)
 }
 
-const list = await targets()
-const page = list.find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))
-if (!page) {
-  console.error('No renderer target. Launch Ember with --remote-debugging-port=%d', PORT)
-  console.error('Saw: %s', list.map((t) => `${t.type} ${t.url}`).join(', ') || '(nothing)')
-  process.exit(1)
-}
+const page = ember.page
 console.log(`target: ${page.url}\nsampling ${SECONDS}s...\n`)
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)

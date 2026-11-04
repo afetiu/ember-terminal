@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const PORT = 9384
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
@@ -25,6 +26,7 @@ const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 cfg.window = { ...(cfg.window ?? {}), opacity: 77 }
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: { ...process.env, EMBER_HOME, EMBER_NOTES_DIR: NOTES, EMBER_PROBE_INACTIVE: '1' },
@@ -86,7 +88,8 @@ async function waitForPrompt(id) {
     const s = (await ev(`window.__ember.sessions()`)).find((x) => (id ? x.id === id : true))
     if (s && s.bytesIn > 0) {
       const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-      const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+      // ¸ too: a profile saved through the wrong code page draws ▸ as â–¸ (this machine's does).
+      const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
       if (s.bytesIn === last) {
         if (!quietSince) quietSince = Date.now()
         if (Date.now() - quietSince > (prompt ? 1200 : 9000)) return s
@@ -111,7 +114,7 @@ async function run(sid, line) {
     await sleep(150)
     const s = (await ev(`window.__ember.sessions()`)).find((x) => x.id === sid)
     const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-    const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+    const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
     if (s.bytesIn === last) {
       quiet++
       if (quiet >= 4 && s.bytesIn > before && prompt) {

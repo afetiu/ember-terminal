@@ -1,13 +1,13 @@
 /**
- * Exercises the whole new feature surface in one run: live config reload, session
- * persistence, split + zoom, scrollback search, palette shell/project modes,
- * broadcast input, and copy-last-output.
+ * Exercises the whole new feature surface in one run: live config reload, split + zoom,
+ * scrollback search, palette shell/project modes, broadcast input, and copy-last-output.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync , mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync , mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join , basename } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -16,7 +16,6 @@ mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME }
 const PORT = 9340
 const CONFIG = join(EMBER_HOME, 'config.json')
-const STATE = join(EMBER_HOME, 'state.json')
 
 const results = []
 const check = (name, ok, detail = '') => {
@@ -24,6 +23,7 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`)
 }
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -156,19 +156,8 @@ const bcast = await ev(`(() => { window.__ember.openPalette(); return true })()`
 await ev(`document.querySelector('.ember-palette').dispatchEvent(new MouseEvent('mousedown', {bubbles:true}))`)
 await sleep(200)
 
-// ---- persistence --------------------------------------------------------
-await sleep(4500)
-const stateOk = existsSync(STATE)
-let saved = null
-if (stateOk) saved = JSON.parse(readFileSync(STATE, 'utf8'))
-// Assert on *some* group holding the split, not groups[0]: if a lingering instance
-// flushed state back to disk after the pre-run delete, restore reopens those groups
-// and the split lands on whichever one is active.
-check(
-  'layout persisted to state.json',
-  stateOk && Array.isArray(saved?.groups) && saved.groups.some((g) => g.panes.length === 2),
-  stateOk ? `${saved.groups.length} group(s), panes: ${saved.groups.map((g) => g.panes.length).join('/')}` : 'missing',
-)
+// No persistence check: nothing about a session survives a restart any more
+// (src/main/state.ts), so there is no saved layout to look for.
 
 await send('Page.bringToFront')
 const shot = await send('Page.captureScreenshot', { format: 'png' })

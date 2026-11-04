@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const PORT = 9411
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
@@ -21,6 +22,7 @@ const userCfg = join(homedir(), '.ember', 'config.json')
 const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: { ...process.env, EMBER_HOME, EMBER_PROBE_INACTIVE: '1', EMBER_PROBE_BOUNDS: '1700x1000' },

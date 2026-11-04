@@ -8,6 +8,7 @@ import { existsSync, rmSync, writeFileSync , mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join , basename } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -24,6 +25,7 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`)
 }
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,

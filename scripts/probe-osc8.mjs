@@ -14,6 +14,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -21,6 +22,7 @@ writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2'
 
 const PORT = 9356
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },

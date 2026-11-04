@@ -13,14 +13,11 @@
  *
  *   node scripts/probe-anim.mjs
  */
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+import { emberPage } from './probelib.mjs'
+const ember = await emberPage('probe-anim', 9491)
+const PORT = ember.port
 
-const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-const page = list.find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))
-if (!page) {
-  console.error('No renderer target — launch Ember with --remote-debugging-port=%d', PORT)
-  process.exit(1)
-}
+const page = ember.page
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)
 await new Promise((r) => ws.addEventListener('open', r, { once: true }))

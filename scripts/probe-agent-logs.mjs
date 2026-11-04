@@ -95,14 +95,19 @@ for (const file of files) {
 console.log(`\nCodex totals over ${files.length} files: ${JSON.stringify(totals)}`)
 
 // User words must appear once, not three times (response_item + event_msg + item_completed).
+// The same words in two turns are fine — people type "continue" more than once — so a
+// repeat only counts when no reply came between the two.
 for (const file of files) {
-  const said = codex
-    .convert(records(file), {})
-    .filter((l) => l.type === 'user' && l.message.content.some((b) => b.type === 'text'))
-    .map((l) => l.message.content.map((b) => b.text).join(''))
-  if (new Set(said).size !== said.length && !said.every((s) => s === said[0])) {
-    const dup = said.filter((s, i) => said.indexOf(s) !== i)
-    if (dup.some((d) => !/^\[Request interrupted/.test(d))) fail(`${basename(file)}: user text repeated: ${dup[0].slice(0, 60)}`)
+  const lines = codex.convert(records(file), {})
+  const said = []
+  let last = null
+  for (const l of lines) {
+    if (l.type === 'assistant') last = null
+    if (l.type !== 'user' || !l.message.content.some((b) => b.type === 'text')) continue
+    const text = l.message.content.map((b) => b.text).join('')
+    said.push(text)
+    if (text === last && !/^\[Request interrupted/.test(text)) fail(`${basename(file)}: user text repeated: ${text.slice(0, 60)}`)
+    last = text
   }
   if (said.some((s) => /<environment_context>|# AGENTS\.md instructions|<recommended_plugins>/.test(s))) fail(`${basename(file)}: injected context shown as user text`)
 }

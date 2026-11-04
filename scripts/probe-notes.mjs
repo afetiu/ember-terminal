@@ -9,20 +9,17 @@
  * Point EMBER_NOTES_DIR at a scratch folder before launching Ember, or this writes into
  * the real notes folder.
  *
- *   node scripts/probe-notes.mjs      (needs --remote-debugging-port=9222)
+ *   node scripts/probe-notes.mjs      (its own dev Ember; EMBER_CDP_PORT=n attaches to a running one)
  */
 import { readdirSync, readFileSync } from 'node:fs'
+import { emberPage } from './probelib.mjs'
 
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+const ember = await emberPage('probe-notes', 9495)
+const PORT = ember.port
 const DIR = process.env['EMBER_NOTES_DIR']
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-const page = list.find((t) => t.type === 'page' && t.url.includes('index.html'))
-if (!page) {
-  console.error('No renderer target — launch Ember with --remote-debugging-port=%d', PORT)
-  process.exit(1)
-}
+const page = ember.page
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)
 await new Promise((r) => ws.addEventListener('open', r, { once: true }))

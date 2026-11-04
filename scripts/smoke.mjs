@@ -12,6 +12,7 @@ import { homedir } from 'node:os'
 import { spawn } from 'node:child_process'
 import { writeFileSync , mkdirSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -19,7 +20,7 @@ const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process
 mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME }
 const PORT = 9333
-const out = process.argv[2] ?? 'smoke.png'
+const out = process.argv[2] ?? join(process.env.TEMP ?? '.', 'ember-smoke.png')
 // EMBER_BIN points the same smoke test at a packaged build, where the app is the exe
 // itself rather than electron loading the project directory.
 const packaged = process.env.EMBER_BIN
@@ -27,8 +28,10 @@ const electron = packaged ?? './node_modules/electron/dist/electron.exe'
 const launchArgs = packaged ? [] : ['.']
 
 console.log('testing:', electron)
+seedHome(EMBER_HOME)
 const child = spawn(electron, [...launchArgs, `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
+  env: PROBE_ENV,
 })
 const logs = []
 child.stdout.on('data', (d) => logs.push(String(d)))
@@ -113,7 +116,6 @@ try {
       cursorLayer: !!document.querySelector('.ember-cursor-layer'),
       canvasCount: document.querySelectorAll('.ember-pane canvas').length,
       rows: document.querySelectorAll('.xterm-rows > div').length,
-      indicator: document.querySelector('.ember-card-indicator')?.style.transform ?? null,
       bodyText: (document.body.innerText || '').slice(0, 400),
     }
   })()`)
@@ -127,14 +129,13 @@ try {
   await cdp.eval(`window.ember.write(${JSON.stringify(state.sessionId)}, "'EMBER_SMOKE_' + 'OK'\\r")`)
   await sleep(2000)
 
-  // Open a second tab so the screenshot shows the tab strip and indicator.
+  // Open a second tab so the screenshot shows two cards in the sidebar.
   await cdp.eval(`document.querySelector('.ember-newtab').click()`)
   await sleep(1800)
 
   const after = await cdp.eval(`(() => ({
     tabs: document.querySelectorAll('.ember-card').length,
     panes: document.querySelectorAll('.ember-pane').length,
-    indicator: document.querySelector('.ember-card-indicator')?.style.transform ?? null,
     sessions: window.__ember.sessions(),
   }))()`)
 
@@ -142,7 +143,6 @@ try {
   // terminal buffer itself instead.
   const sawEcho = after.sessions.some((s) => /EMBER_SMOKE_OK/.test(s.text))
   console.log('tabs after new:', after.tabs, '| panes:', after.panes)
-  console.log('indicator transform:', after.indicator)
   console.log('sessions:', JSON.stringify(after.sessions, null, 2))
   console.log('pty echo seen:', sawEcho)
 
@@ -182,6 +182,7 @@ try {
   child.kill()
 
   if (after.tabs < 2) fail('second tab did not appear')
+  if (!sawEcho) fail('what was typed never came back from the shell')
   console.log('SMOKE OK')
   process.exit(0)
 } catch (err) {

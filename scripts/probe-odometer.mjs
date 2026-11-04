@@ -3,14 +3,14 @@
  * Two bits of chrome that are only wrong to the eye: the card's ticking timer, and the
  * scrollbars inside the panel.
  *
- * The timer is checked structurally rather than visually. "Only the digit that changed
- * moved" is not a thing a screenshot can settle — both the old whole-line slide and the
- * new per-character roll look like a number changing in a still frame. What can be
- * settled is which elements are mid-animation at the moment of the tick, so that is
- * what this reads: drive the status through a sequence of values and count the cells
- * carrying an animation each time.
+ * The timer used to be an odometer whose changed digits rolled; it was the most expensive
+ * thing on screen and is plain text now (src/renderer/src/ui/Odometer.ts). What can go
+ * wrong with it is that it stops showing what it was given, or that something starts
+ * animating on every tick again — neither visible in a still frame, so this drives the
+ * status through a sequence of values and reads the text and the running animations.
  *
- * The scrollbars get a screenshot, because there the eye is the point.
+ * The scrollbars get a screenshot of a long document on the canvas, because there the
+ * eye is the point.
  *
  *   node scripts/probe-odometer.mjs [outfile.png]
  */
@@ -18,6 +18,7 @@ import { spawn } from 'node:child_process'
 import { basename, join } from 'node:path'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -26,6 +27,7 @@ writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2'
 const PORT = 9355
 const out = process.argv[2] ?? 'odometer.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -94,27 +96,14 @@ async function hostTarget() {
   throw new Error('DevTools endpoint never came up')
 }
 
-/**
- * Set the odometer directly and report what moved.
- *
- * It reads `getAnimations()` rather than class names: a cell that carries `is-rolling`
- * but whose animation never started is exactly the bug this is looking for, and only
- * the animation itself distinguishes the two.
- */
+/** Set the card's status directly and report what it shows and what is animating. */
 const drive = (value) => `(() => {
   if (!window.__ember.setCardStatus(${JSON.stringify(value)})) return null
   const odo = document.querySelector('.ember-card-statustext')
-  const cells = [...odo.querySelectorAll('.ember-odo-cell')]
-  const busy = (c) => c.getAnimations({ subtree: true }).some((a) => a.playState === 'running')
-  // Read the arriving glyph only. Mid-roll a cell holds two: the one leaving is
-  // absolutely positioned and on its way out, and counting it reads "3m 26s" ticking
-  // to "3m 267s" — the cell's textContent is not what is on screen.
-  const shown = (c) => c.querySelector('.ember-odo-glyph:not(.is-out)')?.textContent ?? ''
+  if (!odo) return null
   return {
-    text: cells.map(shown).join(''),
-    cells: cells.length,
-    moving: cells.filter(busy).length,
-    chars: cells.map((c) => (busy(c) ? '^' : '\\u00b7')).join(''),
+    text: odo.textContent,
+    moving: odo.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length,
   }
 })()`
 
@@ -125,31 +114,20 @@ try {
   await cdp.send('Page.enable')
   await sleep(3500)
 
-  const seq = ['3m 26s', '3m 27s', '3m 28s', '3m 30s', '4m 00s']
-  console.log('\nodometer')
-  let last = null
+  const seq = ['3m 26s', '3m 27s', '3m 28s', '3m 30s', '4m 00s', '5m 00s']
+  console.log('\nthe card timer')
   for (const v of seq) {
     const state = await cdp.eval(drive(v))
     if (!state) {
-      fail('the odometer disappeared mid-sequence')
+      fail('the card status disappeared mid-sequence')
       break
     }
-    console.log(`  "${state.text}"  moving: ${state.moving}/${state.cells}   ${state.chars}`)
-    if (state.text !== v) fail(`odometer shows "${state.text}", asked for "${v}"`)
-    if (last === '3m 26s' && v === '3m 27s' && state.moving !== 1) {
-      fail(`a one-second tick moved ${state.moving} cells — the whole line is still animating`)
-    }
-    last = v
+    console.log(`  "${state.text}"  animating: ${state.moving}`)
+    if (state.text !== v) fail(`the timer shows "${state.text}", asked for "${v}"`)
+    if (state.moving) fail(`a tick started ${state.moving} animation(s) — the timer is meant to be still text`)
     await sleep(450)
   }
-  if (!failures) pass('a one-second tick rolls exactly one cell')
-
-  // Rollover legitimately moves several, but never all of them: the "m" and the two
-  // spaces either side of it never change.
-  const over = await cdp.eval(drive('5m 00s'))
-  if (over.moving === 0) fail('a minute rollover moved nothing')
-  if (over.moving >= over.cells) fail('a minute rollover moved every cell, including the unchanged ones')
-  pass(`a minute rollover moves ${over.moving} of ${over.cells} cells, not the line`)
+  if (!failures) pass('every tick shows its value, and nothing animates')
 
   console.log('\nscrollbars')
   const bars = await cdp.eval(`(() => {
@@ -159,7 +137,8 @@ try {
       pill: text.includes('::-webkit-scrollbar-thumb'),
       buttons: text.includes('::-webkit-scrollbar-button'),
       // Any survivor here would silently disable every rule above it in Chromium.
-      standard: (text.match(/scrollbar-width/g) ?? []).length,
+      // scrollbar-width: none is a scroller meant to have no bar at all, which is fine.
+      standard: (text.match(/scrollbar-width: (?!none)|scrollbar-color/g) ?? []).length,
     }
   })()`)
   if (!bars.pill) fail('no ::-webkit-scrollbar-thumb rule reached the document')
@@ -174,6 +153,8 @@ try {
   }))()`)
   const token = await readToken(cdp)
   if (wire.origin && token) {
+    // The document lands on the tab's canvas; shown here by a stylesheet, as Claude mode would show it.
+    await cdp.eval(`(() => { const st = document.createElement('style'); st.textContent = '.loom { display: block !important; height: 760px !important; }'; document.head.appendChild(st); return true })()`)
     const rows = Array.from(
       { length: 45 },
       (_, i) => `| row ${i + 1} | ${i * 7} | a wide cell that pushes this table sideways, ${i} |`
@@ -189,9 +170,9 @@ try {
         content: `# Scrollbars\n\nBoth axes, so the pill can be judged.\n\n| What | N | Note |\n| --- | --- | --- |\n${rows}\n`,
       }),
     })
-    // Put the pointer in the panel, since the thumb is deliberately faint until it is.
+    // Put the pointer in the document, since the thumb is deliberately faint until it is.
     await sleep(2000)
-    const box = await cdp.eval(`(() => { const r = document.querySelector('.ember-panel-frame').getBoundingClientRect()
+    const box = await cdp.eval(`(() => { const r = [...document.querySelectorAll('.loom-piece iframe.loom-frame')].at(-1).getBoundingClientRect()
       return { x: Math.round(r.right - 30), y: Math.round(r.top + r.height / 2) } })()`)
     await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: box.x, y: box.y })
     await sleep(500)

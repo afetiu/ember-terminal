@@ -14,6 +14,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 const NOTES = join(EMBER_HOME, 'notes')
@@ -25,6 +26,7 @@ writeFileSync(join(NOTES, 'Todo.md'), '- [ ] open one\n- [x] done one\n- [x] don
 const PORT = 9355
 const out = process.argv[2] ?? 'todo-archive.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME, EMBER_NOTES_DIR: NOTES },

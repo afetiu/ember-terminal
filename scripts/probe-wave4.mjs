@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -20,6 +21,7 @@ const check = (name, ok, detail = '') => {
 }
 
 const PORT = 9348
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -70,19 +72,34 @@ await send('Page.bringToFront')
 // ---- settings panel opens and is populated ----
 await ev(`window.__ember.openSettings()`)
 await sleep(900)
-const panel = await ev(`({
-  open: document.querySelector('.ember-settings').classList.contains('is-open'),
-  sections: [...document.querySelectorAll('.ember-settings-section h3')].map(e => e.textContent),
-  rows: document.querySelectorAll('.ember-settings-row').length,
-  themes: document.querySelectorAll('.ember-theme').length,
-})`)
+// The panel is in tabs (Look, Motion, Agent, Behaviour): a setting is found by what it is
+// about, so the sections and rows are counted across all of them.
+const tab = async (name) => {
+  await ev(`document.querySelector('.ember-settings-tab[data-tab="${name}"]')?.click()`)
+  await sleep(300)
+}
+const tabs = await ev(`[...document.querySelectorAll('.ember-settings-tab')].map((b) => b.dataset.tab)`)
+const panel = { open: await ev(`document.querySelector('.ember-settings').classList.contains('is-open')`), sections: [], rows: 0, themes: 0 }
+for (const t of tabs) {
+  await tab(t)
+  const here = await ev(`({
+    sections: [...document.querySelectorAll('.ember-settings-section h3')].map(e => e.textContent),
+    rows: document.querySelectorAll('.ember-settings-row').length,
+    themes: document.querySelectorAll('.ember-theme').length,
+  })`)
+  panel.sections.push(...here.sections)
+  panel.rows += here.rows
+  panel.themes = Math.max(panel.themes, here.themes)
+}
 check('settings panel opens', panel.open === true)
 check('sections render', panel.sections.length >= 7, JSON.stringify(panel.sections))
-check('controls render', panel.rows > 25, `${panel.rows} rows`)
+check('controls render', panel.rows > 25, `${panel.rows} rows across ${tabs.length} tabs`)
 check('themes listed', panel.themes >= 5, `${panel.themes} themes`)
 
 // ---- a control writes the real config file ----
-const before = JSON.parse(readFileSync(CONFIG, 'utf8')).sound.volume
+await tab('Behaviour')
+// The file holds only what has been saved; an unsaved volume is the shipped 1.
+const before = JSON.parse(readFileSync(CONFIG, 'utf8')).sound?.volume ?? 1
 await ev(`(() => {
   const rows = [...document.querySelectorAll('.ember-settings-row')]
   const row = rows.find(r => r.querySelector('.ember-settings-label').textContent.startsWith('Volume'))
@@ -96,6 +113,7 @@ const after = JSON.parse(readFileSync(CONFIG, 'utf8')).sound.volume
 check('a slider writes config.json', Math.abs(after - 0.9) < 0.01 && after !== before, `${before} -> ${after}`)
 
 // ---- theme switch applies live ----
+await tab('Look')
 await ev(`(() => {
   const t = [...document.querySelectorAll('.ember-theme')].find(b => b.textContent.includes('Deep Sea'))
   t.click()
@@ -124,7 +142,7 @@ await sleep(1600)
 const reset = JSON.parse(readFileSync(CONFIG, 'utf8'))
 check(
   'second click restores shipped defaults',
-  Math.abs(reset.sound.volume - 1) < 0.01 && reset.theme.name === 'Nightfall Neon',
+  Math.abs(reset.sound.volume - 1) < 0.01 && reset.theme.name === 'Ember Night',
   `volume ${reset.sound.volume}, theme ${reset.theme.name}`,
 )
 

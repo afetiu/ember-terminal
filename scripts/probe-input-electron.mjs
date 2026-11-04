@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /**
  * End-to-end input latency in Ember itself (dev Electron, isolated EMBER_HOME, window
- * shown inactive behind whatever the person is doing): start `claude` in the first tab,
- * ask it to stream 200 lines, and while it streams type a letter at a time through the
- * real xterm and measure how long until the screen shows it. Compare with
- * scripts/probe-input.cjs (node-pty alone) to see what the app adds.
+ * shown inactive behind whatever the person is doing): start `claude --model haiku` in the
+ * first tab, which opens in the CLI view (the agent's own screen), ask it to stream 200
+ * lines, and while it streams type a letter at a time through the real xterm — the
+ * person's own typing in that view — and measure how long until the screen shows it.
+ * Compare with scripts/probe-input.cjs (node-pty alone) to see what the app adds.
  *
  *   node scripts/probe-input-electron.mjs [WxH]     (default 1920x1200; try 3840x2160)
  */
 import { spawn } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { seedHome } from './probelib.mjs'
 
 const args = process.argv.slice(2)
 const bounds = args.find((a) => /^\d+x\d+$/.test(a)) ?? '1920x1200'
@@ -22,9 +24,16 @@ const EMBER_HOME = join(process.env.TEMP ?? '.', 'ember-probe-input')
 mkdirSync(EMBER_HOME, { recursive: true })
 const userCfg = join(process.env.USERPROFILE ?? '', '.ember', 'config.json')
 if (existsSync(userCfg)) copyFileSync(userCfg, join(EMBER_HOME, 'config.json'))
+// Typing reaches Claude Code's own screen only in the CLI view; on the canvas it is Ember's composer.
+{
+  const file = join(EMBER_HOME, 'config.json')
+  const cfg = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
+  writeFileSync(file, JSON.stringify({ ...cfg, agentView: 'cli' }, null, 2))
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const t0 = Date.now()
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME, EMBER_PROBE_INACTIVE: '1', EMBER_PROBE_BOUNDS: bounds },
@@ -82,8 +91,13 @@ async function until(pred, maxMs) {
   return false
 }
 await sleep(2500)
-await type('claude\r')
-const up = await until((sc) => sc.some((l) => /auto mode|for shortcuts|Try "/.test(l)), 40000)
+// Only into a plain shell: the tab must not be running anything yet.
+const before = await app.ev(`window.__ember.loom()`)
+if (before && (before.mode !== 'shell' || before.claude)) { child.kill(); throw new Error(`the first tab is not a plain shell (${before.mode})`) }
+await type('claude --model haiku\r')
+const up = await until((sc) => sc.some((l) => /auto mode|for shortcuts|Try "|\? for/.test(l)), 40000)
+const view = await app.ev(`window.__ember.loom()`)
+if (up && view?.mode !== 'raw') { console.log(`[${tag}] not in the CLI view (${view?.mode}); not typing into it`); child.kill(); process.exit(1) }
 console.log(`[${tag}] claude up: ${up} (${Date.now() - t0} ms)`)
 if (!up) { console.log((await screen()).filter((l) => l.trim()).slice(-8).join('\n')); child.kill(); process.exit(1) }
 await sleep(2000)

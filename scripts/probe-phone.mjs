@@ -25,6 +25,15 @@ import { basename, extname, join } from 'node:path'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
+
+// The phone link is switched off in the app (PHONE_LINK in src/renderer/src/phone/flag.ts):
+// no relay starts and nothing pairs, so there is nothing for this to drive. It runs again
+// the day the flag does.
+if (/PHONE_LINK\s*=\s*false/.test(readFileSync(new URL('../src/renderer/src/phone/flag.ts', import.meta.url), 'utf8'))) {
+  console.log('SKIP  the phone link is switched off (src/renderer/src/phone/flag.ts)')
+  process.exit(0)
+}
 
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 const WWW = join(process.cwd(), 'mobile', 'www')
@@ -66,6 +75,7 @@ const web = createServer((req, res) => {
 })
 web.listen(WEB_PORT)
 
+seedHome(EMBER_HOME)
 const ember = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${EMBER_PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },

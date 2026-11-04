@@ -7,6 +7,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { writeFileSync , mkdirSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -14,6 +15,7 @@ const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process
 mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME }
 const PORT = 9335
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -63,7 +65,7 @@ await sleep(3000)
 // Pin focus so the caret uses its full (filled + trail) rendering path even though
 // the automated window is not the OS foreground window.
 await evaluate(`window.__ember.forceCursorFocus(true)`)
-const sid = await evaluate(`document.querySelector('.ember-pane.is-active').dataset.sessionId`)
+const sid = await evaluate(`document.querySelector('.ember-group.is-active .ember-pane').dataset.sessionId`)
 
 // Sample inside the page across the jump — one round-trip per sample would be far
 // too coarse to see a 150ms spring.

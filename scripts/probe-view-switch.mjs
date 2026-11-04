@@ -1,8 +1,10 @@
 /**
- * The keyboard path: a new terminal (with its hint), `claude` typed, a diagram asked for,
- * then Ctrl+↑ onto it, Shift+→ to snap it right, Esc back to typing. Screenshots of each.
+ * The Canvas | CLI switch: Ctrl+K's palette, then `claude --model haiku` typed into a new
+ * terminal, the canvas with its switch, and the agent's own screen after pressing CLI. The
+ * switch must sit in the same place in both views, and the choice must be saved.
+ * Screenshots of each; exits non-zero on a miss. Nothing is asked of the model.
  *
- *   node scripts/probe-kbd-canvas.mjs [out-prefix]
+ *   node scripts/probe-view-switch.mjs [out-prefix]
  */
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -43,6 +45,35 @@ const send = (method, params = {}) =>
 const ev = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }))?.result?.value
 const snap = () => ev('window.__ember.loom()')
 const write = (sid, text) => ev(`window.ember.write(${JSON.stringify(sid)}, ${JSON.stringify(text)})`)
+const typeText = (text) => send('Input.insertText', { text })
+const enterKey = async () => {
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+}
+/** A message, typed into Ember's composer: never into Claude Code's own terminal. */
+const say = async (text) => {
+  await ev(`document.querySelector('.loom-native-input')?.focus()`)
+  await typeText(text)
+  await enterKey()
+}
+/** `claude` typed into the tab's shell, as the person would, and only while it is a plain shell. */
+const startClaude = async (sid) => {
+  for (let i = 0; i < 20 && !(await snap())?.rows?.some((r) => /PS .*>/.test(r)); i++) await wait(500)
+  const s = await snap()
+  if (s.mode !== 'shell' || s.claude) throw new Error(`the tab is not a plain shell (mode ${s.mode}); not typing into it`)
+  await write(sid, 'claude --model haiku')
+  await wait(300)
+  await write(sid, String.fromCharCode(13))
+  for (let i = 0; i < 40; i++) {
+    if ((await snap()).mode === 'claude' && (await snap()).wrapper?.boxSeen) break
+    await wait(1000)
+  }
+}
+let failures = 0
+const check = (label, ok, detail = '') => {
+  if (!ok) failures++
+  console.log(`  ${ok ? 'PASS' : 'FAIL'} ${label}${detail ? `  ${detail}` : ''}`)
+}
 const shot = async (name) => {
   const r = await send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(`${out}-${name}.png`, Buffer.from(r.data, 'base64'))
@@ -60,22 +91,26 @@ await shot('palette')
 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
 await wait(400)
 const sid = (await snap()).sessionId
-await write(sid, 'claude')
-await wait(300)
-await write(sid, String.fromCharCode(13))
-for (let i = 0; i < 40; i++) {
-  if ((await snap()).mode === 'claude') break
-  await wait(1000)
-}
-await wait(3000)
+await startClaude(sid)
+check('typing claude in the shell turns the canvas on', (await snap()).mode === 'claude')
+await wait(2000)
 await shot('canvas')
-console.log('  canvas bar:', JSON.stringify(await ev(`(() => { const r = document.querySelector('.loom-sign:not(.loom-rawpill)').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)))
+const canvasBar = await ev(`(() => { const r = document.querySelector('.loom-sign:not(.loom-rawpill)').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)
+console.log('  canvas bar:', JSON.stringify(canvasBar))
 await ev(`document.querySelector('.loom-sign [data-view="cli"]').click()`)
 await wait(1500)
 await shot('cli')
-console.log('  cli bar:   ', JSON.stringify(await ev(`(() => { const r = document.querySelector('.loom-rawpill').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)))
-console.log('  mode after CLI:', (await snap()).mode)
+const cliBar = await ev(`(() => { const r = document.querySelector('.loom-rawpill').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right), Math.round(r.height)] })()`)
+console.log('  cli bar:   ', JSON.stringify(cliBar))
+// The same switch in the same place in both views: switching moves nothing.
+check('the Canvas | CLI switch stays where it was', JSON.stringify(canvasBar) === JSON.stringify(cliBar), `${JSON.stringify(canvasBar)} vs ${JSON.stringify(cliBar)}`)
+check('CLI shows the agent\'s own screen', (await snap()).mode === 'raw', (await snap()).mode)
 const { readFileSync } = await import('node:fs')
-console.log('  saved view:', JSON.parse(readFileSync(join(EMBER_HOME, 'config.json'), 'utf8')).agentView)
+const saved = JSON.parse(readFileSync(join(EMBER_HOME, 'config.json'), 'utf8')).agentView
+check('the view chosen is remembered', saved === 'cli', String(saved))
 ws.close()
 child.kill()
+if (failures) {
+  console.log(`${failures} failure(s)`)
+  process.exit(1)
+}

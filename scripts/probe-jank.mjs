@@ -10,6 +10,7 @@
 import { spawn, execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { seedHome } from './probelib.mjs'
 
 const flags = new Map(process.argv.slice(2).filter((a) => a.startsWith('--')).map((a) => { const [k, v] = a.slice(2).split('='); return [k, v ?? true] }))
 const bounds = flags.get('bounds') ?? '3840x2160'
@@ -24,10 +25,12 @@ if (existsSync(userCfg)) {
   writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
   console.log(`config: material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'} bounds=${bounds}`)
 }
-const spinner = process.env.SPINNER ?? join(process.env.TEMP ?? '.', 'claude', HOME.replace(/[:\/]/g, '-'), '347628de-4674-4589-a7ed-d3d11d55d602', 'scratchpad', 'spinner.ps1')
+// The same spinner runs in other terminals for comparison: scripts/spinner.ps1.
+const spinner = process.env.SPINNER ?? join(new URL('.', import.meta.url).pathname.slice(1), 'spinner.ps1')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const t0 = Date.now()
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME, EMBER_PROBE_INACTIVE: '1', EMBER_PROBE_BOUNDS: bounds },

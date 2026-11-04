@@ -1,8 +1,8 @@
 /**
  * What Ember costs while it just sits there: CPU and RAM of every Ember process while a
  * tab shows a Claude Code-like spinner (a status line repainting at ~30 fps), and the
- * time from launch to a usable prompt. The same spinner is run in other terminals by
- * scratch/Measure-Term.ps1 so the numbers are comparable.
+ * time from launch to a usable prompt. The spinner is scripts/spinner.ps1, which runs as
+ * well in any other terminal, so the numbers are comparable.
  *
  *   node scripts/probe-cpu.mjs [--material=none|acrylic|mica] [--opacity=N] [--no-webgl] [--idle]
  *
@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const PORT = 9388
 const flags = new Map(process.argv.slice(2).map((a) => { const m = /^--([^=]+)(?:=(.*))?$/.exec(a); return m ? [m[1], m[2] ?? '1'] : [a, '1'] }))
@@ -28,9 +29,11 @@ mkdirSync(EMBER_HOME, { recursive: true })
   writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
   console.log(`config: material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'}${flags.has('no-webgl') ? ' (DOM renderer)' : ''}`)
 }
-const spinner = process.env.SPINNER ?? join(process.env.TEMP ?? '.', 'claude', HOME.replace(/[:\/]/g, '-'), '347628de-4674-4589-a7ed-d3d11d55d602', 'scratchpad', 'spinner.ps1')
+// The same spinner runs in other terminals for comparison: scripts/spinner.ps1.
+const spinner = process.env.SPINNER ?? join(new URL('.', import.meta.url).pathname.slice(1), 'spinner.ps1')
 
 const t0 = Date.now()
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`, ...(flags.has('no-webgl') ? ['--ember-no-webgl'] : [])], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME, ...(flags.has('active') ? {} : { EMBER_PROBE_INACTIVE: '1' }), EMBER_PROBE_BOUNDS: '1400x900' },
@@ -115,7 +118,8 @@ async function waitForPrompt() {
     if (s && s.bytesIn > 0) {
       if (!tFirstByte) tFirstByte = Date.now() - t0
       const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-      const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+      // ¸ too: a profile saved through the wrong code page draws ▸ as â–¸ (this machine's does).
+      const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
       if (prompt && !tPromptSeen) tPromptSeen = Date.now() - t0
       if (s.bytesIn === last) { if (!quietSince) quietSince = Date.now(); if (Date.now() - quietSince > (prompt ? 600 : 9000)) return s }
       else { quietSince = 0; last = s.bytesIn }

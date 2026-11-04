@@ -1,8 +1,10 @@
 /**
- * The keyboard path: a new terminal (with its hint), `claude` typed, a diagram asked for,
- * then Ctrl+↑ onto it, Shift+→ to snap it right, Esc back to typing. Screenshots of each.
+ * An object inline in a reply: `claude --model haiku` typed into a new terminal, a mermaid
+ * block asked for in Ember's composer, then Ctrl+↑ onto it, its edges pulled to size it
+ * where it sits, Enter for full screen, Ctrl+wheel and the 100% button for zoom, Esc out.
+ * Screenshots of each; exits non-zero when a step does not do what it says.
  *
- *   node scripts/probe-kbd-canvas.mjs [out-prefix]
+ *   node scripts/probe-inline-objects.mjs [out-prefix]
  */
 import { spawn } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -43,6 +45,35 @@ const send = (method, params = {}) =>
 const ev = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }))?.result?.value
 const snap = () => ev('window.__ember.loom()')
 const write = (sid, text) => ev(`window.ember.write(${JSON.stringify(sid)}, ${JSON.stringify(text)})`)
+const typeText = (text) => send('Input.insertText', { text })
+const enterKey = async () => {
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+}
+/** A message, typed into Ember's composer: never into Claude Code's own terminal. */
+const say = async (text) => {
+  await ev(`document.querySelector('.loom-native-input')?.focus()`)
+  await typeText(text)
+  await enterKey()
+}
+/** `claude` typed into the tab's shell, as the person would, and only while it is a plain shell. */
+const startClaude = async (sid) => {
+  for (let i = 0; i < 20 && !(await snap())?.rows?.some((r) => /PS .*>/.test(r)); i++) await wait(500)
+  const s = await snap()
+  if (s.mode !== 'shell' || s.claude) throw new Error(`the tab is not a plain shell (mode ${s.mode}); not typing into it`)
+  await write(sid, 'claude --model haiku')
+  await wait(300)
+  await write(sid, String.fromCharCode(13))
+  for (let i = 0; i < 40; i++) {
+    if ((await snap()).mode === 'claude' && (await snap()).wrapper?.boxSeen) break
+    await wait(1000)
+  }
+}
+let failures = 0
+const check = (label, ok, detail = '') => {
+  if (!ok) failures++
+  console.log(`  ${ok ? 'PASS' : 'FAIL'} ${label}${detail ? `  ${detail}` : ''}`)
+}
 const shot = async (name) => {
   const r = await send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(`${out}-${name}.png`, Buffer.from(r.data, 'base64'))
@@ -55,21 +86,10 @@ const key = async (key, code, modifiers = 0) => {
 await wait(5000)
 await shot('terminal')
 const sid = (await snap()).sessionId
-// New sessions start the agent themselves now; only type it if the shell is still bare.
-for (let i = 0; i < 20 && (await snap()).mode !== 'claude'; i++) await wait(1000)
-if ((await snap()).mode !== 'claude') {
-  await write(sid, 'claude')
-  await wait(300)
-  await write(sid, String.fromCharCode(13))
-}
-for (let i = 0; i < 40; i++) {
-  if ((await snap()).mode === 'claude') break
-  await wait(1000)
-}
-await wait(8000)
-await write(sid, 'Reply with only a mermaid code block in your message (do not use any tool): flowchart LR with A --> B --> C.')
-await wait(500)
-await write(sid, String.fromCharCode(13))
+await startClaude(sid)
+check('typing claude in the shell turns the canvas on', (await snap()).mode === 'claude')
+await wait(2000)
+await say('Reply with only a mermaid code block in your message (do not use any tool): flowchart LR with A --> B --> C.')
 for (let i = 0; i < 60; i++) {
   if (await ev(`!!document.querySelector('.loom-shown .loom-liftable, .loom-turn.is-shown .loom-liftable')`)) break
   await wait(1000)
@@ -78,7 +98,9 @@ await wait(3000)
 await key('ArrowUp', 'ArrowUp', 2) // Ctrl
 await wait(700)
 await shot('selected')
-console.log('  ring on:', await ev(`!!document.querySelector('.loom-piece.is-kbd')`), ' legend on:', await ev(`!!document.querySelector('.loom-kbd-legend.is-on')`))
+check('the reply carries an inline diagram', await ev(`!!document.querySelector('.loom-turn.is-shown .loom-liftable')`))
+check('Ctrl+Up puts the ring on it', await ev(`!!document.querySelector('.loom-turn.is-shown .loom-liftable.is-kbd, .loom-piece.is-kbd')`))
+check('and shows the legend', await ev(`!!document.querySelector('.loom-kbd-legend.is-on')`))
 const box = () => ev(`(() => { const r = document.querySelector('.loom-turn.is-shown .loom-liftable')?.getBoundingClientRect(); return r ? [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)] : null })()`)
 const handle = (d) => ev(`(() => { const r = document.querySelector('.loom-turn.is-shown .loom-liftable > .loom-rz[data-rz="${d}"]')?.getBoundingClientRect(); return r && r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null })()`)
 await key('Escape', 'Escape')
@@ -97,7 +119,10 @@ const pull = async (d, dx, dy) => {
 }
 console.log('  se rect:', await ev(`(() => { const L = document.querySelector('.loom-turn.is-shown .loom-liftable'); const h = L.querySelector(':scope > .loom-rz[data-rz="se"]'); const r = h.getBoundingClientRect(); const cs = getComputedStyle(h); return JSON.stringify([r.left, r.top, r.width, r.height, cs.pointerEvents, cs.zIndex, cs.display, getComputedStyle(L).overflow, L.className, L.parentElement.className, getComputedStyle(L.parentElement).overflow]) })()`))
 console.log('  handles:', await ev(`document.querySelectorAll('.loom-turn.is-shown .loom-liftable > .loom-rz').length`), ' start:', JSON.stringify(await box()))
+const start = await box()
 await pull('se', 400, 160)
+const grown = await box()
+check('the corner handle sizes it in place', !!start && !!grown && grown[2] > start[2] && grown[3] > start[3], `${JSON.stringify(start)} -> ${JSON.stringify(grown)}`)
 await pull('w', 100, 0)
 await pull('n', 0, 60)
 await pull('e', -80, 0)
@@ -109,18 +134,28 @@ await wait(500)
 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
 await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
 await wait(2500)
-console.log('  full:', await ev(`!!document.querySelector('.loom-piece.is-full')`), ' zoom bar:', await ev(`document.querySelector('.loom-zoom .loom-zoom-pct')?.textContent`))
+check('Enter opens it full screen, with the zoom bar', await ev(`!!document.querySelector('.loom-piece.is-full') && !!document.querySelector('.loom-zoom .loom-zoom-pct')`))
 const fr = await ev(`(() => { const r = document.querySelector('.loom-piece.is-full iframe')?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 3 } : null })()`)
 if (fr) for (let i = 0; i < 4; i++) { await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: fr.x, y: fr.y, deltaX: 0, deltaY: -120, modifiers: 2 }); await wait(120) }
 await wait(500)
-console.log('  after ctrl+wheel:', await ev(`document.querySelector('.loom-zoom .loom-zoom-pct')?.textContent`))
+const zoomed = await ev(`document.querySelector('.loom-zoom .loom-zoom-pct')?.textContent`)
+check('Ctrl+wheel zooms it', !!zoomed && zoomed !== '100%', zoomed)
 await shot('zoomed')
 await ev(`document.querySelector('.loom-zoom [data-z="reset"]')?.click()`)
 await wait(500)
-console.log('  after reset:', await ev(`document.querySelector('.loom-zoom .loom-zoom-pct')?.textContent`))
+const reset = await ev(`document.querySelector('.loom-zoom .loom-zoom-pct')?.textContent`)
+check('the 100% button goes back to fit', reset === '100%', reset)
+// Esc steps back one level at a time: out of full screen first, then off the object.
 await key('Escape', 'Escape')
 await wait(600)
-console.log('  ring gone after Esc:', await ev(`!document.querySelector('.is-kbd')`))
-console.log('  sized:', await ev(`!!document.querySelector('.loom-liftable.is-sized')`))
+check('Esc leaves full screen, the ring still on', await ev(`!document.querySelector('.loom-piece.is-full') && !!document.querySelector('.is-kbd')`))
+await key('Escape', 'Escape')
+await wait(600)
+check('a second Esc takes the ring off', await ev(`!document.querySelector('.is-kbd')`))
+check('the diagram keeps its size in the reply', await ev(`!!document.querySelector('.loom-liftable.is-sized')`))
 ws.close()
 child.kill()
+if (failures) {
+  console.log(`${failures} failure(s)`)
+  process.exit(1)
+}

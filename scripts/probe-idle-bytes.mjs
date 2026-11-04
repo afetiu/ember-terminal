@@ -8,16 +8,13 @@
  *
  *   node scripts/probe-idle-bytes.mjs [seconds]
  */
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+import { emberPage } from './probelib.mjs'
+const ember = await emberPage('probe-idle-bytes', 9493)
+const PORT = ember.port
 const SECONDS = Number(process.argv[2] ?? 8)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-const page = list.find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))
-if (!page) {
-  console.error('No renderer target — launch Ember with --remote-debugging-port=%d', PORT)
-  process.exit(1)
-}
+const page = ember.page
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)
 await new Promise((r) => ws.addEventListener('open', r, { once: true }))

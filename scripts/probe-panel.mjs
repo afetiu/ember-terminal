@@ -1,8 +1,9 @@
 import { join, basename } from 'node:path'
 /**
- * Drives the v2 visualisation panel the way a Claude session would: start Ember with
- * the panel on, read the tab id and the bridge token out of the running app, POST a
- * markdown panel, a diagram and a URL, and check each one actually arrives on screen.
+ * Drives show_panel the way a Claude session would: start Ember, read the tab id and the
+ * bridge token out of the running app, POST a markdown panel, a diagram and a URL, and
+ * check each one arrives on the tab's canvas — as a piece whose frame loads the bridge's
+ * document, the diagram really drawn inside it — then clear_panel and a fresh tab.
  *
  * The POSTs go over real HTTP with the real token, so this exercises the same path the
  * MCP server takes — the only thing stubbed out is Claude deciding to call it.
@@ -12,6 +13,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync, writeFileSync as write } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -21,6 +23,7 @@ write(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2', restor
 const PORT = 9351
 const out = process.argv[2] ?? 'panel.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -107,20 +110,6 @@ try {
   await cdp.send('Page.enable')
   await sleep(3000)
 
-  // The panel exists but takes no space until something is put on it.
-  const initial = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel')
-       if (!p) return null
-       const b = p.getBoundingClientRect()
-       return { w: Math.round(b.width), open: p.classList.contains('is-open') } })()`,
-    (v) => v !== null,
-    'no .ember-panel in a v2 tab'
-  )
-  console.log('panel at rest:', JSON.stringify(initial))
-  if (initial.w > 2) fail(`panel starts ${initial.w}px wide, expected collapsed`)
-  if (initial.open) fail('panel starts open')
-
   // The shell in the tab must have been handed bridge coordinates.
   const env = await cdp.eval(`(() => {
     const s = window.__ember.sessions()[0]
@@ -161,88 +150,57 @@ try {
   })
   if (noToken.status !== 401) fail(`bridge accepted a push with no token (${noToken.status})`)
 
+  // Every tab is a canvas tab: what a session shows lands on its canvas as a piece, in a
+  // frame that loads the bridge's document. The canvas is drawn only while an agent runs,
+  // so here it is shown by a stylesheet, as Claude mode would show it.
+  await cdp.eval(`(() => { const st = document.createElement('style'); st.textContent = '.loom { display: block !important; height: 760px !important; }'; document.head.appendChild(st); return true })()`)
+  const piece = (title, tab = wire.tabId) => `(() => {
+    const p = [...document.querySelectorAll('.loom[data-tab-id="${tab}"] .loom-piece')].find((x) => x.dataset.title === ${JSON.stringify(title)})
+    if (!p) return null
+    return {
+      src: p.querySelector('iframe.loom-frame')?.getAttribute('src') ?? '',
+      web: p.querySelector('webview')?.getAttribute('src') ?? '',
+      min: p.classList.contains('is-min'),
+    }
+  })()`
+
   await push({ title: 'Estate', format: 'markdown', content: '# Estate\n\n- acme-web\n- acme-api\n' })
+  const estate = await until(cdp, piece('Estate'), (v) => !!v?.src.includes('/doc/'), 'the markdown push never became a piece on the canvas')
+  console.log('markdown:', JSON.stringify(estate))
 
-  const opened = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel')
-       const b = p.getBoundingClientRect()
-       return { w: Math.round(b.width), open: p.classList.contains('is-open'),
-                title: p.querySelector('.ember-panel-title')?.textContent ?? '' } })()`,
-    (v) => v.open && v.w > 200,
-    'panel did not spring open on the first push'
-  )
-  console.log('after push:', JSON.stringify(opened))
-  if (opened.title !== 'Estate') fail(`panel title is "${opened.title}", expected "Estate"`)
-
-  // The terminal must have given up exactly the width the panel took, not been covered.
-  // Once it has landed: the panel travels as an overlay and only takes its place in the
-  // flow when the spring settles, so this is waited for rather than sampled mid-flight.
-  const layout = await until(
-    cdp,
-    `(() => {
-      const panes = document.querySelector('.ember-group-panes').getBoundingClientRect()
-      const panel = document.querySelector('.ember-panel').getBoundingClientRect()
-      return { panesRight: Math.round(panes.right), panelLeft: Math.round(panel.left) }
-    })()`,
-    (v) => Math.abs(v.panesRight - v.panelLeft) <= 2,
-    'panel overlaps the terminal instead of sitting beside it'
-  )
-  console.log('layout:', JSON.stringify(layout))
-
-  // The document really rendered inside the webview, mermaid and all.
-  await push({ title: 'Flow', format: 'mermaid', content: 'graph TD; A[Ember] --> B[Panel]; B --> C[Claude]' })
-  await sleep(2500)
-  const diagram = await cdp.eval(`(() => {
-    const wv = document.querySelector('.ember-panel-frame')
-    return { title: document.querySelector('.ember-panel-title')?.textContent ?? '', src: wv?.getAttribute('src') ?? '' }
-  })()`)
+  // The document really rendered inside its frame, mermaid and all.
+  await push({ title: 'Flow', format: 'mermaid', content: 'graph TD; A[Ember] --> B[Canvas]; B --> C[Claude]' })
+  const diagram = await until(cdp, piece('Flow'), (v) => !!v?.src.includes('/doc/'), 'the diagram push never became a piece on the canvas')
   console.log('diagram:', JSON.stringify(diagram))
-  if (diagram.title !== 'Flow') fail('panel did not switch to the diagram')
-  if (!diagram.src.includes('/doc/')) fail(`panel is not loading a bridge document (${diagram.src})`)
 
-  // Look inside the panel's own page: a diagram that renders as its own source text is
+  // Look inside the document's own page: a diagram that renders as its own source text is
   // the failure this check exists for, and it is invisible from the host document.
   const inside = await inspectDoc(diagram.src)
-  console.log('inside the panel:', JSON.stringify(inside))
-  if (inside.mermaidGlobal !== 'object') fail(`mermaid did not load in the panel (typeof window.mermaid = ${inside.mermaidGlobal})`)
-  if (!inside.svgs) fail('the diagram never rendered — no <svg> in the panel document')
+  console.log('inside the frame:', JSON.stringify(inside))
+  if (inside.mermaidGlobal !== 'object') fail(`mermaid did not load in the document (typeof window.mermaid = ${inside.mermaidGlobal})`)
+  if (!inside.svgs) fail('the diagram never rendered — no <svg> in the document')
   if (inside.fellBack) fail('the diagram fell back to showing its own source')
 
-  // A url push turns the panel into a browser, address bar and all.
+  // A url push is a live page on the canvas.
   await push({ title: 'Docs', format: 'url', content: 'https://example.com', replace: true })
-  const browsing = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel')
-       return { browsing: p.classList.contains('is-browsing'),
-                address: p.querySelector('.ember-panel-address')?.value ?? '' } })()`,
-    (v) => v.browsing,
-    'url push did not switch the panel into browser mode'
-  )
+  const browsing = await until(cdp, piece('Docs'), (v) => !!v?.web, 'the url push did not put a live page on the canvas')
   console.log('browsing:', JSON.stringify(browsing))
-  if (!browsing.address.includes('example.com')) fail(`address bar shows "${browsing.address}"`)
+  if (!browsing.web.includes('example.com')) fail(`the page is loading "${browsing.web}"`)
 
-  // Clearing empties and collapses it again.
+  // clear_panel folds what is up rather than deleting it: it is still part of the story.
   await fetch(`${wire.origin}/panel/clear`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-ember-token': token },
     body: JSON.stringify({ tabId: wire.tabId }),
   })
-  const cleared = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel')
-       return { w: Math.round(p.getBoundingClientRect().width), open: p.classList.contains('is-open') } })()`,
-    (v) => !v.open && v.w < 3,
-    'panel did not collapse after clear'
-  )
+  const cleared = await until(cdp, piece('Estate'), (v) => !!v?.min, 'clear did not fold the pieces')
   console.log('cleared:', JSON.stringify(cleared))
 
-  // The first push into a brand new tab, before anything has built that tab's panel.
+  // The first push into a brand new tab, before anything has been shown in it.
   //
-  // This is the "blank the first time" case: the panel is constructed by the push
-  // itself, so it is asking main where the bridge is at the moment it is asked to show
-  // a document. It used to navigate to `/doc/<id>` with no origin in front of it, drop
-  // the navigation for not being an http url, and sit there empty until a second push.
+  // This is the "blank the first time" case: the document is asked for at the moment the
+  // push arrives, so it has to know where the bridge is then. It used to load `/doc/<id>`
+  // with no origin in front of it and sit there empty until a second push.
   const freshTab = await cdp.eval(`window.__ember.newTab()`)
   const fresh = await fetch(`${wire.origin}/panel`, {
     method: 'POST',
@@ -250,22 +208,8 @@ try {
     body: JSON.stringify({ tabId: freshTab, title: 'First', format: 'markdown', content: '# First\n\nStraight into a new tab.' }),
   })
   if (!fresh.ok) fail(`bridge rejected the push into a fresh tab: ${fresh.status}`)
-  const first = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel[data-tab-id="${freshTab}"]')
-       if (!p) return { panel: false }
-       const f = p.querySelector('.ember-panel-frame')
-       const e = p.querySelector('.ember-panel-empty')
-       return { panel: true, open: p.classList.contains('is-open'),
-                src: f?.getAttribute('src') ?? '',
-                empty: e ? getComputedStyle(e).display !== 'none' : false,
-                title: p.querySelector('.ember-panel-title')?.textContent ?? '' } })()`,
-    (v) => v.panel && v.src.includes('/doc/'),
-    'the first push into a fresh tab left the panel blank'
-  )
+  const first = await until(cdp, piece('First', freshTab), (v) => !!v?.src.startsWith('http') && v.src.includes('/doc/'), 'the first push into a fresh tab left it blank')
   console.log('first push into a fresh tab:', JSON.stringify(first))
-  if (first.empty) fail('the panel is showing its empty placeholder after a push')
-  if (first.title !== 'First') fail(`the fresh panel is titled "${first.title}"`)
   await cdp.eval(`window.__ember.closeTab(${JSON.stringify(freshTab)})`)
   await sleep(400)
   await cdp.eval(`window.__ember.activate(${JSON.stringify(wire.tabId)})`)
@@ -279,16 +223,11 @@ try {
     format: 'markdown',
     content:
       '# Estate\n\nWhat a session can put here.\n\n' +
-      '```mermaid\ngraph LR\n  A[Claude in a tab] -->|show_panel| B[Bridge]\n  B --> C[Panel]\n```\n\n' +
+      '```mermaid\ngraph LR\n  A[Claude in a tab] -->|show_panel| B[Bridge]\n  B --> C[Canvas]\n```\n\n' +
       '| Repo | State |\n| --- | --- |\n| acme-web | scaled to 0 |\n| acme-api | scaled to 0 |\n',
   })
-  const finalSrc = await until(
-    cdp,
-    `document.querySelector('.ember-panel-frame')?.getAttribute('src') ?? ''`,
-    (v) => v.includes('/doc/'),
-    'final panel never loaded'
-  )
-  await inspectDoc(finalSrc)
+  const final = await until(cdp, piece('Estate'), (v) => !!v?.src.includes('/doc/') && !v.min, 'the changed Estate never came back open')
+  await inspectDoc(final.src)
 
   await cdp.send('Page.bringToFront')
   const shot = await cdp.send('Page.captureScreenshot', { format: 'png' })

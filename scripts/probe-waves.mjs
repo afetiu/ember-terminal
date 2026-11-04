@@ -1,11 +1,12 @@
 /**
- * Verifies waves 1-3: command blocks and the rail, git/URL chips and the task runner,
- * cross-session search, unread badges and scrollback restore.
+ * Verifies waves 1-3: command blocks and the rail, the git branch on the card and the task
+ * runner, cross-session search, unread badges, and that a relaunch starts fresh.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -64,6 +65,7 @@ async function connect(port, child) {
 }
 
 // ---------- first run ----------
+seedHome(EMBER_HOME)
 let child = spawn('./node_modules/electron/dist/electron.exe', ['.', '--remote-debugging-port=9346'], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -113,10 +115,11 @@ check('Ctrl+Up jumps to a previous command', jumped.after !== jumped.before, JSO
 // ---- wave 2: git + tasks ----
 await sleep(1200)
 const git = await ev(`(() => {
-  const chip = document.querySelector('.ember-chip.is-git')
-  return chip ? chip.textContent : null
+  // The branch is on the card's third line, beside whatever else it says.
+  const meta = document.querySelector('.ember-card.is-active .ember-card-metatext')
+  return meta ? meta.textContent : null
 })()`)
-check('git branch chip appears for a repo cwd', typeof git === 'string' && git.length > 0, String(git))
+check('the card shows the git branch for a repo cwd', typeof git === 'string' && git.length > 0, String(git))
 
 const tasks = await ev(`(async () => {
   window.__ember.openPalette('!')
@@ -146,11 +149,14 @@ await sleep(1800)
 const unread = await ev(`document.querySelectorAll('.ember-card.has-unread').length`)
 check('background output raises an unread badge', unread >= 1, `${unread} card(s)`)
 
-// force a save, then relaunch and check the scrollback came back
-await sleep(4800)
+// Nothing about a session survives a restart (src/main/state.ts): a relaunch opens one
+// fresh shell, and whatever an older Ember saved is cleared away rather than replayed.
 ws.close()
 child.kill()
 await sleep(1500)
+mkdirSync(join(EMBER_HOME, 'scrollback'), { recursive: true })
+writeFileSync(join(EMBER_HOME, 'scrollback', 'old.txt'), 'BLOCK_ONE \x1b[?1003h')
+writeFileSync(join(EMBER_HOME, 'state.json'), '{}')
 
 // ---------- second run ----------
 child = spawn('./node_modules/electron/dist/electron.exe', ['.', '--remote-debugging-port=9347'], {
@@ -160,36 +166,13 @@ child = spawn('./node_modules/electron/dist/electron.exe', ['.', '--remote-debug
 ;({ ws, send, ev } = await connect(9347, child))
 await sleep(5000)
 
-const restored = await ev(`window.__ember.sessions().map(s => s.text).join('\\n')`)
-const anyText = await ev(`(() => {
-  const out = []
-  for (const s of window.__ember.sessions()) {
-    const t = s.id
-    out.push(t)
-  }
-  return window.__ember.scrollbackText()
-})()`)
+const fresh = await ev(`window.__ember.sessions().map((s) => ({ buffer: s.bufferType, text: s.text }))`)
+check('a relaunch opens one fresh shell', fresh.length === 1 && !/BLOCK_ONE|BLOCK_THREE/.test(fresh[0].text), `${fresh.length} session(s)`)
+check('the fresh shell is on the normal buffer', fresh[0]?.buffer === 'normal', fresh[0]?.buffer)
 check(
-  'scrollback survives a relaunch',
-  /BLOCK_ONE|BLOCK_THREE|restored/.test(anyText ?? restored ?? ''),
-  ((anyText ?? '').match(/BLOCK_\w+|restored/g) ?? []).slice(0, 4).join(','),
+  "an older Ember's saved layout and scrollback are cleared, not replayed",
+  !existsSync(join(EMBER_HOME, 'scrollback')) && !existsSync(join(EMBER_HOME, 'state.json')),
 )
-
-// Restored scrollback must never re-enable terminal modes: SerializeAddon captures
-// them, and replaying ?1003h into a fresh shell turns every mouse click into typed
-// escape codes at the prompt.
-const sbDir = join(EMBER_HOME, 'scrollback')
-const saved = existsSync(sbDir)
-  ? readdirSync(sbDir).map((f) => readFileSync(join(sbDir, f), 'utf8'))
-  : []
-const modeSets = saved.join('').match(/\x1b\[\?[0-9;]*h/g) ?? []
-check('saved scrollback contains no mode-set sequences', modeSets.length === 0, modeSets.slice(0, 5).join(' '))
-
-const liveModes = await ev(`(() => {
-  const s = window.__ember.sessions()[0]
-  return { buffer: s.bufferType }
-})()`)
-check('restored session is on the normal buffer', liveModes.buffer === 'normal', JSON.stringify(liveModes))
 
 writeFileSync(
   `${process.env.TEMP}\\ember-waves.png`,

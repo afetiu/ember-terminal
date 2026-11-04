@@ -7,7 +7,7 @@
  * Like shot.mjs, but with its own port and EMBER_HOME so it can run beside the user's
  * Ember and beside the other probes, and with the theme forced from src/main/themes.ts.
  *
- *   ONBOARD=1  start with the welcome sheet and shoot its first three steps
+ *   ONBOARD=1  start on the first-run desk and shoot it
  *   NOEMU=1    keep the window's own size and pixel ratio. The fixed 1600x960 viewport
  *              is easier to compare, but it shrinks the terminal's WebGL grid, and thin
  *              dark text on a light theme then looks far fainter than it is on screen.
@@ -125,16 +125,10 @@ try {
   console.log('is-light', await ev(`document.body.classList.contains('is-light')`))
 
   if (process.env.ONBOARD) {
-    await step('onboarding', async () => {
-      await shot('00-onboarding')
-      await ev(`document.querySelector('.ember-onboard-btn.is-primary').click()`)
-      await sleep(500)
-      await shot('00b-onboarding-agent')
-      await ev(`document.querySelector('.ember-onboard-btn.is-primary').click()`)
-      await sleep(500)
-      await shot('00c-onboarding-look')
-      await ev(`document.querySelector('.ember-onboard-btn.is-quiet').click()`)
-      await sleep(500)
+    // The first run is a desk that sets itself up in plain view: one sheet, no steps to click through.
+    await step('first run', async () => {
+      await sleep(1500)
+      await shot('00-firstrun')
     })
   }
 

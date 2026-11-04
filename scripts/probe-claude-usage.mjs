@@ -4,12 +4,14 @@ import { join, basename } from 'node:path'
  *
  * Starts a test Ember, then checks three things a real session would produce:
  *
- *   1. The vitals strip grows `5H n%` / `WK n%` chips within a minute of launch — main
+ *   1. The vitals strip grows `5H n%` / `WK n%` chips (whichever windows the plan has) — main
  *      polled the usage endpoint with the OAuth token Claude Code keeps on this machine.
  *      (So this probe needs a signed-in `claude` to pass; signed out, it expects `PLAN ?`.)
+ *      The plan row is off by default (claude.usageLimits), so this probe's config turns it on.
  *   2. The shell was handed EMBER_SETTINGS, the file names a status line, and running
- *      that .cmd with a sample of the JSON Claude Code sends prints a line AND lands on
- *      the tab's sidebar card as `Fable · 8% · $0.01`.
+ *      that .cmd with a sample of the JSON Claude Code sends prints the line, and the
+ *      bridge takes that status with the token. (The card shows it while Claude Code runs
+ *      in the tab — `Fable · 8%` — which probe-one-claude's run carries.)
  *   3. A POST to /status without the token is refused.
  *
  *   node scripts/probe-claude-usage.mjs [outfile.png]
@@ -17,14 +19,16 @@ import { join, basename } from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
-writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2', restoreSession: false }, null, 2))
+writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2', restoreSession: false, claude: { usageLimits: true, statusLine: true } }, null, 2))
 
 const PORT = 9354
 const out = process.argv[2] ?? 'claude-usage.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -124,9 +128,13 @@ try {
   )
   console.log('plan chips:', JSON.stringify(chips))
   if (signedIn) {
-    if (!/^5H \d+%$/.test(chips[0]?.text ?? '')) fail(`first chip is "${chips[0]?.text}", expected "5H n%"`)
-    if (!/^WK \d+%$/.test(chips[1]?.text ?? '')) fail(`second chip is "${chips[1]?.text}", expected "WK n%"`)
-    if (!/resets in /.test(chips[0].title)) fail(`session chip has no reset time in its title: ${chips[0].title}`)
+    // Which windows come back is the plan's business: the session window is absent when
+    // it is not running, and a model-scoped weekly (FABLE …) can join the weekly.
+    const bad = chips.find((c) => !/^(5H|WK|[A-Z0-9-]{1,6}) \d+%$/.test(c.text))
+    if (bad) fail(`a chip reads "${bad.text}", expected "5H n%", "WK n%" or a model's weekly`)
+    if (!chips.some((c) => /^(5H|WK) /.test(c.text))) fail(`no 5H or WK chip among ${chips.map((c) => c.text).join(', ')}`)
+    const noReset = chips.find((c) => /^(5H|WK) /.test(c.text) && !/resets in /.test(c.title))
+    if (noReset) fail(`the ${noReset.text} chip has no reset time in its title: ${noReset.title}`)
     if (chips.some((c) => c.cls.includes('is-stale'))) fail('a fresh fetch is marked stale')
   } else if (chips[0]?.text !== 'PLAN ?') {
     fail(`signed out, expected "PLAN ?", saw "${chips[0]?.text}"`)
@@ -176,15 +184,15 @@ try {
   if (run.status !== 0) fail('the status line wrapper did not exit cleanly')
   if (!/Fable\s+·\s+ctx 8%\s+·\s+\$0\.01\s+·\s+5h 24%\s+·\s+wk 41%/.test(run.stdout)) fail(`unexpected status line: ${run.stdout}`)
 
-  const card = await until(
-    cdp,
-    `(() => { const c = document.querySelector('.ember-chip.is-claude'); return c ? { text: c.textContent, title: c.title } : null })()`,
-    (v) => v !== null,
-    'the status never reached the sidebar card'
-  )
-  console.log('card chip:', JSON.stringify(card))
-  if (card.text !== 'Fable · 8% · $0.01') fail(`card chip reads "${card.text}"`)
-  if (!card.title.includes('200k') || !card.title.includes('cache warm')) fail(`card title is thin: ${card.title}`)
+  // The card shows it only while Claude Code runs in the tab (App: `g.loom.isClaude`), which
+  // needs a real session (probe-one-claude's screenshots carry it). Here: the bridge takes
+  // the status the wrapper sent, with the token.
+  const withToken = await fetch(`${wire.origin}/status`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-ember-token': env.token },
+    body: JSON.stringify({ tabId: wire.tabId, status: sample }),
+  })
+  if (!withToken.ok) fail(`the bridge refused a status with the token (${withToken.status})`)
 
   // 3. No token, no status.
   const noToken = await fetch(`${wire.origin}/status`, {

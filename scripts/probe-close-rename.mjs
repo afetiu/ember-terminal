@@ -1,12 +1,13 @@
 /**
  * Verifies the two safety/UX behaviours: a short tap on a card's close button must
- * NOT close the session, a sustained hold must, and F2 rename must stick and persist.
+ * NOT close the session, a sustained hold must, and F2 rename must stick.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync, rmSync, writeFileSync , mkdirSync } from 'node:fs'
+import { existsSync, rmSync, writeFileSync , mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join , basename } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -23,6 +24,7 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`)
 }
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -140,9 +142,8 @@ await sleep(2200)
 const stillNamed = await ev(`document.querySelector('.ember-card-title').textContent`)
 check('custom name survives a shell title change', stillNamed === 'deploy box', String(stillNamed))
 
-await sleep(4500)
-const saved = existsSync(STATE) ? JSON.parse(readFileSync(STATE, 'utf8')) : null
-check('rename persisted', saved?.groups?.[0]?.customTitle === 'deploy box', JSON.stringify(saved?.groups?.[0]?.customTitle))
+// No "rename persisted" check: nothing about a session survives a restart any more
+// (src/main/state.ts), so there is no saved name to look for.
 
 await send('Page.bringToFront')
 const shot = await send('Page.captureScreenshot', { format: 'png' })

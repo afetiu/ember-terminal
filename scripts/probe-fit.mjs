@@ -8,6 +8,7 @@ import { join, basename } from 'node:path'
 import { spawn } from 'node:child_process'
 import { writeFileSync , mkdirSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 // Probes must never share ~/.ember with the installed copy: they edit config.json and
 // delete state.json, which would rewrite a live session's settings underneath it.
@@ -15,6 +16,7 @@ const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process
 mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME }
 const PORT = 9338
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: PROBE_ENV,
@@ -63,10 +65,10 @@ await sleep(3000)
 await evaluate(`window.ember.window.toggleMaximize()`)
 await sleep(2500)
 
-const sid = await evaluate(`document.querySelector('.ember-pane.is-active').dataset.sessionId`)
+const sid = await evaluate(`document.querySelector('.ember-group.is-active .ember-pane').dataset.sessionId`)
 
 const geom = await evaluate(`(() => {
-  const pane = document.querySelector('.ember-pane.is-active')
+  const pane = document.querySelector('.ember-group.is-active .ember-pane')
   const xterm = pane.querySelector('.xterm')
   const viewport = pane.querySelector('.xterm-viewport')
   const screen = pane.querySelector('.xterm-screen')

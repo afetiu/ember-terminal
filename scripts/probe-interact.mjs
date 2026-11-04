@@ -1,32 +1,34 @@
 #!/usr/bin/env node
 /**
- * Drives the panel in the direction it did not used to go: from the panel back into
- * the terminal.
+ * Drives a shown document in the direction it did not used to go: from the document back
+ * into the terminal. Documents land on the tab's canvas, each in a frame of its own.
  *
- * Three claims, each checked where it can actually fail rather than where it is easy to
+ * Two claims, each checked where it can actually fail rather than where it is easy to
  * observe:
  *
- *   1. Pressing a button on an `ask` panel runs a command in the shell. Proved by
- *      having the button's value *be* a command that writes a file — the whole chain
- *      (guest click → bridge → renderer → pty → pwsh) has to work for the file to exist.
+ *   1. Pressing a button on an `ask` document puts its words on the shell's line — the
+ *      whole chain (guest press → bridge → renderer → pty) has to work for them to be
+ *      there — and, in a plain shell, does not run them: a document's buttons submit only
+ *      into an agent.
  *   2. An `ember-type:` link fills the prompt without pressing Enter, which is read back
  *      out of the terminal grid rather than assumed.
- *   3. Picking an element gives Ember the element's text, and sending composes the two
- *      into one line.
  *
- * It used to also cover dictation routing into panel fields. That went out with the
- * Azure speech subsystem.
+ * And the side panel's toggle (Ctrl+Shift+J) still opens and closes it. It used to also
+ * cover dictation routing into panel fields, which went out with the Azure speech
+ * subsystem, and picking an element in the side panel, which went once nothing a session
+ * shows reaches that panel.
  *
  * The guest is its own DevTools target, so most of this is done through a second CDP
- * connection into the panel's page — the same isolation that keeps model HTML away from
+ * connection into the document's page — the same isolation that keeps model HTML away from
  * `window.ember` also keeps it out of reach of the host document's `querySelector`.
  *
  *   node scripts/probe-interact.mjs [outfile.png]
  */
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { basename, join } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -37,6 +39,7 @@ const out = process.argv[2] ?? 'interact.png'
 const MARK = join(EMBER_HOME, 'pressed.txt').replace(/\\/g, '/')
 rmSync(MARK, { force: true })
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -130,6 +133,36 @@ async function guest(src) {
   fail(`the panel document ${src} never appeared as a debuggable target`)
 }
 
+/**
+ * A real press on something inside a document: the runtime acts only on a trusted event
+ * with a user activation (panelDoc's `live`), which a script's .click() is not. So the
+ * element is found in the guest, its frame on the host, and the mouse goes down there.
+ */
+async function press(cdp, g, selector) {
+  const inner = await g.eval(`(() => { const e = document.querySelector(${JSON.stringify(selector)}); e?.scrollIntoView({ block: 'center' }); const r = e?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null })()`)
+  const frame = await cdp.eval(`(() => { const f = [...document.querySelectorAll('.loom-piece iframe.loom-frame')].at(-1); const r = f?.getBoundingClientRect(); return r ? { x: r.left, y: r.top } : null })()`)
+  if (!inner || !frame) return false
+  const x = frame.x + inner.x
+  const y = frame.y + inner.y
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 })
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
+  return true
+}
+
+/** Does the window in the foreground belong to the Ember this probe launched? */
+function foregroundIsOurs() {
+  try {
+    const ps = `Add-Type -Name Fg -Namespace Probe -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);'; $p = 0; [void][Probe.Fg]::GetWindowThreadProcessId([Probe.Fg]::GetForegroundWindow(), [ref]$p); $p`
+    const pid = Number(execFileSync('powershell.exe', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).trim())
+    // The window is the browser process's; it is the probe's child, or the child's child.
+    const out = execFileSync('powershell.exe', ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").ParentProcessId`], { encoding: 'utf8' }).trim()
+    return pid === child.pid || Number(out) === child.pid
+  } catch {
+    return false
+  }
+}
+
 async function until(cdp, expression, ok, what, tries = 50) {
   let last
   for (let i = 0; i < tries; i++) {
@@ -140,7 +173,9 @@ async function until(cdp, expression, ok, what, tries = 50) {
   fail(`${what} — last saw ${JSON.stringify(last)}`)
 }
 
-const frameSrc = `document.querySelector('.ember-panel-frame')?.getAttribute('src') ?? ''`
+const ASK_MARK = 'ember-ask-probe-marker'
+/** The newest document frame on the tab's canvas: every push lands there, as a piece. */
+const frameSrc = `(() => { const f = [...document.querySelectorAll('.loom-piece iframe.loom-frame')].at(-1); return f?.getAttribute('src') ?? '' })()`
 
 try {
   const page = await hostTarget()
@@ -148,6 +183,14 @@ try {
   await cdp.send('Runtime.enable')
   await cdp.send('Page.enable')
   await sleep(3500)
+  // A press in a document counts only while Ember's window has the focus (App.actHasGesture:
+  // the frame must hold it and the window hold a user activation). Windows gives the
+  // foreground only to the app the person is using, so a probe launched from a background
+  // agent never has it: then the presses are skipped, and said so, rather than faked.
+  await cdp.send('Page.bringToFront')
+  await sleep(300)
+  const canPress = foregroundIsOurs()
+  const skip = (what) => console.log(`  - skip  ${what}  (the window does not have the foreground; run it from the desktop)`)
 
   const wire = await cdp.eval(`(async () => ({
     origin: await window.ember.panel.origin(),
@@ -157,6 +200,9 @@ try {
 
   const token = await readToken(cdp)
   if (!token) fail('the shell never reported EMBER_BRIDGE_TOKEN')
+  // The canvas is drawn only while an agent runs; here it is shown by a stylesheet, as
+  // Claude mode would show it, so its frames lay out and load like they do in use.
+  await cdp.eval(`(() => { const st = document.createElement('style'); st.textContent = '.loom { display: block !important; height: 760px !important; }'; document.head.appendChild(st); return true })()`)
 
   const push = async (body) => {
     const res = await fetch(`${wire.origin}/panel`, {
@@ -176,7 +222,7 @@ try {
     format: 'ask',
     content: 'Pick a side.',
     options: [
-      { label: 'Write the mark', value: `'pressed' | Set-Content -Encoding utf8 '${MARK}'`, hint: 'proves the chain' },
+      { label: 'Write the mark', value: `echo ${ASK_MARK}`, hint: 'proves the chain' },
       { label: 'Do nothing', value: 'echo nothing' },
     ],
   })
@@ -194,20 +240,29 @@ try {
   if (rendered.hint !== 'proves the chain') fail(`hint reads "${rendered.hint}"`)
   pass('ask card renders its options, hints and free-text box')
 
-  await g.eval(`document.querySelectorAll('.ember-ask-opt')[0].click()`)
+  if (!canPress) skip('pressing an option puts its words on the line; the card retires')
+  else {
+    if (!(await press(cdp, g, '.ember-ask-opt'))) fail('could not find the first option to press')
 
-  for (let i = 0; i < 60 && !existsSync(MARK); i++) await sleep(250)
-  if (!existsSync(MARK)) fail('pressing a panel button did not reach the shell — no mark file')
-  if (!readFileSync(MARK, 'utf8').includes('pressed')) fail('the mark file has the wrong contents')
-  pass('pressing an option ran the command in the shell')
+    // The whole chain (guest press → bridge → renderer → pty) has to work for the words to be
+    // on the shell's line. They are not run: a document's buttons submit only into an agent
+    // (App.actToSession), and this tab is a plain shell.
+    const asked = await until(cdp, `window.__ember.sessions()[0].text`, (t) => String(t).includes(ASK_MARK), 'pressing a button in the document did not reach the shell')
+    pass('pressing an option put its words on the shell\'s line')
+    if (String(asked).split(ASK_MARK).length > 2) fail('the option was run, not just put on the line')
+    else pass('and did not run them in a plain shell')
+    // Clear the line again before the next check; the tab is still a plain shell.
+    if ((await cdp.eval(`window.__ember.loom()?.mode`)) === 'shell') await cdp.eval(`window.ember.write(window.__ember.sessions()[0].id, '\\u0003')`)
+    await sleep(600)
 
-  const retired = await g.eval(`({
-    answered: document.querySelector('.ember-ask')?.classList.contains('is-answered') ?? false,
-    note: document.querySelector('.ember-ask-sent')?.textContent ?? ''
-  })`)
-  if (!retired.answered) fail('the answered card is still offering its buttons')
-  if (!retired.note.includes('Set-Content')) fail(`the card does not show what was sent: "${retired.note}"`)
-  pass('the answered card retires itself and shows what it sent')
+    const retired = await g.eval(`({
+      answered: document.querySelector('.ember-ask')?.classList.contains('is-answered') ?? false,
+      note: document.querySelector('.ember-ask-sent')?.textContent ?? ''
+    })`)
+    if (!retired.answered) fail('the answered card is still offering its buttons')
+    if (!retired.note.includes(ASK_MARK)) fail(`the card does not show what was sent: "${retired.note}"`)
+    pass('the answered card retires itself and shows what it sent')
+  }
 
   // ---------- 2. ember-type: fills the prompt without submitting ----------
 
@@ -231,92 +286,33 @@ try {
   if (btn.submit !== '0') fail('ember-type produced a submitting button')
   pass('an ember-type link renders as a fill-only button')
 
-  await g.eval(`document.querySelector('[data-ember-send]').click()`)
-  await until(
-    cdp,
-    `window.__ember.sessions()[0].text`,
-    (t) => String(t).includes(PHRASE),
-    'the phrase never reached the prompt'
-  )
-  pass('the phrase is sitting in the prompt')
-  // Nothing ran it: the shell is still at a prompt with the text on the line, so no
-  // "command not found" ever appeared.
-  const ran = await cdp.eval(`window.__ember.sessions()[0].text`)
-  if (/not recognized|CommandNotFound/i.test(ran)) fail('the fill-only button pressed Enter')
-  pass('and Enter was not pressed for it')
-
-  // ---------- 3. picking an element ----------
-
-  console.log('\npicking')
-  await push({
-    title: 'Cars',
-    format: 'markdown',
-    content: '| Car | Year | Price |\n| --- | --- | --- |\n| Ford Focus | 2014 | 4500 |\n| Golf | 2016 | 7200 |\n',
-    replace: true,
-  })
-  src = await until(cdp, frameSrc, (v) => v.includes('/doc/') && v !== src, 'table panel never loaded')
-  g.close()
-  g = await guest(src)
-
-  await cdp.eval(`document.querySelector('.ember-panel-btn.is-pick').click()`)
-  await until(cdp, `window.__ember.panels()[0].picking`, (v) => v === true, 'pick mode never armed')
-  await until(g, `!!window.__emberPick`, (v) => v === true, 'the picker was never injected into the guest')
-  pass('pick mode arms and injects into the guest')
-
-  // A click on a cell, which the picker is supposed to read as a click on its row.
-  await g.eval(`(() => {
-    const cell = document.querySelectorAll('tbody tr')[1].children[0]
-    const r = cell.getBoundingClientRect()
-    cell.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + 2, clientY: r.top + 2 }))
-  })()`)
-
-  const popped = await until(
-    cdp,
-    `(() => { const p = document.querySelector('.ember-panel')
-       return { open: p.classList.contains('has-pick'),
-                what: p.querySelector('.ember-pick-what')?.textContent ?? '',
-                quote: p.querySelector('.ember-pick-quote')?.textContent ?? '',
-                picking: window.__ember.panels()[0].picking } })()`,
-    (v) => v.open,
-    'the popover never opened after a pick'
-  )
-  if (!popped.quote.includes('Golf') || !popped.quote.includes('7200')) fail(`the quote reads "${popped.quote}"`)
-  if (!popped.quote.includes('|')) fail('a row was not read cell by cell')
-  if (popped.what !== 'row 2') fail(`the pick is named "${popped.what}", expected "row 2" — headers are not rows`)
-  if (popped.picking) fail('pick mode stayed armed after a pick')
-  pass(`picking a cell selects its row — "${popped.what}: ${popped.quote}"`)
-
-  // ---------- sending composes the pick with what was typed ----------
-  await cdp.eval(`document.querySelector('.ember-pick-box').value = 'is this one worth it'`)
-
-  await cdp.eval(`document.querySelector('.ember-pick-send').click()`)
-  const line = await until(
-    cdp,
-    `window.__ember.sessions()[0].text`,
-    (t) => String(t).includes('is this one worth it'),
-    'the composed selection never reached the terminal'
-  )
-  if (!/Golf/.test(line)) fail('the composed line does not quote what was picked')
-  pass('sending composes what was picked with what was said')
-
-  await until(
-    cdp,
-    `document.querySelector('.ember-panel').classList.contains('has-pick')`,
-    (v) => v === false,
-    'the popover stayed open after sending'
-  )
-  pass('the popover closes after sending')
+  if (!canPress) skip('pressing it fills the prompt without Enter')
+  else {
+    if (!(await press(cdp, g, '[data-ember-send]'))) fail('could not find the fill button to press')
+    await until(
+      cdp,
+      `window.__ember.sessions()[0].text`,
+      (t) => String(t).includes(PHRASE),
+      'the phrase never reached the prompt'
+    )
+    pass('the phrase is sitting in the prompt')
+    // Nothing ran it: the shell is still at a prompt with the text on the line, so no
+    // "command not found" ever appeared.
+    const ran = await cdp.eval(`window.__ember.sessions()[0].text`)
+    if (/not recognized|CommandNotFound/i.test(ran)) fail('the fill-only button pressed Enter')
+    pass('and Enter was not pressed for it')
+  }
 
   // ---------- the toggle ----------
 
   console.log('\npanel toggle')
-  await cdp.eval(`document.querySelector('.ember-paneltoggle').click()`)
-  await until(cdp, `window.__ember.panels()[0].open`, (v) => v === false, 'the title-bar toggle did not hide the panel')
-  const marked = await cdp.eval(`document.querySelector('.ember-paneltoggle').classList.contains('has-unseen')`)
-  if (!marked) fail('a hidden panel with content on it is not marked as unseen')
-  await cdp.eval(`document.querySelector('.ember-paneltoggle').click()`)
-  await until(cdp, `window.__ember.panels()[0].open`, (v) => v === true, 'the toggle did not bring the panel back')
-  pass('the title-bar button hides and shows the panel, and marks unseen content')
+  // The title bar has no panel button any more; Ctrl+Shift+J and Ctrl+K's "panel" row run this toggle.
+  const wasOpen = (await cdp.eval(`window.__ember.panels()[0]?.open ?? false`)) === true
+  await cdp.eval(`window.__ember.togglePanel()`)
+  await until(cdp, `window.__ember.panels()[0]?.open ?? false`, (v) => v === !wasOpen, 'the toggle did not change the panel')
+  await cdp.eval(`window.__ember.togglePanel()`)
+  await until(cdp, `window.__ember.panels()[0]?.open ?? false`, (v) => v === wasOpen, 'a second toggle did not put it back')
+  pass('the toggle opens and closes the panel')
 
   await sleep(600)
   await cdp.send('Page.bringToFront')

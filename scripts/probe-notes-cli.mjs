@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const PORT = 9383
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
@@ -26,6 +27,7 @@ const userCfg = join(homedir(), '.ember', 'config.json')
 const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: 'ignore',
   env: { ...process.env, EMBER_HOME, EMBER_NOTES_DIR: NOTES, EMBER_PROBE_INACTIVE: '1' },
@@ -88,7 +90,8 @@ async function waitForPrompt(id) {
     const s = (await ev(`window.__ember.sessions()`)).find((x) => (id ? x.id === id : true))
     if (s && s.bytesIn > 0) {
       const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-      const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+      // ¸ too: a profile saved through the wrong code page draws ▸ as â–¸ (this machine's does).
+      const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
       if (s.bytesIn === last) {
         if (!quietSince) quietSince = Date.now()
         if (Date.now() - quietSince > (prompt ? 1200 : 9000)) return s
@@ -113,7 +116,7 @@ async function run(sid, line) {
     await sleep(150)
     const s = (await ev(`window.__ember.sessions()`)).find((x) => x.id === sid)
     const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-    const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+    const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
     if (s.bytesIn === last) {
       quiet++
       // Quiet with the prompt showing means the command is done. The echo of the command
@@ -144,14 +147,15 @@ try {
   await sleep(800)
   const groups = await ev(`window.__ember.groups()`)
   const active = await ev(`window.__ember.activeTab()`)
-  // The note opens over the shell in the same tab now, not in a tab of its own.
-  const noteTab = (await ev(`!!document.querySelector('.ember-group.is-active .ember-group-panes.has-note .ember-notes')`)) ? groups.find((g) => g.id === active) : null
+  // The note opens in the Notes tab, a tab of its own: never over the shell that asked,
+  // whose canvas and the note would draw over each other.
+  const noteTab = (await ev(`!!document.querySelector('.ember-group.is-active .ember-notes')`)) ? groups.find((g) => g.id === active) : null
   // The newest match: earlier runs leave emptied files of the same name behind.
   const file = readdirSync(NOTES)
     .filter((f) => /the probe was here/i.test(f))
     .sort((a, b) => statSync(join(NOTES, b)).mtimeMs - statSync(join(NOTES, a)).mtimeMs)[0]
   check('pwsh: `note …` creates the note file', !!file, file ?? readdirSync(NOTES).join(', '))
-  check('pwsh: `note …` opens it over the same tab', !!noteTab && active === home, `active ${active}, shell ${home}, ${groups.length} tabs`)
+  check('pwsh: `note …` opens it in the Notes tab', !!noteTab && active !== home, `active ${active}, shell ${home}, ${groups.length} tabs`)
   const body = file ? readFileSync(join(NOTES, file), 'utf8') : ''
   check('the note holds the words', /the probe was here/.test(body), JSON.stringify(body))
 

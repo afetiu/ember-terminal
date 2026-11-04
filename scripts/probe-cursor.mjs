@@ -3,26 +3,24 @@
  *
  * The caret is painted on Ember's own canvas, so nothing in the DOM contradicts it when
  * it drifts — it just looks slightly wrong, which is the hardest kind of wrong to pin
- * down by eye. xterm gives us ground truth for free: it keeps a hidden textarea parked
- * on the cursor cell so IME and screen readers land in the right place. Comparing the
- * painted pixels against that textarea turns "looks a bit off" into a number.
+ * down by eye. The buffer gives the ground truth: the cursor's cell, times the cell size.
+ * Comparing the painted pixels against that cell turns "looks a bit off" into a number.
+ * (xterm's hidden textarea, parked for IME, used to be the reference; it can lag a row
+ * behind after a prompt that wraps, so it is only the fallback.)
  *
  * This catches the specific bug it was written for — a sprite whose intrinsic size is in
  * device pixels blitted into a context already scaled by dpr, which is correct at 100%
  * scaling and off by half a caret at 150%. Run it on a HiDPI display or it proves little.
  *
- *   node scripts/probe-cursor.mjs      (needs --remote-debugging-port=9222)
+ *   node scripts/probe-cursor.mjs      (its own dev Ember; EMBER_CDP_PORT=n attaches to a running one)
  */
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+import { emberPage } from './probelib.mjs'
+const ember = await emberPage('probe-cursor', 9492)
+const PORT = ember.port
 /** Pixels of disagreement worth complaining about. Sub-pixel rounding is not a bug. */
 const TOLERANCE = 2
 
-const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-const page = list.find((t) => t.type === 'page' && t.url.includes('index.html'))
-if (!page) {
-  console.error('No renderer target — launch Ember with --remote-debugging-port=%d', PORT)
-  process.exit(1)
-}
+const page = ember.page
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)
 await new Promise((r) => ws.addEventListener('open', r, { once: true }))
@@ -79,9 +77,22 @@ const expression = `(() => {
   }
   if (!hits) return JSON.stringify({ error: 'nothing solid painted on the caret canvas' })
 
-  // Canvas pixels are device pixels; the textarea is positioned in CSS pixels.
-  const painted = { x: minX / dpr, y: minY / dpr, w: (maxX - minX + 1) / dpr, h: (maxY - minY + 1) / dpr }
-  const expected = { x: parseFloat(ta.style.left) || 0, y: parseFloat(ta.style.top) || 0 }
+  // Canvas pixels are device pixels; the textarea is positioned in CSS pixels. The caret
+  // canvas is a window that follows the caret (SmoothCursor.place), translated to where it
+  // sits over the screen, so its own pixels are offset by that translation.
+  const m = /translate3d\\(\\s*(-?[\\d.]+)px,\\s*(-?[\\d.]+)px/.exec(canvas.style.transform || '')
+  const ox = m ? parseFloat(m[1]) : 0
+  const oy = m ? parseFloat(m[2]) : 0
+  const painted = { x: ox + minX / dpr, y: oy + minY / dpr, w: (maxX - minX + 1) / dpr, h: (maxY - minY + 1) / dpr }
+  // Where the cursor is, from the buffer itself: xterm moves its textarea only on some
+  // events, so after a prompt that wraps (a right-aligned clock one cell too wide) the
+  // textarea can sit a row behind a caret that is exactly right.
+  const sess = window.__ember?.sessions?.()[0]
+  const term = sess && window.__ember.term(sess.id)
+  const sr = screen.getBoundingClientRect()
+  const expected = term
+    ? { x: term.buffer.active.cursorX * (sr.width / term.cols), y: term.buffer.active.cursorY * (sr.height / term.rows) }
+    : { x: parseFloat(ta.style.left) || 0, y: parseFloat(ta.style.top) || 0 }
   return JSON.stringify({ dpr, painted, expected, canvas: { w: canvas.width, h: canvas.height, cssW: canvas.clientWidth } })
 })()`
 
@@ -97,7 +108,7 @@ const dx = r.painted.x - r.expected.x
 const dy = r.painted.y - r.expected.y
 console.log(`  devicePixelRatio : ${r.dpr}`)
 console.log(`  caret painted at : ${r.painted.x.toFixed(1)}, ${r.painted.y.toFixed(1)}  (${r.painted.w.toFixed(1)} x ${r.painted.h.toFixed(1)})`)
-console.log(`  xterm says it is : ${r.expected.x.toFixed(1)}, ${r.expected.y.toFixed(1)}`)
+console.log(`  the buffer says  : ${r.expected.x.toFixed(1)}, ${r.expected.y.toFixed(1)}`)
 console.log(`  offset           : ${dx.toFixed(1)}, ${dy.toFixed(1)}`)
 
 const ok = Math.abs(dx) <= TOLERANCE && Math.abs(dy) <= TOLERANCE

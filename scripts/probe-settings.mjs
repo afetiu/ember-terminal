@@ -1,22 +1,19 @@
 /**
  * Does the settings panel actually build what it claims to?
  *
- * Opens the panel in a running Ember and reads the DOM back: the filter, the speed
- * presets, the OpenAI key field, and what filtering actually leaves on screen. Checking
+ * Opens the panel and reads the DOM back: the filter, the speed presets, the sections,
+ * and what filtering actually leaves on screen. Checking
  * a settings panel by eye means opening it, and opening it means remembering to; this
  * asks the page instead.
  *
- *   node scripts/probe-settings.mjs      (needs --remote-debugging-port=9222)
+ *   node scripts/probe-settings.mjs      (its own dev Ember; EMBER_CDP_PORT=n attaches to a running one)
  */
-const PORT = Number(process.env['EMBER_CDP_PORT'] ?? 9222)
+import { emberPage } from './probelib.mjs'
+const ember = await emberPage('probe-settings', 9496)
+const PORT = ember.port
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-const page = list.find((t) => t.type === 'page' && t.url.includes('index.html'))
-if (!page) {
-  console.error('No renderer target — launch Ember with --remote-debugging-port=%d', PORT)
-  process.exit(1)
-}
+const page = ember.page
 
 const ws = new WebSocket(page.webSocketDebuggerUrl)
 await new Promise((r) => ws.addEventListener('open', r, { once: true }))
@@ -44,32 +41,47 @@ const evaluate = async (expression) => {
 await evaluate('window.__ember.openSettings()')
 await sleep(900)
 
-const checks = {
-  'panel open': "document.querySelector('.ember-settings')?.classList.contains('is-open')",
-  'filter box present': "!!document.querySelector('.ember-settings-filter')",
-  'speed presets': "[...document.querySelectorAll('.ember-preset-btn')].map(b => b.textContent + (b.classList.contains('is-current') ? ' (current)' : '')).join(', ')",
-  'OpenAI key field': "!!document.querySelector('.ember-secret input')",
-  'key field state': "document.querySelector('.ember-secret input')?.placeholder",
-  'key is masked': "document.querySelector('.ember-secret input')?.type === 'password'",
-  'sections shown': "document.querySelectorAll('.ember-settings-section').length",
+let failures = 0
+const check = (label, ok, detail = '') => {
+  if (!ok) failures++
+  console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? `  — ${detail}` : ''}`)
 }
-for (const [label, expr] of Object.entries(checks)) {
-  console.log(`  ${label.padEnd(22)}: ${await evaluate(expr)}`)
+const rowCount = () => evaluate("document.querySelectorAll('.ember-settings-row').length")
+
+check('the panel opens', await evaluate("document.querySelector('.ember-settings')?.classList.contains('is-open') === true"))
+check('it has a filter box', await evaluate("!!document.querySelector('.ember-settings-filter')"))
+// The speed presets are on the Motion tab.
+await evaluate(`document.querySelector('.ember-settings-tab[data-tab="Motion"]')?.click()`)
+await sleep(300)
+const presets = await evaluate("[...document.querySelectorAll('.ember-preset-btn')].map(b => b.textContent + (b.classList.contains('is-current') ? ' (current)' : '')).join(', ')")
+check('the speed presets are there', !!presets, presets)
+const sections = await evaluate("document.querySelectorAll('.ember-settings-section').length")
+check('it shows its sections', sections > 0, `${sections}`)
+
+// Every row, over all the tabs, to compare a filtered panel with.
+let all = 0
+for (const t of await evaluate(`[...document.querySelectorAll('.ember-settings-tab')].map((b) => b.dataset.tab)`)) {
+  await evaluate(`document.querySelector('.ember-settings-tab[data-tab="${t}"]').click()`)
+  await sleep(200)
+  all += await rowCount()
 }
 
 // Filtering is the whole point of the box; assert it narrows rather than just renders.
-for (const term of ['opacity', 'key', 'zzzz']) {
+const filter = async (term) => {
   await evaluate(
     `(() => { const f = document.querySelector('.ember-settings-filter'); f.value = ${JSON.stringify(term)}; f.dispatchEvent(new Event('input')); })()`,
   )
   await sleep(250)
-  const sections = await evaluate(
-    "[...document.querySelectorAll('.ember-settings-section h3')].map(h => h.textContent).join(', ')",
-  )
-  const rows = await evaluate("document.querySelectorAll('.ember-settings-row').length")
+  const rows = await rowCount()
+  const shown = await evaluate("[...document.querySelectorAll('.ember-settings-section h3')].map(h => h.textContent).join(', ')")
   const empty = await evaluate("!!document.querySelector('.ember-settings-empty')")
-  console.log(`\n  filter "${term}" -> ${rows} row(s)${empty ? ' + empty message' : ''}`)
-  console.log(`    sections: ${sections || '(none)'}`)
+  return { rows, shown, empty }
 }
+const opacity = await filter('opacity')
+check('"opacity" narrows the rows to a few', opacity.rows > 0 && opacity.rows < all, `${all} -> ${opacity.rows} (${opacity.shown || 'no sections'})`)
+const none = await filter('zzzz')
+check('nothing matching says so', none.rows === 0 && none.empty, `${none.rows} row(s)${none.empty ? ' + empty message' : ''}`)
 
 ws.close()
+console.log(failures ? `\n${failures} failure(s)` : '\nall good')
+process.exit(failures ? 1 : 0)

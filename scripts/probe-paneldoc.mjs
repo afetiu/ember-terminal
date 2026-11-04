@@ -66,13 +66,19 @@ const push = (over) => ({
 })
 
 const run = async () => {
-  const { renderPanelDocument } = await load('src/main/panelDoc.ts', 'panelDoc')
+  const { renderPanelDocument, takeRuntime } = await load('src/main/panelDoc.ts', 'panelDoc')
 
-  // 1. A markdown panel carries the runtime and the document secret.
+  // 1. A markdown panel loads the runtime by a one-time nonce; the document secret is in
+  //    that script, never in the page, so a page that reads its own source learns nothing.
   const md = renderPanelDocument(push({ content: '# Hello\n\nSome *words*.' }))
   scriptsCompile(md, 'markdown')
-  md.includes('"S3CR3T"') ? pass('markdown: the act secret reaches the page') : fail('markdown: no act secret')
-  md.includes('/panel/act') ? pass('markdown: the page knows where to post') : fail('markdown: no act endpoint')
+  const nonce = /<script src="\/panel\/runtime\.js\?n=([0-9a-f]+)"><\/script>/.exec(md)?.[1]
+  nonce ? pass('markdown: the page loads the runtime by nonce') : fail('markdown: no runtime script')
+  !md.includes('S3CR3T') ? pass('markdown: the act secret is not in the page') : fail('markdown: the act secret is inline')
+  const js = nonce ? takeRuntime(nonce) : null
+  js?.includes('"S3CR3T"') ? pass('markdown: the runtime carries the act secret') : fail('markdown: the runtime has no act secret')
+  js?.includes('/panel/act') ? pass('markdown: the runtime knows where to post') : fail('markdown: no act endpoint')
+  nonce && takeRuntime(nonce) === null ? pass('markdown: the nonce works once') : fail('markdown: the runtime can be fetched twice')
 
   // 2. `ember:` links become buttons, and their target survives escaping intact.
   const links = renderPanelDocument(
@@ -112,8 +118,9 @@ const run = async () => {
     push({ format: 'html', content: '<!doctype html><html><body><h1>Mine</h1></body></html>' })
   )
   scriptsCompile(raw, 'html')
-  raw.startsWith('<!doctype html><html><body><h1>Mine</h1>')
-    ? pass('html: the page is untouched ahead of the graft')
+  // Its own markup is kept; Ember's base styles go in ahead of it, inside its <html>.
+  raw.includes('<body><h1>Mine</h1>') && /^<!doctype html>[\s\S]*<html>/i.test(raw)
+    ? pass('html: the page keeps its own markup')
     : fail('html: the page was rewritten')
   raw.indexOf('__emberDoc') < raw.lastIndexOf('</body>')
     ? pass('html: runtime is grafted inside body')

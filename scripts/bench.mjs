@@ -191,7 +191,8 @@ await evaluate(`window.ember.window.toggleMaximize()`)
     const s = (await evaluate(`window.__ember.sessions()[0]`)) ?? null
     if (s && s.bytesIn > 0) {
       const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
-      const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+      // ¸ too: a profile saved through the wrong code page draws ▸ as â–¸ (this machine's does).
+      const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
       if (s.bytesIn === last) {
         if (!quietSince) quietSince = Date.now()
         if (Date.now() - quietSince > (prompt ? 1200 : 9000)) break

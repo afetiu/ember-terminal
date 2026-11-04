@@ -1,19 +1,20 @@
 import { join, basename } from 'node:path'
 /**
- * The two ways an html panel used to come out blank, and the panel's grip.
+ * The two ways an html panel used to come out blank, and the side panel's grip.
  *
  * Starts a test Ember the way probe-panel does, then pushes the three shapes of html a
  * model actually sends — a bare fragment, a full document that never names a text
- * colour, and a page wrapped in a ```html fence — and looks inside the guest to check
- * each one is readable: wrapped, given colours, unfenced. Then takes hold of the panel's
- * left edge with synthetic mouse events, drags it, and checks that the panel followed
- * and that `panel.width` was written to config.
+ * colour, and a page wrapped in a ```html fence — and looks inside each one's frame on
+ * the canvas to check it is readable: wrapped, given colours, unfenced. Then opens the
+ * side panel, takes hold of its left edge with synthetic mouse events, drags it, and
+ * checks that the panel followed and that `panel.width` was written to config.
  *
  *   node scripts/probe-panel-html.mjs [outfile.png]
  */
 import { spawn } from 'node:child_process'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -22,6 +23,7 @@ writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2'
 const PORT = 9353
 const out = process.argv[2] ?? 'panel-html.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -113,7 +115,9 @@ try {
   await cdp.send('Page.enable')
   await sleep(3000)
 
-  await until(cdp, PANEL_RECT, (v) => v !== null, 'no .ember-panel in a v2 tab')
+  // Every push lands on the tab's canvas, in a frame. The canvas is drawn only while an
+  // agent runs; here it is shown by a stylesheet, as Claude mode would show it.
+  await cdp.eval(`(() => { const st = document.createElement('style'); st.textContent = '.loom { display: block !important; height: 760px !important; }'; document.head.appendChild(st); return true })()`)
 
   const wire = await cdp.eval(`(async () => {
     const origin = await window.ember.panel.origin()
@@ -138,10 +142,12 @@ try {
   const loaded = async (title) =>
     until(
       cdp,
-      `(() => ({ title: document.querySelector('.ember-panel-title')?.textContent ?? '',
-                 src: document.querySelector('.ember-panel-frame')?.getAttribute('src') ?? '' }))()`,
+      `(() => {
+        const p = [...document.querySelectorAll('.loom-piece')].find((x) => x.dataset.title === ${JSON.stringify(title)})
+        return { title: p?.dataset.title ?? '', src: p?.querySelector('iframe.loom-frame')?.getAttribute('src') ?? '' }
+      })()`,
       (v) => v.title === title && v.src.includes('/doc/'),
-      `panel never showed "${title}"`
+      `the canvas never showed "${title}"`
     )
 
   // 1. A bare fragment: wrapped, and its text is the panel's light colour.
@@ -192,8 +198,18 @@ try {
   if (fenced.text.includes('```')) fail('the fence is showing as text')
   if (fenced.color !== 'rgb(255, 0, 0)') fail(`author style lost to the defaults: ${fenced.color}`)
 
-  // 4. The grip: invisible at rest, lit on hover, and drags the panel wider.
-  const before = await cdp.eval(PANEL_RECT)
+  // 4. The side panel's grip: invisible at rest, lit on hover, and drags the panel wider.
+  //    The panel opens by hand now (Ctrl+Shift+J); nothing a session shows opens it.
+  await cdp.eval(`window.__ember.togglePanel()`)
+  await until(cdp, PANEL_RECT, (v) => !!v?.open && v.w > 200, 'the side panel did not open')
+  // It springs open; take hold of the edge where it comes to rest, not where it was mid-flight.
+  let before = await cdp.eval(PANEL_RECT)
+  for (let i = 0; i < 30; i++) {
+    await sleep(150)
+    const now = await cdp.eval(PANEL_RECT)
+    if (now.w === before.w && now.left === before.left) break
+    before = now
+  }
   const grip = await cdp.eval(`(() => {
     const g = document.querySelector('.ember-panel-grip')
     if (!g) return null

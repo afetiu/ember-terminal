@@ -34,6 +34,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const args = new Map(
   process.argv.slice(2).map((a) => {
@@ -116,6 +117,7 @@ writeFileSync(
 // ---- launch ------------------------------------------------------------------------------
 const electronArgs = ['.', `--remote-debugging-port=${PORT}`]
 if (args.has('no-webgl')) electronArgs.push('--no-webgl')
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', electronArgs, {
   stdio: 'ignore',
   // Inactive: the window must not take the keyboard from whoever is at the machine.
@@ -177,7 +179,8 @@ async function waitForPrompt(id) {
       const lastLine = String(s.text ?? '').split('\n').filter((l) => l.trim()).at(-1) ?? ''
       // A prompt glyph is the strong signal; a long quiet spell is the fallback for
       // prompts this regex has not met.
-      const prompt = /[>❯▸$#»]\s*$/.test(lastLine)
+      // ¸ too: a profile saved through the wrong code page draws ▸ as â–¸ (this machine's does).
+      const prompt = /[>❯▸¸$#»]\s*$/.test(lastLine)
       if (s.bytesIn === last) {
         if (!quietSince) quietSince = Date.now()
         // A profile with oh-my-posh in it can sit silent for several seconds before

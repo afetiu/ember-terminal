@@ -46,12 +46,20 @@
  * DesktopAcrylicController and holding SystemBackdropConfiguration.IsInputActive true,
  * which needs a native WinRT module — a different kind of project, not a tweak.
  */
-import { execFile } from 'node:child_process'
+import { execFile, spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { app, BrowserWindow, screen } from 'electron'
+import electron from 'electron'
+
+// Under plain node, 'electron' is only the path to the binary: run this same file inside
+// it, with the same arguments, and pass its verdict on.
+if (typeof electron === 'string') {
+  const r = spawnSync(electron, [new URL(import.meta.url).pathname.slice(1), ...process.argv.slice(2)], { stdio: 'inherit' })
+  process.exit(r.status ?? 1)
+}
+const { app, BrowserWindow, screen } = electron
 
 const run = promisify(execFile)
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -95,6 +103,9 @@ const ps = (script) =>
     windowsHide: true,
     maxBuffer: 1 << 24,
   })
+
+/** The window that has the foreground, as a number to compare with a native handle. */
+const FOREGROUND = `Add-Type -Name Fg -Namespace Probe -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();'; [Probe.Fg]::GetForegroundWindow().ToInt64()`
 
 const sample = async (rect, name) =>
   (await ps(SAMPLE(rect, KEEP ? join(OUT, `${name}.png`) : null))).stdout.trim()
@@ -144,8 +155,14 @@ void app
 
     glass.focus()
     await wait(900)
+    // Windows hands the foreground only to the process the person is using; a probe
+    // launched from a background agent is refused it, and then "focused" was never
+    // focused. Measuring that would be the false reading the notes above warn about.
+    const fg = (await ps(FOREGROUND)).stdout.trim()
+    const own = glass.getNativeWindowHandle().readBigUInt64LE().toString()
     const focused = await sample(rect, 'focused')
-    check(`${MATERIAL}: focused is see-through`, spread(focused) > 20, focused)
+    if (fg !== own) console.log(`skip  ${MATERIAL}: focused is see-through  (Windows kept the foreground elsewhere, ${fg} not ${own}; run it from the desktop)`)
+    else check(`${MATERIAL}: focused is see-through`, spread(focused) > 20, focused)
 
     // Deactivate. This is the case the whole feature exists for. moveTop restores the
     // z-order the focus change just inverted, without handing focus back.

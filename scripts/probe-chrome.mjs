@@ -11,6 +11,7 @@ import { spawn } from 'node:child_process'
 import { basename, join } from 'node:path'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { seedHome } from './probelib.mjs'
 
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
@@ -19,6 +20,7 @@ writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ experience: 'v2'
 const PORT = 9372
 const out = process.argv[2] ?? 'chrome.png'
 
+seedHome(EMBER_HOME)
 const child = spawn('./node_modules/electron/dist/electron.exe', ['.', `--remote-debugging-port=${PORT}`], {
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, EMBER_HOME },
@@ -120,7 +122,7 @@ try {
     const b = s.getBoundingClientRect()
     const card = document.querySelector('.ember-card')
     const title = document.querySelector('.ember-card-title')
-    const badge = document.querySelector('.ember-card-badge')
+    const badge = document.querySelector('.ember-card-state')
     return {
       w: Math.round(b.width),
       mini: document.body.classList.contains('sidebar-mini'),
@@ -142,12 +144,11 @@ try {
   if (mini.titleShown) fail('the rail still shows session names, so it is not really minimised')
   else pass('their names are dropped, which is what makes room')
 
-  // The icons have to come down with it. A rail of full-size badges is a narrower
-  // sidebar, not a minimised one, which is the distinction the user drew.
-  if (mini.badgePx === 0) fail('the rail has no icons in it')
+  // Each card keeps its state dot: the rail still says which session is working.
+  if (mini.badgePx === 0) fail('the rail has no state dots in it')
   else if (mini.badgePx > 34) {
-    fail(`the icons are still ${mini.badgePx}px — the rail is narrower but the icons are not minimised`)
-  } else pass(`and the icons shrink with it (${mini.badgePx}px, from 38)`)
+    fail(`the state marks are ${mini.badgePx}px — the rail is narrower but its marks are not`)
+  } else pass(`and each keeps its state dot (${mini.badgePx}px)`)
 
   await cdp.eval(`window.__ember.sidebar()`)
   const back = await settle(cdp, `Math.round(document.querySelector('.ember-sidebar').getBoundingClientRect().width)`)
