@@ -76,7 +76,3 @@ class Ticker {
 }
 
 export const ticker = new Ticker()
-
-export function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}

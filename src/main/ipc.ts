@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { monitorEventLoopDelay } from 'node:perf_hooks'
 import { activeGpu } from './gpu.js'
@@ -46,15 +46,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
     return runAgent(prompt, { timeoutMs: 120_000, ...(cwd ? { cwd } : {}) }).done
   })
   ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
-  // A handoff brief for switching a tab to another agent: written where the new agent can
-  // read it, and named in the one short message it is given.
-  ipcMain.handle('ember:canvas:handoff', (_e, text: string) => {
-    const dir = join(CONFIG_DIR, 'handoff')
-    mkdirSync(dir, { recursive: true })
-    const file = join(dir, `handoff-${new Date().toISOString().replace(/[:.]/g, '-')}.md`)
-    writeFileSync(file, String(text).slice(0, 200_000), 'utf8')
-    return file
-  })
   ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {
     try {
       return showFile(tabId, path, title)

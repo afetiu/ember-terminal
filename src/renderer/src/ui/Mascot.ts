@@ -162,28 +162,13 @@ const GLINT = '#FFF3E0'
 
 /**
  * Whether the badges are drawn on a light card. The sprite's own colours are a character
- * and stay put; what changes is anything picked to glow against near-black — the shell
- * badge's lavender and amber, the halo behind a waiting mascot, the tick in the todo box —
- * all of which wash out on paper. Set by App with the theme.
+ * and stay put; what changes is anything picked to glow against near-black — the halo
+ * behind a waiting mascot — which washes out on paper. Set by App with the theme.
  */
 let onLight = false
 
 export function setBadgeSurface(light: boolean): void {
   onLight = light
-}
-
-/** Shell badge: frame and prompt per state. On light the prompt is the deeper of the two. */
-const SHELL_INK: Record<'dark' | 'light', Record<'attention' | 'working' | 'idle', { body: string; glow: string }>> = {
-  dark: {
-    attention: { body: '#FFC857', glow: '#FFE3A0' },
-    working: { body: '#F2A43A', glow: '#FFD58A' },
-    idle: { body: '#A99F92', glow: '#CFC6BA' },
-  },
-  light: {
-    attention: { body: '#C08A1E', glow: '#9A5F00' },
-    working: { body: '#D98A1F', glow: '#B07A2A' },
-    idle: { body: '#8C7F70', glow: '#665A4C' },
-  },
 }
 
 /** What the mascot is being asked to portray. */
@@ -442,138 +427,4 @@ export function drawMascot(
   // No exclamation mark anywhere: the flare, the raised hand, the hop, the glow behind
   // it and the card's own tint already say it. Amber for a question that is blocking,
   // a cooler green for "your turn", which is good news rather than a demand.
-}
-
-
-/**
- * Badge for a notes tab: a page with a folded corner and a few lines of writing.
- *
- * Still, on purpose. The other two badges animate because they report something that
- * changes — a shell working, a Claude waiting on you. A note has no such state, and a
- * page that fidgeted would be claiming one.
- */
-export function drawNoteBadge(ctx: CanvasRenderingContext2D, s: number, accent: string): void {
-  ctx.clearRect(0, 0, s, s)
-  const x = 0.24 * s
-  const y = 0.16 * s
-  const w = 0.52 * s
-  const h = 0.68 * s
-  const fold = 0.16 * s
-  const r = 0.06 * s
-
-  // The sheet, with the top-right corner cut for the fold.
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - fold, y)
-  ctx.lineTo(x + w, y + fold)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
-  ctx.strokeStyle = accent
-  ctx.lineWidth = 0.05 * s
-  ctx.lineJoin = 'round'
-  ctx.globalAlpha = 0.85
-  ctx.stroke()
-
-  // The fold itself.
-  ctx.beginPath()
-  ctx.moveTo(x + w - fold, y)
-  ctx.lineTo(x + w - fold, y + fold)
-  ctx.lineTo(x + w, y + fold)
-  ctx.globalAlpha = 0.6
-  ctx.stroke()
-
-  // Three lines of writing, the last one short — a page with words on it, not a form.
-  ctx.lineCap = 'round'
-  ctx.lineWidth = 0.045 * s
-  ctx.globalAlpha = 0.7
-  const lx = x + 0.12 * s
-  for (const [i, len] of [0.28, 0.28, 0.16].entries()) {
-    const ly = y + 0.3 * s + i * 0.13 * s
-    ctx.beginPath()
-    ctx.moveTo(lx, ly)
-    ctx.lineTo(lx + len * s, ly)
-    ctx.stroke()
-  }
-  ctx.globalAlpha = 1
-}
-
-/** Badge for the todo list: a ticked box with a line beside it, and an empty one under. */
-export function drawTodoBadge(ctx: CanvasRenderingContext2D, s: number, accent: string): void {
-  ctx.clearRect(0, 0, s, s)
-  ctx.strokeStyle = accent
-  ctx.fillStyle = accent
-  ctx.lineWidth = 0.05 * s
-  ctx.lineJoin = 'round'
-  ctx.lineCap = 'round'
-  const box = (x: number, y: number, ticked: boolean) => {
-    const w = 0.2 * s
-    ctx.globalAlpha = ticked ? 1 : 0.55
-    ctx.beginPath()
-    ctx.roundRect(x, y, w, w, 0.04 * s)
-    if (ticked) {
-      ctx.fill()
-      // Light palettes' cyans are deep, so the tick cut into them is light.
-      ctx.strokeStyle = onLight ? '#ffffff' : '#1a0e2e'
-      ctx.beginPath()
-      ctx.moveTo(x + w * 0.25, y + w * 0.55)
-      ctx.lineTo(x + w * 0.45, y + w * 0.75)
-      ctx.lineTo(x + w * 0.78, y + w * 0.3)
-      ctx.stroke()
-      ctx.strokeStyle = accent
-    } else {
-      ctx.stroke()
-    }
-    ctx.globalAlpha = ticked ? 0.9 : 0.5
-    ctx.beginPath()
-    ctx.moveTo(x + w + 0.1 * s, y + w / 2)
-    ctx.lineTo(x + w + 0.42 * s, y + w / 2)
-    ctx.stroke()
-  }
-  box(0.2 * s, 0.24 * s, true)
-  box(0.2 * s, 0.56 * s, false)
-  ctx.globalAlpha = 1
-}
-
-/**
- * Badge for a plain shell session: a small terminal with a prompt and a caret that
- * behaves like the app's real one — travelling when busy, resting when not.
- */
-export function drawShellBadge(ctx: CanvasRenderingContext2D, s: number, state: ActivityState, t: number): void {
-  ctx.clearRect(0, 0, s, s)
-  const still = state === 'exited'
-  const { body, glow } = SHELL_INK[onLight ? 'light' : 'dark'][state === 'attention' || state === 'working' ? state : 'idle']
-
-  ctx.strokeStyle = body
-  ctx.globalAlpha = still ? 0.45 : 0.75
-  ctx.lineWidth = 0.05 * s
-  ctx.beginPath()
-  ctx.roundRect(0.16 * s, 0.2 * s, 0.68 * s, 0.6 * s, 0.12 * s)
-  ctx.stroke()
-  ctx.globalAlpha = 1
-
-  ctx.strokeStyle = glow
-  ctx.lineWidth = 0.055 * s
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.globalAlpha = still ? 0.45 : 1
-  ctx.beginPath()
-  ctx.moveTo(0.3 * s, 0.4 * s)
-  ctx.lineTo(0.42 * s, 0.5 * s)
-  ctx.lineTo(0.3 * s, 0.6 * s)
-  ctx.stroke()
-
-  // The caret sweeps while output is flowing and rests at the prompt otherwise.
-  const sweep = state === 'working' ? 0.5 + 0.5 * Math.sin(t * 6) : 0
-  const cx = 0.48 * s + sweep * 0.2 * s
-  ctx.globalAlpha = still ? 0.35 : state === 'idle' ? 0.55 + 0.45 * (0.5 + 0.5 * Math.cos(t * 2)) : 1
-  ctx.fillStyle = glow
-  ctx.beginPath()
-  ctx.roundRect(cx, 0.42 * s, 0.055 * s, 0.18 * s, 0.028 * s)
-  ctx.fill()
-  ctx.globalAlpha = 1
 }

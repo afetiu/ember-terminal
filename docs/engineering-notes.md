@@ -762,9 +762,6 @@ tools). Ember is a terminal for agents, not a desktop driver; the history has th
 - `scripts/probe-cursor.mjs` — isolates xterm's built-in cursor behaviour
 - `scripts/probe-claude.mjs` — records what Claude Code does to the terminal
 - `scripts/probe-glass.mjs` — screenshots the desktop to check the window is see-through, focused and not
-- `scripts/probe-orb.mjs` — checks the mic button's place in the sidebar and that the orb reacts to the voice page
-- `scripts/probe-standalone.mjs` — runs the app with ~/voice hidden and takes it through to real Azure synthesis
-- `scripts/probe-narration.mjs` — a decoy transcript written last, and a background tab that must stay silent
 - `scripts/probe-panel.mjs` — drives the v2 panel over the real bridge: env inheritance, the `claude` shim, auto-open, mermaid actually drawing, browser mode, collapse
 - `scripts/prepare-resources.mjs` — stages mermaid out of node_modules for the panel to load
 - `scripts/bench.mjs` — the head-to-head above, with a per-5s drain readout and `--profile-main`

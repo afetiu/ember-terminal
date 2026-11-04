@@ -742,12 +742,7 @@
   border-bottom: 1px solid var(--l-line);
   font-size: 0.86em;
 }
-.loom-piece-kind {
-  color: var(--l-accent);
-  font-size: 0.86em;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
+
 .loom-piece-title {
   color: var(--l-ink);
   font-weight: 600;
@@ -886,9 +881,7 @@
   background: color-mix(in srgb, var(--c-bg) 92%, #000);
   backdrop-filter: blur(8px);
 }
-.loom-sign-glyph {
-  color: var(--l-accent);
-}
+
 .loom-sign button {
   border: 0;
   background: none;
@@ -923,21 +916,7 @@
 .loom-steps.is-on {
   display: block;
 }
-.loom-steps-head {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 4px 12px;
-  border: 0;
-  background: none;
-  color: var(--l-dim);
-  font: 600 1em var(--l-mono);
-  cursor: pointer;
-  letter-spacing: 0.04em;
-}
-.loom-steps-head .c {
-  color: var(--l-accent);
-}
+
 .loom-steps ol {
   list-style: none;
   margin: 2px 0 0;
@@ -976,28 +955,6 @@
 }
 .loom-steps.is-complete {
   opacity: 0.7;
-}
-
-.loom-live {
-  position: absolute;
-  left: 22px;
-  bottom: 4px;
-  z-index: 3;
-  display: none;
-  gap: 8px;
-  align-items: baseline;
-  color: var(--l-dim);
-  font-size: 0.86em;
-  padding: 1px 10px 1px 2px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--c-bg) 70%, transparent), transparent);
-  border-radius: 6px;
-}
-.loom-live.is-on {
-  display: flex;
-}
-.loom-live-glyph {
-  color: var(--l-accent);
-  animation: loom-breathe 1s ease-in-out infinite;
 }
 
 .loom-jump {
@@ -1284,10 +1241,7 @@
   opacity: 0;
   transform: translateY(-10px);
 }
-.loom-now-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 .loom-now-glyph {
   color: var(--l-accent);
   animation: loom-breathe 1s ease-in-out infinite;
@@ -1394,10 +1348,7 @@
 .loom-bar-mode:hover {
   filter: brightness(1.2);
 }
-.loom-bar-glyph {
-  color: var(--c-accent);
-  margin-right: 6px;
-}
+
 .loom-bar > .loom-bar-model {
   opacity: 0.85;
 }
@@ -1441,16 +1392,6 @@
   font: inherit;
   font-size: 0.85em;
   opacity: 0.6;
-}
-.loom-sign .loom-sign-clear {
-  display: none;
-}
-.loom-sign .loom-sign-clear.is-on {
-  display: inline-flex;
-  color: var(--l-ink);
-}
-.loom-sign-clear .c {
-  color: var(--l-accent);
 }
 
 /* ---------------------------------------------------------------- pinned objects */
@@ -1505,7 +1446,6 @@
   pointer-events: none;
 }
 .loom-piece-acts .loom-close-btn,
-.loom-piece.is-pinned .loom-pin-btn,
 .loom-piece.is-pinned button[data-p="expand"] {
   display: none;
 }
@@ -1521,21 +1461,6 @@
 }
 .loom-diagram.is-lifted {
   display: none;
-}
-.loom-diagram-pin {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  border: 0;
-  border-radius: 6px;
-  padding: 3px 6px;
-  background: color-mix(in srgb, var(--c-bg) 80%, transparent);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms;
-}
-.loom-diagram:hover .loom-diagram-pin {
-  opacity: 1;
 }
 
 /* Room for the now line under the last words. */
@@ -1611,33 +1536,10 @@
   justify-content: center;
 }
 .loom-piece-acts svg,
-.loom-lift svg,
-.loom-grip svg {
+.loom-lift svg {
   display: block;
 }
 
-/* A grip on the left of every title bar says "this can be picked up". */
-.loom-grip {
-  display: inline-flex;
-  color: var(--l-faint);
-  margin: 0 -4px 0 -4px;
-  cursor: grab;
-  transition: color 120ms;
-}
-.loom-piece-head:hover .loom-grip,
-.loom-lift:hover .loom-grip {
-  color: var(--l-accent);
-}
-.loom-drag-hint {
-  color: var(--l-faint);
-  font-size: 0.9em;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 160ms;
-}
-.loom-piece:not(.is-pinned) .loom-piece-head:hover .loom-drag-hint {
-  opacity: 1;
-}
 .loom-piece:not(.is-pinned) .loom-piece-head:hover {
   background: color-mix(in srgb, var(--c-accent) 6%, transparent);
 }
@@ -1685,31 +1587,6 @@
 
 /* ---------------------------------------------------------------- stepping through turns */
 
-.loom-turns {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-right: 4px;
-  color: var(--l-faint);
-}
-.loom-sign .loom-turns button {
-  padding: 3px 5px;
-}
-.loom-sign .loom-turns button[disabled] {
-  opacity: 0.3;
-  pointer-events: none;
-}
-.loom-turns-at {
-  padding: 0 4px;
-  white-space: nowrap;
-}
-.loom-turns.is-past .loom-turns-at {
-  color: var(--l-ink);
-}
-.loom-sign .loom-turns-now {
-  color: var(--l-accent);
-  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
-}
 /* Looking back: a quiet edge says this is not the turn in progress. */
 .loom.is-past .loom-scroll {
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--c-accent) 35%, transparent);
@@ -2013,11 +1890,7 @@ body.is-light .loom-modal {
   border-bottom-color: var(--l-line);
   background: rgba(255, 255, 255, 0.015);
 }
-.loom-piece-kind {
-  color: var(--l-faint);
-  font-size: 0.78em;
-  letter-spacing: 0.1em;
-}
+
 .loom-piece-title {
   color: var(--l-strong);
   font-family: var(--l-prose);
@@ -2070,8 +1943,7 @@ body.is-light .loom-modal {
 .loom-steps li.is-done .m {
   color: var(--l-ok);
 }
-.loom-steps li.is-now .m,
-.loom-steps-head .c {
+.loom-steps li.is-now .m {
   color: var(--l-accent);
 }
 .loom-interrupt {
@@ -2122,9 +1994,7 @@ body.is-light .loom-modal {
 .loom-bar > .loom-bar-model {
   color: var(--l-dim);
 }
-.loom-bar-glyph {
-  color: var(--l-faint);
-}
+
 .loom-bar > .loom-bar-rest {
   opacity: 1;
   color: var(--l-faint);
@@ -2231,14 +2101,6 @@ body.is-light .loom-frame-box {
 .loom-piece-title {
   flex: 1 1 auto;
   min-width: 0;
-}
-.loom-drag-hint {
-  display: none;
-  flex: 0 0 auto;
-}
-.loom-piece:not(.is-pinned) .loom-piece-head:hover .loom-drag-hint {
-  display: inline;
-  opacity: 1;
 }
 
 /* ---------------------------------------------------------------- see-through, on top */
@@ -2413,10 +2275,6 @@ body.is-light .loom-frame-box {
 .loom-piece.is-min > .loom-piece-head {
   background: rgba(255, 255, 255, 0.03);
 }
-.loom-piece-kind {
-  font-size: 0.72em;
-  opacity: 0.8;
-}
 
 /* The resize corner: a hint of a curve, not a drawn glyph. */
 .loom-piece.is-pinned::after {
@@ -2517,11 +2375,7 @@ body.is-light .loom-frame-box {
   cursor: grab;
   gap: 8px;
 }
-.loom-piece-head .loom-grip,
-.loom-piece-head .loom-piece-kind,
-.loom-piece-head .loom-drag-hint {
-  display: none !important;
-}
+
 .loom-piece-title {
   font-size: 0.95em;
   opacity: 0.92;
@@ -3336,20 +3190,7 @@ body.is-light .loom-frame-box {
   opacity: 1;
   transform: none;
 }
-.loom-now-text {
-  display: inline-flex;
-  overflow: hidden;
-  line-height: 1.35;
-  height: 1.35em;
-}
-.loom-now-text .ch {
-  display: inline-block;
-  white-space: pre;
-  animation: loom-odo-in 520ms cubic-bezier(0.2, 1.25, 0.35, 1) backwards;
-}
-.loom-now-line.is-out .loom-now-text .ch {
-  animation: loom-odo-out 420ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
-}
+
 .loom-now-detail {
   display: inline-flex;
   overflow: hidden;
@@ -3370,14 +3211,6 @@ body.is-light .loom-frame-box {
   }
   to {
     transform: none;
-  }
-}
-@keyframes loom-odo-out {
-  from {
-    transform: none;
-  }
-  to {
-    transform: translateY(-105%);
   }
 }
 
@@ -4476,23 +4309,12 @@ body.is-light .loom-rawpill {
   font: 500 var(--fs-12) var(--l-prose);
   color: var(--l-dim);
 }
-.loom-sign .loom-sign-icon {
-  width: 28px;
-  padding: 0;
-  justify-content: center;
-}
-.loom-sign .loom-sign-icon svg {
-  width: 15px;
-  height: 15px;
-}
+
 .loom-sign button:hover {
   color: var(--l-strong);
   background: var(--fill-2);
 }
-.loom-sign-clear .c {
-  color: var(--l-dim);
-  font-variant-numeric: tabular-nums;
-}
+
 .loom-rawpill {
   display: none;
   align-items: center;
@@ -5260,63 +5082,6 @@ body.is-light .loom-ask .loom-caret::before {
 }
 
 /* ---------------------------------------------------------------- the agent in this tab */
-
-.loom-sign-agent {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--fill-1);
-  box-shadow: var(--rim);
-  color: var(--l-ink);
-  font: 500 var(--fs-12) var(--l-prose);
-  cursor: pointer;
-}
-.loom-sign-agent .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-accent);
-}
-.loom-sign-agent .c {
-  color: var(--l-dim);
-  font-size: 10px;
-}
-.loom-sign-agent:hover {
-  background: var(--fill-2);
-}
-.loom-switch {
-  position: absolute;
-  z-index: 40;
-  width: 260px;
-}
-.loom-switch-head {
-  padding: 6px 10px 4px;
-  color: var(--l-dim);
-  font: 600 var(--fs-12) var(--l-prose);
-}
-.loom-switch button[data-agent] {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-.loom-switch .v,
-.loom-switch-none {
-  color: var(--l-dim);
-  font-size: var(--fs-12);
-}
-.loom-switch-none {
-  padding: 6px 10px;
-}
-.loom-switch-note {
-  margin-top: 4px;
-  padding: 8px 10px 4px;
-  border-top: 1px solid var(--l-line, rgba(255, 255, 255, 0.08));
-  color: var(--l-dim);
-  font: var(--fs-12) / 1.45 var(--l-prose);
-}
 
 /* An agent tab while its agent starts: a calm cover over the shell. */
 .loom-starting {

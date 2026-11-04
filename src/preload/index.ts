@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import { homedir } from 'node:os'
 import type {
   NoteMeta,
   PtyDataEvent,
@@ -73,7 +72,6 @@ const bridge: EmberBridge = {
     onSteps: (cb) => on<CanvasSteps>('ember:canvas:steps', cb),
     onCost: (cb) => on<EmberCost>('ember:canvas:cost', cb),
     tabAgent: (tabId, agent, cwd, since) => ipcRenderer.send('ember:canvas:tabAgent', tabId, agent, cwd, since),
-    handoff: (text) => ipcRenderer.invoke('ember:canvas:handoff', text) as Promise<string>,
     onAgent: (cb) => on<{ tabId: string; agentId: string; action: string; at: number }>('ember:canvas:agent', cb),
     screen: (tabId, items) => ipcRenderer.send('ember:canvas:screen', tabId, items),
   },
@@ -150,7 +148,6 @@ const bridge: EmberBridge = {
     onMaximizeChange: (cb) => on<boolean>('ember:win:maximized', cb),
   },
   platform: {
-    homedir: homedir(),
     // A dropped File no longer carries .path; this is the supported way to get it.
     pathForFile: (file: File) => webUtils.getPathForFile(file),
   },

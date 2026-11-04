@@ -8,7 +8,7 @@
  *      (`npm pack @anthropic-ai/claude-agent-sdk`) against the copy in docs/specs/sdk.d.ts —
  *      message types, control request subtypes and capability strings added or gone.
  *   3. One GitHub issue, "Claude Code <version>: what's new for Ember", with a checklist of
- *      what Ember's native code (claudeHost.ts, NativeClaude.ts, Asks.ts, Composer.ts)
+ *      what Ember's Claude code (claudeCatalog.ts, ClaudeTui.ts, Asks.ts, Composer.ts, hook.mjs)
  *      already names and what it does not.
  *
  * It changes no file in the repo and pushes nothing. Updating claude-version.txt and
@@ -33,7 +33,7 @@ const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '
 const SPECS = join(REPO, 'docs', 'specs')
 const CHANGELOG_URL = 'https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md'
 /** Ember's code that speaks the protocol: what it names, it handles (or deliberately ignores). */
-const EMBER_FILES = ['src/main/claudeHost.ts', 'src/renderer/src/canvas/NativeClaude.ts', 'src/renderer/src/canvas/Asks.ts', 'src/renderer/src/canvas/Composer.ts']
+const EMBER_FILES = ['src/main/claudeCatalog.ts', 'src/renderer/src/canvas/ClaudeTui.ts', 'src/renderer/src/canvas/Asks.ts', 'src/renderer/src/canvas/Composer.ts', 'resources/hook.mjs']
 const BODY_MAX = 60_000
 
 const argv = process.argv.slice(2)

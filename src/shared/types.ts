@@ -414,29 +414,6 @@ export interface PanelConfig {
   allowHtml: boolean
 }
 
-/**
- * Everything the realtime page needs to place one call, and nothing else.
- *
- * `secret` is an ephemeral `ek_…` scoped to a single session, never the account key, and
- * `callsUrl` is carried rather than hardcoded so the page never has to be right about a
- * URL that has already moved once.
- */
-export interface RealtimeAuth {
-  ok: boolean
-  secret?: string
-  model?: string
-  callsUrl?: string
-  expiresAt?: number
-  error?: string
-}
-
-/** One thing a narrated session did, already phrased for speech. */
-export interface TranscriptEvent {
-  tabId: string
-  text: string
-  kind: 'assistant' | 'tool' | 'result'
-}
-
 /** One answer offered by an `ask` panel, or one action chip on any panel. */
 export interface PanelOption {
   /** What the button reads. */
@@ -668,8 +645,6 @@ export interface EmberBridge {
      * Claude Code: main then follows that agent's own session log (docs/specs/providers.md).
      */
     tabAgent(tabId: string, agent: string | null, cwd: string, since: number): void
-    /** Write a handoff brief (switching a tab to another agent); returns its path. */
-    handoff(text: string): Promise<string>
   }
   panel: {
     /** Base URL of the local bridge, for the panel webview to load documents from. */
@@ -788,7 +763,6 @@ export interface EmberBridge {
     onMaximizeChange(cb: (maximized: boolean) => void): () => void
   }
   platform: {
-    homedir: string
     /** Where a dropped file lives on disk; '' for one that is not a file on disk. */
     pathForFile(file: File): string
   }
