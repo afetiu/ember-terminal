@@ -1,6 +1,7 @@
 import type { BrainStatus, EmberConfig, FontOption, ThemeConfig } from '@shared/types'
 import { FontPicker } from './FontPicker'
 import { AgentPicker } from './AgentPicker'
+import { PHONE_LINK } from '../phone/flag'
 
 type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | 'font' | 'preset'
 
@@ -54,8 +55,10 @@ interface Section {
 }
 
 /** The panel's tabs, in order. Theme is part of Look; the rest are the sections below. */
-export const SETTINGS_TABS = ['Look', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
-export type SettingsTab = (typeof SETTINGS_TABS)[number]
+const ALL_TABS = ['Look', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
+export type SettingsTab = (typeof ALL_TABS)[number]
+/** Labs holds only the phone link, so it goes when that is switched off. */
+export const SETTINGS_TABS: readonly SettingsTab[] = PHONE_LINK ? ALL_TABS : ALL_TABS.filter((t) => t !== 'Labs')
 
 
 /** Read/write a dotted path on the config object. */

@@ -14,6 +14,7 @@ import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
 import { PhoneHost } from '../phone/PhoneHost'
+import { PHONE_LINK } from '../phone/flag'
 import { FirstRun } from './FirstRun'
 import { PairSheet } from './PairSheet'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
@@ -1551,7 +1552,7 @@ export class App {
     // The phone link comes up at boot and stays up. It is not started on demand because
     // the demand arrives from the other side: the point is that the user can reach a laptop
     // that has been sitting untouched for hours.
-    void window.ember.remote.account().then((account) => this.remote.start(account))
+    if (PHONE_LINK) void window.ember.remote.account().then((account) => this.remote.start(account))
 
     // `note`/`notes`, typed in any shell, arriving via the bridge. A shell cannot open a
     // tab; it says what it wants and this decides what that means.
@@ -2359,18 +2360,21 @@ export class App {
         cli: 'pick',
         run: () => this.togglePanelPicking(),
       },
-      {
-        id: 'devices',
-        group: 'Phone',
-        title: this.remote.joined ? 'Connect your phone — your devices' : 'Connect your phone',
-        cli: 'devices',
-        // The phone link goes through a relay Deep Answer Labs runs; until that is a real
-        // public service it is Labs.
-        run: () => {
-          if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
-          void this.pairSheet.show()
-        },
-      },
+      // The phone link goes through a relay Deep Answer Labs runs; it is switched off (PHONE_LINK).
+      ...(PHONE_LINK
+        ? [
+            {
+              id: 'devices',
+              group: 'Phone',
+              title: this.remote.joined ? 'Connect your phone — your devices' : 'Connect your phone',
+              cli: 'devices',
+              run: () => {
+                if (!this.config.labs?.enabled) return void this.flashToast('The phone link is a Labs feature — Settings › Labs')
+                void this.pairSheet.show()
+              },
+            },
+          ]
+        : []),
       { id: 'zen', group: 'View', title: 'Zen mode', hint: 'Ctrl+Shift+Enter', cli: 'zen', run: () => this.toggleZen() },
       {
         id: 'clear',
