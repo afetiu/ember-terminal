@@ -9,7 +9,7 @@ import { Pieces } from './loom/pieces'
 import { Plan } from './loom/plan'
 import { Snaps } from './loom/snaps'
 import { Stage } from './loom/stage'
-import { div, reduced, viewSwitch, sameTitle, type Browser, type Dock, type Mode, type Piece } from './loom/shared'
+import { div, reduced, viewSwitch, sameTitle, type Browser, type Mode, type Piece } from './loom/shared'
 
 /**
  * A tab's canvas: a real shell whose output space becomes a canvas while an agent runs.
@@ -23,14 +23,14 @@ import { div, reduced, viewSwitch, sameTitle, type Browser, type Dock, type Mode
  * switch shows or hides the real screen — the same process, so the switch is instant.
  * When Claude Code exits, the tab is the shell again.
  *
- * Codex is still framed the older way: its own input, cut out of its screen, under the
- * canvas. Other agents get the switch and their whole screen.
+ * Codex is wrapped the same way (CodexTui). Other agents get the switch and their whole
+ * screen; no agent's screen is ever cropped into the canvas.
  *
  * This class is the coordinator: it owns the canvas's element, the feed and the state the
  * parts share (the pieces by title, what is pinned, the frames), wires the events, and
  * hands the work to the parts in ./loom:
  *
- * - host.ts      the agent in the shell, the mode, the composer's frame, the bar and model picker, Codex's dock
+ * - host.ts      the agent in the shell and its wrapper, the mode, the composer's frame, the bar and model picker
  * - stage.ts     the turn on screen, the rail, the wheel between turns, the live line, trail and subagents
  * - plan.ts      the plan piece
  * - pieces.ts    a piece made, dragged out, placed, sized, minimized, full screen and zoomed
@@ -387,7 +387,7 @@ export class LoomView {
     s.setProperty('--l-font-size', `${config.font.size}px`)
   }
 
-  // ================================================================ the dock
+  // ================================================================ layout
 
   schedule(): void {
     if (this.frameReq || this.disposed) return
@@ -432,7 +432,7 @@ export class LoomView {
   /** Words for the session, as the person: through the composer on Claude's canvas, else typed. */
   type(text: string, submit: boolean): void {
     const w = this.host.wrapper
-    if (w && this.host.claudeOn) {
+    if (w && this.host.onAgent) {
       if (submit) w.send(text)
       else w.put(text)
       return
@@ -477,7 +477,7 @@ export class LoomView {
 
   /** An agent's canvas is showing (not the plain shell): its keys are the canvas's. */
   get onCanvas(): boolean {
-    return this.mode === 'claude' || this.mode === 'agent' || !!this.input.kbd || !!this.input.kbdInline
+    return this.mode === 'claude' || !!this.input.kbd || !!this.input.kbdInline
   }
 
   /** Whether the session is working right now, for Ember on the phone. */
@@ -524,7 +524,7 @@ export class LoomView {
 
   grew(): void {
     // Native mode has no transcript feed to clear the hint; the first message does.
-    if (this.host.claudeOn) this.host.claudeHint()
+    if (this.host.onAgent) this.host.claudeHint()
     this.stage.restage()
     if (this.pinned.size) this.snapping.reflow()
     // The stage starts at the top of the turn, your words first. It follows what is
@@ -624,7 +624,7 @@ export class LoomView {
     mode: Mode
     raw: boolean
     working: boolean
-    dock: Dock | null
+    agent: string | null
     todos: number
     pieces: number
     browsers: number
@@ -652,7 +652,7 @@ export class LoomView {
       working: this.host.working,
       says: this.feed.el.querySelectorAll('.loom-say').length,
       raw: this.raw,
-      dock: this.host.dock,
+      agent: this.host.onAgent,
       todos: this.plan.todos.length,
       pieces: this.pieces.size,
       browsers: this.browsers.length,

@@ -47,6 +47,8 @@ export interface ComposerContext {
   relayout(): void
   /** Whether a queued message has its own × (the TUI's queue cannot drop one). */
   queueCancel?: boolean
+  /** The commands only the agent's own screen has (default: Claude Code's, TUI_ONLY). */
+  tuiOnly?: Record<string, { description: string; args?: boolean }>
 }
 
 /**
@@ -73,10 +75,10 @@ export const TUI_ONLY: Record<string, { description: string; args?: boolean }> =
 }
 
 /** Whether a message is one of those, with what it would need here. */
-export function tuiOnly(text: string): string | null {
+export function tuiOnly(text: string, table: Record<string, { description: string; args?: boolean }> = TUI_ONLY): string | null {
   const m = /^\/([\w:-]+)(\s+\S[\s\S]*)?$/.exec(text.trim())
   if (!m) return null
-  const spec = TUI_ONLY[m[1]!]
+  const spec = table[m[1]!]
   if (!spec) return null
   if (spec.args && m[2]) return null
   return m[1]!
@@ -295,12 +297,13 @@ export class Composer {
       seen.add(name)
       items.push({ label: `/${name}`, detail, insert: `/${name} `, hint, cli, score })
     }
+    const only = this.ctx.tuiOnly ?? TUI_ONLY
     for (const c of this.ctx.commands()) {
-      if (TUI_ONLY[c.name] && !TUI_ONLY[c.name]!.args) continue
+      if (only[c.name] && !only[c.name]!.args) continue
       add(c.name, c.description.replace(/\s*\((user|project|plugin[^)]*|bundled)\)\s*$/i, ''), c.argumentHint, false)
       for (const a of c.aliases ?? []) seen.add(a)
     }
-    for (const [name, spec] of Object.entries(TUI_ONLY)) add(name, spec.description, '', true)
+    for (const [name, spec] of Object.entries(only)) add(name, spec.description, '', true)
     items.sort((a, b) => a.score - b.score || a.label.localeCompare(b.label))
     if (!items.length) return this.closeMenu()
     this.menu = { kind: 'slash', items: items.slice(0, 60), index: 0, start: 0, query: q }

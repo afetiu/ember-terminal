@@ -976,18 +976,6 @@
   display: block;
 }
 
-/* A dialog in the dock (a permission prompt, a picker) is where the eye should go. */
-.loom.is-dialog::after {
-  content: '';
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--l-accent), transparent);
-  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--l-accent) 45%, transparent);
-  animation: loom-breathe 1.6s ease-in-out infinite;
-}
 
 /* ---------------------------------------------------------------- ask about this */
 

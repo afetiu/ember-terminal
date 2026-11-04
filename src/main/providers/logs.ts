@@ -177,7 +177,8 @@ function mcpContent(result: unknown): Json[] {
  * `<recommended_plugins>` …) are not the person speaking and are dropped.
  */
 
-const CODEX_HOME = join(homedir(), '.codex')
+/** Codex's home: CODEX_HOME when set, as Codex itself reads it, else ~/.codex. */
+const CODEX_HOME = process.env['CODEX_HOME'] || join(homedir(), '.codex')
 const CODEX_SESSIONS = join(CODEX_HOME, 'sessions')
 /** A whole message that is one injected tag block, or the AGENTS.md preamble. */
 const CODEX_INJECTED = /^\s*(?:<([a-z_]+)>[\s\S]*<\/\1>\s*$|# AGENTS\.md instructions)/

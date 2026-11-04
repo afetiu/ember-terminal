@@ -47,7 +47,7 @@ const states = {}
 // Ember opens on the agent; wait for it to be up.
 for (let i = 0; i < 40; i++) {
   const d = await snap()
-  if (d && d.mode === 'agent' && d.rows.some((r) => r.trim())) break
+  if (d && d.mode === 'claude' && d.rows.some((r) => r.trim())) break
   await wait(1000)
 }
 await wait(4000)

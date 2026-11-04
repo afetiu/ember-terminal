@@ -234,6 +234,9 @@ function writeAgentMcpConfigs(dir: string): Record<string, string> {
   // Codex takes -c overrides, and a bare command with no inline table is the only shape
   // that survives cmd.exe's second parse; the launcher carries ELECTRON_RUN_AS_NODE.
   out['EMBER_MCP_LAUNCHER'] = join(CONFIG_DIR, 'bin', 'ember-mcp.cmd')
+  // Ember's hook for Codex (its approvals become the canvas's cards), at a path that
+  // stays put so the trust the person gives it in Codex lasts (notes.ts writes it).
+  out['EMBER_CODEX_HOOK'] = join(CONFIG_DIR, 'bin', 'ember-hook.cmd').replace(/\\/g, '/')
   return out
 }
 
@@ -1173,7 +1176,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const sessionId = String(hook['session_id'] ?? '')
         const cwd = String(hook['cwd'] ?? '')
         const file = String(hook['transcript_path'] ?? '')
-        if (sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
+        // Only Claude Code's sessions bind the tab: another agent's hook (Codex) names its
+        // own log, which the canvas finds and reads by that agent's adapter instead.
+        const agent = typeof body['agent'] === 'string' ? body['agent'] : 'claude'
+        if (agent === 'claude' && sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
         const at = typeof body['at'] === 'number' ? body['at'] : Date.now()
         const id = randomUUID()
         const blocking = event === 'PermissionRequest'

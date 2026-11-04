@@ -3,6 +3,10 @@
  * Ember's Claude Code hook: how a Claude session in a tab tells the canvas what it is doing
  * and asks it what the person wants, with nothing read off its screen.
  *
+ * Codex runs the same script (its hooks take Claude Code's shape: the same events, the
+ * same PermissionRequest decision), handed to it by the shim's `-c hooks.â€¦` overrides once
+ * the person has trusted them in Codex. EMBER_SESSION_AGENT says which agent is asking.
+ *
  * Claude Code runs this for the events Ember's settings file lists (src/main/bridge.ts,
  * writeSettings), with the hook's JSON input on stdin. It is handed to the bridge as it
  * is. For most events that is all: they are `async` hooks, Claude never waits on them.
@@ -42,7 +46,7 @@ async function main(raw) {
     const res = await fetch(`${BRIDGE}/hook`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-ember-token': TOKEN },
-      body: JSON.stringify({ tabId: TAB, at: STARTED, input }),
+      body: JSON.stringify({ tabId: TAB, at: STARTED, agent: process.env.EMBER_SESSION_AGENT || 'claude', input }),
       // A card waits on a person; Claude Code's own hook timeout is the limit there.
       ...(blocking ? {} : { signal: AbortSignal.timeout(3000) }),
     })

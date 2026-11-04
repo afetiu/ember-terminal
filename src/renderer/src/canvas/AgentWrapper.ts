@@ -16,8 +16,8 @@ import type { Feed } from './Feed'
  * event sources it has besides the screen (Claude Code: its hooks). LoomView hosts it and
  * owns everything that is the same for every agent: the canvas, the layout, the switch.
  *
- * Claude Code is the first (ClaudeTui). Codex keeps its framed screen for now; the next
- * step is a CodexTui on this interface.
+ * Claude Code is the first (ClaudeTui), Codex the second (CodexTui). Any other agent
+ * gets the Canvas | CLI switch over its whole screen until it has a wrapper of its own.
  */
 
 export type WrapperPhase = 'starting' | 'idle' | 'working' | 'asking' | 'exited'
@@ -34,6 +34,8 @@ export interface WrapperState {
   /** The session's name (`/rename`), if it has one. */
   title: string
   sessionId: string
+  /** How full the context is, in percent, when the agent's own screen says (Codex). */
+  context?: number
 }
 
 /** What the host (LoomView) gives a wrapper. */
@@ -70,6 +72,8 @@ export interface AgentWrapper {
   readonly state: WrapperState
   /** Something of the wrapper's is open over the canvas (a menu, a card, the queue). */
   readonly busy: boolean
+  /** The agent is showing something only its own screen has (the "Open CLI" banner is up). */
+  readonly away: boolean
   /** The agent's screen changed (called at most once a frame). */
   screen(): void
   /** The person switched views (true: to the agent's own screen). */
