@@ -427,9 +427,10 @@ export class LoomView {
   }
 
   /** For the sidebar card: Claude Code in the tab, its folder and the session's name. */
-  get claudeCard(): { folder: string; title: string; cli: boolean } | null {
-    if (!this.host.claudeOn || !this.host.wrapper) return null
-    return { folder: this.session.cwd || this.session.initialCwd || '', title: this.host.wrapper.state.title, cli: this.raw }
+  /** The tab's card while an agent runs on its wrapper: the agent in a folder, not the shell. */
+  get claudeCard(): { folder: string; title: string; agent: string; cli: boolean } | null {
+    if (!this.host.onAgent || !this.host.wrapper) return null
+    return { folder: this.session.cwd || this.session.initialCwd || '', title: this.host.wrapper.state.title, agent: this.host.who, cli: this.raw }
   }
 
   /** Words for the session, as the person: through the composer on Claude's canvas, else typed. */

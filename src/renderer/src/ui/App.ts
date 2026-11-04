@@ -1998,13 +1998,13 @@ export class App {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
-      // A tab running Claude Code is Claude in a folder ("name · folder" once the session is
-      // named), not the shell under its canvas.
+      // A tab running an agent on its canvas is that agent in a folder ("name · folder" once
+      // the session is named), not the shell under its canvas.
       const cc = !g.isSplit ? g.loom?.claudeCard : null
       const folder = cc ? folderName(cc.folder) : ''
       return {
         id: g.id,
-        title: cc && !g.customTitle ? `${cc.title || 'Claude Code'}${folder ? ` · ${folder}` : ''}${cc.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        title: cc && !g.customTitle ? `${cc.title || cc.agent}${folder ? ` · ${folder}` : ''}${cc.cli ? ' (CLI)' : ''}` : g.displayTitle,
         subtitle: cc ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.

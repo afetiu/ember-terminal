@@ -52,7 +52,7 @@ export class AgentHost {
   }
 
   /** The agent's name as the canvas says it: "Claude Code", "Codex". */
-  private get who(): string {
+  get who(): string {
     return agentSpec(this.onAgent ?? 'claude').name.replace(/ CLI$/, '')
   }
 
