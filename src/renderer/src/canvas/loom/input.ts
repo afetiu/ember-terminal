@@ -1,6 +1,7 @@
 import { escapeHtml, renderMarkdown } from '../markdown'
 import type { LoomView } from '../LoomView'
 import { ICON, SNAPS_PER_EDGE, div, type Piece, type Side } from './shared'
+import { isQuestion } from './question'
 
 /**
  * The pointer and the keyboard on the canvas. Clicks (buttons in replies, links, copy,
@@ -310,7 +311,7 @@ export class CanvasInput {
       if (!q) return
       const quoted = quote ? ` — “${quote.replace(/\s+/g, ' ').slice(0, 600)}”` : ''
       // A question is answered here; anything else is a change, and goes to the session.
-      const question = /\?\s*$/.test(q) || /^(what|why|how|when|where|who|which|is|are|was|were|can|could|does|do|did|should|would|will|explain|tell me|describe|summari[sz]e|compare)/i.test(q)
+      const question = isQuestion(q)
       if (obj.title && !question) mode = 'change'
       if (mode === 'change') {
         v.type(`Change ${about}${quoted}: ${q}. It is on my screen as "${obj.title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`, true)
