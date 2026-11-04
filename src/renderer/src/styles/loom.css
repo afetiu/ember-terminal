@@ -6587,3 +6587,159 @@ body.is-light .loom-zoom {
   color: var(--c-fg);
   text-decoration: underline;
 }
+
+/* ---------------------------------------------------------------- cards, as a terminal draws them */
+
+/* The cards over the input (permission, question, plan), the answer card under a reply,
+   the queue, the / and @ menus and the "showing in the CLI" line take the composer's
+   prompt look a step further, a little retro: the terminal's font throughout, square
+   boxes ruled in the theme's foreground, keys as [1] [2], and what is chosen in inverse
+   video. Every colour comes from the theme, so it stays Ember in day and night. */
+.loom-ask-card,
+.loom-answers,
+.loom-native-queue,
+.loom-native-menu,
+.loom-elsewhere {
+  --tty-line: color-mix(in srgb, var(--c-fg) 24%, transparent);
+  --tty-dim: color-mix(in srgb, var(--c-fg) 50%, transparent);
+  border: 1px solid var(--tty-line) !important;
+  border-radius: 2px !important;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 2px, color-mix(in srgb, var(--c-fg) 2.5%, transparent) 2px 3px),
+    var(--c-bg) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-bg) 60%, transparent), 0 10px 30px rgba(0, 0, 0, 0.28) !important;
+  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace !important;
+}
+.loom-ask-card *,
+.loom-answers *,
+.loom-native-queue *,
+.loom-native-menu *,
+.loom-elsewhere * {
+  font-family: inherit !important;
+}
+/* The head line: the tool or the title, after a rule mark, like a box's caption. */
+.loom-ask-card-head,
+.loom-native-menu-head {
+  color: var(--tty-dim);
+  letter-spacing: 0.02em;
+}
+.loom-ask-card-head::before,
+.loom-native-menu-head::before {
+  content: '── ';
+  color: var(--tty-line);
+}
+.loom-ask-card-dot {
+  display: none;
+}
+.loom-ask-card-what,
+.loom-ask-card-file {
+  border-radius: 0 !important;
+  border-left: 2px solid var(--tty-line) !important;
+  background: color-mix(in srgb, var(--c-fg) 4%, transparent) !important;
+}
+/* Buttons and chips: square, ruled, the key before the label as [1]. */
+.loom-ask-card-acts button,
+.loom-ask-chip,
+.loom-ans-chip,
+.loom-ans-send,
+.loom-queue-acts button,
+.loom-elsewhere button {
+  border: 1px solid var(--tty-line) !important;
+  border-radius: 2px !important;
+  background: transparent !important;
+  color: var(--c-fg) !important;
+  box-shadow: none !important;
+}
+.loom-ask-card-acts button:hover,
+.loom-ask-chip:hover,
+.loom-ans-chip:hover,
+.loom-queue-acts button:hover,
+.loom-elsewhere button:hover {
+  border-color: color-mix(in srgb, var(--c-fg) 55%, transparent) !important;
+}
+.loom-ask-card-acts kbd,
+.loom-ask-chip kbd {
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: var(--tty-dim) !important;
+}
+.loom-ask-card-acts kbd::before,
+.loom-ask-chip kbd::before {
+  content: '[';
+}
+.loom-ask-card-acts kbd::after,
+.loom-ask-chip kbd::after {
+  content: ']';
+}
+/* What is chosen, or will happen on Enter: inverse video, in the theme's accent. */
+.loom-ask-card-acts button.is-primary,
+.loom-ans-send:not(:disabled),
+.loom-ask-chip.is-on,
+.loom-ans-chip[aria-pressed='true'],
+.loom-native-menu-row.is-sel {
+  background: var(--c-accent) !important;
+  border-color: var(--c-accent) !important;
+  color: var(--c-bg) !important;
+}
+.loom-ask-card-acts button.is-primary kbd,
+.loom-ask-chip.is-on kbd,
+.loom-native-menu-row.is-sel * {
+  color: inherit !important;
+}
+.loom-ans-chip.is-current::after {
+  content: ' *';
+  color: var(--tty-dim);
+}
+.loom-ans-tag {
+  display: none;
+}
+/* Fields: a line to write on, with the terminal's block caret. */
+.loom-ask-other,
+.loom-ans-other,
+.loom-ask-field input,
+.loom-ask-field textarea,
+.loom-ask-card input[type='text'],
+.loom-ask-card textarea {
+  border: 0 !important;
+  border-bottom: 1px dashed var(--tty-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--c-fg) !important;
+  caret-color: var(--c-fg);
+  caret-shape: block;
+}
+.loom-ask-other:focus,
+.loom-ans-other:focus,
+.loom-ask-card input[type='text']:focus,
+.loom-ask-card textarea:focus {
+  border-bottom-style: solid !important;
+  border-bottom-color: color-mix(in srgb, var(--c-fg) 60%, transparent) !important;
+  outline: 0 !important;
+}
+.loom-ans-n::after {
+  content: '.';
+}
+.loom-ask-card-keys,
+.loom-ans-note,
+.loom-queue-tag {
+  color: var(--tty-dim) !important;
+}
+.loom-queue-tag::before {
+  content: '[';
+}
+.loom-queue-tag::after {
+  content: ']';
+}
+.loom-ask-q-tag {
+  border-radius: 0 !important;
+  background: none !important;
+  color: var(--tty-dim, currentColor) !important;
+}
+.loom-ask-q-tag::before {
+  content: '[';
+}
+.loom-ask-q-tag::after {
+  content: ']';
+}
