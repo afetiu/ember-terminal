@@ -20,7 +20,7 @@ rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 mkdirSync(OUT, { recursive: true })
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ agent: { onboarded: true }, brain: { sync: false } }))
-const PORT = 9393
+const PORT = Number(process.env.PROBE_PORT) || 9393
 const child = spawn(join(REPO, 'node_modules/electron/dist/electron.exe'), ['.', `--remote-debugging-port=${PORT}`], {
   cwd: REPO,
   stdio: 'ignore',

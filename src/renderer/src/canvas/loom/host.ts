@@ -239,6 +239,9 @@ export class AgentHost {
           relayout: () => v.schedule(),
           toast: (t) => v.hooks.toast(t),
         })
+        // Said once it is ours: the wrapper's first state came before `this.wrapper` was set,
+        // and the canvas went on saying "Claude Code is here" through the whole start.
+        this.wrapperChanged()
         const input = this.wrapper.input
         const nf = () => this.frame.classList.toggle('is-focus', document.activeElement === input)
         input.addEventListener('focus', nf)
@@ -309,7 +312,7 @@ export class AgentHost {
     v.stage.spin = s.live ? { ...s.live } : { glyph: '✻', verb: s.phase === 'starting' ? 'Starting…' : 'Working…', detail: '' }
     const hint = v.hint.querySelector('.loom-hint-text')
     if (hint && this.claudeOn)
-      hint.textContent = s.phase === 'starting' ? 'Starting Claude Code…' : 'Claude Code is here. Ask below — what it says and shows appears on this canvas.'
+      hint.textContent = s.phase === 'starting' ? s.boot || 'Starting Claude Code…' : 'Claude Code is here. Ask below — what it says and shows appears on this canvas.'
     this.claudeHint()
     v.stage.renderNow()
     if (was !== this.working) {
@@ -335,7 +338,7 @@ export class AgentHost {
   private renderBarClaude(): void {
     const s = this.wrapper?.state
     const st = this.status
-    const key = `claude|${s?.phase}|${s?.mode}|${s?.model}|${s?.effort}|${st?.at ?? ''}|${this.cost?.tokens ?? ''}`
+    const key = `claude|${s?.phase}|${s?.boot ?? ''}|${s?.mode}|${s?.model}|${s?.effort}|${st?.at ?? ''}|${this.cost?.tokens ?? ''}`
     if (key === this.barKey) return
     this.barKey = key
     const modes: Record<string, [string, string]> = {
@@ -347,7 +350,7 @@ export class AgentHost {
     }
     const [label, cls] = modes[s?.mode ?? ''] ?? ['default', 'is-default']
     const phase =
-      s?.phase === 'starting' ? 'starting…' : s?.phase === 'working' ? 'working · esc to interrupt' : s?.phase === 'asking' ? 'waiting for you' : s?.phase === 'exited' ? 'exited' : 'ready'
+      s?.phase === 'starting' ? (s.boot ? s.boot.replace(/^Starting Claude Code · /, 'starting · ') : 'starting…') : s?.phase === 'working' ? 'working · esc to interrupt' : s?.phase === 'asking' ? 'waiting for you' : s?.phase === 'exited' ? 'exited' : 'ready'
     const parts: string[] = []
     parts.push(`<button type="button" class="loom-bar-mode ${cls}" title="Permission mode — click or Shift+Tab to cycle"><i></i>${escapeHtml(label)}</button>`)
     const name = st?.model || s?.model || 'Claude Code'

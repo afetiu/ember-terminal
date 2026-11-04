@@ -25,7 +25,7 @@ import type { AgentWrapper, WrapperHost, WrapperState } from './AgentWrapper'
  * clears the TUI's prompt (Ctrl+C, which Claude Code reads as "clear the input" while
  * there is any). The composer then holds everything that will be sent.
  *
- * Knowing. Claude Code's hooks (resources/hook.mjs, through the bridge) say when a turn
+ * Knowing. Claude Code's hooks (http hooks POSTed to the bridge) say when a turn
  * starts and ends, which session the tab holds (a `/clear` included), and — the one that
  * waits — every permission request: a tool, AskUserQuestion, ExitPlanMode. Those become
  * Ember's cards, and the card's answer is the hook's decision, which resolves the TUI's
@@ -92,6 +92,11 @@ export class ClaudeTui implements AgentWrapper {
   private elsewhere = false
   private disposed = false
   private recheck = 0
+  /** The start, said on the canvas while it lasts: since when, its MCP servers, whether the session is up. */
+  private bootSince = 0
+  private bootTimer = 0
+  private bootMcp = 0
+  private bootSession = false
   /** For probes: hook events seen, by name. */
   private readonly counts: Record<string, number> = {}
   private readonly log: string[] = []
@@ -169,7 +174,30 @@ export class ClaudeTui implements AgentWrapper {
   started(): void {
     window.ember.hooks.hooked(this.host.tabId, true)
     this.boxSeen = false
+    this.bootSince = Date.now()
+    this.bootSession = false
+    this.bootMcp = 0
     this.set({ phase: 'starting' })
+    this.boot()
+    // A session with many MCP servers takes seconds to show its screen: say what it waits on.
+    void window.ember.claude.mcpCount(this.host.cwd()).then((n) => {
+      this.bootMcp = n
+      this.boot()
+    }, () => {})
+  }
+
+  /** The words for the start, refreshed each second while it lasts (the canvas shows them). */
+  private boot(): void {
+    if (this.disposed || this.state.phase !== 'starting') {
+      window.clearInterval(this.bootTimer)
+      this.bootTimer = 0
+      if (this.state.boot) this.set({ boot: '' })
+      return
+    }
+    if (!this.bootTimer) this.bootTimer = window.setInterval(() => this.boot(), 1000)
+    const secs = Math.floor((Date.now() - this.bootSince) / 1000)
+    const what = this.bootSession ? 'session started, opening its screen…' : this.bootMcp > 1 ? `connecting ${this.bootMcp} MCP servers…` : 'loading…'
+    this.set({ boot: `Starting Claude Code · ${what}${secs >= 2 ? ` ${secs}s` : ''}` })
   }
 
   ended(): void {
@@ -274,7 +302,14 @@ export class ClaudeTui implements AgentWrapper {
     if (this.turnOn && !live && box && now - this.spinnerAt > 2000 && now - this.promptAt > 2500 && !this.cards.size) {
       this.stopAt = now
       this.set({ phase: 'idle' })
-    } else if (live && this.state.phase === 'idle' && !this.cards.size) this.set({ phase: 'working' })
+    } else if (live && this.state.phase === 'idle' && !this.cards.size && now - this.stopAt > 1500) {
+      // A turn the screen shows and no hook announced. Not in the moment after a Stop: the
+      // hooks arrive within milliseconds, often before the TUI has redrawn without its spinner.
+      this.set({ phase: 'working' })
+    } else if (!live && !this.turnOn && this.state.phase === 'working' && box && !this.cards.size && now - this.spinnerAt > 1000) {
+      // The screen set it working (above) and the turn is over by the hooks and the screen.
+      this.set({ phase: 'idle' })
+    }
     this.flushQueue()
     // screen() runs when the screen changes, and an interrupted turn leaves it still: look
     // again shortly while a turn may have ended unseen or a queued message waits.
@@ -563,6 +598,10 @@ export class ClaudeTui implements AgentWrapper {
     switch (e.event) {
       case 'SessionStart':
         if (this.state.phase === 'exited') this.set({ phase: 'starting' })
+        if (this.state.phase === 'starting') {
+          this.bootSession = true
+          this.boot()
+        }
         // `/clear`: a new conversation in a new transcript, which Claude Code may not write
         // until the next message. The hook says it at once, so the canvas starts over now.
         if (i['source'] === 'clear') {
@@ -646,7 +685,10 @@ export class ClaudeTui implements AgentWrapper {
       }
     }
     if (!changed) return
-    if ('phase' in patch) this.placeholder()
+    if ('phase' in patch) {
+      this.placeholder()
+      if (patch.phase !== 'starting' && this.bootTimer) this.boot()
+    }
     this.host.changed()
     if (patch.phase === 'idle') queueMicrotask(() => this.flushQueue())
   }
@@ -689,6 +731,7 @@ export class ClaudeTui implements AgentWrapper {
     if (this.disposed) return
     this.disposed = true
     window.clearTimeout(this.recheck)
+    window.clearInterval(this.bootTimer)
     this.closeCards()
     window.ember.hooks.hooked(this.host.tabId, false)
     for (const u of this.unsubs) u()

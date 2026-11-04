@@ -19,7 +19,7 @@ import { seedHome } from './probelib.mjs'
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-${basename(process.argv[1])}`)
 mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME }
-const PORT = 9333
+const PORT = Number(process.env.PROBE_PORT) || 9333
 const out = process.argv[2] ?? join(process.env.TEMP ?? '.', 'ember-smoke.png')
 // EMBER_BIN points the same smoke test at a packaged build, where the app is the exe
 // itself rather than electron loading the project directory.

@@ -130,6 +130,7 @@ const bridge: EmberBridge = {
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
     catalog: (cwd) => ipcRenderer.invoke('ember:claude:catalog', cwd) as Promise<ClaudeCatalog>,
+    mcpCount: (cwd) => ipcRenderer.invoke('ember:claude:mcpCount', cwd) as Promise<number>,
   },
   hooks: {
     onEvent: (cb) => on<HookEvent>('ember:hook:event', cb),

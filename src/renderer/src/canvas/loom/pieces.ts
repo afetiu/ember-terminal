@@ -48,10 +48,13 @@ export class Pieces {
     // Until the document has drawn, the object shimmers in its own shape.
     host.classList.add('is-loading')
     f.addEventListener('load', () => window.setTimeout(() => host.classList.remove('is-loading'), 160), { once: true })
-    // Drawn in the theme on screen: its accent, ink and ground, not the panel's purple.
-    f.src = url.includes('?') ? url : `${url}${docTone()}`
+    // Off screen it need not load yet (frames.ts): a diagram in an earlier turn loads when
+    // that turn is shown. In the document first, so the sleeper can tell what it is.
+    f.setAttribute('loading', 'lazy')
     host.appendChild(f)
     this.v.frames.add(f)
+    // Drawn in the theme on screen: its accent, ink and ground, not the panel's purple.
+    this.v.sleeper.load(f, url.includes('?') ? url : `${url}${docTone()}`)
     return f
   }
 

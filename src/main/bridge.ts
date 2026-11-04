@@ -13,6 +13,7 @@ import { registerMedia, requestAnnotate, screenOf, serveMedia } from './canvas.j
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
 import { homedir } from 'node:os'
+import { imagesFromHook } from './imageHook.js'
 
 /**
  * The bridge: how a Claude session inside a tab reaches that tab's panel.
@@ -101,30 +102,44 @@ function writeSettings(): string {
       '\r\n',
     'utf8'
   )
-  // The image hook (resources/image-hook.mjs): screenshots and pictures the session sees,
-  // onto the panel. `async` so Claude never waits on it.
-  const hook = join(dir, 'ember-image-hook.cmd')
+  // Ember's hooks: what the session is doing, for the canvas; the permission requests its
+  // cards answer; and the images it sees, for the panel. They are Claude Code's own `http`
+  // hooks — it POSTs the event to the bridge itself, so an event costs one loopback request
+  // instead of starting a process (a node process per event was 60-100 ms each, and every
+  // Read and MCP tool call started one). The tab and the token travel as headers, read from
+  // the session's environment (`allowedEnvVars`); the URL is this bridge's, fixed for the
+  // life of the app. The state events are `async`, so Claude never waits on them;
+  // PermissionRequest waits for the person, up to an hour. With no canvas behind the tab
+  // it gets no answer at once, and Claude Code asks as it always does.
+  const http = (opts: { async?: boolean; timeout: number; images?: boolean }) => ({
+    type: 'http',
+    url: `http://127.0.0.1:${port}/hook${opts.images ? '?images=1' : ''}`,
+    headers: { 'x-ember-token': '$EMBER_BRIDGE_TOKEN', 'x-ember-tab': '$EMBER_TAB_ID' },
+    allowedEnvVars: ['EMBER_BRIDGE_TOKEN', 'EMBER_TAB_ID'],
+    timeout: opts.timeout,
+    ...(opts.async ? { async: true } : {}),
+  })
+  const said = http({ async: true, timeout: 10 })
+  const asks = http({ timeout: 3600 })
+  // Claude Code runs no http hook for SessionStart, so that one is a command: curl.exe
+  // (in Windows since 10 1803) posting stdin, ~15 ms, or the node hook where there is none.
+  const curl = join(process.env['SystemRoot'] || 'C:\\Windows', 'System32', 'curl.exe')
+  const startCmd = join(dir, 'ember-hook.cmd')
   writeFileSync(
-    hook,
-    ['@echo off', 'set ELECTRON_RUN_AS_NODE=1', `"${process.execPath}" "${resourcePath('image-hook.mjs')}"`].join('\r\n') +
-      '\r\n',
+    startCmd,
+    (existsSync(curl)
+      ? [
+          '@echo off',
+          `"${curl}" -s -m 3 -o NUL -H "content-type: application/json" -H "x-ember-token: %EMBER_BRIDGE_TOKEN%" -H "x-ember-tab: %EMBER_TAB_ID%" --data-binary @- "%EMBER_BRIDGE_URL%/hook"`,
+          'exit /b 0',
+        ]
+      : ['@echo off', 'set ELECTRON_RUN_AS_NODE=1', `"${process.execPath}" "${resourcePath('hook.mjs')}"`]
+    ).join('\r\n') + '\r\n',
     'utf8'
   )
-  const imageHook = { type: 'command', command: hook.replace(/\\/g, '/'), async: true, timeout: 30 }
-  // Ember's own hook (resources/hook.mjs): what the session is doing, for the canvas, and
-  // the permission requests its cards answer. The state events are `async`, so Claude
-  // never waits on them; PermissionRequest waits for the person, up to an hour, and with
-  // no Ember (or no canvas) behind it gives no answer, so Claude Code asks as it always does.
-  const emberHookCmd = join(dir, 'ember-hook.cmd')
-  writeFileSync(
-    emberHookCmd,
-    ['@echo off', 'set ELECTRON_RUN_AS_NODE=1', `"${process.execPath}" "${resourcePath('hook.mjs')}"`].join('\r\n') + '\r\n',
-    'utf8'
-  )
-  const said = { type: 'command', command: emberHookCmd.replace(/\\/g, '/'), async: true, timeout: 10 }
-  const asks = { type: 'command', command: emberHookCmd.replace(/\\/g, '/'), timeout: 3600 }
+  const started = { type: 'command', command: startCmd.replace(/\\/g, '/'), async: true, timeout: 10 }
   const emberHooks = {
-    SessionStart: [{ hooks: [said] }],
+    SessionStart: [{ hooks: [started] }],
     SessionEnd: [{ hooks: [said] }],
     UserPromptSubmit: [{ hooks: [said] }],
     Notification: [{ hooks: [said] }],
@@ -148,8 +163,9 @@ function writeSettings(): string {
         statusLine: { type: 'command', command: cmd.replace(/\\/g, '/'), padding: 0 },
         hooks: {
           ...emberHooks,
-          PostToolUse: [{ matcher: 'Read|mcp__.*', hooks: [imageHook] }],
-          Stop: [{ hooks: [imageHook, said] }],
+          // The images the session sees go to the panel (imageHook.ts): the same POST, marked.
+          PostToolUse: [{ matcher: 'Read|mcp__.*', hooks: [http({ async: true, timeout: 30, images: true })] }],
+          Stop: [{ hooks: [http({ async: true, timeout: 10, images: true })] }],
         },
       },
       null,
@@ -432,6 +448,20 @@ function addImage(tabId: string, body: Record<string, unknown>, auto: boolean): 
 }
 
 /** The tab's images as one panel document, the newest in front. */
+/** Images onto a tab's panel: one (`path` or `data`), or several `paths`. How many it took. */
+function takeImage(tabId: string, body: Record<string, unknown>, auto: boolean): number {
+  const raw = body['paths']
+  const many = Array.isArray(raw) ? raw.slice(0, 12).map(String) : typeof raw === 'string' && raw ? [raw] : null
+  const added = (many ?? [null])
+    .reverse()
+    .map((p) => addImage(tabId, p === null ? body : { ...body, path: p }, auto))
+    .filter((e): e is ImageEntry => e !== null)
+  if (!added.length) return 0
+  const { act: _act, ...forRenderer } = imagesPush(tabId, auto)
+  broadcast('ember:panel:push', forRenderer)
+  return added.length
+}
+
 function imagesPush(tabId: string, quiet: boolean): PanelPush {
   const list = images.get(tabId) ?? []
   const push: PanelPush = {
@@ -938,19 +968,11 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         // An image a session merely looked at (a screenshot for itself) is not put up in a
         // Loom tab; only one it chose to show is.
         if (auto && canvasTabs.has(tabId)) return send(res, 200, JSON.stringify({ ok: true, skipped: 'canvas' }))
-        const raw = body['paths']
-        const many = Array.isArray(raw) ? raw.slice(0, 12).map(String) : typeof raw === 'string' && raw ? [raw] : null
-        const added = (many ?? [null])
-          .reverse()
-          .map((p) => addImage(tabId, p === null ? body : { ...body, path: p }, auto))
-          .filter((e): e is ImageEntry => e !== null)
-        if (!added.length) {
+        const count = takeImage(tabId, body, auto)
+        if (!count) {
           return send(res, auto ? 200 : 400, JSON.stringify(auto ? { ok: true, count: 0 } : { error: 'no readable image (absolute path to a png, jpg, gif, webp or bmp)' }))
         }
-        const push = imagesPush(tabId, auto)
-        const { act: _act, ...forRenderer } = push
-        broadcast('ember:panel:push', forRenderer)
-        send(res, 200, JSON.stringify({ ok: true, count: added.length }))
+        send(res, 200, JSON.stringify({ ok: true, count }))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return
@@ -1159,27 +1181,40 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return
   }
 
-  // Ember's Claude Code hook (resources/hook.mjs): every event it is given names the
+  // Ember's Claude Code hooks (http hooks, see writeSettings): every event names the
   // session, so the tab follows it (a `/clear` or `/resume` included), and the canvas is
   // told. A PermissionRequest waits here for the person's answer on the canvas.
   if (req.method === 'POST' && url.pathname === '/hook') {
-    void readJson(req)
+    // Two shapes: Claude Code's http hook (the event as the body, the tab in a header, the
+    // answer as the whole response), and resources/hook.mjs's ({ tabId, at, input }, the
+    // answer under `output`) where curl.exe is missing.
+    const headerTab = String(req.headers['x-ember-tab'] ?? '')
+    const direct = !!headerTab
+    void readJson(req, 40_000_000)
       .then((body) => {
-        const tabId = String(body['tabId'] ?? '')
-        const input = body['input']
+        const tabId = direct ? headerTab : String(body['tabId'] ?? '')
+        const input = direct ? body : body['input']
         if (!tabId || !input || typeof input !== 'object') throw new Error('tabId and input are required')
         const hook = input as Record<string, unknown>
+        // The images the session saw (PostToolUse, Stop), for the panel: never in a canvas
+        // tab (the canvas shows what the session chooses to show, not what it looked at).
+        if (url.searchParams.get('images') === '1') {
+          if (!canvasTabs.has(tabId)) void imagesFromHook(hook, (image) => takeImage(tabId, { ...image }, true))
+          if (hook['hook_event_name'] === 'PostToolUse') return send(res, 200, '{}')
+        }
         const event = String(hook['hook_event_name'] ?? '')
         const sessionId = String(hook['session_id'] ?? '')
         const cwd = String(hook['cwd'] ?? '')
         const file = String(hook['transcript_path'] ?? '')
         if (sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
-        const at = typeof body['at'] === 'number' ? body['at'] : Date.now()
+        // When Claude Code ran the hook: async hooks can land out of order. An http hook lands
+        // as it is sent, so its arrival is its time.
+        const at = !direct && typeof body['at'] === 'number' ? body['at'] : Date.now()
         const id = randomUUID()
         const blocking = event === 'PermissionRequest'
         if (!blocking || !hookedTabs.has(tabId)) {
           broadcast('ember:hook:event', { tabId, id, event, at, input: hook, blocking: false })
-          return send(res, 200, JSON.stringify({ ok: true }))
+          return send(res, 200, direct ? '{}' : JSON.stringify({ ok: true }))
         }
         // Headers now and a space now and then: the hook's fetch would give up on a
         // response that says nothing for five minutes, and a person may take longer.
@@ -1188,7 +1223,8 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const done = (output: Record<string, unknown> | null) => {
           clearInterval(keep)
           heldHooks.delete(id)
-          if (!res.writableEnded) res.end(JSON.stringify(output ? { ok: true, output } : { ok: true }))
+          // (The keep-alive's leading spaces are fine: JSON allows them.)
+          if (!res.writableEnded) res.end(direct ? JSON.stringify(output ?? {}) : JSON.stringify(output ? { ok: true, output } : { ok: true }))
         }
         heldHooks.set(id, { tabId, done })
         res.on('close', () => {

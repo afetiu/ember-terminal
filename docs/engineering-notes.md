@@ -730,6 +730,74 @@ Output arrival motion costs nothing here — measured on vs off at 2465 ms vs 28
 i.e. noise — because throughput this high is far above `effects.outputMotionMaxRate`
 and the animation disables itself.
 
+## The canvas, measured (November 2026)
+
+`node scripts/probe-perf.mjs [--only=start,claude,hooks,mem,frames] [--profile] [--idle-only]`
+measures the one-Claude canvas: its own Ember (own EMBER_HOME, CDP 9501), the real
+`claude --model haiku` in ~/agent-box typed into a plain shell, and Ember's own process tree
+only, memory as private bytes (working sets get trimmed under pressure and read *lower* with
+more tabs). Medians of 3 (5 for start, 7 for hooks). Two other agents' probes shared the box
+throughout, machine load 6–100%, printed beside every CPU sample. Under load the compositor
+drops frames and Ember's CPU reads *lower*, so a CPU figure is only comparable with one taken
+at the same load: the before/after CPU rows below differ by load, not by code.
+
+| | Before | After |
+| --- | --- | --- |
+| Launch → first shell prompt | 3766 ms | 3688 ms |
+| `claude` typed → canvas ready | 3–12 s (Claude Code's own start) | same; now says what it waits on |
+| CPU idle, canvas up: total / renderer | 23.8 / 10.9 % (load 48–96%) | 19.1 / 7.4 % (load 6–30%) |
+| CPU while a long reply streams: total / renderer | 94 / 37 % (load 65–90%) | 66 / 27 % (load 16–31%) |
+| Composer keypress → painted, idle / streaming (p50) | 10.4 / 7.8 ms | 7.5 / 8.9 ms |
+| Hook, async event → in the renderer | 671 ms | **5 ms** |
+| Hook, PermissionRequest → card shown | 501 ms | **16 ms** |
+| Real permission: Claude Code's dialog drawn → Ember's card | card 590–1763 ms later | card 83 ms *earlier* |
+| Ember MB, 1 Claude tab / each extra tab | 419 / +56 | 400 / +27 |
+| 30 diagrams in a conversation: renderer MB, live frames | 514, 30 | **129, 1** |
+| Stepping through those 30 turns: frame p95 / worst | 83 / 97 ms | 63 / 80 ms |
+
+(Before's per-tab memory counts the hook processes alive at the time: each was an
+electron.exe running as node.)
+
+What changed:
+
+- **Hooks are Claude Code's own `http` hooks.** Every event used to start
+  `electron.exe resources/hook.mjs` through a .cmd — and every Read and MCP tool call started
+  `image-hook.mjs` too — 300–1500 ms each on a busy box, with PermissionRequest waiting on it.
+  Claude Code 2.1.318 POSTs the event itself: `type: "http"`, the bridge's URL, the tab and
+  token as headers interpolated from the session's environment (`allowedEnvVars`; checked in
+  the binary and by a real run that `EMBER_BRIDGE_TOKEN` is not withheld as a credential).
+  The blocking response is the hook output itself; the keep-alive spaces before it are valid
+  JSON. Claude Code runs no http hook for `SessionStart` ("HTTP hooks are not supported for
+  SessionStart"), so that one is `curl.exe` posting stdin (Windows 10 1803+), else hook.mjs.
+  The image hook's work moved into main (src/main/imageHook.ts) behind the same POST, and
+  stops at once in a canvas tab, where its pictures were always thrown away.
+- **A race the fast hooks exposed.** `Stop` now lands before the TUI has redrawn without its
+  spinner, and the screen rule "a spinner while idle means a turn" set the canvas back to
+  working for good. ClaudeTui ignores the spinner for 1.5 s after a Stop and goes idle when
+  the screen and the hooks both say the turn is over.
+- **Frames sleep** (canvas/loom/frames.ts). Earlier turns are `display: none`, but each
+  diagram in them was a live document. A static frame (diagram, markdown, code) now loads when
+  it first comes within 800px of the screen and unloads after 10 s away, keeping its height;
+  html pages, views, live browsers, questions, and anything placed, snapped, sized or full
+  screen are never unloaded. A hidden canvas (a plain shell tab) loads none.
+- **Startup says what it waits on.** The canvas said "Claude Code is here. Ask below" through
+  the whole start (the wrapper's first state arrived before the host held it). Now "Starting
+  Claude Code · connecting 10 MCP servers… 4s", then "session started, opening its screen…"
+  once SessionStart lands, in the hint and the bar. The count is read once from
+  ~/.claude.json, the folder's .mcp.json, enabled plugins and claude.ai connectors
+  (`mcpServerCount`, claudeCatalog.ts). The TUI itself draws nothing until it is ready.
+
+Tried and dropped: pausing xterm's renderer while the canvas hides the TUI (it runs full
+size under `visibility: hidden`, which still intersects, so xterm keeps drawing). A/B at the
+same load showed no difference, idle 23.8 vs 25.2% and streaming 94 vs 103%: Claude Code
+writes nothing at idle, and while it streams the canvas drawing the reply dominates. JS is
+~5% of the renderer's time in a streaming profile; `layout()` per cursor move is ~2 ms/s.
+
+Traps: an Ember launched from a new electron.exe path relaunches itself once for the GPU
+preference (`--gpu-relaunched`), so the child you spawned is not the app and killing its
+tree leaves it on your CDP port — kill by port. Command lines from
+`Get-CimInstance Win32_Process` can hold control characters that break the JSON.
+
 ## Three things worth knowing
 
 All found empirically, all load-bearing:
@@ -767,6 +835,7 @@ tools). Ember is a terminal for agents, not a desktop driver; the history has th
 - `scripts/bench.mjs` — the head-to-head above, with a per-5s drain readout and `--profile-main`
 - `scripts/bench-pty.cjs` — the same firehose through node-pty alone: ConPTY's floor
 - `scripts/probe-latency.mjs` — keystroke-to-echo, on a real pty, under load
+- `scripts/probe-perf.mjs` — the canvas's numbers: start, idle and streaming CPU, composer latency, hooks, memory per tab, 30 diagrams
 - `scripts/probe-frames.mjs` — frame pacing of every animation (late frames, worst gap, p95)
 - `scripts/probe-notes-cli.mjs` — the `notes` command from inside a real Ember shell, PowerShell and Git Bash
 - `scripts/shot.mjs` — screenshots of the chrome (shell, notes, todo, palette, settings)

@@ -9,6 +9,7 @@ import { Pieces } from './loom/pieces'
 import { Plan } from './loom/plan'
 import { Snaps } from './loom/snaps'
 import { Stage } from './loom/stage'
+import { FrameSleeper } from './loom/frames'
 import { div, reduced, viewSwitch, sameTitle, type Browser, type Dock, type Mode, type Piece } from './loom/shared'
 
 /**
@@ -83,6 +84,8 @@ export class LoomView {
   disposed = false
   origin = ''
   readonly frames = new Set<HTMLIFrameElement>()
+  /** Loads frames as they come near the screen and unloads static ones long away from it. */
+  readonly sleeper = new FrameSleeper()
   /** Everything shown, by title. */
   readonly pieces = new Map<string, Piece>()
   /** Objects you pinned: they stay where you put them, turn after turn, until removed. */
@@ -666,6 +669,7 @@ export class LoomView {
     if (this.disposed) return
     this.disposed = true
     if (this.frameReq) cancelAnimationFrame(this.frameReq)
+    this.sleeper.dispose()
     for (const u of this.unsubs) u()
     window.ember.canvas.unwatch(this.tabId)
     this.host.wrapper?.dispose()
