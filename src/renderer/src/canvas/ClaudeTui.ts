@@ -511,12 +511,12 @@ export class ClaudeTui implements AgentWrapper {
     const p = this.state.phase
     this.composer.input.placeholder =
       p === 'starting'
-        ? 'Starting Claude Code… you can type already'
+        ? 'starting… you can type already'
         : p === 'exited'
-          ? 'Claude Code has exited'
+          ? 'exited'
           : p === 'working' || p === 'asking'
-            ? 'Queue a message for when this turn ends'
-            : 'Ask Claude…   / commands   @ files   ! shell'
+            ? 'queue a message for when this turn ends'
+            : 'type a message   / commands   @ files   ! shell'
   }
 
   debug(): Record<string, unknown> {

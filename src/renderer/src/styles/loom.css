@@ -6523,45 +6523,49 @@ body.is-light .loom-zoom {
 
 /* ---------------------------------------------------------------- the composer, as a prompt */
 
-/* Ember's input reads like a terminal prompt: the terminal's own font and background, a
-   rule above and below instead of a rounded card, the caret and `❯` in the accent, and
-   the bar under it written like a status line. */
+/* Ember's input reads like a plain terminal prompt, whichever agent it talks to: the
+   terminal's font, colours and background, a `>` and a block caret in the terminal's own
+   foreground, rules above and below instead of a card, and the bar under it written like
+   a status line. Nothing in it is any one agent's look. */
 .loom-frame-box.is-native {
   border: 0;
-  border-top: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--c-fg) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-fg) 14%, transparent);
   border-radius: 0;
-  background: color-mix(in srgb, var(--c-bg) 86%, #000);
+  background: var(--c-bg);
   box-shadow: none;
 }
 .loom-frame-box.is-native.is-focus {
-  border-top-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+  border-top-color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--c-fg) 34%, transparent);
   box-shadow: none;
 }
 .loom-frame-box.is-native::before {
+  content: '>';
   opacity: 1;
-  color: var(--c-accent);
-  font-weight: 700;
+  color: color-mix(in srgb, var(--c-fg) 72%, transparent);
+  font-weight: 400;
 }
 .loom-frame-box.is-native::after {
-  content: '⏎ send';
+  content: 'enter';
   font: 12px var(--term-font), 'Cascadia Code', Consolas, monospace;
-  opacity: 0.55;
+  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  opacity: 1;
 }
 .loom-native-input {
-  caret-color: var(--c-accent);
+  caret-color: var(--c-fg);
   caret-shape: block;
 }
 .loom-native-input::placeholder {
   font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
-  color: color-mix(in srgb, var(--c-fg) 34%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 32%, transparent);
 }
 .loom-bar.is-native,
 .loom-bar.is-native button,
 .loom-bar.is-native span {
   font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
   font-size: 12px;
+  color: color-mix(in srgb, var(--c-fg) 55%, transparent);
 }
 .loom-bar.is-native > button,
 .loom-bar.is-native > span {
@@ -6572,13 +6576,14 @@ body.is-light .loom-zoom {
   padding: 0 2px;
 }
 .loom-bar.is-native > * + *::before {
-  content: '·';
+  content: '|';
   margin-right: 8px;
-  color: color-mix(in srgb, var(--c-fg) 30%, transparent);
+  color: color-mix(in srgb, var(--c-fg) 22%, transparent);
 }
 .loom-bar.is-native > .loom-bar-rest::before {
   content: none;
 }
 .loom-bar.is-native > button:hover {
-  color: var(--c-accent);
+  color: var(--c-fg);
+  text-decoration: underline;
 }

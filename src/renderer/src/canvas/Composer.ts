@@ -109,7 +109,7 @@ export class Composer {
     this.input.className = 'loom-native-input'
     this.input.rows = 1
     this.input.spellcheck = false
-    this.input.placeholder = 'Ask Claude…'
+    this.input.placeholder = 'type a message'
     this.input.setAttribute('aria-label', 'Message Claude')
     ctx.frame.appendChild(this.input)
 
