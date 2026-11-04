@@ -123,8 +123,6 @@ export interface CardModel {
 }
 
 export interface SidebarHandlers {
-  /** The provider chip: which agent a new session starts with. */
-  onProvider(anchor: HTMLElement): void
   onSelect(id: string): void
   onClose(id: string): void
   onNew(): void
@@ -169,7 +167,6 @@ export class Sidebar {
 
   readonly el: HTMLElement
   private readonly list: HTMLElement
-  private readonly providerBtn: HTMLButtonElement
   private readonly navBtns = new Map<Place, { btn: HTMLButtonElement; badge: HTMLElement }>()
   private navSig = ''
   private readonly nodes = new Map<string, CardNode>()
@@ -207,19 +204,13 @@ export class Sidebar {
 
     const add = document.createElement('button')
     add.className = 'ember-newtab'
-    add.title = 'New session  (Ctrl+Shift+T · ember new)'
-    add.setAttribute('aria-label', 'New session')
+    add.title = 'New terminal tab  (Ctrl+Shift+T · ember new) — run claude in it for the canvas'
+    add.setAttribute('aria-label', 'New terminal tab')
     add.textContent = '+'
     add.addEventListener('click', () => this.handlers.onNew())
 
     add.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
-    // Which agent a new session starts with — the + beside it opens Loom running it.
-    this.providerBtn = document.createElement('button')
-    this.providerBtn.type = 'button'
-    this.providerBtn.className = 'ember-provider'
-    this.providerBtn.title = 'The agent new sessions start with. Click to choose, or add more.'
-    this.providerBtn.addEventListener('click', () => this.handlers.onProvider(this.providerBtn))
-    head.append(label, this.providerBtn, add)
+    head.append(label, add)
 
     // The places — todo and notes — as one quiet row of icons at the foot of the column.
     // The column is the session list; the places are a click away, never in its way.
@@ -543,13 +534,6 @@ export class Sidebar {
       hold: 0,
       holding: false,
     }
-  }
-
-  /** Show which agent new sessions start with. */
-  setProvider(name: string): void {
-    this.providerBtn.innerHTML = `<span class="dot" aria-hidden="true"></span><span class="n"></span><span class="c" aria-hidden="true">▾</span>`
-    ;(this.providerBtn.querySelector('.n') as HTMLElement).textContent = name
-    this.providerBtn.setAttribute('aria-label', `New sessions start ${name}. Choose another agent.`)
   }
 
   /**

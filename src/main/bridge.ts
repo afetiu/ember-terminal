@@ -7,7 +7,7 @@ import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/t
 import { renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
 import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
-import { bindSession, rebindFromStatus, unbindSession } from './transcript.js'
+import { bindSession, boundSession, rebindFromStatus, unbindSession } from './transcript.js'
 import { forget, recall, remember, skills } from './brain.js'
 import { registerMedia, requestAnnotate, requestCanvasPoint, screenOf, serveMedia } from './canvas.js'
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
@@ -51,6 +51,28 @@ export function markCanvasTab(tabId: string, on: boolean): void {
   else canvasTabs.delete(tabId)
 }
 
+/**
+ * Tabs whose canvas answers Claude Code's permission requests (a Claude tab on its canvas).
+ * Any other tab's request is let through at once with no answer, so its own dialog asks.
+ */
+const hookedTabs = new Set<string>()
+/** PermissionRequest hooks waiting on a card, by the id the renderer was given. */
+const heldHooks = new Map<string, { tabId: string; done: (output: Record<string, unknown> | null) => void }>()
+
+export function setHooked(tabId: string, on: boolean): void {
+  if (on) hookedTabs.add(tabId)
+  else {
+    hookedTabs.delete(tabId)
+    // Nobody is going to answer them now: Claude Code's own dialog takes over.
+    for (const h of [...heldHooks.values()]) if (h.tabId === tabId) h.done(null)
+  }
+}
+
+/** The person answered a card: the hook prints this (null = no answer, Claude Code asks itself). */
+export function answerHook(id: string, output: Record<string, unknown> | null): void {
+  heldHooks.get(id)?.done(output && typeof output === 'object' ? output : null)
+}
+
 let mcpConfig = ''
 /** The `--settings` file the shim passes: full screen, the status line and the image hook. */
 let settingsFile = ''
@@ -91,13 +113,34 @@ function writeSettings(): string {
     'utf8'
   )
   const imageHook = { type: 'command', command: hook.replace(/\\/g, '/'), async: true, timeout: 30 }
+  // Ember's own hook (resources/hook.mjs): what the session is doing, for the canvas, and
+  // the permission requests its cards answer. The state events are `async`, so Claude
+  // never waits on them; PermissionRequest waits for the person, up to an hour, and with
+  // no Ember (or no canvas) behind it gives no answer, so Claude Code asks as it always does.
+  const emberHookCmd = join(dir, 'ember-hook.cmd')
+  writeFileSync(
+    emberHookCmd,
+    ['@echo off', 'set ELECTRON_RUN_AS_NODE=1', `"${process.execPath}" "${resourcePath('hook.mjs')}"`].join('\r\n') + '\r\n',
+    'utf8'
+  )
+  const said = { type: 'command', command: emberHookCmd.replace(/\\/g, '/'), async: true, timeout: 10 }
+  const asks = { type: 'command', command: emberHookCmd.replace(/\\/g, '/'), timeout: 3600 }
+  const emberHooks = {
+    SessionStart: [{ hooks: [said] }],
+    SessionEnd: [{ hooks: [said] }],
+    UserPromptSubmit: [{ hooks: [said] }],
+    Notification: [{ hooks: [said] }],
+    PreCompact: [{ hooks: [said] }],
+    SubagentStop: [{ hooks: [said] }],
+    PermissionRequest: [{ hooks: [asks] }],
+  }
   // Full screen, always. The canvas reads Claude Code's full-screen layout (its input box
   // on the alternate screen); drawn inline, as it is by default on a machine whose own
   // settings lack `"tui": "fullscreen"`, the tab looked like a plain shell: no canvas and
   // no Canvas | CLI switch. Passed only inside Ember, so other terminals keep theirs.
   const tui = { tui: 'fullscreen' }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
-  writeFileSync(baseSettingsFile, JSON.stringify(tui, null, 2), 'utf8')
+  writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')
   const file = join(dir, 'ember-settings.json')
   writeFileSync(
     file,
@@ -106,8 +149,9 @@ function writeSettings(): string {
         ...tui,
         statusLine: { type: 'command', command: cmd.replace(/\\/g, '/'), padding: 0 },
         hooks: {
+          ...emberHooks,
           PostToolUse: [{ matcher: 'Read|mcp__.*', hooks: [imageHook] }],
-          Stop: [{ hooks: [imageHook] }],
+          Stop: [{ hooks: [imageHook, said] }],
         },
       },
       null,
@@ -1214,6 +1258,52 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const cwd = String(body['cwd'] ?? '')
         bindSession(tabId, sessionId, cwd)
         send(res, 200, JSON.stringify({ ok: true }))
+      })
+      .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
+    return
+  }
+
+  // Ember's Claude Code hook (resources/hook.mjs): every event it is given names the
+  // session, so the tab follows it (a `/clear` or `/resume` included), and the canvas is
+  // told. A PermissionRequest waits here for the person's answer on the canvas.
+  if (req.method === 'POST' && url.pathname === '/hook') {
+    void readJson(req)
+      .then((body) => {
+        const tabId = String(body['tabId'] ?? '')
+        const input = body['input']
+        if (!tabId || !input || typeof input !== 'object') throw new Error('tabId and input are required')
+        const hook = input as Record<string, unknown>
+        const event = String(hook['hook_event_name'] ?? '')
+        const sessionId = String(hook['session_id'] ?? '')
+        const cwd = String(hook['cwd'] ?? '')
+        const file = String(hook['transcript_path'] ?? '')
+        if (sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
+        const at = typeof body['at'] === 'number' ? body['at'] : Date.now()
+        const id = randomUUID()
+        const blocking = event === 'PermissionRequest'
+        if (!blocking || !hookedTabs.has(tabId)) {
+          broadcast('ember:hook:event', { tabId, id, event, at, input: hook, blocking: false })
+          return send(res, 200, JSON.stringify({ ok: true }))
+        }
+        // Headers now and a space now and then: the hook's fetch would give up on a
+        // response that says nothing for five minutes, and a person may take longer.
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+        const keep = setInterval(() => res.write(' '), 60_000)
+        const done = (output: Record<string, unknown> | null) => {
+          clearInterval(keep)
+          heldHooks.delete(id)
+          if (!res.writableEnded) res.end(JSON.stringify(output ? { ok: true, output } : { ok: true }))
+        }
+        heldHooks.set(id, { tabId, done })
+        res.on('close', () => {
+          if (!heldHooks.has(id)) return
+          // Claude Code gave up on it (the dialog was answered in the CLI view, the turn
+          // stopped, the hook timed out): the card goes.
+          clearInterval(keep)
+          heldHooks.delete(id)
+          broadcast('ember:hook:gone', { tabId, id })
+        })
+        broadcast('ember:hook:event', { tabId, id, event, at, input: hook, blocking: true })
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return

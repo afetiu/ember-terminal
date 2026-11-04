@@ -5789,6 +5789,55 @@ body.is-light .loom-zoom {
   color: var(--l-err, #e2676f);
 }
 
+/* Claude Code is showing something on its own screen no card describes (a picker, the
+   trust dialog, /login): one quiet line over the composer, and the way to see it. */
+.loom-elsewhere {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--l-yellow, #e5c07b) 40%, transparent);
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-elsewhere.is-on {
+  display: flex;
+}
+.loom-elsewhere-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-yellow, #e5c07b);
+  animation: loom-queue-wait 2s ease-in-out infinite;
+}
+.loom-elsewhere-text {
+  flex: 1;
+  min-width: 0;
+}
+.loom-elsewhere button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.92em;
+  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
+  cursor: pointer;
+}
+.loom-elsewhere button:hover {
+  background: color-mix(in srgb, var(--c-fg) 15%, transparent);
+}
+.loom-elsewhere kbd {
+  font-family: var(--l-mono);
+  font-size: 0.82em;
+  color: var(--l-dim);
+}
+
 /* Claude asks before a tool runs: a card over the input, Allow or Deny. */
 .loom-asks {
   display: none;

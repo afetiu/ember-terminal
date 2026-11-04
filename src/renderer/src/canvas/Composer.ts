@@ -2,12 +2,12 @@ import type { ClaudeImage } from '@shared/types'
 import { escapeHtml } from './markdown'
 
 /**
- * The input of a Claude tab the canvas drives itself (native mode): Ember's own box where
- * Claude Code's prompt used to be, and what sits right above it — pictures waiting to go,
- * messages waiting for the turn, the `/` and `@` menus.
+ * The input of an agent tab's canvas: Ember's own box, in place of the agent's prompt,
+ * and what sits right above it — pictures waiting to go, messages waiting for the turn,
+ * the `/` and `@` menus.
  *
- * Phase 2 of docs/specs/canvas-native.md. It knows nothing about the process: it says what
- * the person sent, and asks its owner for the command list and file suggestions.
+ * It knows nothing about the agent: it says what the person sent, and asks its owner
+ * (an AgentWrapper) for the command list and file suggestions.
  */
 
 export interface SlashCommand {
@@ -45,6 +45,8 @@ export interface ComposerContext {
   cancel(uuid: string): void
   toast(text: string): void
   relayout(): void
+  /** Whether a queued message has its own × (the TUI's queue cannot drop one). */
+  queueCancel?: boolean
 }
 
 /**
@@ -338,7 +340,8 @@ export class Composer {
       const rest = value.slice(caret).replace(/^\S*/, '')
       this.set(`${item.insert}${rest.replace(/^\s+/, '')}`)
       this.closeMenu()
-      if (enter && !item.hint && !rest.trim()) this.submit()
+      // Enter on a command that takes nothing, or one already typed out in full, sends it.
+      if (enter && !rest.trim() && (!item.hint || value.slice(0, caret).trim() === item.insert.trim())) this.submit()
       return
     }
     const next = value.slice(0, m.start) + item.insert + value.slice(caret)
@@ -455,7 +458,8 @@ export class Composer {
             `<div class="loom-queue-item" data-uuid="${escapeHtml(q.uuid)}"><span class="loom-queue-tag">queued</span>` +
             `<span class="loom-queue-text">${escapeHtml(q.text || '(picture)')}${q.images ? ` <i>+${q.images} image${q.images > 1 ? 's' : ''}</i>` : ''}</span>` +
             `<span class="loom-queue-acts"><button type="button" data-q="now" title="Stop the turn and send this now">Send now</button>` +
-            `<button type="button" data-q="x" class="is-x" title="Don't send" aria-label="Cancel">×</button></span></div>`
+            (this.ctx.queueCancel === false ? '' : `<button type="button" data-q="x" class="is-x" title="Don't send" aria-label="Cancel">×</button>`) +
+            `</span></div>`
         )
         .join('') + (items.length ? `<div class="loom-queue-foot"><span>Sent when this turn ends · Esc stops the turn and gives them back</span></div>` : '')
     this.queueEl.classList.toggle('has-items', items.length > 0)

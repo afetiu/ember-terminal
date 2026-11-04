@@ -142,17 +142,14 @@ export class App {
       onMode: () => void this.switchMode(),
     })
     this.sidebar = new Sidebar({
-      onProvider: (anchor) => void this.providerMenu(anchor),
       onSelect: (id) => void this.activate(id),
       onClose: (id) => this.closeGroup(id),
-      // A new session is a terminal: type an agent's name, notes, todo, ember…
-      // + is a session: the canvas, running the agent chosen in the chip beside it.
-      onNew: () => void this.newAgentSession(),
+      // + is a terminal: run an agent in it (`claude`) and the tab becomes its canvas.
+      onNew: () => void this.newGroup(),
       onRename: (id, title) => this.renameGroup(id, title),
       onReorder: (ids) => this.reorderGroups(ids),
       onPlace: (place) => void this.goPlace(place),
     })
-    this.sidebar.setProvider(agentSpec(this.config.agent?.default).name)
 
     // The vitals line, pinned at the very bottom of the sidebar.
     this.vitals = new Vitals()
@@ -325,13 +322,8 @@ export class App {
       newTab: () => this.newGroup().then((g) => g.id),
       /** A Loom tab, and what its canvas believes. */
       newLoom: (cwd?: string) => this.newGroup(undefined, cwd, { loom: true }).then((g) => g.id),
-      /** A Claude tab, as + opens one: native when canvas.native is on (scripts/probe-native.mjs). */
+      /** A Claude tab, as Ctrl+K › New Claude tab opens one: a terminal that runs `claude` first. */
       newClaude: (cwd?: string) => this.newGroup(undefined, cwd, { agent: 'claude' }).then((g) => g.id),
-      /** Probes: what the CLI view runs as `claude` (a stand-in TUI). */
-      cliBin: (bin: string) => {
-        LoomView.cliBin = bin
-        return true
-      },
       /** The sidebar card of a tab, as drawn. */
       card: (id: string) => {
         const el = document.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"], [data-group-id="${CSS.escape(id)}"]`)
@@ -343,7 +335,6 @@ export class App {
       /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
       loomSwitch: (id: string, first = false, fresh = false) => this.groups.find((g) => g.id === id)?.loom?.switchForProbe(first, fresh),
       /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */
-      loomPasted: (id: string, url: string) => this.groups.find((g) => g.id === id)?.loom?.pastedImage(url),
       /** From now on, record what would be typed into sessions instead of typing it; `sends()` reads it. */
       recordSends: () => {
         this.probeSends = []
@@ -360,6 +351,8 @@ export class App {
       closeTab: (id: string) => this.closeGroup(id),
       activate: (id: string) => this.activate(id),
       activeTab: () => this.activeId,
+      /** The pid of a tab's shell (probes: the agent it runs is its child). */
+      shellPid: (id: string) => this.groups.find((g) => g.id === id)?.focused?.pid ?? 0,
       /** A session's xterm, for a probe that needs to write to it or read its buffer. */
       term: (id: string) => this.allSessions.find((s) => s.id === id)?.term ?? null,
       sessions: () =>
@@ -557,7 +550,6 @@ export class App {
       const fontChanged = config.font.family !== this.config.font.family
       const wasLight = document.body.classList.contains('is-light')
       this.config = config
-      this.sidebar.setProvider(agentSpec(config.agent?.default).name)
       sound.configure(config.sound)
       quality.setEnabled(config.effects.adaptive)
       this.applyCssVars()
@@ -598,25 +590,9 @@ export class App {
       this.startFirstRun()
       return
     }
-    // Native canvas: the Claude tabs open at the last quit come back, each on its own
-    // session (`--resume`), in its folder. Live sessions, not a replay of old text.
-    const saved = this.config.canvas?.native === true ? await window.ember.claude.savedTabs().catch(() => []) : []
-    if (saved.length) {
-      for (const t of saved) await this.newGroup(undefined, t.cwd || undefined, { agent: 'claude', ...(t.sessionId ? { resume: t.sessionId } : {}) })
-      this.scheduleSpare()
-      return
-    }
-    await this.newAgentSession()
+    // A terminal first: the agent starts when the person runs it (or from Ctrl+K).
+    await this.newGroup()
     this.scheduleSpare()
-  }
-
-  /** The native tabs as they stand, for the next start (see boot). */
-  private saveNativeTabs(): void {
-    const tabs = this.groups.flatMap((g) => {
-      const n = g.loom?.nativeSession
-      return n ? [n] : []
-    })
-    window.ember.claude.saveTabs(tabs)
   }
 
   private startFirstRun(): void {
@@ -624,12 +600,11 @@ export class App {
     const done = (agent: AgentId | null) => {
       this.config = { ...this.config, agent: { ...this.config.agent, onboarded: true, ...(agent ? { default: agent } : {}) } }
       window.ember.saveConfig(this.config)
-      this.sidebar.setProvider(agentSpec(this.config.agent.default).name)
       this.firstRun?.el.remove()
       this.firstRun = null
     }
     this.firstRun = new FirstRun({
-      start: () => void this.newAgentSession(),
+      start: () => void this.newGroup(),
       runInTab: (command, title) => void this.runInNewTab(command, title),
       openAgents: () => void this.settings.show(this.config, 'Agent'),
       finish: (agent) => {
@@ -779,12 +754,11 @@ export class App {
   private lastEntrance: Record<string, number> = {}
 
   /**
-   * The + button: a Loom tab already running the chosen agent, not a bare shell. Falls
-   * back to the shell when that agent is not installed, and says why.
+   * Ctrl+K › New Claude tab: a terminal that runs `claude` as it starts. Falls back to the
+   * plain terminal when Claude Code is not installed, and says why.
    */
-  private async newAgentSession(cwd?: string): Promise<void> {
-    const id = this.config.agent?.default ?? 'claude'
-    const spec = agentSpec(id)
+  private async newClaudeTab(cwd?: string): Promise<void> {
+    const spec = agentSpec('claude')
     const installed = (await window.ember.agents.detect(false).catch(() => [])).find((a) => a.id === spec.id)?.installed
     if (!installed) {
       await this.newGroup(undefined, cwd)
@@ -808,59 +782,7 @@ export class App {
     window.ember.write(s.id, '\r')
   }
 
-  /** The provider chip's menu: installed agents, the chosen one ticked, and a way to add more. */
-  private async providerMenu(anchor: HTMLElement): Promise<void> {
-    document.querySelector('.ember-provider-menu')?.remove()
-    const statuses = await window.ember.agents.detect(false).catch(() => [])
-    const current = this.config.agent?.default ?? 'claude'
-    const menu = document.createElement('div')
-    menu.className = 'ember-provider-menu'
-    menu.setAttribute('role', 'menu')
-    const r = anchor.getBoundingClientRect()
-    menu.style.left = `${Math.round(r.left)}px`
-    menu.style.top = `${Math.round(r.bottom + 6)}px`
-    for (const st of statuses.filter((x) => x.installed)) {
-      const spec = AGENTS[st.id]
-      const b = document.createElement('button')
-      b.type = 'button'
-      b.setAttribute('role', 'menuitemradio')
-      b.setAttribute('aria-checked', String(st.id === current))
-      b.className = st.id === current ? 'is-on' : ''
-      b.innerHTML = `<span class="n"></span><span class="v"></span>`
-      ;(b.querySelector('.n') as HTMLElement).textContent = spec.name
-      ;(b.querySelector('.v') as HTMLElement).textContent = spec.vendor
-      b.addEventListener('click', () => {
-        this.setProvider(st.id)
-        menu.remove()
-      })
-      menu.appendChild(b)
-    }
-    const more = document.createElement('button')
-    more.type = 'button'
-    more.className = 'is-more'
-    more.textContent = 'Add more agents…'
-    more.addEventListener('click', () => {
-      menu.remove()
-      void this.settings.show(this.config, 'Agent')
-    })
-    menu.appendChild(more)
-    document.body.appendChild(menu)
-    const close = (e: Event) => {
-      if (menu.contains(e.target as Node) || e.target === anchor) return
-      menu.remove()
-      window.removeEventListener('pointerdown', close, true)
-    }
-    window.addEventListener('pointerdown', close, true)
-  }
-
-  /** Choose the agent new sessions (and Ember's own questions) run on. */
-  private setProvider(id: AgentId): void {
-    this.config = { ...this.config, agent: { ...this.config.agent, default: id } }
-    window.ember.saveConfig(this.config)
-    this.sidebar.setProvider(AGENTS[id].name)
-  }
-
-  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId; resume?: string }): Promise<Group> {
+  async newGroup(profileId?: string, cwd?: string, opts?: { loom?: boolean; agent?: AgentId }): Promise<Group> {
     const marks: Record<string, number> = {}
     let last = performance.now()
     const lap = (k: string) => {
@@ -888,10 +810,7 @@ export class App {
 
     const session = warm?.session ?? this.makeSession(profileId)
     if (cwd) session.initialCwd = cwd
-    // Native canvas (canvas.native): a Claude tab's Claude Code is started by the canvas,
-    // in structured mode, not by the shell. The shell stays a plain shell underneath.
-    const native = opts?.agent === 'claude' && opts?.loom !== false && this.config.canvas?.native === true
-    if (opts?.agent && !native) session.startAgent = opts.agent
+    if (opts?.agent) session.startAgent = opts.agent
     session.tabId = group.id
     if (!warm) group.add(session)
     // Every tab is a Loom tab: the shell, with a canvas over its output space for when an
@@ -909,8 +828,8 @@ export class App {
           this.config = { ...this.config, agentView: view }
           window.ember.saveConfig(this.config)
         },
-        nativeSession: () => this.saveNativeTabs(),
-      }, native ? { ...(cwd ? { cwd } : {}), ...(opts?.resume ? { resume: opts.resume } : {}) } : null)
+        changed: () => this.syncTabs(),
+      })
     }
     lap('session')
     sound.play('open')
@@ -1236,12 +1155,9 @@ export class App {
     const group = this.groups[idx]!
     sound.play('close')
     this.groups.splice(idx, 1)
-    const wasNative = !!group.loom?.nativeSession
     group.dispose()
     window.ember.panel.forget(id)
     this.claudeByTab.delete(id)
-    // A Claude tab closed on purpose does not come back at the next start.
-    if (wasNative) this.saveNativeTabs()
 
     if (this.groups.length === 0) {
       // Nothing left to show: the window stays, with the empty state and the sidebar's
@@ -2079,13 +1995,14 @@ export class App {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
-      // A native tab is Claude Code in a folder, not the shell that idles under its canvas.
-      const native = !g.isSplit ? g.loom?.nativeCard : null
-      const folder = native ? folderName(native.folder) : ''
+      // A tab running Claude Code is Claude in a folder ("name · folder" once the session is
+      // named), not the shell under its canvas.
+      const cc = !g.isSplit ? g.loom?.claudeCard : null
+      const folder = cc ? folderName(cc.folder) : ''
       return {
         id: g.id,
-        title: native && !g.customTitle ? `Claude Code${folder ? ` · ${folder}` : ''}${native.cli ? ' (CLI)' : ''}` : g.displayTitle,
-        subtitle: native ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
+        title: cc && !g.customTitle ? `${cc.title || 'Claude Code'}${folder ? ` · ${folder}` : ''}${cc.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        subtitle: cc ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.
         accent: g.isTodo
@@ -2100,8 +2017,7 @@ export class App {
         git: this.gitByCwd.get(cwd) ?? null,
         url: focused?.urls[focused.urls.length - 1] ?? null,
         unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
-        // A native tab has no status line: its model and context come from the canvas's own bar.
-        claude: native?.status ?? (this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null),
+        claude: this.config.claude.statusLine ? (this.claudeByTab.get(g.id) ?? null) : null,
       }
     })
     this.sidebar.render(models, this.activeId)
@@ -2199,8 +2115,8 @@ export class App {
           const img = items.find((i) => i.types.some((t) => t.startsWith('image/')))
           if (img && !text) {
             const blob = await img.getType(img.types.find((t) => t.startsWith('image/'))!)
+            void blob
             window.ember.write(session.id, '\x1bv')
-            group.loom.pastedImage(URL.createObjectURL(blob))
             return
           }
         } catch {
@@ -2299,7 +2215,8 @@ export class App {
   private commandTable(): CommandSpec[] {
     return [
       ...this.contextRows(),
-      { id: 'new', group: 'Session', title: 'New session', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'canvas'], run: (a) => void this.newAgentSession(a.join(' ') || undefined) },
+      { id: 'new', group: 'Session', title: 'New terminal tab', hint: 'Ctrl+Shift+T', cli: 'new [dir]', aliases: ['n', 'terminal', 'shell'], run: (a) => void this.newGroup(undefined, a.join(' ') || undefined) },
+      { id: 'claude', group: 'Session', title: 'New Claude tab', cli: 'claude [dir]', aliases: ['cc', 'canvas'], run: (a) => void this.newClaudeTab(a.join(' ') || undefined) },
       {
         id: 'computer-use',
         group: 'Session',
@@ -2878,7 +2795,7 @@ export class App {
 
         if (ctrl && e.shiftKey && e.code === 'KeyT') {
           e.preventDefault()
-          void this.newAgentSession()
+          void this.newGroup(undefined, active?.cwd || undefined)
           return
         }
         // Ctrl+Shift+L was "new Loom session"; every session is one now, so it opens one

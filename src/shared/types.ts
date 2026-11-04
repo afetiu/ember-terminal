@@ -289,80 +289,44 @@ export interface ClaudeStatus {
   at: number
 }
 
-/**
- * A Claude tab the canvas drives directly (Settings › Agent › "Canvas drives Claude
- * directly"): Claude Code in its structured stdio mode, hosted by main, one process per
- * tab. See docs/specs/canvas-native.md.
- */
-export interface ClaudeStartOptions {
-  /** The tab's folder. Defaults to the shell profile's. */
-  cwd?: string
-  /** Pick up this session instead of starting a new one. */
-  resume?: string
-}
-
-export interface ClaudeStartResult {
-  ok: boolean
-  /** The session's id, known before Claude Code says it (`--session-id`). */
-  sessionId?: string
-  pid?: number
-  error?: string
-}
-
-/** A picture to send with a message, already read and base64'd. */
+/** A picture attached in a canvas's composer, read and base64'd. */
 export interface ClaudeImage {
   mediaType: string
   data: string
 }
 
-/** How a message is sent (native canvas). */
-export interface ClaudeSendOptions {
-  /** The message's uuid, chosen by the canvas so it can show the message before Claude Code echoes it. */
-  uuid?: string
-  /**
-   * Text blocks that go before the message: what `!` commands printed since the last
-   * message, as `<bash-input>`/`<bash-stdout>` — the way Claude Code's own bash mode
-   * hands them to the model.
-   */
-  context?: string[]
+/** One `/` command, as Claude Code lists it (`initialize.commands`) or a project defines it. */
+export interface SlashCommandInfo {
+  name: string
+  description: string
+  argumentHint: string
+  aliases?: string[]
 }
-
-/** Control requests the canvas may send to its tab's Claude Code. Main refuses any other. */
-export type ClaudeControlRequest =
-  | { subtype: 'file_suggestions'; query: string }
-  | { subtype: 'cancel_async_message'; message_uuid: string }
-  | { subtype: 'interrupt'; cancel_queued?: boolean }
-  | { subtype: 'set_permission_mode'; mode: string }
-  | { subtype: 'get_context_usage' }
-  /** A model from `initialize.models` (its `value`), or null for the default. */
-  | { subtype: 'set_model'; model: string | null }
-  /** Only the effort level: the one flag setting the bar changes. */
-  | { subtype: 'apply_flag_settings'; settings: { effortLevel: string } }
 
 /**
- * A native tab, as remembered across restarts (`native-tabs.json` under EMBER_HOME): the
- * Claude session it held and its folder. No session id = the tab never started a turn,
- * and comes back as a fresh session in that folder.
+ * What a Claude tab's canvas offers beyond the TUI it wraps: the command list and the
+ * models, from one cached structured run of Claude Code (src/main/claudeCatalog.ts).
  */
-export interface NativeTabState {
-  sessionId: string
-  cwd: string
+export interface ClaudeCatalog {
+  at: number
+  version: string
+  commands: SlashCommandInfo[]
+  models: Array<{ value: string; displayName: string; description: string }>
 }
 
-/** What a tab's Claude Code process said, as main passes it on. */
-export type ClaudeEvent =
-  /** `initialize` answered: Claude Code is up and taking messages. */
-  | { tabId: string; kind: 'ready'; info: Record<string, unknown> }
-  /** One stdout message that is not part of a control exchange: assistant, user, system, stream_event, result… */
-  | { tabId: string; kind: 'message'; msg: Record<string, unknown> }
-  /** Claude Code asks before a tool runs (`can_use_tool`), or an MCP server asks for input (`elicitation`). Must be answered. */
-  | { tabId: string; kind: 'ask'; requestId: string; request: Record<string, unknown> }
-  /** It withdrew a question it asked (after an interrupt, say). */
-  | { tabId: string; kind: 'cancel'; requestId: string }
-  | { tabId: string; kind: 'stderr'; text: string }
-  /** Something went wrong on Ember's side: the process would not start, a request timed out. */
-  | { tabId: string; kind: 'error'; text: string }
-  | { tabId: string; kind: 'exit'; code: number | null; signal: string | null }
+/**
+ * One of Claude Code's hooks firing in a tab (resources/hook.mjs, through the bridge). A
+ * `blocking` one (PermissionRequest) waits for `hooks.answer(id, …)`.
+ */
+export interface HookEvent {
+  tabId: string
+  id: string
+  event: string
+  /** When the hook ran, by Ember's clock: async hooks can land out of order. */
+  at: number
+  input: Record<string, unknown>
+  blocking: boolean
+}
 
 export interface ClaudeConfig {
   /** Poll the plan's rate limits and show them beside CPU and memory. */
@@ -477,12 +441,6 @@ export interface EmberConfig {
   agent: AgentConfig
   /** How an agent tab shows by default: Ember's canvas, or the agent's own screen. Remembered. */
   agentView?: 'canvas' | 'cli'
-  /**
-   * `native`: a Claude tab on the canvas runs Claude Code in its structured mode and the
-   * canvas draws it from data, instead of reading its screen. Off by default while it is
-   * a preview (docs/specs/canvas-native.md).
-   */
-  canvas?: { native?: boolean }
   /** Ember Brain: one memory, instructions and skills for every agent. On unless turned off. */
   brain?: { sync: boolean }
   /**
@@ -888,25 +846,25 @@ export interface EmberBridge {
   /** What the Claude session in a tab reports through its status line. */
   claude: {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
-    /** Native canvas: start this tab's Claude Code process (structured mode). */
-    start(tabId: string, opts: ClaudeStartOptions): Promise<ClaudeStartResult>
-    /** One message from the person, with pictures if any. Held until Claude Code is up. */
-    send(tabId: string, text: string, images?: ClaudeImage[], opts?: ClaudeSendOptions): void
-    /** Stop the turn in progress. Resolves with Claude Code's answer, or an error. */
-    interrupt(tabId: string): Promise<{ ok: boolean; error?: string }>
-    /** One of the control requests the canvas is allowed (menus, the queue, the mode). */
-    control(tabId: string, request: ClaudeControlRequest): Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>
-    /** Answer a question Claude Code asked (an `ask` event), by its request id. */
-    answer(tabId: string, requestId: string, response: Record<string, unknown>): void
-    /** End the process: stdin closed, then killed if it lingers. Resolves once it has gone. */
-    stop(tabId: string): Promise<void>
-    onEvent(cb: (e: ClaudeEvent) => void): () => void
-    /** The native tabs, in order, to bring back on the next start. */
-    saveTabs(tabs: NativeTabState[]): void
-    savedTabs(): Promise<NativeTabState[]>
-    /** The session a tab's Claude last reported (panel server or status line): '' if none. */
-    boundSession(tabId: string): Promise<string>
+    /** The `/` commands and models for a Claude tab's canvas; `cwd` adds the project's own. */
+    catalog(cwd?: string): Promise<ClaudeCatalog>
   }
+  /** Claude Code's hooks in a tab: what its session does, and the permission cards. */
+  hooks: {
+    onEvent(cb: (e: HookEvent) => void): () => void
+    /** A held request went away unanswered (Claude Code stopped waiting). */
+    onGone(cb: (e: { tabId: string; id: string }) => void): () => void
+    /** This tab's canvas answers permission requests (or no longer does). */
+    hooked(tabId: string, on: boolean): void
+    /** The hook output for a blocking event; null lets Claude Code ask in its own screen. */
+    answer(id: string, output: Record<string, unknown> | null): void
+  }
+  files: {
+    /** `@` completion: paths under a folder that match, folders with a trailing slash. */
+    search(cwd: string, query: string): Promise<string[]>
+  }
+  /** Put a picture (a png or jpeg data: URL) on the clipboard, for Claude Code's Alt+V. */
+  clipboardImage(dataUrl: string): Promise<boolean>
   window: {
     minimize(): void
     toggleMaximize(): void

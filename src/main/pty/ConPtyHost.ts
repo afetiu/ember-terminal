@@ -225,6 +225,10 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     '  }',
     // The status line rides in the same way: a settings file main wrote, holding only a
     // `statusLine` command that reports to the bridge. A path, never text — see above.
+    // The announcement, as the other agents' shims make it (otherAgentShims): the tab's
+    // canvas comes up over Claude Code's screen while it runs, and goes with the next prompt.
+    // Not for a one-shot `claude -p`, which prints and exits like any command.
+    "  if (-not ($args -contains '-p' -or $args -contains '--print')) { [Console]::Write(\"$([char]27)]133;E;ember-agent=claude$([char]7)\") }",
     '  if ($env:EMBER_SETTINGS) { & $real.Source --mcp-config $env:EMBER_MCP_CONFIG --settings $env:EMBER_SETTINGS @args; return }',
     '  & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args',
     '}',

@@ -136,14 +136,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
   <ul class="chips" aria-label="Supported agent CLIs">
     <li>Claude Code</li><li>Codex CLI</li><li>Gemini CLI</li><li>Cursor Agent</li><li>OpenCode</li><li>Copilot CLI</li><li>Qwen Code</li><li>Amp</li><li>Aider</li><li>Crush</li>
   </ul>
-  <h3>The agent chip and +</h3>
-  <p>At the top of the sidebar sits a chip with the current agent, for example <b>Claude Code</b>. Next to it is <b>+</b>.</p>
+  <h3>A terminal first</h3>
   <ul>
-    <li><b>+</b> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>) opens a new session with the current agent. The agent starts by itself and the session opens on its canvas.</li>
-    <li>Click the chip to switch agents. The next <b>+</b> uses the one you picked. Ember remembers it.</li>
-    <li><b>Add more agents…</b> at the bottom of the chip's menu opens Settings › Agent. It shows which CLIs are installed and how to install the others.</li>
+    <li><b>+</b> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>) opens a new terminal tab: a plain PowerShell.</li>
+    <li>Run <code>claude</code> in it and the tab becomes Claude Code's canvas. You type in Ember's input box at the bottom; permission requests, questions and plans come up as cards above it. When Claude Code exits, the tab is a terminal again.</li>
+    <li><kbd>Ctrl</kbd><kbd>K</kbd> › <b>New Claude tab</b> opens a terminal that starts <code>claude</code> by itself.</li>
+    <li>Settings › Agent shows which CLIs are installed and how to install the others.</li>
   </ul>
-  <p>Claude Code and Codex get the most: their replies, tool calls and objects are read from their own session logs, and Ember docks a shared input box under the canvas. The other agents run in their own screen with Ember's tools available to them.</p>
+  <p>Claude Code and Codex get the most: their replies, tool calls and objects are read from their own session logs. The other agents run in their own screen with Ember's tools available to them.</p>
 </section>
 
 <section aria-labelledby="sessions">
@@ -214,7 +214,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
 <section aria-labelledby="cli-view">
   <h2 id="cli-view">Canvas or CLI view <a class="anchor" href="#cli-view" aria-label="Link to this section">#</a></h2>
   <p>The switch at the top right, <b>Canvas | CLI</b>, shows either the canvas or the agent's own terminal screen. <kbd>Ctrl</kbd><kbd>`</kbd> switches too. The switch stays in the same place and size in both views.</p>
-  <p>Ember remembers your choice and opens new sessions in the same view. Whatever you type reaches the same agent either way.</p>
+  <p>Both views show the same running agent: switching restarts nothing and is instant. Ember remembers your choice. If Claude Code shows something the canvas has no card for (a picker, a sign-in), the canvas says so with an <b>Open CLI</b> button.</p>
 </section>
 
 <section aria-labelledby="keyboard">

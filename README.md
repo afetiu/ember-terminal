@@ -2,7 +2,7 @@
 
 <h1 align="center">Ember</h1>
 
-<p align="center">Your coding agent, on a canvas. A free Windows app for Claude Code, Codex and the other agent CLIs you already use.</p>
+<p align="center">A terminal that wraps your agent CLIs in a canvas. A free Windows app for Claude Code, Codex and the other agent CLIs you already use.</p>
 
 ![Fixing a bug in Ember: the agent answers with a chart, the chart is pinned to the side, a line of code is changed from its right-click menu while the tests run, and one click opens the pull request.](docs/media/ember-demo.gif)
 
@@ -22,7 +22,7 @@ Free · MIT · no account · no telemetry · Windows 10/11 x64
   about the part you clicked, and the answer comes right there without interrupting the
   session. Say what to change instead, and the agent changes it in place.
 - **Canvas or CLI.** One switch, ``Ctrl+` ``, between the canvas and the agent's own screen.
-  It stays in the same place in both views, and Ember remembers your pick.
+  Both show the same running agent, so the switch is instant and nothing restarts.
 - **Keyboard first.** `Ctrl+↑` walks the objects, `Enter` opens one full screen, `Esc`
   is always the way back, and `Ctrl+K` does the rest.
 - **Notes and a todo list, outside sessions.** A sticky note with `Ctrl+Shift+N`, a todo
@@ -39,9 +39,11 @@ exactly as in any other terminal:
 
 **Claude Code · Codex CLI · Gemini CLI · Cursor Agent · OpenCode · Copilot CLI · Qwen Code · Amp · Aider · Crush**
 
-The first run finds the ones you have installed and checks that each one answers. The chip
-at the top of the sidebar picks the agent; `+` (or `Ctrl+Shift+T`) opens a session with it,
-straight on its canvas.
+The first run lists the ones you have installed. Every tab starts as a plain terminal
+(`+` or `Ctrl+Shift+T`). Run `claude` in it and the tab becomes Claude Code's canvas: your
+messages go in through Ember's own input box, permission requests and questions come up as
+cards, and the reply is drawn on the canvas. Exit Claude Code and the tab is a terminal
+again. `Ctrl+K` › **New Claude tab** opens a terminal that starts `claude` by itself.
 
 Claude Code and Codex get the most: their replies, tool calls and objects are read from
 their own session logs. The others run in their own screen, with Ember's tools available

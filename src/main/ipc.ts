@@ -18,7 +18,7 @@ import { deskState, haltDesk, isOverlayWindow, onDeskState, overlayState, resume
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
-import { registerClaudeHost } from './claudeHost.js'
+import { catalog, registerClaudeCatalog } from './claudeCatalog.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import type { PtyHost } from './pty/PtyHost.js'
@@ -129,8 +129,10 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   // open tab by itself.
   const notesBin = installNotesCli()
   installSkills()
-  // Native canvas: Claude Code in structured mode, one process per tab (canvas.native).
-  registerClaudeHost([notesBin])
+  // A Claude tab's canvas: its / menu, @ files, image pastes and permission cards.
+  registerClaudeCatalog()
+  // Warm the command list (a short structured run, cached a day) before a canvas asks.
+  setTimeout(() => void catalog().catch(() => {}), 8000)
   const unwatchNotes = watchNotes((id) => broadcast('ember:notes:changed', { id }))
   ipcMain.on('ember:cmd:reply', (_e, reqId: string, r: { result: string; error?: string }) => resolveCmd(reqId, r))
   ipcMain.handle('ember:todo:read', () => readTodo())
@@ -154,7 +156,14 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
       cwd: resolveHome(req.cwd ?? profile.cwd),
       shellIntegration: config.shellIntegration,
       // Only a known agent's own command, never free text from the renderer.
-      ...(req.agent && req.agent in AGENTS ? { startup: AGENTS[req.agent as AgentId].bin } : {}),
+      ...(req.agent && req.agent in AGENTS
+        ? {
+            startup:
+              AGENTS[req.agent as AgentId].bin +
+              // Probes only: flags for a real run (`--model haiku`), from main's own environment, never the renderer.
+              (req.agent === 'claude' && process.env['EMBER_CLAUDE_ARGS'] && /^[\w\s=.-]+$/.test(process.env['EMBER_CLAUDE_ARGS']) ? ` ${process.env['EMBER_CLAUDE_ARGS']}` : ''),
+          }
+        : {}),
       bin: [notesBin],
       // A Loom tab says so to everything it starts: the panel MCP server reads it and
       // describes a canvas instead of a side panel.

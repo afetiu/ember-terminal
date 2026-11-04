@@ -889,7 +889,7 @@ export class Session implements ActivitySource {
 
   /**
    * Where the keyboard goes instead of this terminal, when something else is the tab's
-   * input: a native canvas tab (canvas.native) types into Ember's own box, never the shell.
+   * input: a Claude tab on its canvas types into Ember's composer, never into Claude Code's screen.
    */
   focusInstead: (() => void) | null = null
 

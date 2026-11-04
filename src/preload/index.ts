@@ -26,9 +26,8 @@ import type {
   CanvasAnnotate,
   CanvasAnnotateResult,
   CanvasSteps, EmberCost,
-  ClaudeEvent,
-  NativeTabState,
-  ClaudeStartResult } from '../shared/types.js'
+  ClaudeCatalog,
+  HookEvent } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -142,17 +141,18 @@ const bridge: EmberBridge = {
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
-    start: (tabId, opts) => ipcRenderer.invoke('ember:claude:start', tabId, opts) as Promise<ClaudeStartResult>,
-    send: (tabId, text, images, opts) => ipcRenderer.send('ember:claude:send', tabId, text, images, opts),
-    control: (tabId, request) => ipcRenderer.invoke('ember:claude:control', tabId, request) as Promise<{ ok: boolean; response?: Record<string, unknown>; error?: string }>,
-    interrupt: (tabId) => ipcRenderer.invoke('ember:claude:interrupt', tabId) as Promise<{ ok: boolean; error?: string }>,
-    answer: (tabId, requestId, response) => ipcRenderer.send('ember:claude:answer', tabId, requestId, response),
-    stop: (tabId) => ipcRenderer.invoke('ember:claude:stop', tabId) as Promise<void>,
-    onEvent: (cb) => on<ClaudeEvent>('ember:claude:event', cb),
-    saveTabs: (tabs) => ipcRenderer.send('ember:claude:saveTabs', tabs),
-    savedTabs: () => ipcRenderer.invoke('ember:claude:savedTabs') as Promise<NativeTabState[]>,
-    boundSession: (tabId) => ipcRenderer.invoke('ember:claude:bound', tabId) as Promise<string>,
+    catalog: (cwd) => ipcRenderer.invoke('ember:claude:catalog', cwd) as Promise<ClaudeCatalog>,
   },
+  hooks: {
+    onEvent: (cb) => on<HookEvent>('ember:hook:event', cb),
+    onGone: (cb) => on<{ tabId: string; id: string }>('ember:hook:gone', cb),
+    hooked: (tabId, on) => ipcRenderer.send('ember:hook:hooked', tabId, on),
+    answer: (id, output) => ipcRenderer.send('ember:hook:answer', id, output),
+  },
+  files: {
+    search: (cwd, query) => ipcRenderer.invoke('ember:files:search', cwd, query) as Promise<string[]>,
+  },
+  clipboardImage: (dataUrl) => ipcRenderer.invoke('ember:clipboard:image', dataUrl) as Promise<boolean>,
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),
     toggleMaximize: () => ipcRenderer.send('ember:win:toggleMaximize'),

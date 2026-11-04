@@ -1,10 +1,10 @@
 import { escapeHtml, renderMarkdown } from './markdown'
 
 /**
- * What Claude Code asks the person, as cards over the input (native mode): a tool it wants
- * to run, its multiple-choice questions, the plan it wants approved, and an MCP server's
- * request for input. Phase 3 of docs/specs/canvas-native.md; the wire format is in
- * docs/specs/claude-protocol-reference.md §3.2 and §5.6.
+ * What Claude Code asks the person, as cards over the composer: a tool it wants to run,
+ * its multiple-choice questions, the plan it wants approved. They arrive as Claude Code's
+ * PermissionRequest hook (ClaudeTui); the answers are the hook's decision, in the same
+ * shape the SDK's canUseTool takes (behavior, updatedInput, updatedPermissions, message).
  *
  * Every card stays until it is answered: an unanswered request holds the turn. Esc is
  * always the "no" of the card on top. Keys: the number on a button presses it, Enter is the
