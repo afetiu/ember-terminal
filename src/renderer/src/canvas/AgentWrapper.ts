@@ -34,6 +34,8 @@ export interface WrapperState {
   /** The session's name (`/rename`), if it has one. */
   title: string
   sessionId: string
+  /** While starting: what the start is doing, in words ("Starting Claude Code · connecting 12 MCP servers… 4s"). */
+  boot?: string
 }
 
 /** What the host (LoomView) gives a wrapper. */

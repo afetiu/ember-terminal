@@ -249,7 +249,56 @@ export function searchFiles(cwd: string, query: string): string[] {
 
 // ------------------------------------------------------------------ IPC
 
+/**
+ * How many MCP servers Claude Code will start in `cwd`, as far as its config files say: the
+ * user's and this folder's (~/.claude.json), the project's .mcp.json, the enabled plugins'
+ * own, the claude.ai connectors it has connected before, and Ember's panel. It is what the
+ * canvas says while the session starts ("connecting 12 MCP servers…") — most of the wait on
+ * a machine with many — so a close count is enough. Read when a session starts, not polled.
+ */
+export function mcpServerCount(cwd: string): number {
+  const read = (file: string): Json | null => {
+    try {
+      return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Json) : null
+    } catch {
+      return null
+    }
+  }
+  const keys = (o: unknown): string[] => (o && typeof o === 'object' ? Object.keys(o as Json) : [])
+  const names = new Set<string>()
+  const home = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude')
+  const state = read(join(homedir(), '.claude.json')) ?? {}
+  for (const k of keys(state['mcpServers'])) names.add(`user:${k}`)
+  const norm = (p: string) => p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase()
+  const projects = (state['projects'] ?? {}) as Record<string, Json>
+  const project = Object.entries(projects).find(([p]) => norm(p) === norm(cwd))?.[1] ?? {}
+  for (const k of keys(project['mcpServers'])) names.add(`local:${k}`)
+  const off = new Set([...((project['disabledMcpServers'] as string[] | undefined) ?? []), ...((project['disabledMcpjsonServers'] as string[] | undefined) ?? [])])
+  for (const k of keys((read(join(cwd, '.mcp.json')) ?? {})['mcpServers'])) if (!off.has(k)) names.add(`project:${k}`)
+  // Plugins: enabled in any settings file, installed where installed_plugins.json says.
+  const enabled = new Set<string>()
+  for (const f of [join(home, 'settings.json'), join(home, 'settings.local.json'), join(cwd, '.claude', 'settings.json'), join(cwd, '.claude', 'settings.local.json')]) {
+    const s = read(f)
+    for (const [k, v] of Object.entries((s?.['enabledPlugins'] ?? {}) as Record<string, unknown>)) {
+      if (v) enabled.add(k)
+      else enabled.delete(k)
+    }
+  }
+  const installed = ((read(join(home, 'plugins', 'installed_plugins.json')) ?? {})['plugins'] ?? {}) as Record<string, unknown>
+  for (const id of enabled) {
+    const at = ([] as Array<{ installPath?: string }>).concat((installed[id] as never) ?? [])[0]?.installPath
+    if (!at) continue
+    const own = read(join(at, '.mcp.json'))
+    const servers = own ? (own['mcpServers'] ?? own) : (read(join(at, '.claude-plugin', 'plugin.json')) ?? {})['mcpServers']
+    for (const k of keys(servers)) if (!off.has(k)) names.add(`plugin:${id}:${k}`)
+  }
+  for (const k of (state['claudeAiMcpEverConnected'] as string[] | undefined) ?? []) names.add(`claude.ai:${k}`)
+  // Ember's own panel server, passed with --mcp-config.
+  return names.size + 1
+}
+
 export function registerClaudeCatalog(): void {
+  ipcMain.handle('ember:claude:mcpCount', (_e, cwd: unknown) => mcpServerCount(typeof cwd === 'string' ? cwd : ''))
   ipcMain.handle('ember:claude:catalog', async (_e, cwd: unknown) => {
     const c = await catalog()
     const own = projectCommands(typeof cwd === 'string' ? cwd : '')

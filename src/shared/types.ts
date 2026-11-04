@@ -254,7 +254,7 @@ export interface ClaudeCatalog {
 }
 
 /**
- * One of Claude Code's hooks firing in a tab (resources/hook.mjs, through the bridge). A
+ * One of Claude Code's hooks firing in a tab (its http hooks, POSTed to the bridge). A
  * `blocking` one (PermissionRequest) waits for `hooks.answer(id, …)`.
  */
 export interface HookEvent {
@@ -739,6 +739,8 @@ export interface EmberBridge {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
     /** The `/` commands and models for a Claude tab's canvas; `cwd` adds the project's own. */
     catalog(cwd?: string): Promise<ClaudeCatalog>
+    /** How many MCP servers Claude Code starts in `cwd`, from its config files (for "connecting N MCP servers…"). */
+    mcpCount(cwd: string): Promise<number>
   }
   /** Claude Code's hooks in a tab: what its session does, and the permission cards. */
   hooks: {
