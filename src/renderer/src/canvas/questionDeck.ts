@@ -1,7 +1,7 @@
 /**
- * Questions, answered one at a time: the card Claude Code and Claude's apps use for
- * AskUserQuestion, shared by the canvas's two kinds of question — Claude's real
- * AskUserQuestion (Asks.ts) and the questions a reply ends with (questions.ts).
+ * Questions, answered one at a time, in the shape Claude Code and Claude's apps give
+ * AskUserQuestion: the card for the questions a reply ends with (questions.ts). Claude's
+ * real AskUserQuestion is answered in its own CLI, below the canvas.
  *
  * Each question is a page: its text, its options as full-width rows (key at the left,
  * label and description, a check when chosen) and a last "Other…" row that is a field.

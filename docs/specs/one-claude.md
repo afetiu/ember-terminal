@@ -1,5 +1,8 @@
 # One Claude, instant switch
 
+> **Superseded 2026-11-05 by [hybrid.md](hybrid.md).** Ember's composer, menus, queue and cards
+> are gone; the real CLI sits at the bottom of the tab and the canvas shows its output above.
+
 Decided by the owner on 2026-11-04. Supersedes `canvas-native.md` (the structured-mode
 canvas) and the screen-cropping canvas in `loom.md`.
 
@@ -26,7 +29,8 @@ canvas) and the screen-cropping canvas in `loom.md`.
 | `!cmd` | `!` (bash mode), then the command, then `\r` |
 | Interrupt | `Esc` |
 | Send now (one queued message) | the message (Claude Code queues it mid-turn), then `Ctrl+X Ctrl+S` |
-| Trust this folder | `Down` until the screen shows `❯` on "Yes, I trust this folder", then ``; No is `Esc` |
+| Trust this folder | `Down` until the screen shows `❯` on "Yes, I trust this folder", then `
+`; No is `Esc` |
 | Mode | `Shift+Tab` (`\x1b[Z`); the mode is read back from the mode line |
 | Model | `/model <value>` from the bar's picker |
 

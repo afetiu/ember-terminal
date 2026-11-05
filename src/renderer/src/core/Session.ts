@@ -73,6 +73,16 @@ export class Session implements ActivitySource {
   private ro: ResizeObserver | null = null
   private resizeTimer: number | null = null
   private lastSize = { cols: 0, rows: 0 }
+  /** Keep the screen still (no arrival rise, no rubber band): an agent's CLI on a split tab. */
+  setStill(on: boolean): void {
+    if (!this.scroller || this.scroller.still === on) return
+    this.scroller.still = on
+  }
+
+  /** The size the PTY was last given, for probes. */
+  get ptySize(): { cols: number; rows: number } {
+    return { ...this.lastSize }
+  }
   private disposed = false
 
   title: string
@@ -887,17 +897,7 @@ export class Session implements ActivitySource {
     return lines.join('\n').replace(/\n+$/, '')
   }
 
-  /**
-   * Where the keyboard goes instead of this terminal, when something else is the tab's
-   * input: a Claude tab on its canvas types into Ember's composer, never into Claude Code's screen.
-   */
-  focusInstead: (() => void) | null = null
-
   focus(): void {
-    if (this.focusInstead) {
-      this.focusInstead()
-      return
-    }
     this.term.focus()
     this.cursor?.setFocused(true)
     this.cursor?.wake()

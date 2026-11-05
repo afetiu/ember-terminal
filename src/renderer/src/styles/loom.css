@@ -6,13 +6,96 @@
    one. Richness is reserved for what carries meaning: a diagram, a picture, a page.
    ========================================================================== */
 
-.ember-pane.is-loom {
-  /* The crop and the bottom anchoring are a translate and a clip on the pane; both
-     glide rather than jump when the dock grows (a permission prompt) or the prompt moves. */
+/* An agent tab: the canvas above, the agent's real terminal below. The terminal's box is
+   the pane with its top moved down (host.ts); the session fits the PTY to that box. Only
+   the box's top moves — never a transform, a clip or a mask on the terminal. */
+.ember-pane.is-loom.is-gliding,
+.loom.is-gliding,
+.loom-divider.is-gliding {
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ember-pane.is-loom.is-gliding {
+  transition-property: top;
+}
+.loom.is-gliding {
+  transition-property: height;
+}
+.loom-divider.is-gliding {
+  transition-property: top;
+}
+
+.loom-divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 9px;
+  z-index: 6;
+  display: none;
+  cursor: row-resize;
+  touch-action: none;
+}
+.loom-divider.is-on {
+  display: block;
+}
+/* The seam: a hairline of the glass, a little brighter where the grip is. */
+.loom-divider-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 4px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--c-fg) 12%, transparent) 12%,
+    color-mix(in srgb, var(--c-fg) 12%, transparent) 88%,
+    transparent
+  );
+  transition: background 140ms;
+}
+.loom-divider-grip {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 34px;
+  height: 5px;
+  margin-left: -17px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c-fg) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 6%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0.55;
   transition:
-    transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    clip-path 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
+    opacity 140ms,
+    background 140ms,
+    width 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-left 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-divider:hover .loom-divider-grip,
+.loom-divider.is-dragging .loom-divider-grip {
+  opacity: 1;
+  width: 48px;
+  margin-left: -24px;
+  background: color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+.loom-divider:hover .loom-divider-line,
+.loom-divider.is-dragging .loom-divider-line {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--c-accent) 35%, transparent) 20%,
+    color-mix(in srgb, var(--c-accent) 35%, transparent) 80%,
+    transparent
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .ember-pane.is-loom.is-gliding,
+  .loom.is-gliding,
+  .loom-divider.is-gliding {
+    transition: none;
+  }
 }
 
 .loom {
@@ -976,7 +1059,6 @@
   display: block;
 }
 
-
 /* ---------------------------------------------------------------- ask about this */
 
 .loom-chip {
@@ -1254,114 +1336,6 @@
 
 /* ---------------------------------------------------------------- the input, framed */
 
-/* Claude Code's own prompt, keys and all, with its rules masked away and this drawn
-   round it instead: still monospace, still a caret, just held in a quieter shape. */
-.loom-frame-box {
-  position: absolute;
-  z-index: 3;
-  display: none;
-  pointer-events: none;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
-  background: color-mix(in srgb, var(--c-fg) 3%, transparent);
-  transition:
-    top 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 200ms,
-    box-shadow 200ms;
-}
-.loom-frame-box.is-on {
-  display: block;
-}
-.loom-frame-box.is-focus {
-  border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--c-accent) 12%, transparent),
-    0 10px 40px -18px color-mix(in srgb, var(--c-accent) 60%, transparent);
-}
-
-.loom-bar {
-  position: absolute;
-  z-index: 5;
-  display: none;
-  align-items: center;
-  gap: 14px;
-  padding: 0 4px;
-  color: var(--c-fg);
-  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.loom-bar.is-on {
-  display: flex;
-}
-.loom-bar > span {
-  opacity: 0.62;
-}
-.loom-bar-mode {
-  border: 1px solid color-mix(in srgb, var(--c-fg) 22%, transparent);
-  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  color: var(--c-fg);
-  font: inherit;
-  padding: 3px 9px;
-  border-radius: 99px;
-  cursor: pointer;
-  letter-spacing: 0.03em;
-}
-.loom-bar-mode::before {
-  content: '⏵⏵ ';
-  opacity: 0.7;
-}
-.loom-bar-mode.is-default::before {
-  content: '';
-}
-.loom-bar-mode.is-bypass {
-  color: #ff5c7a;
-  border-color: rgba(255, 92, 122, 0.5);
-  background: rgba(255, 92, 122, 0.1);
-}
-.loom-bar-mode.is-edits {
-  color: #f5c451;
-  border-color: rgba(245, 196, 81, 0.5);
-  background: rgba(245, 196, 81, 0.1);
-}
-.loom-bar-mode.is-plan,
-.loom-bar-mode.is-auto {
-  color: #5ad1e6;
-  border-color: rgba(90, 209, 230, 0.5);
-  background: rgba(90, 209, 230, 0.1);
-}
-.loom-bar-mode:hover {
-  filter: brightness(1.2);
-}
-
-.loom-bar > .loom-bar-model {
-  opacity: 0.85;
-}
-.loom-bar-ctx {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.loom-bar-ctx i {
-  display: inline-block;
-  width: 54px;
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--c-accent) var(--p), color-mix(in srgb, var(--c-fg) 14%, transparent) var(--p));
-}
-.loom-bar-ctx.is-high i {
-  background: linear-gradient(90deg, #ff5c7a var(--p), color-mix(in srgb, var(--c-fg) 14%, transparent) var(--p));
-}
-.loom-bar > .loom-bar-rest {
-  margin-left: auto;
-  opacity: 0.42;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ---------------------------------------------------------------- the sign */
 
 .loom-sign {
@@ -1500,11 +1474,6 @@
   border-bottom: 2px solid color-mix(in srgb, var(--c-accent) 60%, transparent);
   border-radius: 0 0 4px 0;
   pointer-events: none;
-}
-
-.loom-bar > .loom-bar-ember {
-  opacity: 0.7;
-  cursor: help;
 }
 
 /* ---------------------------------------------------------------- placing objects */
@@ -1681,26 +1650,16 @@
 }
 .loom-piece-acts button,
 .loom-sign button,
-.loom-menu button,
-.loom-bar-mode {
+.loom-menu button {
   transition:
     background-color 140ms,
     color 140ms,
     opacity 140ms,
     filter 140ms;
 }
-.loom-frame-box {
-  transition:
-    top 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms,
-    box-shadow 220ms;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .loom *,
-  .loom-frame-box,
-  .loom-bar {
+  .loom * {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
@@ -1719,8 +1678,6 @@
    ========================================================================== */
 
 .loom,
-.loom-bar,
-.loom-frame-box,
 .loom-modal,
 .loom-rawpill {
   --l-ink: color-mix(in srgb, var(--c-fg) 14%, #e7e4df);
@@ -1748,8 +1705,6 @@
   --l-r-ctl: 8px;
 }
 body.is-light .loom,
-body.is-light .loom-bar,
-body.is-light .loom-frame-box,
 body.is-light .loom-modal {
   --l-ink: color-mix(in srgb, var(--c-fg) 14%, #23211f);
   --l-strong: color-mix(in srgb, var(--c-fg) 8%, #121110);
@@ -1940,67 +1895,6 @@ body.is-light .loom-modal {
 .loom-peek-line.is-error,
 .loom-quiet-row.is-error {
   color: var(--l-err);
-}
-.loom-bar-mode.is-bypass {
-  color: var(--l-err);
-  border-color: color-mix(in srgb, var(--l-err) 45%, transparent);
-  background: color-mix(in srgb, var(--l-err) 10%, transparent);
-}
-.loom-bar-mode.is-edits {
-  color: var(--l-warn);
-  border-color: color-mix(in srgb, var(--l-warn) 45%, transparent);
-  background: color-mix(in srgb, var(--l-warn) 10%, transparent);
-}
-.loom-bar-mode.is-plan,
-.loom-bar-mode.is-auto {
-  color: var(--l-info);
-  border-color: color-mix(in srgb, var(--l-info) 45%, transparent);
-  background: color-mix(in srgb, var(--l-info) 10%, transparent);
-}
-.loom-bar-mode.is-default {
-  color: var(--l-dim);
-  border-color: var(--l-line-strong);
-  background: none;
-}
-.loom-bar-ctx i {
-  background: linear-gradient(90deg, var(--l-ink) var(--p), var(--l-line-strong) var(--p));
-}
-.loom-bar-ctx.is-high i {
-  background: linear-gradient(90deg, var(--l-warn) var(--p), var(--l-line-strong) var(--p));
-}
-
-/* ---------------------------------------------------------------- calmer chrome */
-
-.loom-bar {
-  color: var(--l-ink);
-  gap: 16px;
-}
-.loom-bar > span {
-  opacity: 1;
-  color: var(--l-faint);
-}
-.loom-bar > .loom-bar-model {
-  color: var(--l-dim);
-}
-
-.loom-bar > .loom-bar-rest {
-  opacity: 1;
-  color: var(--l-faint);
-}
-
-.loom-frame-box {
-  border-color: var(--l-line-strong);
-  background: rgba(255, 255, 255, 0.025);
-  border-radius: var(--l-r-card);
-}
-body.is-light .loom-frame-box {
-  background: rgba(0, 0, 0, 0.02);
-}
-.loom-frame-box.is-focus {
-  border-color: color-mix(in srgb, var(--c-accent) 50%, var(--l-line-strong));
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--c-accent) 10%, transparent),
-    0 12px 40px -22px color-mix(in srgb, var(--c-accent) 50%, transparent);
 }
 
 .loom-sign {
@@ -2303,20 +2197,6 @@ body.is-light .loom-frame-box {
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 24px 70px -24px rgba(0, 0, 0, 0.75);
 }
-.loom-frame-box {
-  border: 0;
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-.loom-frame-box.is-focus {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 40%, transparent),
-    0 0 0 4px color-mix(in srgb, var(--c-accent) 9%, transparent),
-    0 14px 44px -24px color-mix(in srgb, var(--c-accent) 45%, transparent);
-}
 
 /* On a light theme the glass is milk, and the rim is a shade, not a light. */
 body.is-light .loom-piece,
@@ -2350,8 +2230,7 @@ body.is-light .loom-sign {
 body.is-light .loom-code,
 body.is-light .loom-table,
 body.is-light .loom-note,
-body.is-light .loom-out,
-body.is-light .loom-frame-box {
+body.is-light .loom-out {
   background: rgba(0, 0, 0, 0.03);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
@@ -3663,136 +3542,6 @@ body.is-light .loom-rail {
 
 /* ---------------------------------------------------------------- queued messages */
 
-/* What sits right above the input box — queued messages, pasted pictures: its top is the
-   box's top, and it lifts itself by its own height. */
-.loom-above {
-  position: absolute;
-  z-index: 6;
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  transform: translateY(calc(-100% - 8px));
-  pointer-events: none;
-  /* Outside the canvas element, so it carries the canvas's tokens itself. */
-  --l-dim: color-mix(in srgb, var(--c-fg) 62%, transparent);
-  --l-faint: color-mix(in srgb, var(--c-fg) 42%, transparent);
-  --l-accent: var(--c-accent);
-  --l-mono: var(--term-font), 'Cascadia Code', Consolas, monospace;
-  --l-prose: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
-  font-family: var(--l-prose);
-  font-size: var(--l-font-size, 14px);
-  line-height: 1.5;
-}
-.loom-above.is-on {
-  display: flex;
-}
-.loom-above > * {
-  pointer-events: auto;
-}
-.loom-queue {
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 12px;
-  /* Solid: what is on the canvas behind it must not read through. */
-  background: var(--c-bg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
-}
-.loom-queue.has-items {
-  display: flex;
-}
-
-/* Pictures pasted into the prompt: thumbnails, as a chat app shows an attachment. */
-.loom-attach {
-  display: none;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.loom-attach.has-items {
-  display: flex;
-}
-.loom-attach-item {
-  position: relative;
-  margin: 0;
-  width: 84px;
-  height: 84px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--c-bg);
-  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.6), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 14%, transparent);
-  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-attach-item img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.loom-attach-item figcaption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 3px 6px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-}
-.loom-attach-item.is-wait img {
-  opacity: 0.5;
-}
-.loom-queue-item {
-  max-width: none;
-}
-.loom-queue-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 2px 4px 0 6px;
-  font-size: 0.82em;
-  color: var(--l-faint);
-}
-.loom-queue-foot button {
-  padding: 4px 12px;
-  border: 0;
-  border-radius: 8px;
-  font: 600 0.95em var(--l-prose);
-  color: var(--c-bg);
-  background: var(--l-accent);
-  cursor: pointer;
-}
-.loom-queue-foot button:hover {
-  filter: brightness(1.1);
-}
-.loom-queue-item {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.035);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  animation: loom-rise 300ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-queue-tag {
-  flex: none;
-  font: 0.72em var(--l-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--l-accent);
-  animation: loom-queue-wait 2s ease-in-out infinite;
-}
-.loom-queue-text {
-  color: var(--l-dim);
-  font-family: var(--l-mono);
-  font-size: 0.9em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 @keyframes loom-queue-wait {
   0%,
   100% {
@@ -3849,8 +3598,6 @@ body.is-light .loom-menu .loom-menu-grid button {
    ========================================================================== */
 
 .loom,
-.loom-bar,
-.loom-frame-box,
 .loom-modal,
 .loom-rawpill {
   --fs-12: 12px;
@@ -3875,8 +3622,6 @@ body.is-light .loom-menu .loom-menu-grid button {
   --focus: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
 }
 body.is-light .loom,
-body.is-light .loom-bar,
-body.is-light .loom-frame-box,
 body.is-light .loom-modal,
 body.is-light .loom-rawpill {
   --rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
@@ -3890,7 +3635,6 @@ body.is-light .loom-rawpill {
   font-size: var(--fs-14);
 }
 .loom :focus-visible,
-.loom-bar :focus-visible,
 .loom-modal :focus-visible {
   outline: none;
   box-shadow: var(--focus);
@@ -4152,7 +3896,6 @@ body.is-light .loom-rawpill {
 }
 /* Only the live glyph loops. */
 .loom-trail-item[data-age='0'] .loom-trail-dot,
-.loom-queue-tag,
 .loom-dot.is-working,
 .loom-rail.is-working::after,
 .loom-steps li.is-now .m {
@@ -4160,127 +3903,6 @@ body.is-light .loom-rawpill {
 }
 .loom-trail-item[data-age='0'] .loom-trail-dot {
   background: var(--l-dim);
-}
-.loom-queue-tag {
-  opacity: 0.85;
-  color: var(--l-dim);
-}
-.loom-queue-item {
-  border-radius: var(--r-ctl);
-  box-shadow: var(--rim);
-}
-
-/* ---------------------------------------------------------------- the input */
-
-.loom-frame-box {
-  border-radius: 14px;
-  background: var(--fill-1);
-  box-shadow: var(--rim-top), var(--rim);
-}
-.loom-frame-box.is-focus {
-  box-shadow:
-    var(--rim-top),
-    inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
-    0 0 0 4px color-mix(in srgb, var(--c-accent) 8%, transparent);
-}
-.loom-frame-box::before {
-  content: 'Ask Claude…   / for commands';
-  position: absolute;
-  left: var(--ph-left, 40px);
-  top: var(--ph-top, 10px);
-  height: var(--ph-h, 20px);
-  display: flex;
-  align-items: center;
-  font: var(--fs-14) var(--l-prose);
-  color: var(--l-faint);
-  opacity: 0;
-  transition: opacity var(--t2) var(--ease);
-  pointer-events: none;
-  white-space: nowrap;
-}
-.loom-frame-box.is-empty::before {
-  opacity: 1;
-}
-.loom-frame-box::after {
-  content: '↵ send';
-  position: absolute;
-  right: 14px;
-  bottom: 9px;
-  font: var(--fs-12) var(--l-prose);
-  color: var(--l-faint);
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* ---------------------------------------------------------------- the status line */
-
-.loom-bar {
-  gap: 16px;
-  padding: 0 6px;
-  font: var(--fs-12) / 1 var(--l-prose);
-}
-.loom-bar > span,
-.loom-bar > .loom-bar-model,
-.loom-bar > .loom-bar-rest,
-.loom-bar > .loom-bar-ember {
-  color: var(--l-faint);
-  opacity: 1;
-}
-.loom-bar > .loom-bar-model {
-  color: var(--l-dim);
-  font-weight: 500;
-}
-.loom-bar-mode,
-.loom-bar-mode.is-bypass,
-.loom-bar-mode.is-edits,
-.loom-bar-mode.is-plan,
-.loom-bar-mode.is-auto,
-.loom-bar-mode.is-default {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 3px 10px 3px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--fill-1);
-  box-shadow: var(--rim);
-  color: var(--l-dim);
-  font: 500 var(--fs-12) var(--l-prose);
-  letter-spacing: 0;
-  filter: none;
-}
-.loom-bar-mode::before,
-.loom-bar-mode.is-default::before {
-  content: none;
-}
-.loom-bar-mode i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--l-faint);
-}
-.loom-bar-mode.is-bypass i {
-  background: var(--l-err);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--l-err) 60%, transparent);
-}
-.loom-bar-mode.is-edits i {
-  background: var(--l-warn);
-}
-.loom-bar-mode.is-plan i,
-.loom-bar-mode.is-auto i {
-  background: var(--l-info);
-}
-.loom-bar-mode:hover {
-  background: var(--fill-2);
-  color: var(--l-ink);
-}
-.loom-bar-ctx i {
-  width: 44px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--l-dim) var(--p), var(--fill-2) var(--p));
-}
-.loom-bar-ctx.is-high i {
-  background: linear-gradient(90deg, var(--l-warn) var(--p), var(--fill-2) var(--p));
 }
 
 /* ---------------------------------------------------------------- top controls */
@@ -4359,11 +3981,6 @@ body.is-light .loom-rawpill {
   font-weight: 600;
 }
 
-/* ---------------------------------------------------------------- light theme parity */
-
-body.is-light .loom-frame-box {
-  background: rgba(255, 255, 255, 0.7);
-}
 body.is-light .loom-ask .loom-caret {
   background: rgba(0, 0, 0, 0.35);
 }
@@ -5397,46 +5014,6 @@ body.is-light .loom-zoom {
 
 /* ---------------------------------------------------------------- native mode (canvas.native) */
 
-/* The input is Ember's own: a textarea in the same frame, with the TUI's caret drawn in
-   front of it, so the box reads exactly as it did when it held Claude Code's prompt. */
-.loom-frame-box.is-native {
-  pointer-events: auto;
-  cursor: text;
-}
-.loom-frame-box.is-native::before {
-  content: '❯';
-  left: 14px;
-  top: 10px;
-  height: 21px;
-  opacity: 0.75;
-  color: var(--c-fg);
-  font: 14px var(--term-font), 'Cascadia Code', Consolas, monospace;
-}
-.loom-frame-box.is-native::after {
-  bottom: 12px;
-}
-.loom-native-input {
-  position: absolute;
-  left: 32px;
-  right: 70px;
-  top: 10px;
-  height: 21px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  resize: none;
-  overflow-y: auto;
-  background: transparent;
-  color: var(--c-fg);
-  caret-color: var(--c-accent);
-  font: 14px / 21px var(--term-font), 'Cascadia Code', Consolas, monospace;
-}
-.loom-native-input::placeholder {
-  color: color-mix(in srgb, var(--c-fg) 40%, transparent);
-  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
-}
-
 /* The reply while it is being written: the same type as the finished one. */
 .loom-writing > .loom-say {
   display: block;
@@ -5452,528 +5029,11 @@ body.is-light .loom-zoom {
   color: var(--l-err, #e2676f);
 }
 
-/* Claude Code is showing something on its own screen no card describes (a picker, the
-   trust dialog, /login): one quiet line over the composer, and the way to see it. */
-.loom-elsewhere {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 8px 8px 14px;
-  border-radius: 12px;
-  background: var(--c-bg);
-  color: var(--c-fg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--l-yellow, #e5c07b) 40%, transparent);
-  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-elsewhere.is-on {
-  display: flex;
-}
-.loom-elsewhere-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--l-yellow, #e5c07b);
-  animation: loom-queue-wait 2s ease-in-out infinite;
-}
-.loom-elsewhere-text {
-  flex: 1;
-  min-width: 0;
-}
-.loom-elsewhere button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 0.92em;
-  color: var(--c-fg);
-  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
-  cursor: pointer;
-}
-.loom-elsewhere button:hover {
-  background: color-mix(in srgb, var(--c-fg) 15%, transparent);
-}
-.loom-elsewhere kbd {
-  font-family: var(--l-mono);
-  font-size: 0.82em;
-  color: var(--l-dim);
-}
+/* ---------------------------------------------------------------- the answer card: glass
 
-/* Claude asks before a tool runs: a card over the input, Allow or Deny. */
-.loom-asks {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-}
-.loom-asks.has-items {
-  display: flex;
-}
-.loom-ask-card {
-  padding: 12px 14px 10px;
-  border-radius: 12px;
-  background: var(--c-bg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 34%, transparent);
-  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-ask-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--c-fg);
-}
-.loom-ask-card-head b {
-  font-weight: 600;
-}
-.loom-ask-card-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--c-accent);
-  animation: loom-queue-wait 2s ease-in-out infinite;
-}
-.loom-ask-card-what {
-  margin: 8px 0 0;
-  padding: 8px 10px;
-  max-height: 160px;
-  overflow: auto;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
-  color: var(--c-fg);
-  font: 0.9em / 1.5 var(--l-mono);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.loom-ask-card-why {
-  margin-top: 6px;
-  font-size: 0.85em;
-  color: var(--l-faint);
-}
-.loom-ask-card-acts {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-.loom-ask-card-acts button {
-  padding: 4px 14px;
-  border: 0;
-  border-radius: 8px;
-  font: 600 0.92em var(--l-prose);
-  color: var(--c-fg);
-  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
-  cursor: pointer;
-}
-.loom-ask-card-acts button.is-primary {
-  color: var(--c-bg);
-  background: var(--l-accent);
-}
-.loom-ask-card-acts button:hover {
-  filter: brightness(1.12);
-}
-.loom-ask-card-keys {
-  margin-left: auto;
-  font-size: 0.8em;
-  color: var(--l-faint);
-}
-
-/* ---------------------------------------------------------------- native: the composer (phase 2) */
-
-/* A picture waiting to go: the overlay's thumbnail, with a way to take it back. */
-.loom-attach-x {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  font: 600 13px / 20px var(--l-prose);
-  color: #fff;
-  background: rgba(0, 0, 0, 0.62);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms;
-}
-.loom-attach-item:hover .loom-attach-x,
-.loom-attach-x:focus-visible {
-  opacity: 1;
-}
-.loom-attach-x:hover {
-  background: rgba(0, 0, 0, 0.85);
-}
-
-/* Queued messages, each with its own Send now and x. */
-.loom-native-queue .loom-queue-item {
-  align-items: center;
-}
-.loom-native-queue .loom-queue-text {
-  flex: 1;
-  min-width: 0;
-}
-.loom-native-queue .loom-queue-text i {
-  font-style: normal;
-  color: var(--l-faint);
-}
-.loom-queue-acts {
-  display: flex;
-  flex: none;
-  gap: 4px;
-}
-.loom-queue-acts button {
-  padding: 3px 10px;
-  border: 0;
-  border-radius: 7px;
-  font: 600 0.8em var(--l-prose);
-  color: var(--c-bg);
-  background: var(--l-accent);
-  cursor: pointer;
-}
-.loom-queue-acts button.is-x {
-  padding: 3px 8px;
-  color: var(--l-dim);
-  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
-}
-.loom-queue-acts button:hover {
-  filter: brightness(1.12);
-}
-
-/* The / and @ menus: Claude Code's own list, drawn as a card over the input. */
-.loom-native-menu {
-  display: none;
-  flex-direction: column;
-  min-width: 0;
-  border-radius: 12px;
-  background: var(--c-bg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
-  overflow: hidden;
-  animation: loom-rise 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-native-menu.is-on {
-  display: flex;
-}
-.loom-native-menu-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 12px 5px;
-  font: 600 0.78em var(--l-prose);
-  color: var(--l-faint);
-  border-bottom: 1px solid color-mix(in srgb, var(--c-fg) 7%, transparent);
-}
-.loom-native-menu-head span {
-  font-weight: 400;
-}
-.loom-native-menu-list {
-  max-height: 264px;
-  overflow-y: auto;
-  padding: 4px;
-}
-.loom-native-menu-row {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.loom-native-menu-row {
-  overflow: hidden;
-}
-.loom-native-menu-row .n {
-  flex: none;
-  min-width: 132px;
-  max-width: 55%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font: 0.92em var(--l-mono);
-  color: var(--c-fg);
-}
-.loom-native-menu-row .n i {
-  font-style: normal;
-  color: var(--l-faint);
-}
-.loom-native-menu-row .d {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.86em;
-  color: var(--l-faint);
-}
-.loom-native-menu-row.is-dir .n {
-  color: var(--l-accent);
-}
-.loom-native-menu-row:hover {
-  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
-}
-.loom-native-menu-row.is-sel {
-  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
-}
-.loom-native-menu-row.is-sel .n {
-  color: var(--l-accent);
-}
-.loom-native-menu-row.is-sel .d {
-  color: var(--l-dim);
-}
-
-/* ---------------------------------------------------------------- native: the asks (phase 3) */
-
-.loom-ask-card {
-  outline: 0;
-}
-.loom-ask-card:focus-within {
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
-}
-.loom-ask-card-sub {
-  color: var(--l-faint);
-  font-size: 0.9em;
-}
-.loom-ask-card-acts {
-  flex-wrap: wrap;
-}
-.loom-ask-card-acts button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.loom-ask-card-acts button:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
-}
-.loom-ask-card kbd {
-  font: 600 0.8em var(--l-mono);
-  opacity: 0.55;
-}
-.loom-ask-card-file {
-  margin-top: 8px;
-  font: 0.86em var(--l-mono);
-  color: var(--l-dim);
-}
-.loom-ask-card-file + .loom-ask-card-what {
-  margin-top: 4px;
-}
-.loom-ask-card-what.is-diff {
-  max-height: 220px;
-}
-.loom-ask-card-what .del {
-  color: var(--l-red, #e2676f);
-}
-.loom-ask-card-what .ins {
-  color: var(--l-green, #5fbf8f);
-}
-.loom-ask-card-what .sep {
-  color: var(--l-faint);
-}
-.loom-ask-card-why.is-err {
-  color: var(--l-err, #e2676f);
-}
-.loom-ask-card-msg {
-  margin-top: 8px;
-  color: var(--c-fg);
-  white-space: pre-wrap;
-}
-.loom-ask-card-say,
-.loom-ask-other,
-.loom-ask-field input[type='text'],
-.loom-ask-field input[type='number'],
-.loom-ask-field select {
-  box-sizing: border-box;
-  width: 100%;
-  margin-top: 8px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  outline: 0;
-  font: 0.92em var(--l-prose);
-  color: var(--c-fg);
-  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 8%, transparent);
-}
-.loom-ask-card-say::placeholder,
-.loom-ask-other::placeholder {
-  color: var(--l-faint);
-}
-.loom-ask-card-say:focus,
-.loom-ask-other:focus,
-.loom-ask-field input:focus,
-.loom-ask-field select:focus {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
-}
-
-/* The plan, as it will be followed. */
-.loom-ask-plan {
-  margin-top: 10px;
-  padding: 4px 14px;
-  max-height: 46vh;
-  overflow-y: auto;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
-  color: var(--c-fg);
-}
-.loom-ask-plan h1,
-.loom-ask-plan h2,
-.loom-ask-plan h3 {
-  margin: 12px 0 6px;
-  font-size: 1.02em;
-  font-weight: 600;
-}
-.loom-ask-plan p,
-.loom-ask-plan ul,
-.loom-ask-plan ol {
-  margin: 6px 0;
-}
-.loom-ask-plan ul,
-.loom-ask-plan ol {
-  padding-left: 20px;
-}
-.loom-ask-plan code {
-  font: 0.9em var(--l-mono);
-}
-
-/* An MCP server's form. */
-.loom-ask-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-}
-.loom-ask-field {
-  display: flex;
-  flex-direction: column;
-  color: var(--c-fg);
-}
-.loom-ask-field .l {
-  font-weight: 600;
-  font-size: 0.92em;
-}
-.loom-ask-field .l i {
-  font-style: normal;
-  color: var(--l-accent);
-}
-.loom-ask-field .d {
-  font-size: 0.84em;
-  color: var(--l-faint);
-}
-.loom-ask-field input,
-.loom-ask-field select {
-  margin-top: 4px !important;
-}
-.loom-ask-field input[type='checkbox'] {
-  appearance: none;
-  display: grid;
-  place-content: center;
-  width: 18px;
-  height: 18px;
-  margin: 6px 0 0;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 18%, transparent);
-  cursor: pointer;
-}
-.loom-ask-field input[type='checkbox']:checked {
-  background: var(--l-accent);
-  box-shadow: none;
-}
-.loom-ask-field input[type='checkbox']:checked::after {
-  content: '';
-  width: 9px;
-  height: 5px;
-  margin-top: -2px;
-  border: solid var(--c-bg);
-  border-width: 0 0 2px 2px;
-  transform: rotate(-45deg);
-}
-
-/* ---------------------------------------------------------------- native mode: the bar's switches
-
-   The model and the effort are buttons that read as the bar's plain text until hovered;
-   the model opens Claude Code's own list above the bar. */
-
-.loom-bar > .loom-bar-pickmodel,
-.loom-bar > .loom-bar-effort {
-  border: 0;
-  background: none;
-  padding: 3px 4px;
-  margin: 0 -4px;
-  border-radius: 6px;
-  font: inherit;
-  color: var(--l-dim);
-  cursor: pointer;
-}
-.loom-bar > .loom-bar-effort {
-  color: var(--l-faint);
-}
-.loom-bar > .loom-bar-pickmodel:hover,
-.loom-bar > .loom-bar-effort:hover {
-  color: var(--l-ink);
-  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
-}
-.loom-bar-caret {
-  margin-left: 5px;
-  font-size: 0.8em;
-  opacity: 0.6;
-}
-.loom-bar-pick {
-  position: absolute;
-  z-index: 8;
-  display: none;
-  flex-direction: column;
-  min-width: 240px;
-  max-width: min(420px, 80%);
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--c-bg);
-  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.55), inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
-  animation: loom-rise 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-bar-pick.is-on {
-  display: flex;
-}
-.loom-bar-pick button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: var(--c-fg);
-  text-align: left;
-  cursor: pointer;
-}
-.loom-bar-pick button b {
-  font: 600 0.86em var(--l-prose);
-}
-.loom-bar-pick button span {
-  font-size: 0.78em;
-  color: var(--l-faint);
-}
-.loom-bar-pick button:hover {
-  background: color-mix(in srgb, var(--c-fg) 5%, transparent);
-}
-.loom-bar-pick button.is-on b::after {
-  content: '  ✓';
-  color: var(--l-accent);
-}
-
-/* ---------------------------------------------------------------- the composer and its cards: glass */
-
-/* The input and everything that rises over it (permission, question and plan cards, the
-   queue, the / and @ menus, the "showing in the CLI" line) are the same frosted panes as
-   the canvas objects (see Glass above): translucent, blurred, a hairline of light round
-   the rim. The prompt keeps the terminal's font and a plain `>`. */
-.loom-frame-box.is-native,
-.loom-ask-card,
-.loom-answers,
-.loom-native-queue,
-.loom-native-menu,
-.loom-elsewhere {
+   The same frosted pane as the canvas objects (see Glass above): translucent, blurred, a
+   hairline of light round the rim. */
+.loom-answers {
   border: 0;
   border-radius: 14px;
   background: color-mix(in srgb, var(--c-bg) 52%, transparent);
@@ -5984,53 +5044,26 @@ body.is-light .loom-zoom {
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
-.loom-frame-box.is-native.is-focus,
-.loom-ask-card:focus-within,
 .loom-answers:focus-within:not(.is-sent) {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
     0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
-body.is-light .loom-frame-box.is-native,
-body.is-light .loom-ask-card,
-body.is-light .loom-answers,
-body.is-light .loom-native-queue,
-body.is-light .loom-native-menu,
-body.is-light .loom-elsewhere {
+body.is-light .loom-answers {
   background: color-mix(in srgb, var(--c-bg) 62%, transparent);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 0 0 1px rgba(0, 0, 0, 0.06),
     0 18px 48px -30px rgba(0, 0, 0, 0.35);
 }
-.loom-frame-box.is-native::before {
-  content: '>';
-  opacity: 1;
-  color: color-mix(in srgb, var(--c-fg) 60%, transparent);
-  font-weight: 400;
-}
-.loom-frame-box.is-native::after {
-  content: '↵ send';
-  font: var(--fs-12) var(--l-prose);
-  color: var(--l-faint);
-  opacity: 0.7;
-}
-.loom-native-input {
-  caret-color: var(--c-accent);
-}
-.loom-native-input::placeholder {
-  font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
-  color: color-mix(in srgb, var(--c-fg) 36%, transparent);
-}
 
 /* ---------------------------------------------------------------- questions: the deck
 
-   Claude's AskUserQuestion and the questions a reply ends with, as one card
-   (questionDeck.ts): a question at a time, its options as full-width rows with their key at
-   the left, "Other…" as the last row, a tab strip and a review when there are several.
-   Glass like the composer's cards; the accent only marks the chosen row and the primary
-   button. */
+   The questions a reply ends with, as one card (questionDeck.ts): a question at a time,
+   its options as full-width rows with their key at the left, "Other…" as the last row, a
+   tab strip and a review when there are several. The accent only marks the chosen row and
+   the primary button. */
 
 .loom-answers {
   margin: 6px 0 16px;
@@ -6041,9 +5074,7 @@ body.is-light .loom-elsewhere {
 .loom-answers.is-stale {
   display: none;
 }
-.loom-ask-card.is-question {
-  padding: 14px 16px 12px;
-}
+
 .loom-qd {
   --qd-row: color-mix(in srgb, var(--c-fg) 4.5%, transparent);
   --qd-rim: color-mix(in srgb, var(--c-fg) 7%, transparent);
@@ -6431,5 +5462,60 @@ body.is-light .loom-elsewhere {
   box-shadow: none;
 }
 .loom-qd.is-sent .loom-qd-tabs {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- pictures attached in the CLI
+   A strip at the canvas's foot, just above the divider (never over the CLI): what the
+   message being written in the TUI carries, labelled with the TUI's own "[Image #n]". */
+.loom-pasted {
+  position: absolute;
+  left: 18px;
+  bottom: 8px;
+  z-index: 5;
+  display: none;
+  gap: 8px;
+  max-width: calc(100% - 36px);
+  overflow-x: auto;
+  padding: 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 8%, transparent),
+    0 10px 30px -18px #000;
+  backdrop-filter: blur(14px);
+}
+.loom-pasted.is-on {
+  display: flex;
+}
+.loom-pasted-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: zoom-in;
+}
+.loom-pasted-item img {
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 10%, transparent);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-pasted-item:hover img {
+  transform: translateY(-1px);
+}
+.loom-pasted-item span {
+  font: 500 10.5px / 1 var(--l-prose, inherit);
+  color: var(--l-dim);
+  letter-spacing: 0.01em;
+}
+
+/* The shell's prompt marks mean nothing inside an agent's TUI. */
+.ember-group-panes[data-loom='claude'] .ember-rail,
+.ember-group-panes[data-loom='claude'] .ember-block-header,
+.ember-group-panes[data-loom='raw'] .ember-rail,
+.ember-group-panes[data-loom='raw'] .ember-block-header {
   display: none;
 }

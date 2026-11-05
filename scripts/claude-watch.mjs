@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * What a new Claude Code means for Ember's native canvas (docs/specs/canvas-native.md,
- * "Keeping up with Claude Code"). Run weekly by .github/workflows/claude-watch.yml.
+ * What a new Claude Code means for Ember's canvas (docs/specs/hybrid.md, "Keeping up with
+ * Claude Code"): the transcript it draws from, the screen it reads to size the CLI, and the
+ * hooks it registers. Run weekly by .github/workflows/claude-watch.yml.
  *
  *   1. `npm view @anthropic-ai/claude-code version` against docs/specs/claude-version.txt.
  *   2. On a new version: the CHANGELOG sections in between, and the Agent SDK's sdk.d.ts
  *      (`npm pack @anthropic-ai/claude-agent-sdk`) against the copy in docs/specs/sdk.d.ts —
  *      message types, control request subtypes and capability strings added or gone.
  *   3. One GitHub issue, "Claude Code <version>: what's new for Ember", with a checklist of
- *      what Ember's Claude code (claudeCatalog.ts, ClaudeTui.ts, Asks.ts, Composer.ts, hook.mjs)
- *      already names and what it does not.
+ *      what Ember's Claude code (canvas.ts, transcript.ts, Feed.ts, tuiScreen.ts, bridge.ts,
+ *      hook.mjs) already names and what it does not.
  *
  * It changes no file in the repo and pushes nothing. Updating claude-version.txt and
  * sdk.d.ts is the issue's suggested follow-up, reviewed like any change.
@@ -33,7 +34,7 @@ const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '
 const SPECS = join(REPO, 'docs', 'specs')
 const CHANGELOG_URL = 'https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md'
 /** Ember's code that speaks the protocol: what it names, it handles (or deliberately ignores). */
-const EMBER_FILES = ['src/main/claudeCatalog.ts', 'src/renderer/src/canvas/ClaudeTui.ts', 'src/renderer/src/canvas/Asks.ts', 'src/renderer/src/canvas/Composer.ts', 'resources/hook.mjs']
+const EMBER_FILES = ['src/main/canvas.ts', 'src/main/transcript.ts', 'src/renderer/src/canvas/Feed.ts', 'src/renderer/src/canvas/tuiScreen.ts', 'src/main/bridge.ts', 'resources/hook.mjs']
 const BODY_MAX = 60_000
 
 const argv = process.argv.slice(2)
@@ -198,7 +199,7 @@ try {
 
   title = `Claude Code ${latest}: what's new for Ember`
   const out = []
-  out.push(`Claude Code **${latest}** is out; Ember's native canvas was last checked against **${stored}** (\`docs/specs/claude-version.txt\`).`)
+  out.push(`Claude Code **${latest}** is out; Ember's canvas was last checked against **${stored}** (\`docs/specs/claude-version.txt\`).`)
   out.push(`Agent SDK types: \`${before.version}\` → \`${now.version}\`.`)
   out.push('')
   out.push('## Changelog')
@@ -220,13 +221,14 @@ try {
   list('Exported types gone', goneExports)
   out.push('')
   out.push('## Checklist for Ember')
-  out.push('Ticked = the name appears in Ember\'s native code (' + EMBER_FILES.map((f) => `\`${f.split('/').pop()}\``).join(', ') + '). Unknown messages are ignored, never fatal; unknown control requests from Claude Code are answered with an error.')
+  out.push('Ticked = the name appears in Ember\'s Claude code (' + EMBER_FILES.map((f) => `\`${f.split('/').pop()}\``).join(', ') + '). Unknown messages are ignored, never fatal; unknown control requests from Claude Code are answered with an error.')
   const check = (kind, label, ok) => out.push(`- [${ok ? 'x' : ' '}] ${label} \`${kind}\``)
   if (!newMessages.length && !newControls.length && !newCaps.length) out.push('- [ ] Nothing new on the wire: read the changelog for behaviour changes (TUI-only commands, flags, settings).')
   for (const k of newMessages) check(k, 'message', handles(names, k))
   for (const k of newControls) check(k, 'control request', names.has(k))
   for (const k of newCaps) check(k, 'capability', names.has(k))
-  out.push('- [ ] Run `scripts/probe-native.mjs`, `probe-native-composer.mjs` and `probe-native-bar.mjs` against the new `claude`.')
+  out.push('- [ ] Read the changelog for transcript (JSONL) format changes, TUI layout changes (input box, dialogs, pickers, queue: `tuiScreen.ts` reads them to size the CLI), and hook input changes.')
+  out.push('- [ ] Run `scripts/probe-hybrid.mjs` and `scripts/probe-clear.mjs` against the new `claude`.')
   out.push(`- [ ] Update \`docs/specs/claude-version.txt\` to \`${latest}\` and \`docs/specs/sdk.d.ts\` to SDK \`${now.version}\` in a PR.`)
   out.push('')
   out.push('<details><summary>Everything on the wire today, and whether Ember names it</summary>')

@@ -7,8 +7,8 @@ import { escapeHtml } from '../markdown'
  */
 
 /**
- * What the tab shows. 'claude' is an agent on its wrapper (Claude Code, Codex): the canvas
- * with Ember's composer, none of the agent's screen. 'raw' is a wrapped (or any announced)
+ * What the tab shows. 'claude' is a wrapped agent (Claude Code, Codex): the canvas above,
+ * its real terminal below. 'raw' is a wrapped (or any announced)
  * agent's own screen, by the switch; 'app' a full-screen program; 'shell' the shell.
  */
 export type Mode = 'shell' | 'claude' | 'app' | 'raw'
@@ -107,10 +107,6 @@ export function iconFor(format: string): string {
 export const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 export const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 export const ms = (n: number) => (reduced() ? 0 : n)
-
-/** The bar under the input box, and the breathing room inside its frame, in px. */
-export const BAR_H = 26
-export const FRAME_PAD = 10
 
 /** Up to four objects per edge; a fifth does not snap. */
 export const SNAPS_PER_EDGE = 4

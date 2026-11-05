@@ -1,6 +1,6 @@
 /**
  * An object inline in a reply: `claude --model haiku` typed into a new terminal, a mermaid
- * block asked for in Ember's composer, then Ctrl+↑ onto it, its edges pulled to size it
+ * block asked for in the CLI's prompt, then Ctrl+↑ onto it, its edges pulled to size it
  * where it sits, Enter for full screen, Ctrl+wheel and the 100% button for zoom, Esc out.
  * Screenshots of each; exits non-zero when a step does not do what it says.
  *
@@ -47,12 +47,14 @@ const snap = () => ev('window.__ember.loom()')
 const write = (sid, text) => ev(`window.ember.write(${JSON.stringify(sid)}, ${JSON.stringify(text)})`)
 const typeText = (text) => send('Input.insertText', { text })
 const enterKey = async () => {
+  // A beat first: an Enter right after typed text reads to the TUI as part of a paste.
+  await new Promise((r) => setTimeout(r, 350))
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
 }
-/** A message, typed into Ember's composer: never into Claude Code's own terminal. */
+/** A message, typed into the agent's own prompt in the CLI, as the person would. */
 const say = async (text) => {
-  await ev(`document.querySelector('.loom-native-input')?.focus()`)
+  await ev(`document.querySelector('[data-session-id="' + window.__ember.loom().sessionId + '"] .xterm-helper-textarea')?.focus()`)
   await typeText(text)
   await enterKey()
 }
@@ -65,7 +67,7 @@ const startClaude = async (sid) => {
   await wait(300)
   await write(sid, String.fromCharCode(13))
   for (let i = 0; i < 40; i++) {
-    if ((await snap()).mode === 'claude' && (await snap()).wrapper?.boxSeen) break
+    if ((await snap()).mode === 'claude' && (await snap()).cli?.promptSeen) break
     await wait(1000)
   }
 }

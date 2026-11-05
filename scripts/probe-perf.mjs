@@ -1,18 +1,14 @@
 /**
- * What the one-Claude canvas costs: the numbers in docs/engineering-notes.md › "The canvas,
+ * What the hybrid canvas costs: the numbers in docs/engineering-notes.md › "The canvas,
  * measured". Launches its own Ember (own EMBER_HOME, onboarded) and, for the Claude parts,
  * the real `claude --model haiku` in ~/agent-box, typed into a plain shell as a person would.
  *
- *   node scripts/probe-perf.mjs [--only=start,claude,hooks,mem,frames] [--port=9501] [--profile]
+ *   node scripts/probe-perf.mjs [--only=start,claude,mem,frames] [--port=9501] [--profile]
  *
  *   start   launch → first shell prompt, three launches, median
  *   claude  `claude` typed → canvas ready (and what the canvas said meanwhile); CPU idle with
- *           the canvas up; CPU while a long reply streams (3 turns, median); keypress →
- *           character in the composer (idle and while streaming) and in a plain shell; the
- *           real permission round trip (Claude Code's dialog drawn → Ember's card shown)
- *   hooks   the hook itself, without a model: an async event (start → in the renderer) and a
- *           PermissionRequest (start → card shown), 7 each, median — run exactly as the
- *           settings file Claude Code is handed says (a command, or an http hook)
+ *           the canvas up; CPU while a long reply streams (3 turns, median); keypress → echo
+ *           in the real CLI (idle and while streaming) and in a plain shell
  *   mem     Ember's memory with 1 and with 4 Claude canvas tabs
  *   frames  a made-up conversation with 30 diagrams (window.__ember.loomFeed): memory, frames,
  *           CPU while scrolled to the top and at rest
@@ -31,7 +27,7 @@ import { seedHome } from './probelib.mjs'
 const REPO = new URL('..', import.meta.url).pathname.slice(1).replace(/\/$/, '')
 const flags = new Map(process.argv.slice(2).map((a) => { const m = /^--([^=]+)(?:=(.*))?$/.exec(a); return m ? [m[1], m[2] ?? '1'] : [a, '1'] }))
 const PORT = Number(flags.get('port') ?? 9501)
-const ONLY = new Set((flags.get('only') ?? 'start,claude,hooks,mem,frames').split(','))
+const ONLY = new Set((flags.get('only') ?? 'start,claude,mem,frames').split(','))
 const CWD = join(homedir(), 'agent-box')
 const HOME = join(process.env.TEMP ?? '.', `ember-probe-perf-${PORT}`)
 /** A shell prompt: PowerShell's own, or a profile's (this machine's draws ▸, through the wrong code page â–¸). */
@@ -150,7 +146,7 @@ if (ONLY.has('start')) {
   note('start: launch → first shell prompt, ms (5 launches)', { runs: times, median: median(times) })
 }
 
-if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('mem') || ONLY.has('frames')) {
+if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('mem') || ONLY.has('frames')) {
   const { app, child, kill } = await launch()
   const ev = app.ev
   const key = (k, code, vk, modifiers = 0, text) =>
@@ -176,7 +172,7 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
           const l = window.__ember.loom(tab)
           if (l) {
             if (!r.modeAt && l.mode === 'claude') r.modeAt = Date.now()
-            if (!r.boxAt && l.wrapper && l.wrapper.boxSeen) r.boxAt = Date.now()
+            if (!r.boxAt && l.cli && l.cli.promptSeen) r.boxAt = Date.now()
             for (const row of l.rows) { const t = row.trim(); if (t && !seen.has(t) && r.lines.length < 80) { seen.add(t); r.lines.push([Date.now(), t.slice(0, 120)]) } }
             const el = document.querySelector('.is-active .loom-hint-text, .loom-starting, .loom-boot')
             const said = [...document.querySelectorAll('.loom-hint-text, .loom-starting, .loom-boot')].filter((x) => x.offsetParent).map((x) => x.textContent.trim()).join(' | ')
@@ -196,7 +192,7 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
     const t0 = Date.now()
     if (record) await ev(`window.__perfStart.t0 = ${t0}`)
     await enter()
-    const up = await until(async () => { const x = await ev(`window.__ember.loom(${JSON.stringify(tab)})`); return x?.claude && x.wrapper?.boxSeen && x }, 90_000, 50)
+    const up = await until(async () => { const x = await ev(`window.__ember.loom(${JSON.stringify(tab)})`); return x?.claude && x.cli?.promptSeen && x }, 90_000, 50)
     return { tab, t0, ready: up ? Date.now() - t0 : NaN }
   }
 
@@ -216,7 +212,7 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
     for (const [k, v] of [...self.entries()].sort((x, y) => y[1] - x[1]).slice(0, 16)) console.log(`   ${v.toFixed(1).padStart(8)}  ${k}`)
   }
   // The diagrams alone need no Claude.
-  const needClaude = ['claude', 'startup', 'hooks', 'mem'].some((k) => ONLY.has(k))
+  const needClaude = ['claude', 'startup', 'mem'].some((k) => ONLY.has(k))
   const tab = needClaude ? await claudeTab(true) : { tab: first, ready: NaN, t0: 0 }
   if (needClaude) await ev(`window.__ember.closeTab(${JSON.stringify(first)})`)
   await ev(`window.__ember.activate(${JSON.stringify(tab.tab)})`)
@@ -232,11 +228,11 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
   }
 
   const say = async (text) => {
-    await ev(`document.querySelector('.is-active .loom-native-input, .loom-native-input').focus()`)
+    await ev(`document.querySelector('[data-session-id="' + window.__ember.loom().sessionId + '"] .xterm-helper-textarea')?.focus()`)
     await app.send('Input.insertText', { text })
     await enter()
   }
-  const idle = () => until(async () => { const w = (await loom())?.wrapper; return w?.phase === 'idle' && !w.live && w }, 120_000, 100)
+  const idle = () => until(async () => { const w = (await loom())?.cli; return w?.prompt && !w.live && w }, 120_000, 100)
 
   if (ONLY.has('claude')) {
     await sleep(8000)
@@ -260,39 +256,37 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
       process.exit(0)
     }
 
-    // Typing into the composer: keydown → the character in the textarea → the frame it shows in.
-    const composerLatency = async (n) => {
-      await ev(`document.querySelector('.is-active .loom-native-input, .loom-native-input').focus()`)
+    // Typing into the real CLI: keydown → the TUI's echo parsed by the terminal.
+    const cliLatency = async (n) => {
+      const sid = await ev(`window.__ember.loom(${JSON.stringify(tab.tab)}).sessionId`)
+      await ev(`window.__ember.term(${JSON.stringify(sid)}).focus()`)
       const res = []
       for (let i = 0; i < n; i++) {
-        await ev(`(() => { const inp = document.querySelector('.loom-native-input'); window.__lat = null; const t = performance.now(); window.__latKey = t
-          const onIn = () => { inp.removeEventListener('input', onIn); requestAnimationFrame(() => { window.__lat = performance.now() - window.__latKeyDown }) }
-          inp.addEventListener('input', onIn)
-          window.addEventListener('keydown', () => { window.__latKeyDown = performance.now() }, { once: true, capture: true })
-          return true })()`)
+        await ev(`(() => { const t = window.__ember.term(${JSON.stringify(sid)}); window.__lat = null
+          window.addEventListener('keydown', () => { const k = performance.now(); const d = t.onWriteParsed(() => { d.dispose(); window.__lat = performance.now() - k }) }, { once: true, capture: true }); return true })()`)
         const ch = 'abcdefghij'[i % 10]
         await key(ch, `Key${ch.toUpperCase()}`, ch.toUpperCase().charCodeAt(0), 0, ch)
-        const v = await until(() => ev('window.__lat'), 2000, 5)
-        res.push(v ?? NaN)
+        res.push((await until(() => ev('window.__lat'), 2000, 5)) ?? NaN)
         await sleep(60)
       }
-      await ev(`(() => { const inp = document.querySelector('.loom-native-input'); inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true })); return true })()`)
+      // What was typed goes (Ctrl+C clears Claude Code's prompt).
+      await key('c', 'KeyC', 67, 2)
       return res
     }
-    const lat0 = await composerLatency(15)
-    note('claude: composer keypress → painted, ms (idle, 15 keys)', { p50: Math.round(median(lat0) * 10) / 10, max: Math.round(Math.max(...lat0)) })
+    const lat0 = await cliLatency(15)
+    note('claude: keypress in the CLI → echo parsed, ms (idle, 15 keys)', { p50: Math.round(median(lat0) * 10) / 10, max: Math.round(Math.max(...lat0)) })
 
-    // Streaming: a long reply, CPU over the turn, the composer typed into meanwhile.
+    // Streaming: a long reply, CPU over the turn, the CLI typed into meanwhile.
     const streamRuns = []
     let latStream = []
     for (let i = 0; i < 3; i++) {
       await idle()
       await say(`Write ${40 + i} numbered lines of plain text, one short sentence each, about rivers. No tools, no headings.`)
-      const started = await until(async () => { const w = (await loom())?.wrapper; return (w?.phase === 'working' || w?.live) && w }, 30_000, 50)
+      const started = await until(async () => { const w = (await loom())?.cli; return w?.live && w }, 30_000, 50)
       const load = machineLoad()
       const a = snap(child.pid)
       const ta = Date.now()
-      if (i === 0) latStream = await composerLatency(12)
+      if (i === 0) latStream = await cliLatency(12)
       let prof = null
       if (i === 1 && flags.has('profile')) {
         await app.send('Profiler.enable')
@@ -319,24 +313,7 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
       }
     }
     note('claude: CPU % while a long reply streams (3 turns)', { runs: streamRuns, median: median(streamRuns.map((r) => r.total)), renderer: median(streamRuns.map((r) => r.renderer)), main: median(streamRuns.map((r) => r.main)) })
-    note('claude: composer keypress → painted, ms (while streaming, 12 keys)', { p50: Math.round(median(latStream) * 10) / 10, max: Math.round(Math.max(...latStream)) })
-
-    // The real permission round trip: Claude Code's own dialog drawn (on its hidden screen) → Ember's card.
-    await idle()
-    const PF = join(CWD, 'probe-perf.txt')
-    rmSync(PF, { force: true })
-    await ev(`(() => { const tab = ${JSON.stringify(tab.tab)}; const r = (window.__perm = { dialog: 0, card: 0 })
-      const tick = () => { const l = window.__ember.loom(tab)
-        if (!r.dialog && l.rows.some((x) => /Do you want to/i.test(x))) r.dialog = Date.now()
-        if (!r.card && document.querySelector('.loom-ask-card button[data-a="yes"]')) r.card = Date.now()
-        if (!(r.dialog && r.card)) requestAnimationFrame(tick) }
-      requestAnimationFrame(tick); return true })()`)
-    await say('Use the Bash tool to run exactly this command and nothing else: echo hi > probe-perf.txt')
-    const perm = await until(async () => { const r = await ev('window.__perm'); return r.dialog && r.card && r }, 90_000, 100)
-    note('claude: permission — TUI dialog drawn → Ember card shown, ms (+ = card later)', perm ? perm.card - perm.dialog : 'no card')
-    await ev(`document.querySelector('.loom-ask-card button[data-a="no"]')?.click()`)
-    await idle()
-    rmSync(PF, { force: true })
+    note('claude: keypress in the CLI → echo parsed, ms (while streaming, 12 keys)', { p50: Math.round(median(latStream) * 10) / 10, max: Math.round(Math.max(...latStream)) })
 
     // A plain shell's echo, for comparison: keydown → onWriteParsed with the character.
     const shellTab = await ev('window.__ember.newTab()')
@@ -356,62 +333,6 @@ if (ONLY.has('claude') || ONLY.has('startup') || ONLY.has('hooks') || ONLY.has('
     }
     note('shell: keypress → echo parsed, ms (idle, 15 keys)', { p50: Math.round(median(shellLat) * 10) / 10, max: Math.round(Math.max(...shellLat)) })
     await ev(`window.__ember.closeTab(${JSON.stringify(shellTab)})`)
-    await ev(`window.__ember.activate(${JSON.stringify(tab.tab)})`)
-  }
-
-  // ---------------------------------------------------------------- hooks, without a model
-  if (ONLY.has('hooks')) {
-    // The bridge's address and token, read the way any shell in a tab has them.
-    const sh = await ev('window.__ember.newTab()')
-    await until(async () => (await ev(`window.__ember.loom(${JSON.stringify(sh)})`))?.rows?.some((r) => PROMPT.test(r)), 20_000)
-    const shSid = await ev(`window.__ember.groups().find((g) => g.id === ${JSON.stringify(sh)}).panes[0]`)
-    await ev(`window.ember.write(${JSON.stringify(shSid)}, 'echo "ENV|$env:EMBER_BRIDGE_URL|$env:EMBER_BRIDGE_TOKEN|$env:EMBER_SETTINGS|"' + '\\r')`)
-    const envRow = await until(async () => (await ev(`window.__ember.loom(${JSON.stringify(sh)})`))?.rows?.find((r) => /^ENV\|http/.test(r.trim())), 10_000)
-    const [, url, token, settings] = envRow.trim().split('|')
-    const cfg = JSON.parse(readFileSync(settings, 'utf8'))
-    const hookOf = (event) => cfg.hooks[event][0].hooks.find((h) => h.type === 'http' || /ember-hook/.test(h.command ?? ''))
-    const envFor = (tabId) => ({ ...process.env, EMBER_BRIDGE_URL: url, EMBER_BRIDGE_TOKEN: token, EMBER_TAB_ID: tabId })
-    /** Run a hook as Claude Code would: its command with the input on stdin, or its http POST. */
-    function runHook(h, tabId, input) {
-      const t0 = Date.now()
-      if (h.type === 'http') {
-        const env = envFor(tabId)
-        const headers = { 'content-type': 'application/json' }
-        for (const [k, v] of Object.entries(h.headers ?? {})) headers[k] = v.replace(/\$\{?([A-Z_][A-Z0-9_]*)\}?/g, (_m, n) => ((h.allowedEnvVars ?? []).includes(n) ? env[n] ?? '' : ''))
-        const ac = new AbortController()
-        const done = fetch(h.url, { method: 'POST', headers, body: JSON.stringify(input), signal: ac.signal }).then((r) => r.text()).catch(() => '').then(() => Date.now() - t0)
-        return { t0, done, stop: () => ac.abort() }
-      }
-      const p = spawn('cmd.exe', ['/d', '/s', '/c', `"${h.command}"`], { env: envFor(tabId), stdio: ['pipe', 'pipe', 'ignore'], windowsVerbatimArguments: true })
-      p.stdin.end(JSON.stringify(input))
-      const done = new Promise((r) => p.on('exit', () => r(Date.now() - t0)))
-      return { t0, done, stop: () => { try { execFileSync('taskkill', ['/PID', String(p.pid), '/T', '/F'], { stdio: 'ignore' }) } catch {} } }
-    }
-    await ev(`(() => { window.__hk = {}; window.ember.hooks.onEvent((e) => { const m = e.input && e.input.message; if (m) window.__hk[m] = Date.now() }); return true })()`)
-    const asyncRuns = [], exitRuns = []
-    const nh = hookOf('Notification')
-    for (let i = 0; i < 7; i++) {
-      const m = `perf-${i}-${Date.now()}`
-      const r = runHook(nh, sh, { hook_event_name: 'Notification', session_id: '', message: m })
-      exitRuns.push(await r.done)
-      const at = await until(async () => (await ev(`window.__hk[${JSON.stringify(m)}]`)) || 0, 5000, 5)
-      asyncRuns.push(at ? at - r.t0 : NaN)
-      await sleep(200)
-    }
-    note(`hooks (${nh.type}): async event start → in renderer, ms (7)`, { runs: asyncRuns, median: median(asyncRuns) })
-    note(`hooks (${nh.type}): async event start → hook done, ms (7)`, { runs: exitRuns, median: median(exitRuns) })
-    const ph = hookOf('PermissionRequest')
-    const cardRuns = []
-    for (let i = 0; i < 7; i++) {
-      const r = runHook(ph, tab.tab, { hook_event_name: 'PermissionRequest', session_id: '', tool_name: 'Bash', tool_input: { command: `echo synthetic-${i}` } })
-      const shown = await until(async () => (await ev(`!!document.querySelector('.loom-ask-card button[data-a="yes"]')`)) && Date.now(), 10_000, 2)
-      cardRuns.push(shown ? shown - r.t0 : NaN)
-      r.stop()
-      await until(async () => !(await ev(`!!document.querySelector('.loom-ask-card')`)), 5000, 20)
-      await sleep(300)
-    }
-    note(`hooks (${ph.type}): PermissionRequest start → card shown, ms (7)`, { runs: cardRuns, median: median(cardRuns) })
-    await ev(`window.__ember.closeTab(${JSON.stringify(sh)})`)
     await ev(`window.__ember.activate(${JSON.stringify(tab.tab)})`)
   }
 

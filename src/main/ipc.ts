@@ -17,7 +17,6 @@ import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
-import { catalog, registerClaudeCatalog } from './claudeCatalog.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import type { PtyHost } from './pty/PtyHost.js'
@@ -107,10 +106,6 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   // open tab by itself.
   const notesBin = installNotesCli()
   installSkills()
-  // A Claude tab's canvas: its / menu, @ files, image pastes and permission cards.
-  registerClaudeCatalog()
-  // Warm the command list (a short structured run, cached a day) before a canvas asks.
-  setTimeout(() => void catalog().catch(() => {}), 8000)
   const unwatchNotes = watchNotes((id) => broadcast('ember:notes:changed', { id }))
   ipcMain.on('ember:cmd:reply', (_e, reqId: string, r: { result: string; error?: string }) => resolveCmd(reqId, r))
   ipcMain.handle('ember:todo:read', () => readTodo())

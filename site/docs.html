@@ -137,7 +137,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
   <h3>A terminal first</h3>
   <ul>
     <li><b>+</b> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd>) opens a new terminal tab: a plain PowerShell.</li>
-    <li>Run <code>claude</code> in it and the tab becomes Claude Code's canvas. You type in Ember's input box at the bottom; permission requests, questions and plans come up as cards above it. When Claude Code exits, the tab is a terminal again.</li>
+    <li>Run <code>claude</code> in it and the tab splits: the canvas above, Claude Code's real CLI below. You type into its own prompt; permission requests, questions, plans and pickers are its own, as in any terminal. When Claude Code exits, the tab is a terminal again.</li>
     <li><kbd>Ctrl</kbd><kbd>K</kbd> › <b>New Claude tab</b> opens a terminal that starts <code>claude</code> by itself.</li>
     <li>Settings › Agent shows which CLIs are installed and how to install the others.</li>
   </ul>
@@ -161,15 +161,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
 
 <section aria-labelledby="canvas">
   <h2 id="canvas">The canvas <a class="anchor" href="#canvas" aria-label="Link to this section">#</a></h2>
-  <p>An agent session opens on its canvas. You type in the input box at the bottom and press <kbd>Enter</kbd>. The reply appears above it as readable text, not as raw terminal output.</p>
+  <p>An agent session opens with its canvas above and its real CLI below. You type into the CLI's own prompt and press <kbd>Enter</kbd>. The reply appears on the canvas as readable text, with its diagrams, tables and pages, while the CLI keeps showing the agent as it always does.</p>
   <ul>
     <li><b>The current turn</b> fills the canvas. Earlier turns are a step away: the arrows at the left edge, or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>↑</kbd> / <kbd>↓</kbd>. Each turn keeps its own content.</li>
     <li><b>Work in progress</b> (files read, commands run, steps) shows as a short trail while the agent works, then gets out of the way.</li>
     <li><b>Visuals.</b> When a picture explains something better than words, the agent draws one: a diagram, a table, a chart, a plan with steps it ticks off. It can also put up a file, an image or a live web page.</li>
     <li><b>Copy:</b> select text and press <kbd>Ctrl</kbd><kbd>C</kbd>. On the canvas that copies; it does not interrupt the agent.</li>
-    <li>The line under the input shows the mode, the model, how full the context is and what the session cost.</li>
-    <li><b>Pictures.</b> <kbd>Ctrl</kbd>+<kbd>V</kbd> an image into the input and it shows as a thumbnail above it until you send.</li>
-    <li><b>Queued messages.</b> What you send while the agent works waits in a card right above the input, and goes when the turn ends. <b>Send now</b> sends it straight away.</li>
+    <li><b>The divider</b> between canvas and CLI drags to size the CLI; a double-click resets it. The CLI grows by itself while the agent shows a picker, a permission prompt, a question, the <code>/</code> list, a long prompt or queued messages that would not fit, and shrinks back after.</li>
+    <li><b>Pictures.</b> <kbd>Ctrl</kbd>+<kbd>V</kbd> an image (or drop one) and the agent attaches it as <code>[Image #1]</code>; its thumbnail shows just above the divider until you send, then in your turn.</li>
   </ul>
   <p>Right-click any object for its menu. The box at the top asks the agent about that object, or about the part you clicked, like one node of a diagram. Below it are <b>Copy</b>, <b>Full screen</b> and <b>Place</b>.</p>
 </section>
@@ -211,13 +210,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
 
 <section aria-labelledby="cli-view">
   <h2 id="cli-view">Canvas or CLI view <a class="anchor" href="#cli-view" aria-label="Link to this section">#</a></h2>
-  <p>The switch at the top right, <b>Canvas | CLI</b>, shows either the canvas or the agent's own terminal screen. <kbd>Ctrl</kbd><kbd>`</kbd> switches too. The switch stays in the same place and size in both views.</p>
-  <p>Both views show the same running agent: switching restarts nothing and is instant. Ember remembers your choice. If Claude Code shows something the canvas has no card for (a picker, a sign-in), the canvas says so with an <b>Open CLI</b> button.</p>
+  <p>The switch at the top right, <b>Canvas | CLI</b>, gives the agent's CLI the whole tab, or puts the canvas back above it. <kbd>Ctrl</kbd><kbd>`</kbd> switches too. The switch stays in the same place and size in both views.</p>
+  <p>Both views show the same running agent: switching restarts nothing and is instant. Ember remembers your choice.</p>
 </section>
 
 <section aria-labelledby="keyboard">
   <h2 id="keyboard">The canvas from the keyboard <a class="anchor" href="#keyboard" aria-label="Link to this section">#</a></h2>
-  <p>Everything on the canvas can be reached without the mouse. Press <kbd>Ctrl</kbd><kbd>↑</kbd> in the input to go to the newest object. It gets an amber ring, and a strip of keys appears.</p>
+  <p>Everything on the canvas can be reached without the mouse. Press <kbd>Ctrl</kbd><kbd>↑</kbd> in the CLI to go to the newest object. It gets an amber ring, and a strip of keys appears.</p>
   <div class="tablewrap">
     <table class="keys-table">
       <thead><tr><th>Keys</th><th>With an object selected</th></tr></thead>
@@ -236,7 +235,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
       </tbody>
     </table>
   </div>
-  <p>Typing any other character also takes you back to the input, with that character typed. <kbd>PgUp</kbd> / <kbd>PgDn</kbd> scroll the reply, and <kbd>Ctrl</kbd><kbd>Home</kbd> / <kbd>End</kbd> go to its start and end.</p>
+  <p>Typing any other character also takes you back to the CLI, with that character typed. <kbd>PgUp</kbd> / <kbd>PgDn</kbd> scroll the reply, and <kbd>Ctrl</kbd><kbd>Home</kbd> / <kbd>End</kbd> go to its start and end.</p>
 </section>
 
 <section aria-labelledby="sticky">
@@ -335,7 +334,7 @@ ember diag                   Ember's recent log</code></pre>
         <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd></td><td>Zen mode</td></tr>
         <tr class="group"><td colspan="2">In a session</td></tr>
         <tr><td class="keys"><kbd>Ctrl</kbd><kbd>`</kbd></td><td>Canvas or CLI view</td></tr>
-        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>↑</kbd></td><td>From the input to the newest object</td></tr>
+        <tr><td class="keys"><kbd>Ctrl</kbd><kbd>↑</kbd></td><td>From the CLI to the newest object</td></tr>
         <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>↑</kbd> <kbd>↓</kbd></td><td>Earlier or later turns</td></tr>
         <tr><td class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd></td><td>Sticky note (in a plain shell: Notes)</td></tr>
         <tr><td class="keys"><kbd>Esc</kbd></td><td>Back to typing; closes full screen</td></tr>

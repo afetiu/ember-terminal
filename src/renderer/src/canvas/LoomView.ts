@@ -11,27 +11,28 @@ import { Snaps } from './loom/snaps'
 import { Stage } from './loom/stage'
 import { FrameSleeper } from './loom/frames'
 import { div, reduced, viewSwitch, sameTitle, type Browser, type Mode, type Piece } from './loom/shared'
+import { pasteIntoTui } from './tuiScreen'
 
 /**
  * A tab's canvas: a real shell whose output space becomes a canvas while an agent runs.
  *
  * It starts as a plain PowerShell, drawn exactly as PowerShell draws it. Type `claude` and
- * the real Claude Code starts in that shell, exactly as in any terminal — and the tab puts
- * a canvas over it. The canvas never shows any of Claude Code's screen: the conversation
- * is drawn from the session's own transcript (replies as rich text, diagrams as diagrams,
- * edits as diffs, whatever the session chose to show), and Ember's own composer types into
- * Claude Code's prompt for you (ClaudeTui, an AgentWrapper). Ctrl+` or the Canvas | CLI
- * switch shows or hides the real screen — the same process, so the switch is instant.
- * When Claude Code exits, the tab is the shell again.
+ * the real Claude Code starts in that shell, exactly as in any terminal — and the tab
+ * splits: the canvas above, the real CLI below (the same terminal, its PTY resized to the
+ * bottom box). The person types into Claude Code's own prompt; the canvas shows the
+ * conversation drawn from the session's own transcript (replies as rich text, diagrams as
+ * diagrams, edits as diffs, whatever the session chose to show). The CLI grows while it
+ * shows a picker or a dialog, and Ctrl+` gives it the whole tab. When Claude Code exits,
+ * the tab is the shell again.
  *
- * Codex is wrapped the same way (CodexTui). Other agents get the switch and their whole
- * screen; no agent's screen is ever cropped into the canvas.
+ * Codex gets the same layout. Other agents get the switch and their whole screen; no
+ * agent's screen is ever cropped.
  *
  * This class is the coordinator: it owns the canvas's element, the feed and the state the
  * parts share (the pieces by title, what is pinned, the frames), wires the events, and
  * hands the work to the parts in ./loom:
  *
- * - host.ts      the agent in the shell and its wrapper, the mode, the composer's frame, the bar and model picker
+ * - host.ts      the agent in the shell, the mode, the split (canvas above, CLI below), the divider, auto-grow
  * - stage.ts     the turn on screen, the rail, the wheel between turns, the live line, trail and subagents
  * - plan.ts      the plan piece
  * - pieces.ts    a piece made, dragged out, placed, sized, minimized, full screen and zoomed
@@ -67,6 +68,9 @@ export class LoomView {
   private readonly steps: HTMLElement
   readonly jump: HTMLElement
   readonly rawPill: HTMLElement
+  /** Pictures attached to the message being written in the CLI, shown just above the divider. */
+  readonly pastedEl: HTMLElement
+  private pasted: Array<{ src: string; n: number | null; at: number; goneAt: number; el: HTMLElement }> = []
 
   // The parts (see the list above).
   readonly host: AgentHost
@@ -138,10 +142,11 @@ export class LoomView {
     // across turns and changes in place. A new turn replaces only the exchange.
     this.scroller.append(this.feed.el)
 
-    this.hint = div('loom-hint', `<span class="loom-hint-glyph">✻</span><span class="loom-hint-text">Ask below — what your agent says and shows appears on this canvas.</span>`)
+    this.hint = div('loom-hint', `<span class="loom-hint-glyph">✻</span><span class="loom-hint-text">What your agent says and shows appears on this canvas.</span>`)
     this.sign = div('loom-sign')
     this.steps = div('loom-steps')
     this.jump = div('loom-jump', '↓ latest')
+    this.pastedEl = div('loom-pasted')
     // Over the agent's own screen: the same bar as on the canvas, so switching views moves nothing.
     this.rawPill = div('loom-rawpill loom-sign', viewSwitch(true))
     // The canvas's size and colours, so the same bar renders the same.
@@ -153,28 +158,29 @@ export class LoomView {
     const { input, host } = this
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
-    this.el.append(this.scroller, this.stage.rail, this.objects.pinLayer, this.hint, this.sign, this.steps, this.jump, input.chip, input.pop, input.ctxMenu, this.notebook.drawer, input.lightbox)
-    panes.append(this.el, host.frame, host.above, host.bar, host.barPick, this.rawPill)
+    this.el.append(this.scroller, this.stage.rail, this.objects.pinLayer, this.hint, this.sign, this.steps, this.jump, this.pastedEl, input.chip, input.pop, input.ctxMenu, this.notebook.drawer, input.lightbox)
+    panes.append(this.el, host.divider, this.rawPill)
     panes.classList.add('has-loom')
     session.el.classList.add('is-loom')
 
     this.wire()
-    // Files dropped anywhere on the canvas: pictures attach to the message, others are
-    // mentioned by path. Handled here, so the window's own drop (typing paths into the
-    // shell) leaves them alone.
-    const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files') && !!this.host.wrapper && this.mode === 'claude'
-    for (const target of [this.el, host.frame, host.above]) {
-      target.addEventListener('dragover', (e) => {
-        if (!hasFiles(e)) return
-        e.preventDefault()
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
-      })
-      target.addEventListener('drop', (e) => {
-        if (!hasFiles(e) || e.defaultPrevented) return
-        e.preventDefault()
-        this.host.wrapper?.dropFiles([...(e.dataTransfer?.files ?? [])])
-      })
-    }
+    // Files dropped on the canvas: their paths go into the agent's prompt, as a drop on its
+    // terminal would put them. Handled here, so the window's own drop leaves them alone.
+    const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files') && !!this.host.onAgent && this.mode === 'claude'
+    this.el.addEventListener('dragover', (e) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    })
+    this.el.addEventListener('drop', (e) => {
+      if (!hasFiles(e) || e.defaultPrevented) return
+      e.preventDefault()
+      this.dropFiles([...(e.dataTransfer?.files ?? [])])
+    })
+    this.pastedEl.addEventListener('click', (e) => {
+      const img = (e.target as HTMLElement).closest('.loom-pasted-item')?.querySelector('img')
+      if (img) this.input.zoom(img.src, img.alt)
+    })
     this.renderSign()
     this.schedule()
     void window.ember.panel.origin().then((o) => (this.origin = o))
@@ -201,24 +207,6 @@ export class LoomView {
     sub(term.onResize(() => this.schedule()))
     sub(term.buffer.onBufferChange(() => this.schedule()))
     sub(term.onCursorMove(() => this.schedule()))
-    const ta = this.session.term.textarea
-    if (ta) {
-      const focus = () => {
-        // On the canvas the agent's screen is not where the person types. Whatever put the
-        // keyboard there (switching tabs, a click) puts it in Ember's composer instead.
-        if (host.wrapper && this.mode === 'claude' && document.activeElement === ta) {
-          host.wrapper.input.focus()
-          return
-        }
-        host.frame.classList.toggle('is-focus', document.activeElement === ta)
-      }
-      ta.addEventListener('focus', focus)
-      ta.addEventListener('blur', focus)
-      this.unsubs.push(() => {
-        ta.removeEventListener('focus', focus)
-        ta.removeEventListener('blur', focus)
-      })
-    }
     this.sign.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('button[data-s]')
       if (b?.dataset['s'] === 'notes') {
@@ -234,32 +222,6 @@ export class LoomView {
       else if (b?.dataset['s'] === 'raw') this.setRaw(true)
       else if ((e.target as HTMLElement).closest('[data-view="cli"]')) this.setRaw(true)
     })
-    host.bar.addEventListener('click', (e) => {
-      if (host.wrapper && this.mode === 'claude') {
-        host.barClickClaude(e.target as HTMLElement)
-        return
-      }
-      // The mode chip cycles the permission mode, as Shift+Tab does.
-      if ((e.target as HTMLElement).closest('.loom-bar-mode')) {
-        window.ember.write(this.session.id, '\x1b[Z')
-        this.session.focus()
-      }
-    })
-    host.barPick.addEventListener('mousedown', (e) => e.preventDefault())
-    host.barPick.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-model]')
-      if (!b || !host.wrapper) return
-      host.wrapper.setModel(b.dataset['model'] ?? '')
-      host.closeBarPick()
-      host.wrapper.input.focus()
-    })
-    const outsidePick = (e: MouseEvent) => {
-      if (!host.barPick.classList.contains('is-on')) return
-      const t = e.target as HTMLElement
-      if (!host.barPick.contains(t) && !t.closest?.('.loom-bar-pickmodel')) host.closeBarPick()
-    }
-    window.addEventListener('mousedown', outsidePick, true)
-    this.unsubs.push(() => window.removeEventListener('mousedown', outsidePick, true))
     const ro = new ResizeObserver(() => this.schedule())
     ro.observe(this.panes)
     this.unsubs.push(() => ro.disconnect())
@@ -268,7 +230,16 @@ export class LoomView {
       window.ember.canvas.onFeed((f: CanvasFeed) => {
         if (f.tabId !== this.tabId) return
         if (f.kind === 'switch') this.feed.switchSession(f.first, f.fresh === true)
-        else this.feed.add(f.lines)
+        else {
+          // The session's name (`/rename`), for the tab's card.
+          for (const l of f.lines as unknown as Array<Record<string, unknown>>) {
+            if (l['type'] === 'custom-title' && typeof l['customTitle'] === 'string' && l['customTitle'] !== this.host.title) {
+              this.host.title = l['customTitle']
+              this.hooks.changed?.()
+            }
+          }
+          this.feed.add(f.lines)
+        }
         this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
         stage.restage()
         stage.renderNow()
@@ -301,14 +272,19 @@ export class LoomView {
         }
       }),
       window.ember.canvas.onCost((c) => {
-        if (c.tabId !== this.tabId) return
-        host.cost = c
-        host.barKey = ''
+        if (c.tabId === this.tabId) host.cost = c
       }),
       window.ember.claude.onStatus((s) => {
-        if (s.tabId !== this.tabId) return
-        host.status = s
-        host.barKey = ''
+        if (s.tabId === this.tabId) host.status = s
+      }),
+      // The session's name (`/rename`): Claude Code's hooks carry it, for the tab's card.
+      window.ember.hooks.onEvent((e) => {
+        if (e.tabId !== this.tabId) return
+        const t = (e.input as Record<string, unknown>)['session_title']
+        if (typeof t === 'string' && t && t !== host.title) {
+          host.title = t
+          this.hooks.changed?.()
+        }
       })
     )
 
@@ -409,11 +385,10 @@ export class LoomView {
     this.panes.dataset['loom'] = mode
     if (showCanvas) this.stage.restage()
     this.renderSign()
-    // Leaving the canvas for the agent's own screen: the keyboard goes with it.
-    if (was === 'claude' && mode === 'raw' && this.hooks.isActive()) this.session.term.focus()
-    // The pane just moved under a new transform and clip (or came out from under the
-    // canvas). The WebGL drawing buffer is not preserved across composites (see
-    // Session.repaint), so draw every row afresh rather than trusting what was there.
+    void was
+    // The pane just moved (to the bottom box, or back to the whole tab). The WebGL drawing
+    // buffer is not preserved across composites (see Session.repaint), so draw every row
+    // afresh rather than trusting what was there.
     requestAnimationFrame(() => this.session.repaint())
   }
 
@@ -426,19 +401,21 @@ export class LoomView {
     if (this.pinned.size) this.snapping.reflow()
   }
 
-  /** For the sidebar card: Claude Code in the tab, its folder and the session's name. */
-  /** The tab's card while an agent runs on its wrapper: the agent in a folder, not the shell. */
+  /** The tab's card while an agent runs in it: the agent in a folder, not the shell. */
   get claudeCard(): { folder: string; title: string; agent: string; cli: boolean } | null {
-    if (!this.host.onAgent || !this.host.wrapper) return null
-    return { folder: this.session.cwd || this.session.initialCwd || '', title: this.host.wrapper.state.title, agent: this.host.who, cli: this.raw }
+    if (!this.host.onAgent) return null
+    return { folder: this.session.cwd || this.session.initialCwd || '', title: this.host.title, agent: this.host.who, cli: this.raw }
   }
 
-  /** Words for the session, as the person: through the composer on Claude's canvas, else typed. */
+  /**
+   * Words for the session, as the person: pasted into the agent's own prompt (and Enter,
+   * when `submit`), and the keyboard back in its terminal. With no agent, typed into the shell.
+   */
   type(text: string, submit: boolean): void {
-    const w = this.host.wrapper
-    if (w && this.host.onAgent) {
-      if (submit) w.send(text)
-      else w.put(text)
+    if (this.host.onAgent) {
+      void pasteIntoTui((d) => window.ember.write(this.session.id, d), text, submit)
+      // After the click that sent it has settled (a card focuses its own parts on the way).
+      if (this.hooks.isActive()) window.setTimeout(() => this.session.term.focus(), 60)
       return
     }
     this.hooks.send(text, submit)
@@ -465,6 +442,76 @@ export class LoomView {
     this.reportScreen()
   }
 
+  /**
+   * Files dropped on the tab while an agent runs: their paths go into its prompt, the way a
+   * drop on a terminal puts them (Claude Code makes an image's path an `[Image #n]`), and a
+   * picture gets its thumbnail above the divider.
+   */
+  dropFiles(files: File[]): void {
+    const paths = files.map((f) => window.ember.platform.pathForFile(f)).filter(Boolean)
+    if (!paths.length) return
+    for (const f of files) if (f.type.startsWith('image/')) this.addPasted(URL.createObjectURL(f))
+    this.type(paths.map((p) => (/\s/.test(p) ? `"${p}"` : p)).join(' ') + ' ', false)
+  }
+
+  /**
+   * A picture went to the agent's prompt (Ctrl+V, a drop). Its thumbnail waits for the TUI's
+   * own mark (`[Image #n]`, read from the prompt rows) and is labelled with it; it goes when
+   * the mark leaves the prompt (sent: the turn on the canvas shows it then, or deleted).
+   */
+  addPasted(src: string): void {
+    const el = div('loom-pasted-item')
+    el.innerHTML = `<img alt="Pasted image"><span>Image</span>`
+    el.querySelector('img')!.src = src
+    el.title = 'Attached in the CLI — click to see it'
+    this.pasted.push({ src, n: null, at: Date.now(), goneAt: 0, el })
+    this.pastedEl.appendChild(el)
+    this.pastedEl.classList.add('is-on')
+    this.schedule()
+  }
+
+  /** The prompt's `[Image #n]` marks, as the screen shows them now. */
+  syncPasted(marks: number[]): void {
+    if (!this.pasted.length) return
+    const now = Date.now()
+    const taken = new Set(this.pasted.map((p) => p.n).filter((n) => n != null))
+    for (const p of this.pasted) {
+      if (p.n == null) {
+        const free = marks.filter((m) => !taken.has(m)).sort((a, b) => a - b)[0]
+        if (free != null) {
+          p.n = free
+          taken.add(free)
+          p.el.querySelector('span')!.textContent = `Image #${free}`
+          p.el.querySelector('img')!.alt = `Image #${free}`
+        }
+      }
+      if (p.n != null) p.goneAt = marks.includes(p.n) ? 0 : p.goneAt || now
+    }
+    const keep = this.pasted.filter((p) => (p.n == null ? now - p.at < 8000 : !p.goneAt || now - p.goneAt < 600))
+    for (const p of this.pasted) {
+      if (keep.includes(p)) continue
+      p.el.remove()
+      if (p.src.startsWith('blob:')) window.setTimeout(() => URL.revokeObjectURL(p.src), 30_000)
+    }
+    this.pasted = keep
+    this.pastedEl.classList.toggle('is-on', keep.length > 0)
+  }
+
+  /** The agent left: its attachments went with it. */
+  clearPasted(): void {
+    for (const p of this.pasted) {
+      p.el.remove()
+      if (p.src.startsWith('blob:')) URL.revokeObjectURL(p.src)
+    }
+    this.pasted = []
+    this.pastedEl.classList.remove('is-on')
+  }
+
+  /** For probes: the thumbnails waiting above the divider, by their labels. */
+  get pastedLabels(): string[] {
+    return this.pasted.map((p) => (p.n == null ? 'Image' : `Image #${p.n}`))
+  }
+
   /** Ctrl+`: the real TUI, whole, or back to the canvas. */
   setRaw(on: boolean): void {
     if (on === this.raw) return
@@ -473,9 +520,7 @@ export class LoomView {
     // At once, not on the next frame: the switch only shows or hides the screen of the
     // one process both views share, and it should feel like it.
     this.host.layout()
-    this.host.wrapper?.view(on)
-    if (on) this.session.term.focus()
-    else this.session.focus()
+    this.session.term.focus()
     this.hooks.changed?.()
   }
 
@@ -527,8 +572,7 @@ export class LoomView {
   }
 
   grew(): void {
-    // Native mode has no transcript feed to clear the hint; the first message does.
-    if (this.host.onAgent) this.host.claudeHint()
+    if (this.host.onAgent) this.host.hint()
     this.stage.restage()
     if (this.pinned.size) this.snapping.reflow()
     // The stage starts at the top of the turn, your words first. It follows what is
@@ -604,7 +648,8 @@ export class LoomView {
     this.rawPill.innerHTML = viewSwitch(true)
   }
 
-  /** Claude Code is in this tab (on the canvas or in its own view): Alt+V pastes a picture. */
+  /** Claude Code is in this tab (split or full CLI): Ctrl+V with a picture is its Alt+V. */
+
   get isClaude(): boolean {
     return this.host.claudeOn
   }
@@ -636,17 +681,50 @@ export class LoomView {
     says: number
     rows: string[]
     sessionId: string
-    wrapper: Record<string, unknown> | null
+    cli: Record<string, unknown>
     claude: boolean
     paneVisible: boolean
     text: string
     hint: boolean
-    bar: string
   } {
+    const term = this.session.term
+    const pane = this.session.el
+    const x = term.element
+    const cs = getComputedStyle(pane)
+    const xs = x ? getComputedStyle(x) : null
     return {
       hint: !this.hint.classList.contains('is-gone') && this.el.classList.contains('is-on'),
-      bar: this.host.bar.innerText,
-      wrapper: this.host.wrapper?.debug() ?? null,
+      cli: {
+        rows: term.rows,
+        cols: term.cols,
+        pty: this.session.ptySize,
+        cellH: (term as unknown as { _core?: { _renderService?: { dimensions?: { css?: { cell?: { height?: number } } } } } })._core?._renderService?.dimensions?.css?.cell?.height ?? 0,
+        padY: x ? (parseFloat(getComputedStyle(x).paddingTop) || 0) + (parseFloat(getComputedStyle(x).paddingBottom) || 0) : 0,
+        need: this.host.read?.need ?? 0,
+        wantRows: this.host.wantRows,
+        paneTop: pane.offsetTop,
+        paneH: pane.clientHeight,
+        paneW: pane.clientWidth,
+        xtermH: x?.clientHeight ?? 0,
+        screenH: (x?.querySelector('.xterm-screen') as HTMLElement | null)?.offsetHeight ?? 0,
+        canvasH: this.el.clientHeight,
+        canvasOn: this.el.classList.contains('is-on'),
+        grown: this.host.grown,
+        userRows: this.host.userRows,
+        why: this.host.read?.why ?? '',
+        prompt: this.host.read?.prompt ?? false,
+        promptSeen: this.host.promptSeen,
+        live: this.host.live,
+        transform: cs.transform,
+        clipPath: cs.clipPath,
+        mask: cs.maskImage,
+        visibility: cs.visibility,
+        xtermTransform: xs?.transform ?? '',
+        xtermClip: xs?.clipPath ?? '',
+        focusInTerm: document.activeElement === term.textarea,
+        title: this.host.title,
+        pasted: this.pastedLabels,
+      },
       claude: this.host.claudeOn,
       paneVisible: this.session.el.style.visibility !== 'hidden',
       text: this.feed.el.innerText,
@@ -673,21 +751,13 @@ export class LoomView {
     this.sleeper.dispose()
     for (const u of this.unsubs) u()
     window.ember.canvas.unwatch(this.tabId)
-    this.host.wrapper?.dispose()
-    this.host.wrapper = null
-    this.session.focusInstead = null
     const pane = this.session.el
-    pane.style.visibility = ''
-    pane.style.transform = ''
-    pane.style.clipPath = ''
-    pane.style.maskImage = ''
-    pane.classList.remove('is-loom')
+    pane.style.top = ''
+    pane.classList.remove('is-loom', 'is-gliding')
     this.panes.classList.remove('has-loom')
     delete this.panes.dataset['loom']
     this.el.remove()
-    this.host.frame.remove()
-    this.host.bar.remove()
-    this.host.barPick.remove()
+    this.host.dispose()
     this.rawPill.remove()
   }
 }

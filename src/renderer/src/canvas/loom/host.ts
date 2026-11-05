@@ -1,30 +1,62 @@
 import type { ClaudeStatus, EmberCost } from '@shared/types'
 import { agentSpec } from '@shared/agents'
 import { escapeHtml } from '../markdown'
-import type { AgentWrapper, WrapperHost } from '../AgentWrapper'
-import { ClaudeTui } from '../ClaudeTui'
-import { CodexTui } from '../CodexTui'
+import { readTui, type TuiRead } from '../tuiScreen'
 import type { LoomView } from '../LoomView'
-import { BAR_H, FRAME_PAD, div, type Mode } from './shared'
+import { div, reduced, type Mode } from './shared'
 
-/** The agents with a wrapper: the canvas with Ember's composer over their own screen. */
+/** The agents laid out as canvas above, their real CLI below. */
 const WRAPPED = new Set(['claude', 'codex'])
 
+/** The CLI's height when nobody has chosen one, in rows. */
+export const DEFAULT_CLI_ROWS = 15
+/** The CLI never gets smaller than this: its prompt and footer always fit. */
+export const MIN_CLI_ROWS = 10
+/** What the canvas keeps at the least, in px. */
+const MIN_CANVAS = 96
+/** The divider's height: the line and its grab area. */
+export const DIVIDER_H = 9
+/** How much of the tab the CLI takes while the TUI shows a picker or a dialog. */
+const GROWN = 0.7
+/** Rows of the conversation kept above the TUI's bottom area when that area grows it. */
+const HEADROOM = 3
+const ROWS_KEY = 'ember.cliRows'
+
+function savedRows(): number {
+  try {
+    const n = Number(window.localStorage.getItem(ROWS_KEY))
+    return Number.isFinite(n) && n >= MIN_CLI_ROWS ? Math.round(n) : DEFAULT_CLI_ROWS
+  } catch {
+    return DEFAULT_CLI_ROWS
+  }
+}
+
+function saveRows(n: number): void {
+  try {
+    if (n === DEFAULT_CLI_ROWS) window.localStorage.removeItem(ROWS_KEY)
+    else window.localStorage.setItem(ROWS_KEY, String(n))
+  } catch {
+    /* remembered for this run only */
+  }
+}
+
 /**
- * The agent the tab's shell is running, and where its input sits. An agent with a wrapper
- * (Claude Code: ClaudeTui, Codex: CodexTui) gets the canvas with Ember's composer and the
- * bar under it, and none of its own screen; any other agent the Canvas | CLI switch over
- * its whole screen. This decides the mode, hides or shows the terminal pane, and lays out
- * the composer's frame and the bar, with the model picker above it.
+ * The agent the tab's shell is running, and the tab's layout while it runs.
+ *
+ * A wrapped agent (Claude Code, Codex) splits the tab: the canvas above, the agent's real
+ * terminal below, with a divider between. The terminal is the tab's own xterm, moved to the
+ * bottom box — its PTY is resized to that box, and the TUI redraws itself at that size.
+ * Nothing of the terminal is cropped, masked or transformed.
+ *
+ * The CLI's height is the person's (the divider, remembered), except while the TUI shows
+ * more than its plain prompt — a picker, a permission prompt, a question, a menu — when it
+ * grows to most of the tab and goes back once the prompt is plain again (tuiScreen.ts
+ * decides). Ctrl+` gives the CLI the whole tab.
+ *
+ * Any other agent the tab runs gets the Canvas | CLI switch over its whole screen.
  */
 export class AgentHost {
-  /** The frame round the input box, the bar under it, and what sits on the frame's top edge. */
-  readonly frame = div('loom-frame-box')
-  readonly bar = div('loom-bar')
-  /** The model picker, above the bar. */
-  readonly barPick = div('loom-bar-pick')
-  // ================================================================ the composer's place
-  readonly above = div('loom-above')
+  readonly divider = div('loom-divider', '<span class="loom-divider-line"></span><span class="loom-divider-grip"></span>')
   /** "Starting Claude Code…", over the shell until the agent's own screen is up. */
   private readonly starting = div('loom-starting')
   private agentUp = false
@@ -32,21 +64,47 @@ export class AgentHost {
   private tabAgentSent: string | null = null
   /** When the tab's current agent started, for finding its session log. */
   private tabAgentSince = Date.now()
-  /** What drives the agent on the canvas, once one has run in the tab. */
-  wrapper: AgentWrapper | null = null
   /** The wrapped agent running in the tab's shell (announced, and no prompt since), or null. */
   onAgent: string | null = null
-  /** The wrapped agent says it is mid-turn. */
+  /** The agent is mid-turn (its working line is on screen). */
   working = false
+  /** The working line, as the agent draws it. */
+  live: TuiRead['live'] = null
+  /** The agent's plain prompt has been on screen since it started. */
+  promptSeen = false
   status: ClaudeStatus | null = null
-  barKey = ''
   cost: EmberCost | null = null
+  /** The session's name (`/rename`), from Claude Code's hooks. */
+  title = ''
+
+  /** The CLI's height the person chose, in rows. */
+  userRows = savedRows()
+  /** The CLI's height now, in rows: the person's, or more while the TUI needs it. */
+  wantRows = this.userRows
+  private pendingRows = 0
+  private mostHeld = false
+  private pendingSince = 0
+  /** What the last look at the screen said. */
+  read: TuiRead | null = null
+  private liveAt = 0
+  private recheck = 0
+  /** A drag in progress: the CLI's height follows the pointer. */
+  private dragPx = 0
+  /** A drag made while grown: stays until the TUI is plain again, then the person's height is back. */
+  private heldPx = 0
+  /** The pane's last top, so a change is known (and animated). */
+  private lastTop = -1
 
   constructor(private readonly v: LoomView) {
-    this.barPick.setAttribute('role', 'listbox')
+    this.wireDivider()
   }
 
-  /** Claude Code is running in the tab, on its wrapper. */
+  /** The CLI is taller than the person's height: the TUI needs it. */
+  get grown(): boolean {
+    return this.wantRows > this.userRows
+  }
+
+  /** Claude Code is running in the tab. */
   get claudeOn(): boolean {
     return this.onAgent === 'claude'
   }
@@ -68,12 +126,10 @@ export class AgentHost {
     if (v.disposed) return
     const term = v.session.term
     const buf = term.buffer.active
-    const pane = v.session.el
-    if (!pane.clientHeight || !term.rows) return
+    if (!v.panes.clientHeight || !term.rows) return
 
     // Which agent the shell said it started (Ember's shims announce it, and the shell's
-    // next prompt says it has gone). One with a wrapper gets the canvas with Ember's
-    // composer; any other agent the switch over its whole screen.
+    // next prompt says it has gone).
     const agent = v.session.announcedAgent
     // Told again once the folder is known: an agent started with the shell runs before
     // the first prompt has said where the shell is.
@@ -103,224 +159,244 @@ export class AgentHost {
       }
       if (this.agentUp) this.starting.remove()
     }
-    this.wrapState(wrapped ? agent : null)
+    this.agentChanged(wrapped ? agent : null)
     if (v.raw && (mode === 'claude' || (mode === 'app' && !!agent))) mode = 'raw'
+    v.session.setStill(wrapped)
     if (mode === 'claude') {
-      this.layoutWrapped()
+      this.layoutSplit()
       return
     }
-    // The shell, an app or an agent's own screen: the terminal as it is, whole.
-    if (pane.style.visibility) pane.style.visibility = ''
+    // The shell, an app or an agent's whole screen: the terminal as it is, the whole tab.
+    this.place(0)
+    this.divider.classList.remove('is-on')
     v.setMode(mode, false)
     // The switch stays while an agent's own screen is shown, whatever it looks like.
     v.rawPill.classList.toggle('is-on', mode === 'raw' || (mode === 'app' && !!agent))
-    this.frame.classList.remove('is-on', 'is-native')
-    this.bar.classList.remove('is-on', 'is-native')
-    this.above.classList.remove('is-on')
+    // Still read in the full CLI, so the canvas's working line is right on coming back.
+    if (mode === 'raw' && wrapped) this.look()
   }
 
-  // ---------------------------------------------------------------- an agent on its wrapper
+  // ---------------------------------------------------------------- the agent comes and goes
 
-  /** A wrapped agent started or stopped in the tab's shell: its wrapper is told, made the first time. */
-  private wrapState(agent: string | null): void {
+  private agentChanged(agent: string | null): void {
     const v = this.v
     if (agent === this.onAgent) return
-    if (this.onAgent) this.wrapper?.ended()
     this.onAgent = agent
-    if (agent) {
-      if (this.wrapper && this.wrapper.agent !== agent) {
-        this.wrapper.dispose()
-        this.wrapper = null
-      }
-      if (!this.wrapper) {
-        const host: WrapperHost = {
-          tabId: v.tabId,
-          feed: v.feed,
-          frame: this.frame,
-          above: this.above,
-          term: v.session.term,
-          write: (d) => window.ember.write(v.session.id, d),
-          cwd: () => v.session.cwd || v.session.initialCwd || '',
-          inCli: () => v.raw,
-          openCli: () => v.setRaw(true),
-          changed: () => this.wrapperChanged(),
-          cleared: () => {
-            v.feed.switchSession(false, true)
-            v.hint.classList.toggle('is-gone', !v.feed.isEmpty)
-            v.stage.restage()
-            v.stage.renderNow()
-          },
-          relayout: () => v.schedule(),
-          toast: (t) => v.hooks.toast(t),
-        }
-        this.wrapper = agent === 'codex' ? new CodexTui(host) : new ClaudeTui(host)
-        // Said once it is ours: the wrapper's first state came before `this.wrapper` was set,
-        // and the canvas went on saying "Claude Code is here" through the whole start.
-        this.wrapperChanged()
-        const input = this.wrapper.input
-        const nf = () => this.frame.classList.toggle('is-focus', document.activeElement === input)
-        input.addEventListener('focus', nf)
-        input.addEventListener('blur', nf)
-      } else this.wrapper.started()
-      const input = this.wrapper.input
-      v.session.focusInstead = () => (v.raw ? v.session.term.focus() : input.focus())
-      if (v.hooks.isActive() && !v.raw) requestAnimationFrame(() => input.focus())
-    } else {
-      v.session.focusInstead = null
-      this.frame.classList.remove('is-on', 'is-native')
-      this.above.classList.remove('is-on')
-      this.bar.classList.remove('is-on', 'is-native')
-      this.closeBarPick()
-      // Back to the shell: the keyboard goes to its prompt.
-      if (v.hooks.isActive()) requestAnimationFrame(() => v.session.term.focus())
-    }
-    this.barKey = ''
+    if (!agent) v.clearPasted()
+    this.promptSeen = false
+    this.wantRows = this.userRows
+    this.heldPx = 0
+    this.setLive(null)
+    // The keyboard stays in the terminal: the person types into the agent's own prompt.
+    if (v.hooks.isActive()) requestAnimationFrame(() => v.session.term.focus())
+    this.hint()
     v.hooks.changed?.()
   }
 
-  /**
-   * The wrapped agent's canvas: nothing of its screen. The canvas takes the tab down to
-   * Ember's composer, with the bar under it; the terminal keeps its full size underneath,
-   * out of sight, so the agent lays itself out as it always does.
-   */
-  private layoutWrapped(): void {
-    const v = this.v
-    const w = this.wrapper
-    const pane = v.session.el
-    const paneH = pane.clientHeight
-    if (!paneH || !w) return
-    pane.style.visibility = 'hidden'
-    v.setMode('claude', true)
-    v.rawPill.classList.remove('is-on')
-    w.screen()
-    const left = pane.offsetLeft
-    const width = pane.offsetWidth
-    const frameH = Math.max(w.input.offsetHeight, 20) + FRAME_PAD * 2
-    const frameTop = pane.offsetTop + paneH - BAR_H - 6 - frameH
-    this.frame.classList.add('is-on', 'is-native')
-    this.frame.classList.remove('is-empty')
-    this.above.classList.add('is-on')
-    this.bar.classList.add('is-on', 'is-native')
-    Object.assign(this.frame.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px`, height: `${frameH.toFixed(1)}px` })
-    Object.assign(this.above.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${frameTop.toFixed(1)}px` })
-    Object.assign(this.bar.style, { left: `${left + 10}px`, width: `${width - 20}px`, top: `${(pane.offsetTop + paneH - BAR_H - 2).toFixed(1)}px`, height: `${BAR_H}px` })
-    v.sizeCanvas(frameTop - pane.offsetTop - 8)
-    this.renderBarWrapped()
-    this.claudeHint()
+  // ---------------------------------------------------------------- canvas above, CLI below
+
+  /** The terminal's row height and its padding, in CSS px. */
+  private cell(): { h: number; pad: number } {
+    const term = this.v.session.term as unknown as { _core?: { _renderService?: { dimensions?: { css?: { cell?: { height?: number } } } } } }
+    let h = term._core?._renderService?.dimensions?.css?.cell?.height ?? 0
+    if (!h) h = (this.v.session.term.options.fontSize ?? 14) * (this.v.session.term.options.lineHeight ?? 1.2) * 1.2
+    const x = this.v.session.term.element
+    let pad = 0
+    if (x) {
+      const cs = getComputedStyle(x)
+      pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
+    }
+    return { h, pad }
   }
 
-  /** The wrapper's state changed: the working line, the bar, the hint. */
-  private wrapperChanged(): void {
+  /** The CLI's height in px for `rows` rows, kept inside what the tab can give. */
+  private cliPx(rows: number, total: number): number {
+    const { h, pad } = this.cell()
+    const most = Math.max(MIN_CLI_ROWS, Math.floor((total - MIN_CANVAS - DIVIDER_H - pad) / h))
+    const r = Math.max(MIN_CLI_ROWS, Math.min(most, rows))
+    // Half a pixel to spare, so the fit never rounds a row away.
+    return r * h + pad + 0.5
+  }
+
+  private layoutSplit(): void {
     const v = this.v
-    const s = this.wrapper?.state
-    if (!s) return
+    const total = v.panes.clientHeight
+    if (!total) return
+    v.setMode('claude', true)
+    v.rawPill.classList.remove('is-on')
+    this.look()
+    const { h, pad } = this.cell()
+    let rows = this.wantRows
+    if (this.dragPx) rows = Math.round((this.dragPx - pad) / h)
+    else if (this.heldPx) rows = Math.round((this.heldPx - pad) / h)
+    const cli = this.cliPx(rows, total)
+    const top = Math.max(0, total - cli)
+    this.place(top)
+    this.divider.classList.add('is-on')
+    this.divider.style.top = `${(top - DIVIDER_H).toFixed(1)}px`
+    v.sizeCanvas(top - DIVIDER_H)
+  }
+
+  /**
+   * Where the terminal's box starts. The pane keeps its left, right and bottom at the tab's
+   * edges; only its top moves, and the session's own resize observer fits the terminal to
+   * the box and resizes the PTY. A change glides (unless dragged, or motion is reduced).
+   */
+  private place(top: number): void {
+    const v = this.v
+    const pane = v.session.el
+    const px = top > 0 ? `${top.toFixed(1)}px` : ''
+    if (pane.style.top === px) return
+    const glide = !this.dragPx && this.lastTop > 0 && top > 0 && !reduced()
+    v.el.classList.toggle('is-gliding', glide)
+    this.divider.classList.toggle('is-gliding', glide)
+    pane.classList.toggle('is-gliding', glide)
+    pane.style.top = px
+    this.lastTop = top
+  }
+
+  /**
+   * Read the agent's screen and decide the CLI's height. A picker or a dialog gets most of
+   * the tab; the bottom area (working line, todo list, queued messages, the prompt, its
+   * footer) gets at least its own rows and a few of the conversation above. More room is
+   * given as soon as the screen has held still a moment (a redraw can show a half-drawn
+   * screen); it is taken back only once the smaller need has held for a little while.
+   */
+  look(): void {
+    const v = this.v
+    if (!this.onAgent) return
+    const r = readTui(v.session.term, this.onAgent)
+    this.read = r
+    const now = Date.now()
+    if (r.prompt && !this.promptSeen) {
+      this.promptSeen = true
+      this.hint()
+    }
+    if (r.live) this.liveAt = now
+    if (r.prompt) v.syncPasted(r.marks)
+    this.setLive(r.live ?? (now - this.liveAt < 1500 ? this.live : null))
+    // Before the first prompt only a dialog counts (a fresh `claude` draws nothing for a moment).
+    const room = r.room || (this.promptSeen && !r.prompt)
+    const { h, pad } = this.cell()
+    const total = v.panes.clientHeight
+    let target = this.userRows
+    // A long prompt that filled its box keeps all the room while it stays long: at a
+    // smaller height the box would fill again and the two would take turns.
+    this.mostHeld = !!r.most || (this.mostHeld && r.why.startsWith('long prompt'))
+    if (this.mostHeld) target = Math.max(target, Math.floor((total - pad) / h))
+    else if (room) target = Math.max(target, Math.floor((total * GROWN - pad) / h))
+    else if (r.need) target = Math.max(target, r.need + HEADROOM)
+    if (target !== this.pendingRows) {
+      this.pendingRows = target
+      this.pendingSince = now
+    }
+    const held = now - this.pendingSince
+    if (target !== this.wantRows && held >= (target > this.wantRows ? 120 : 350)) {
+      this.wantRows = target
+      // A size dragged while grown lasts until the TUI is plain again.
+      if (target === this.userRows) this.heldPx = 0
+      v.schedule()
+    }
+    // A still screen draws nothing that would call again: look once more while it waits.
+    const pending = target !== this.wantRows || !!this.live
+    window.clearTimeout(this.recheck)
+    if (pending) this.recheck = window.setTimeout(() => v.schedule(), target > this.wantRows ? 130 : 380)
+  }
+
+  private setLive(live: TuiRead['live']): void {
+    const v = this.v
+    if (JSON.stringify(live) === JSON.stringify(this.live) && this.working === !!live) return
     const was = this.working
-    this.working = s.phase === 'working' || !!s.live
-    v.stage.spin = s.live ? { ...s.live } : { glyph: '✻', verb: s.phase === 'starting' ? 'Starting…' : 'Working…', detail: '' }
-    const hint = v.hint.querySelector('.loom-hint-text')
-    if (hint && this.onAgent)
-      hint.textContent = s.phase === 'starting' ? s.boot || `Starting ${this.who}…` : `${this.who} is here. Ask below — what it says and shows appears on this canvas.`
-    this.claudeHint()
+    this.live = live
+    this.working = !!live
+    v.stage.spin = live ? { ...live } : { glyph: '✻', verb: 'Working…', detail: '' }
     v.stage.renderNow()
     if (was !== this.working) {
       v.stage.restage()
       v.stage.trail.classList.toggle('is-on', this.working && v.stage.trail.childElementCount > 0)
       if (!this.working) v.stage.clearTrail()
+      this.hint()
+      v.hooks.changed?.()
     }
-    this.barKey = ''
-    if (this.bar.classList.contains('is-on') && v.mode === 'claude') this.renderBarWrapped()
-    v.hooks.changed?.()
   }
 
-  /** "Claude Code is here": only on an empty canvas with nothing open over it. */
-  claudeHint(): void {
+  /** The words on an empty canvas while the agent runs. */
+  hint(): void {
     const v = this.v
-    const w = this.wrapper
-    if (!w || !this.onAgent) return
-    const open = w.busy || this.barPick.classList.contains('is-on') || v.input.ctxMenu.classList.contains('is-on') || v.notebook.drawer.classList.contains('is-on')
-    v.hint.classList.toggle('is-gone', !v.feed.isEmpty || w.state.phase === 'working' || w.state.phase === 'asking' || open || w.away)
+    const text = v.hint.querySelector('.loom-hint-text')
+    if (text && this.onAgent)
+      text.textContent = this.promptSeen ? `${this.who} is below. What it says and shows appears here.` : `${this.who} is starting…`
+    const open = v.input.ctxMenu.classList.contains('is-on') || v.notebook.drawer.classList.contains('is-on')
+    v.hint.classList.toggle('is-gone', !v.feed.isEmpty || this.working || open)
   }
 
-  /** The bar: the mode (a switch), the model (a picker), context used, what it is doing. */
-  private renderBarWrapped(): void {
-    const s = this.wrapper?.state
-    // Claude Code's status line reports for its own tab only.
-    const st = this.claudeOn ? this.status : null
-    const away = !!this.wrapper?.away
-    const key = `${this.onAgent}|${away}|${s?.phase}|${s?.boot ?? ''}|${s?.mode}|${s?.model}|${s?.effort}|${s?.context ?? ''}|${st?.at ?? ''}|${this.cost?.tokens ?? ''}`
-    if (key === this.barKey) return
-    this.barKey = key
-    const modes: Record<string, [string, string]> = {
-      bypassPermissions: ['bypass', 'is-bypass'],
-      acceptEdits: ['accept edits', 'is-edits'],
-      plan: ['plan', 'is-plan'],
-      auto: ['auto', 'is-auto'],
-      dontAsk: ["don't ask", 'is-auto'],
-    }
-    const [label, cls] = modes[s?.mode ?? ''] ?? ['default', 'is-default']
-    const phase = away
-      ? 'in the CLI'
-      : s?.phase === 'starting'
-        ? s.boot ? s.boot.replace(/^Starting [^·]+ · /, 'starting · ') : 'starting…'
-        : s?.phase === 'working' ? 'working · esc to interrupt' : s?.phase === 'asking' ? 'waiting for you' : s?.phase === 'exited' ? 'exited' : 'ready'
-    const parts: string[] = []
-    const what = this.claudeOn ? 'Permission mode' : 'Mode'
-    parts.push(`<button type="button" class="loom-bar-mode ${cls}" title="${what} — click or Shift+Tab to cycle"><i></i>${escapeHtml(label)}</button>`)
-    const name = st?.model || s?.model || this.who
-    const size = st?.contextSize && st.contextSize >= 1_000_000 && !/context|1M/i.test(name) ? ' 1M' : ''
-    if (this.wrapper?.models().length) parts.push(`<button type="button" class="loom-bar-model loom-bar-pickmodel" title="Model — click to switch">${escapeHtml(name)}${size}<span class="loom-bar-caret">▾</span></button>`)
-    else parts.push(`<span class="loom-bar-model">${escapeHtml(name)}${size}</span>`)
-    if (s?.effort) parts.push(`<span class="loom-bar-effort" title="Effort (/effort to change)">${escapeHtml(s.effort)}</span>`)
-    const ctx = st?.contextPercent ?? s?.context
-    if (ctx != null) {
-      const p = Math.max(0, Math.min(100, Math.round(ctx)))
-      parts.push(`<span class="loom-bar-ctx${p >= 80 ? ' is-high' : ''}" title="Context used"><i style="--p:${p}%"></i>${p}%</span>`)
-    }
-    if (st?.costUsd != null) parts.push(`<span class="loom-bar-cost" title="This session, all of it">$${st.costUsd.toFixed(2)}</span>`)
-    parts.push(`<span class="loom-bar-rest">${escapeHtml(phase)}</span>`)
-    this.bar.innerHTML = parts.join('')
+  // ---------------------------------------------------------------- the divider
+
+  private wireDivider(): void {
+    const d = this.divider
+    d.setAttribute('role', 'separator')
+    d.setAttribute('aria-orientation', 'horizontal')
+    d.title = 'Drag to size the CLI · double-click to reset'
+    d.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return
+      e.preventDefault()
+      d.setPointerCapture(e.pointerId)
+      d.classList.add('is-dragging')
+      document.body.classList.add('is-resizing')
+      const total = this.v.panes.clientHeight
+      const pr = this.v.panes.getBoundingClientRect()
+      const move = (ev: PointerEvent) => {
+        const cli = Math.max(0, pr.bottom - ev.clientY - DIVIDER_H / 2)
+        this.dragPx = Math.max(this.cliPx(MIN_CLI_ROWS, total), Math.min(cli, total - MIN_CANVAS - DIVIDER_H))
+        this.v.schedule()
+      }
+      const up = () => {
+        d.removeEventListener('pointermove', move)
+        d.removeEventListener('pointerup', up)
+        d.removeEventListener('pointercancel', up)
+        d.classList.remove('is-dragging')
+        document.body.classList.remove('is-resizing')
+        if (this.dragPx) {
+          const { h, pad } = this.cell()
+          const rows = Math.max(MIN_CLI_ROWS, Math.round((this.dragPx - pad) / h))
+          // Sized while a picker had it grown: that size holds until the picker goes; the
+          // person's own height is what they set with nothing grown.
+          if (this.grown) this.heldPx = this.dragPx
+          else {
+            this.userRows = this.wantRows = rows
+            saveRows(rows)
+          }
+          this.dragPx = 0
+          this.v.schedule()
+        }
+        this.v.session.term.focus()
+      }
+      d.addEventListener('pointermove', move)
+      d.addEventListener('pointerup', up)
+      d.addEventListener('pointercancel', up)
+    })
+    d.addEventListener('dblclick', () => this.resetSize())
   }
 
-  barClickClaude(t: HTMLElement): void {
-    const w = this.wrapper
-    if (!w) return
-    if (t.closest('.loom-bar-mode')) {
-      w.cycleMode()
-      w.input.focus()
-    } else if (t.closest('.loom-bar-pickmodel')) {
-      if (this.barPick.classList.contains('is-on')) this.closeBarPick()
-      else this.openBarPick(t.closest<HTMLElement>('.loom-bar-pickmodel')!)
-    }
+  /** The CLI back to its default height. */
+  resetSize(): void {
+    this.userRows = this.wantRows = DEFAULT_CLI_ROWS
+    this.heldPx = 0
+    saveRows(DEFAULT_CLI_ROWS)
+    this.v.schedule()
+    this.v.session.term.focus()
   }
 
-  /** The model picker: the agent's own list, above the bar. Picking types `/model <it>`. */
-  private openBarPick(anchor: HTMLElement): void {
-    const w = this.wrapper
-    if (!w) return
-    const current = (this.status?.model || w.state.model).toLowerCase()
-    this.barPick.innerHTML = w
-      .models()
-      .map((m) => {
-        const on = !!current && (m.displayName.toLowerCase() === current || m.value.toLowerCase() === current)
-        return (
-          `<button type="button" role="option" data-model="${escapeHtml(m.value)}" class="${on ? 'is-on' : ''}" aria-selected="${on}">` +
-          `<b>${escapeHtml(m.displayName || m.value)}</b><span>${escapeHtml(m.description ?? '')}</span></button>`
-        )
-      })
-      .join('')
-    const pr = this.v.panes.getBoundingClientRect()
-    const ar = anchor.getBoundingClientRect()
-    const br = this.bar.getBoundingClientRect()
-    this.barPick.style.left = `${Math.max(8, ar.left - pr.left - 8).toFixed(0)}px`
-    this.barPick.style.bottom = `${(pr.bottom - br.top + 6).toFixed(0)}px`
-    this.barPick.classList.add('is-on')
-    this.claudeHint()
+  /** For probes and the keyboard: the person's CLI height, in rows. */
+  setRows(rows: number): void {
+    this.userRows = this.wantRows = Math.max(MIN_CLI_ROWS, Math.round(rows))
+    saveRows(this.userRows)
+    this.v.schedule()
   }
 
-  closeBarPick(): boolean {
-    if (!this.barPick.classList.contains('is-on')) return false
-    this.barPick.classList.remove('is-on')
-    this.claudeHint()
-    return true
+  dispose(): void {
+    window.clearTimeout(this.recheck)
+    this.divider.remove()
+    this.starting.remove()
   }
 }

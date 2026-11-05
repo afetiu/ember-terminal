@@ -192,6 +192,8 @@ export function isFresh(lines: Json[], since: number): boolean {
 
 function slimLine(line: Json): Json | null {
   const type = String(line['type'] ?? '')
+  // `/rename`: the session's name, for the tab's card.
+  if (type === 'custom-title' && typeof line['customTitle'] === 'string') return { type, customTitle: cap(String(line['customTitle'])) }
   if (type !== 'user' && type !== 'assistant' && type !== 'system') return null
   const msg = (line['message'] ?? {}) as Json
   const content = msg['content']

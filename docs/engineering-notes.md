@@ -732,6 +732,10 @@ and the animation disables itself.
 
 ## The canvas, measured (November 2026)
 
+> Measured before the hybrid layout ([specs/hybrid.md](specs/hybrid.md)): the composer,
+> ClaudeTui, the hook-driven turn state and the startup words below are gone; the real CLI
+> now sits at the bottom of the tab. `probe-perf.mjs` measures keypress → echo in that CLI.
+
 `node scripts/probe-perf.mjs [--only=start,claude,hooks,mem,frames] [--profile] [--idle-only]`
 measures the one-Claude canvas: its own Ember (own EMBER_HOME, CDP 9501), the real
 `claude --model haiku` in ~/agent-box typed into a plain shell, and Ember's own process tree
@@ -835,7 +839,8 @@ tools). Ember is a terminal for agents, not a desktop driver; the history has th
 - `scripts/bench.mjs` — the head-to-head above, with a per-5s drain readout and `--profile-main`
 - `scripts/bench-pty.cjs` — the same firehose through node-pty alone: ConPTY's floor
 - `scripts/probe-latency.mjs` — keystroke-to-echo, on a real pty, under load
-- `scripts/probe-perf.mjs` — the canvas's numbers: start, idle and streaming CPU, composer latency, hooks, memory per tab, 30 diagrams
+- `scripts/probe-perf.mjs` — the canvas's numbers: start, idle and streaming CPU, keypress → echo in the CLI, memory per tab, 30 diagrams
+- `scripts/probe-hybrid.mjs` — the hybrid tab with the real Claude Code (and `--codex`): the PTY fits the CLI's box, nothing covers it, the CLI grows for pickers, dialogs, menus, long prompts and the queue, pictures, the divider, Ctrl+`
 - `scripts/probe-frames.mjs` — frame pacing of every animation (late frames, worst gap, p95)
 - `scripts/probe-notes-cli.mjs` — the `notes` command from inside a real Ember shell, PowerShell and Git Bash
 - `scripts/shot.mjs` — screenshots of the chrome (shell, notes, todo, palette, settings)

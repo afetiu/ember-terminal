@@ -34,7 +34,17 @@ export class CanvasInput {
       this.kbdKey(e)
       return
     }
-    // Ctrl+↑ from the input: into the results, onto the newest object.
+    const inTerm = !!(e.target as HTMLElement | null)?.closest?.('.xterm')
+    // Ctrl+` in the terminal or on the canvas: the CLI takes the whole tab, or gives it back.
+    if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
+      if (v.mode === 'claude' || v.mode === 'raw') {
+        e.preventDefault()
+        e.stopPropagation()
+        v.setRaw(!v.raw)
+      }
+      return
+    }
+    // Ctrl+↑ from the prompt: into the canvas, onto the newest object.
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === 'ArrowUp' && v.mode === 'claude') {
       e.preventDefault()
       e.stopPropagation()
@@ -55,14 +65,14 @@ export class CanvasInput {
       else v.notebook.toggleDrawer('notes')
       return
     }
-    if (e.ctrlKey && !e.altKey && e.code === 'Backquote') {
-      if (v.mode === 'claude' || v.mode === 'raw') {
-        e.preventDefault()
-        e.stopPropagation()
-        v.setRaw(!v.raw)
-      }
+    if (v.mode === 'claude' && e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault()
+      e.stopPropagation()
+      v.stage.stepTurn(e.key === 'ArrowUp' ? -1 : 1)
       return
     }
+    // Every other key typed in the agent's terminal is the agent's: Esc, PageUp, Ctrl+C.
+    if (inTerm) return
     // Ctrl+C with text selected on the canvas copies it — it does not reach Claude Code as
     // an interrupt.
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.code === 'KeyC') {
@@ -77,21 +87,17 @@ export class CanvasInput {
       }
     }
     if (v.mode !== 'claude') return
-    if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault()
-      e.stopPropagation()
-      v.stage.stepTurn(e.key === 'ArrowUp' ? -1 : 1)
-      return
-    }
     if (inLoomInput && e.key !== 'Escape') return
     if (e.key === 'Escape') {
-      // Esc is Claude Code's interrupt. Only take it when something of ours is open.
-      if (v.host.closeBarPick() || this.closeOverlays() || (v.host.wrapper && v.mode === 'claude' && v.host.wrapper.escape())) {
+      // On the canvas, Esc closes what is open there, or else gives the keyboard back to the
+      // agent's prompt. It never reaches the agent as its interrupt from here.
+      if (this.closeOverlays()) {
         e.preventDefault()
         e.stopPropagation()
-      }
+      } else if (tgt === document.body || (tgt && v.el.contains(tgt))) v.session.focus()
       return
     }
+
     if (inLoomInput) return
     if ((e.key === 'PageUp' || e.key === 'PageDown') && !e.ctrlKey && !e.altKey && !e.shiftKey) {
       e.preventDefault()
@@ -108,7 +114,7 @@ export class CanvasInput {
     }
     // Typing anywhere on the canvas types into the prompt.
     const target = e.target as HTMLElement | null
-    if (target && v.el.contains(target) && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (target && (target === document.body || v.el.contains(target)) && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
       v.session.focus()
     }
   }

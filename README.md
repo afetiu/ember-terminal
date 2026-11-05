@@ -21,8 +21,10 @@ Free · MIT · no account · no telemetry · Windows 10/11 x64
 - **Right-click to ask or to change.** Every object has a menu. Ask a question about it, or
   about the part you clicked, and the answer comes right there without interrupting the
   session. Say what to change instead, and the agent changes it in place.
-- **Canvas or CLI.** One switch, ``Ctrl+` ``, between the canvas and the agent's own screen.
-  Both show the same running agent, so the switch is instant and nothing restarts.
+- **The real CLI at the bottom, its output on a canvas above.** You type into the agent's
+  own prompt, exactly as in any terminal: its `/` commands, pickers, permission prompts and
+  queue are its own. Ember formats what it says and shows on the canvas above. The CLI grows
+  while it shows a picker or a dialog, and ``Ctrl+` `` gives it the whole tab.
 - **Keyboard first.** `Ctrl+↑` walks the objects, `Enter` opens one full screen, `Esc`
   is always the way back, and `Ctrl+K` does the rest.
 - **Notes and a todo list, outside sessions.** A sticky note with `Ctrl+Shift+N`, a todo
@@ -39,16 +41,14 @@ exactly as in any other terminal:
 
 The first run lists the ones you have installed. Every tab starts as a plain terminal
 (`+` or `Ctrl+Shift+T`). Run `claude` or `codex` in it and the tab becomes that agent's
-canvas: your messages go in through Ember's own input box, permission requests and
-questions come up as cards, and the reply is drawn on the canvas. Exit the agent and the
-tab is a terminal again. `Ctrl+K` › **New Claude tab** opens a terminal that starts
+canvas above the agent's real CLI: you type into its own prompt at the bottom, and its
+replies are drawn on the canvas. Exit the agent and the tab is a terminal again. `Ctrl+K` › **New Claude tab** opens a terminal that starts
 `claude` by itself.
 
 Claude Code and Codex get the canvas: their replies, tool calls and objects are read from
-their own session logs, and their hooks bring permission requests to Ember. Codex runs
-hooks only after you approve them once on its own *Hooks need review* screen; until then
-its approvals stay in the CLI view. The others run in their own screen, with Ember's tools
-available to them. How each CLI is run lives in `src/shared/agents.ts`.
+their own session logs. Everything else (permission prompts, questions, plan approval,
+`/` menus, pickers, the queue) stays in their own CLI, so Ember never has to keep a copy of
+it up to date. The others run in their own screen, with Ember's tools available to them. How each CLI is run lives in `src/shared/agents.ts`.
 
 ## Install
 
@@ -79,8 +79,13 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 
 ## Working on the canvas
 
-- **Ask in the input box** at the bottom. The current turn fills the canvas; earlier turns
-  are a step away with `Ctrl+Shift+↑` / `↓`, or keep scrolling past the top or bottom.
+- **Type in the CLI** at the bottom: it is the agent's own prompt. The current turn fills
+  the canvas; earlier turns are a step away with `Ctrl+Shift+↑` / `↓`, or keep scrolling
+  past the top or bottom.
+- **The divider** between canvas and CLI drags to size the CLI (double-click resets it to
+  15 rows, it never goes below 10). The CLI grows by itself while the agent shows a picker,
+  a permission prompt, a question, the `/` list, a long prompt or a queue that would not
+  fit, and goes back once its prompt is plain again.
 - **Objects in a reply** resize from any edge. **Drag out** takes one out of the reply:
   drop it anywhere, or at an edge to snap it there (up to four per edge, each where you drop
   it), and the text moves out of the way.
@@ -89,17 +94,13 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 - **The plan** of a longer piece of work is an object like the others: it ticks itself off, follows
   the work into later turns, and can be moved, snapped, minimized or removed.
 - **Subagents** show as pills while they work. Click one to see the steps it took.
-- **Pictures:** `Ctrl+V` an image into the input and it shows as a thumbnail above it
-  until you send, then it is part of your message.
-- **Queued messages**, sent while the agent works, wait right above the input; **Send now**
-  sends one without waiting for the turn to end, and **×** drops it.
+- **Pictures:** `Ctrl+V` an image (or drop one) and the agent attaches it as
+  `[Image #1]`; the canvas shows its thumbnail just above the divider until you send, then
+  in your turn.
 - **Questions** a reply ends with get their options as buttons and a field each; **Send**
-  answers them all in one message.
-- **`/` and `@`** open Ember's own menus of commands and files, and `!` runs a command in
-  the agent's shell mode. Anything only the CLI can show (a picker, `/login`) says so, and
-  ``Ctrl+` `` takes you there.
+  types the answers into the agent's prompt as one message.
 
-| Keys | With an object selected (`Ctrl+↑` from the input) |
+| Keys | With an object selected (`Ctrl+↑` from the CLI) |
 | --- | --- |
 | `↑` `↓` | Choose another object |
 | `Enter` | Full screen |

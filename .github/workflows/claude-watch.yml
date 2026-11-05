@@ -1,5 +1,5 @@
-# Keeps Ember's native canvas in step with Claude Code (docs/specs/canvas-native.md,
-# "Keeping up with Claude Code").
+# Keeps Ember's canvas in step with Claude Code (docs/specs/hybrid.md, "Keeping up with
+# Claude Code"): the transcript format it draws from and the TUI layout it sizes the CLI by.
 #
 # Weekly, and on demand: compares the latest @anthropic-ai/claude-code on npm with
 # docs/specs/claude-version.txt. On a new version, scripts/claude-watch.mjs reads the

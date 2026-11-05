@@ -1,6 +1,6 @@
 /**
  * The keyboard path: a new terminal, `claude --model haiku` typed into it, a diagram asked for
- * in Ember's composer,
+ * in the CLI's prompt,
  * then Ctrl+↑ onto it, Shift+→ to snap it right, Esc back to typing. Screenshots of each;
  * exits non-zero when a step does not do what it says.
  *
@@ -47,12 +47,14 @@ const snap = () => ev('window.__ember.loom()')
 const write = (sid, text) => ev(`window.ember.write(${JSON.stringify(sid)}, ${JSON.stringify(text)})`)
 const typeText = (text) => send('Input.insertText', { text })
 const enterKey = async () => {
+  // A beat first: an Enter right after typed text reads to the TUI as part of a paste.
+  await new Promise((r) => setTimeout(r, 350))
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
 }
-/** A message, typed into Ember's composer: never into Claude Code's own terminal. */
+/** A message, typed into the agent's own prompt in the CLI, as the person would. */
 const say = async (text) => {
-  await ev(`document.querySelector('.loom-native-input')?.focus()`)
+  await ev(`document.querySelector('[data-session-id="' + window.__ember.loom().sessionId + '"] .xterm-helper-textarea')?.focus()`)
   await typeText(text)
   await enterKey()
 }
@@ -65,7 +67,7 @@ const startClaude = async (sid) => {
   await wait(300)
   await write(sid, String.fromCharCode(13))
   for (let i = 0; i < 40; i++) {
-    if ((await snap()).mode === 'claude' && (await snap()).wrapper?.boxSeen) break
+    if ((await snap()).mode === 'claude' && (await snap()).cli?.promptSeen) break
     await wait(1000)
   }
 }
@@ -107,8 +109,8 @@ await shot('snapped')
 check('Shift+Right snaps it right', await ev(`!!document.querySelector('.loom-piece.is-kbd.is-pinned.is-snapped[data-snap="right"]')`))
 await key('Escape', 'Escape')
 await wait(500)
-// Back to typing on the canvas is Ember's composer, not the terminal underneath it.
-check('Esc goes back to typing', await ev(`!document.querySelector('.loom-piece.is-kbd') && !!document.activeElement?.closest?.('.loom-native-input, .loom-frame-box')`), await ev(`document.activeElement?.className`))
+// Back to typing is the agent's own prompt, in the CLI below.
+check('Esc goes back to typing', await ev(`!document.querySelector('.loom-piece.is-kbd') && !!document.activeElement?.classList?.contains('xterm-helper-textarea')`), await ev(`document.activeElement?.className`))
 ws.close()
 child.kill()
 if (failures) {

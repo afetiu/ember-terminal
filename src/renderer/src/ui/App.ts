@@ -305,7 +305,7 @@ export class App {
       const at = document.activeElement
       if (at instanceof HTMLIFrameElement || at?.tagName === 'WEBVIEW') return
       // Half way through answering a question card: it keeps the keyboard.
-      if (at?.closest('.loom-answers, .loom-ask-card')) return
+      if (at?.closest('.loom-answers')) return
       this.activeGroup?.focusFirst()
     })
   }
@@ -2100,22 +2100,26 @@ export class App {
    * An image, though, cannot travel as text. When the clipboard holds one (a screenshot,
    * a copied picture) and Claude Code is in the tab, Claude is sent its own image-paste
    * key, Alt+V on Windows: it reads the clipboard itself and attaches the picture as
-   * "[Image #n]", exactly as it would natively. The canvas shows a thumbnail of it above
-   * the input until the message goes.
+   * "[Image #n]", exactly as it would natively (Codex: its own Ctrl+V). The canvas shows
+   * a thumbnail of it just above the divider
+   * until the message goes.
    */
   private pasteClipboard(): void {
     void (async () => {
       const group = this.activeGroup
       const session = group?.focused
-      if (session && group?.loom?.isClaude) {
+      const agent = group?.loom?.host.onAgent
+      if (session && group?.loom && agent) {
         try {
           const items = await navigator.clipboard.read()
           const text = items.some((i) => i.types.includes('text/plain'))
           const img = items.find((i) => i.types.some((t) => t.startsWith('image/')))
           if (img && !text) {
+            // The TUI reads the clipboard itself (Claude Code on Alt+V, Codex on Ctrl+V) and
+            // attaches it as "[Image #n]"; the canvas keeps a thumbnail of it meanwhile.
             const blob = await img.getType(img.types.find((t) => t.startsWith('image/'))!)
-            void blob
-            window.ember.write(session.id, '\x1bv')
+            group.loom.addPasted(URL.createObjectURL(blob))
+            window.ember.write(session.id, agent === 'codex' ? '\x16' : '\x1bv')
             return
           }
         } catch {
@@ -2172,6 +2176,11 @@ export class App {
       if (!paths.length) return
       hit.group.focus(hit.session.id)
       hit.session.focus()
+      // An agent in the tab: its prompt takes the paths (and a picture gets its thumbnail).
+      if (hit.group.loom?.host.onAgent) {
+        hit.group.loom.dropFiles([...(e.dataTransfer?.files ?? [])])
+        return
+      }
       window.ember.write(hit.session.id, `${paths.map((p) => `'${p.replace(/'/g, "''")}'`).join(' ')} `)
     })
   }

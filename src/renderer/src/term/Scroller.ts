@@ -53,6 +53,12 @@ export class Scroller {
     this.effects = effects
   }
 
+  /**
+   * No motion on the screen: an agent's CLI under the canvas must show its rows exactly
+   * where the PTY put them (the arrival rise and the rubber band both move the screen).
+   */
+  still = false
+
   setCellHeight(h: number): void {
     if (h > 0) this.cellHeight = h
   }
@@ -78,7 +84,7 @@ export class Scroller {
     this.lastY = y
     if (delta <= 0) return
 
-    if (!this.effects.outputMotion) return
+    if (!this.effects.outputMotion || this.still) return
     if (this.ratePerSec > this.effects.outputMotionMaxRate) return
     if (!quality.allowsDecoration) return
     // A jump of many lines is a screen clear or a jump-to-bottom, not an arrival.
@@ -120,7 +126,7 @@ export class Scroller {
       const nextY = buf.viewportY + step
       if (nextY < 0 || nextY > maxY) {
         // Past an end: convert the remaining momentum into stretch, then bleed it.
-        if (this.config.elastic) {
+        if (this.config.elastic && !this.still) {
           this.overscroll += this.velocity * dt * 0.22
           this.velocity *= 0.82
         } else {

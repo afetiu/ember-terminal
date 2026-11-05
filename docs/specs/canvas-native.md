@@ -1,6 +1,6 @@
 # Canvas, native: Ember drives Claude Code instead of reading its screen
 
-> **Superseded 2026-11-04 by [one-claude.md](one-claude.md).** The structured-mode driver
+> **Superseded 2026-11-05 by [hybrid.md](hybrid.md)** (and before that, 2026-11-04, by [one-claude.md](one-claude.md)). The structured-mode driver
 > (`claudeHost.ts`, `NativeClaude.ts`) is gone; its Composer and Asks live on in `ClaudeTui`.
 
 Status: approved 2026-11-03, in progress on branch `canvas-native`. Phases 1–5 done

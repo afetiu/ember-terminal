@@ -50,28 +50,6 @@ export function markCanvasTab(tabId: string, on: boolean): void {
   else canvasTabs.delete(tabId)
 }
 
-/**
- * Tabs whose canvas answers Claude Code's permission requests (a Claude tab on its canvas).
- * Any other tab's request is let through at once with no answer, so its own dialog asks.
- */
-const hookedTabs = new Set<string>()
-/** PermissionRequest hooks waiting on a card, by the id the renderer was given. */
-const heldHooks = new Map<string, { tabId: string; done: (output: Record<string, unknown> | null) => void }>()
-
-export function setHooked(tabId: string, on: boolean): void {
-  if (on) hookedTabs.add(tabId)
-  else {
-    hookedTabs.delete(tabId)
-    // Nobody is going to answer them now: Claude Code's own dialog takes over.
-    for (const h of [...heldHooks.values()]) if (h.tabId === tabId) h.done(null)
-  }
-}
-
-/** The person answered a card: the hook prints this (null = no answer, Claude Code asks itself). */
-export function answerHook(id: string, output: Record<string, unknown> | null): void {
-  heldHooks.get(id)?.done(output && typeof output === 'object' ? output : null)
-}
-
 let mcpConfig = ''
 /** The `--settings` file the shim passes: full screen, the status line and the image hook. */
 let settingsFile = ''
@@ -102,15 +80,13 @@ function writeSettings(): string {
       '\r\n',
     'utf8'
   )
-  // Ember's hooks: what the session is doing, for the canvas; the permission requests its
-  // cards answer; and the images it sees, for the panel. They are Claude Code's own `http`
-  // hooks — it POSTs the event to the bridge itself, so an event costs one loopback request
-  // instead of starting a process (a node process per event was 60-100 ms each, and every
-  // Read and MCP tool call started one). The tab and the token travel as headers, read from
-  // the session's environment (`allowedEnvVars`); the URL is this bridge's, fixed for the
-  // life of the app. The state events are `async`, so Claude never waits on them;
-  // PermissionRequest waits for the person, up to an hour. With no canvas behind the tab
-  // it gets no answer at once, and Claude Code asks as it always does.
+  // Ember's hooks, the few the canvas needs: SessionStart binds the tab to its session (a
+  // `/clear` or `/resume` included), Stop carries the session's name, and the images it
+  // sees go to the panel. Permission prompts, questions and plans are Claude Code's own:
+  // the person answers them in its real screen, which sits under the canvas. They are
+  // Claude Code's own `http` hooks — it POSTs the event to the bridge itself, one loopback
+  // request instead of starting a process. The tab and the token travel as headers, read
+  // from the session's environment (`allowedEnvVars`). All `async`: Claude never waits.
   const http = (opts: { async?: boolean; timeout: number; images?: boolean }) => ({
     type: 'http',
     url: `http://127.0.0.1:${port}/hook${opts.images ? '?images=1' : ''}`,
@@ -120,7 +96,6 @@ function writeSettings(): string {
     ...(opts.async ? { async: true } : {}),
   })
   const said = http({ async: true, timeout: 10 })
-  const asks = http({ timeout: 3600 })
   // Claude Code runs no http hook for SessionStart, so that one is a command: curl.exe
   // (in Windows since 10 1803) posting stdin, ~15 ms, or the node hook where there is none.
   const curl = join(process.env['SystemRoot'] || 'C:\\Windows', 'System32', 'curl.exe')
@@ -140,17 +115,10 @@ function writeSettings(): string {
   const started = { type: 'command', command: startCmd.replace(/\\/g, '/'), async: true, timeout: 10 }
   const emberHooks = {
     SessionStart: [{ hooks: [started] }],
-    SessionEnd: [{ hooks: [said] }],
-    UserPromptSubmit: [{ hooks: [said] }],
-    Notification: [{ hooks: [said] }],
-    PreCompact: [{ hooks: [said] }],
-    SubagentStop: [{ hooks: [said] }],
-    PermissionRequest: [{ hooks: [asks] }],
   }
-  // Full screen, always. The canvas reads Claude Code's full-screen layout (its input box
-  // on the alternate screen); drawn inline, as it is by default on a machine whose own
-  // settings lack `"tui": "fullscreen"`, the tab looked like a plain shell: no canvas and
-  // no Canvas | CLI switch. Passed only inside Ember, so other terminals keep theirs.
+  // Full screen, always: Claude Code then keeps its prompt at the bottom of the CLI's box
+  // whatever its size, which is what the CLI's height is read from (the plain prompt, or
+  // a dialog that needs more room). Passed only inside Ember, so other terminals keep theirs.
   const tui = { tui: 'fullscreen' }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
   writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')
@@ -250,9 +218,6 @@ function writeAgentMcpConfigs(dir: string): Record<string, string> {
   // Codex takes -c overrides, and a bare command with no inline table is the only shape
   // that survives cmd.exe's second parse; the launcher carries ELECTRON_RUN_AS_NODE.
   out['EMBER_MCP_LAUNCHER'] = join(CONFIG_DIR, 'bin', 'ember-mcp.cmd')
-  // Ember's hook for Codex (its approvals become the canvas's cards), at a path that
-  // stays put so the trust the person gives it in Codex lasts (notes.ts writes it).
-  out['EMBER_CODEX_HOOK'] = join(CONFIG_DIR, 'bin', 'ember-hook.cmd').replace(/\\/g, '/')
   return out
 }
 
@@ -1184,14 +1149,13 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return
   }
 
-  // Ember's Claude Code hooks (http hooks, see writeSettings): every event names the
-  // session, so the tab follows it (a `/clear` or `/resume` included), and the canvas is
-  // told. A PermissionRequest waits here for the person's answer on the canvas.
+  // Ember's Claude Code hooks (see writeSettings): every event names the session, so the
+  // tab follows it (a `/clear` or `/resume` included), and the canvas is told (it reads the
+  // session's name from it). Nothing here waits: Claude Code's prompts are its own.
   if (req.method === 'POST' && url.pathname === '/hook') {
-    // Two shapes: the direct one (the event as the body, the tab in a header, the answer as
-    // the whole response) from Claude Code's http hooks and from curl.exe (Claude's
-    // SessionStart, every Codex hook), and resources/hook.mjs's ({ tabId, at, agent, input },
-    // the answer under `output`) where curl.exe is missing.
+    // Two shapes: the direct one (the event as the body, the tab in a header) from Claude
+    // Code's http hooks and from curl.exe (SessionStart), and resources/hook.mjs's
+    // ({ tabId, at, input }) where curl.exe is missing.
     const headerTab = String(req.headers['x-ember-tab'] ?? '')
     const direct = !!headerTab
     void readJson(req, 40_000_000)
@@ -1210,40 +1174,10 @@ function route(req: IncomingMessage, res: ServerResponse): void {
         const sessionId = String(hook['session_id'] ?? '')
         const cwd = String(hook['cwd'] ?? '')
         const file = String(hook['transcript_path'] ?? '')
-        // Only Claude Code's sessions bind the tab: another agent's hook (Codex) names its
-        // own log, which the canvas finds and reads by that agent's adapter instead.
-        // (The direct shape says so in a header: Codex's ember-hook.cmd posts it with curl.)
-        const agent = (direct ? String(req.headers['x-ember-agent'] ?? '') : typeof body['agent'] === 'string' ? body['agent'] : '') || 'claude'
-        if (agent === 'claude' && sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
-        // When Claude Code ran the hook: async hooks can land out of order. An http hook lands
-        // as it is sent, so its arrival is its time.
+        if (sessionId && cwd && event !== 'SessionEnd' && boundSession(tabId) !== sessionId) bindSession(tabId, sessionId, cwd, file || undefined)
         const at = !direct && typeof body['at'] === 'number' ? body['at'] : Date.now()
-        const id = randomUUID()
-        const blocking = event === 'PermissionRequest'
-        if (!blocking || !hookedTabs.has(tabId)) {
-          broadcast('ember:hook:event', { tabId, id, event, at, input: hook, blocking: false })
-          return send(res, 200, direct ? '{}' : JSON.stringify({ ok: true }))
-        }
-        // Headers now and a space now and then: the hook's fetch would give up on a
-        // response that says nothing for five minutes, and a person may take longer.
-        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
-        const keep = setInterval(() => res.write(' '), 60_000)
-        const done = (output: Record<string, unknown> | null) => {
-          clearInterval(keep)
-          heldHooks.delete(id)
-          // (The keep-alive's leading spaces are fine: JSON allows them.)
-          if (!res.writableEnded) res.end(direct ? JSON.stringify(output ?? {}) : JSON.stringify(output ? { ok: true, output } : { ok: true }))
-        }
-        heldHooks.set(id, { tabId, done })
-        res.on('close', () => {
-          if (!heldHooks.has(id)) return
-          // Claude Code gave up on it (the dialog was answered in the CLI view, the turn
-          // stopped, the hook timed out): the card goes.
-          clearInterval(keep)
-          heldHooks.delete(id)
-          broadcast('ember:hook:gone', { tabId, id })
-        })
-        broadcast('ember:hook:event', { tabId, id, event, at, input: hook, blocking: true })
+        broadcast('ember:hook:event', { tabId, id: randomUUID(), event, at, input: hook })
+        send(res, 200, direct ? '{}' : JSON.stringify({ ok: true }))
       })
       .catch((err: Error) => send(res, 400, JSON.stringify({ error: err.message })))
     return

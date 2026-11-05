@@ -228,34 +228,9 @@ export interface ClaudeStatus {
   at: number
 }
 
-/** A picture attached in a canvas's composer, read and base64'd. */
-export interface ClaudeImage {
-  mediaType: string
-  data: string
-}
-
-/** One `/` command, as Claude Code lists it (`initialize.commands`) or a project defines it. */
-export interface SlashCommandInfo {
-  name: string
-  description: string
-  argumentHint: string
-  aliases?: string[]
-}
-
 /**
- * What a Claude tab's canvas offers beyond the TUI it wraps: the command list and the
- * models, from one cached structured run of Claude Code (src/main/claudeCatalog.ts).
- */
-export interface ClaudeCatalog {
-  at: number
-  version: string
-  commands: SlashCommandInfo[]
-  models: Array<{ value: string; displayName: string; description: string }>
-}
-
-/**
- * One of Claude Code's hooks firing in a tab (its http hooks, POSTed to the bridge). A
- * `blocking` one (PermissionRequest) waits for `hooks.answer(id, …)`.
+ * One of Claude Code's hooks firing in a tab (SessionStart, Stop: POSTed to the bridge).
+ * The canvas reads the session's name from them; nothing waits on an answer.
  */
 export interface HookEvent {
   tabId: string
@@ -264,7 +239,6 @@ export interface HookEvent {
   /** When the hook ran, by Ember's clock: async hooks can land out of order. */
   at: number
   input: Record<string, unknown>
-  blocking: boolean
 }
 
 export interface ClaudeConfig {
@@ -737,27 +711,11 @@ export interface EmberBridge {
   /** What the Claude session in a tab reports through its status line. */
   claude: {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
-    /** The `/` commands and models for a Claude tab's canvas; `cwd` adds the project's own. */
-    catalog(cwd?: string): Promise<ClaudeCatalog>
-    /** How many MCP servers Claude Code starts in `cwd`, from its config files (for "connecting N MCP servers…"). */
-    mcpCount(cwd: string): Promise<number>
   }
-  /** Claude Code's hooks in a tab: what its session does, and the permission cards. */
+  /** Claude Code's hooks in a tab (SessionStart, Stop): the session's name, for its card. */
   hooks: {
     onEvent(cb: (e: HookEvent) => void): () => void
-    /** A held request went away unanswered (Claude Code stopped waiting). */
-    onGone(cb: (e: { tabId: string; id: string }) => void): () => void
-    /** This tab's canvas answers permission requests (or no longer does). */
-    hooked(tabId: string, on: boolean): void
-    /** The hook output for a blocking event; null lets Claude Code ask in its own screen. */
-    answer(id: string, output: Record<string, unknown> | null): void
   }
-  files: {
-    /** `@` completion: paths under a folder that match, folders with a trailing slash. */
-    search(cwd: string, query: string): Promise<string[]>
-  }
-  /** Put a picture (a png or jpeg data: URL) on the clipboard, for Claude Code's Alt+V. */
-  clipboardImage(dataUrl: string): Promise<boolean>
   window: {
     minimize(): void
     toggleMaximize(): void

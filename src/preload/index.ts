@@ -24,7 +24,6 @@ import type {
   CanvasAnnotate,
   CanvasAnnotateResult,
   CanvasSteps, EmberCost,
-  ClaudeCatalog,
   HookEvent } from '../shared/types.js'
 
 /** Subscribe helper that returns an unsubscribe function and strips the IpcRendererEvent. */
@@ -129,19 +128,10 @@ const bridge: EmberBridge = {
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
-    catalog: (cwd) => ipcRenderer.invoke('ember:claude:catalog', cwd) as Promise<ClaudeCatalog>,
-    mcpCount: (cwd) => ipcRenderer.invoke('ember:claude:mcpCount', cwd) as Promise<number>,
   },
   hooks: {
     onEvent: (cb) => on<HookEvent>('ember:hook:event', cb),
-    onGone: (cb) => on<{ tabId: string; id: string }>('ember:hook:gone', cb),
-    hooked: (tabId, on) => ipcRenderer.send('ember:hook:hooked', tabId, on),
-    answer: (id, output) => ipcRenderer.send('ember:hook:answer', id, output),
   },
-  files: {
-    search: (cwd, query) => ipcRenderer.invoke('ember:files:search', cwd, query) as Promise<string[]>,
-  },
-  clipboardImage: (dataUrl) => ipcRenderer.invoke('ember:clipboard:image', dataUrl) as Promise<boolean>,
   window: {
     minimize: () => ipcRenderer.send('ember:win:minimize'),
     toggleMaximize: () => ipcRenderer.send('ember:win:toggleMaximize'),
