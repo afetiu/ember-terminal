@@ -101,6 +101,8 @@ export class AgentHost {
   /** A kick under way: grown one row over, back to `to` at `at` (see `look`). */
   private kick: { at: number; to: number } | null = null
   private kickedAt = 0
+  /** Kicks in a row that left the area still scrolled up. */
+  private cutKicks = 0
 
   constructor(private readonly v: LoomView) {
     this.divider.setAttribute('aria-hidden', 'true')
@@ -338,6 +340,7 @@ export class AgentHost {
       if (this.sizes.length > 300) this.sizes.splice(0, this.sizes.length - 300)
       this.wantRows = to
     }
+    if (!r.cut) this.cutKicks = 0
     let done = !!this.kick && now < this.kick.at && target <= this.wantRows
     if (this.kick && now >= this.kick.at) {
       // The second half of a kick: one row less, which makes the TUI lay its bottom area out
@@ -354,10 +357,16 @@ export class AgentHost {
     } else if (r.cut && r.dock && !this.forceRows && target <= this.wantRows && !this.kick && now - this.kickedAt > 400) {
       // The bottom area fits, but its top has scrolled out of view (it outgrew the box for a
       // moment): Claude Code's classic screen draws it again in place only when the screen
-      // gets shorter. One row more, then back.
+      // gets shorter. One row more, then back — and if that has not done it twice over, a
+      // good deal more, which the shrink after brings back down.
       this.kickedAt = now
-      this.kick = { at: now + KICK_MS, to: this.wantRows }
-      resize(this.wantRows + 1, 'kick: scrolled up')
+      this.cutKicks++
+      const to = Math.max(target, this.wantRows)
+      if (this.cutKicks > 2) resize(Math.max(to + 1, this.shareRows(GROWN)), 'kick: still scrolled up')
+      else {
+        this.kick = { at: now + KICK_MS, to }
+        resize(to + 1, 'kick: scrolled up')
+      }
     } else if (target !== this.wantRows && (target > this.wantRows || held >= SHRINK_MS)) {
       if (target > this.wantRows && r.cut && !this.forceRows) {
         // Grown because part of the bottom area had scrolled away: a row over, then back, so
@@ -378,6 +387,8 @@ export class AgentHost {
     if (this.kick) this.recheck = window.setTimeout(() => v.schedule(), Math.max(0, this.kick.at - now) + 5)
     else if (target !== this.wantRows) this.recheck = window.setTimeout(() => v.schedule(), SHRINK_MS - held + 10)
     else if (this.redrawWait) this.recheck = window.setTimeout(() => v.schedule(), REDRAW_MS + 10)
+    // Still cut, on a screen that may draw nothing more: look again, the kick above will act.
+    else if (r.cut && !this.forceRows) this.recheck = window.setTimeout(() => v.schedule(), Math.max(60, 410 - (now - this.kickedAt)))
     else if (this.live || now < this.preUntil) this.recheck = window.setTimeout(() => v.schedule(), 250)
   }
 

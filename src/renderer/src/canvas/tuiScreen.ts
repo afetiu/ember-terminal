@@ -151,6 +151,8 @@ function readClaude(v: View): TuiRead {
     let end = y
     while (end + 1 <= last && !RULE.test(L[end + 1]!)) end++
     if (end + 1 > last) break
+    // The live box has its bottom rule on screen: one wholly in the scrollback is an old frame.
+    if (end + 1 < v.vp) break
     top = y
     bottom = end + 1
     break

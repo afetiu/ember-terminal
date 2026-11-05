@@ -253,7 +253,12 @@ try {
             line = e < rows.length && RULE.test(rows[e])
           }
         const foot = rows.some((r) => FOOT.test(r))
-        T.frames.push({ t: performance.now(), rows: term.rows, ok: line || foot, text: rows })
+        // The TUI drawing nothing under its last line, with rows to spare (Claude Code between
+        // closing the box and drawing /mcp's dialog): its own empty frame, not one cut short.
+        let blank = 0
+        for (let y = rows.length - 1; y >= 0 && !rows[y].trim(); y--) blank++
+        const empty = !line && !foot && blank >= 3
+        T.frames.push({ t: performance.now(), rows: term.rows, ok: line || foot || empty, empty, text: rows })
         requestAnimationFrame(tick)
       }
       requestAnimationFrame(tick)
@@ -266,7 +271,7 @@ try {
         if (f.ok) run = 0
         else { run++; bad++; if (run > worst) { worst = run; at = i } }
       })
-      return { frames: T.frames.length, bad, worst, sizes: [...new Set(T.frames.map((f) => f.rows))], worstText: at >= 0 ? T.frames[at].text : null }
+      return { frames: T.frames.length, bad, worst, empty: T.frames.filter((f) => f.empty).length, sizes: [...new Set(T.frames.map((f) => f.rows))], worstText: at >= 0 ? T.frames[at].text : null }
     }
     T.first = (src) => { const re = new RegExp(src); const f = T.frames.find((f) => f.text.some((r) => re.test(r))); return f ? f.t : null }
     window.__tight = T
@@ -301,7 +306,7 @@ try {
     } finally {
       const s = await ev(`window.__tight.stop()`)
       worstFrames.push({ label, worst: s.worst, frames: s.frames, sizes: s.sizes })
-      check(`${label}: every frame shows the prompt or the dialog's keys (worst ${s.worst} frame${s.worst === 1 ? '' : 's'} without)`, s.worst <= allow, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.sizes.join('→')}`)
+      check(`${label}: every frame shows the prompt or the dialog's keys (worst ${s.worst} frame${s.worst === 1 ? '' : 's'} without)`, s.worst <= allow, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.sizes.join('→')}${s.empty ? `, ${s.empty} frame(s) the TUI drew nothing under its last line` : ''}`)
       if (s.worst > 1 && VERBOSE) console.log(s.worstText.map((r, i) => `   ${String(i).padStart(2)}|${r}`).join('\n'))
     }
     return out
@@ -388,7 +393,8 @@ try {
     // ---- the `/` list: typed as a key (the pre-grow), and pasted (no key: measured only)
     const slashOk = async (where) => {
       const x = await lm()
-      const at = x.rows.findIndex((r) => /^❯ \//.test(r))
+      // (Claude Code puts a no-break space after its `❯`.)
+      const at = x.rows.findIndex((r) => /^❯\s*\//.test(r))
       const items = x.rows.filter((r) => /^\s+(?:❯\s*)?\/[\w:.-]+\s{2,}\S/.test(r)).length
       // All its rows on screen: the box's top rule above the prompt line, the list under the
       // box, and nothing of it cut at the bottom (the last row is the TUI's own blank).
