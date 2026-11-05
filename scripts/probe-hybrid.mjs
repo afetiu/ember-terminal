@@ -272,7 +272,8 @@ try {
       const g = await grownFor()
       await dump(tab, cmd)
       check(`${cmd} grows the CLI`, !!g, g ? `rows=${g.rows} why=${g.why}` : `why=${(await cli()).why}`)
-      const choices = await rowsHave(/❯|^\s*\d+\.\s|Esc to|Enter to/i)
+      // The picker draws a moment after the CLI has grown; its pointer is `❯` or `>`.
+      const choices = !!(await until(async () => (await rowsHave(/^\s*[❯>]\s|^\s*\d+\.\s|Esc to|Enter to/i)) || null, 5000))
       check(`${cmd}: its picker is in the viewport rows`, choices)
       await rules(tab, `${cmd} open`)
       if (cmd === '/mcp') console.log('shot', await shot('2-grown-mcp'))
