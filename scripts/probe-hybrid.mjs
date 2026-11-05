@@ -21,7 +21,7 @@
  *
  * Keys go into the terminal as the person would type them (CDP key events into xterm).
  *
- *   npm run build; node scripts/probe-hybrid.mjs [--codex] [--only=claude|codex] [out-dir]
+ *   npm run build; node scripts/probe-hybrid.mjs [--codex] [--only=claude|codex|pills] [out-dir]
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -223,7 +223,7 @@ try {
   const writePty = (tab, data) => ev(`window.ember.write(window.__ember.loom(${JSON.stringify(tab)}).sessionId, ${JSON.stringify(data)})`)
 
   // ================================================================== Claude Code
-  if (ONLY !== 'codex') {
+  if (ONLY !== 'codex' && ONLY !== 'pills') {
     const tab = await newTab()
     await ev(`window.__ember.closeTab(${JSON.stringify(first)})`)
     await ev(`window.__ember.activate(${JSON.stringify(tab)})`)
@@ -525,6 +525,20 @@ try {
     const shell = await until(async () => { const x = await loom(); return x.mode === 'shell' && x }, 20_000)
     check('/exit gives the tab back to a plain shell, the terminal the whole tab', !!shell && shell.cli.paneTop === 0 && !shell.cli.canvasOn)
     rmSync(PROBE_FILE, { force: true })
+  }
+
+  // ================================================================== subagent pills (fed, no model)
+  if (ONLY !== 'codex') {
+    const t2 = await newTab()
+    await wait(1200)
+    await ev(`window.__ember.loomFeed(${JSON.stringify(t2)}, [
+      { type: 'user', uuid: 'su1', timestamp: '2026-11-05T09:00:00Z', message: { role: 'user', content: 'look into it' } },
+      { type: 'assistant', uuid: 'sa1', timestamp: '2026-11-05T09:00:01Z', message: { role: 'assistant', content: [{ type: 'tool_use', id: 'task1', name: 'Task', input: { description: 'Survey the repo', subagent_type: 'Explore', prompt: 'x' } }] } },
+    ])`)
+    await wait(600)
+    const pill = await ev(`!!document.querySelector('.loom-agent[data-state="running"]')`)
+    check('a subagent shows as a pill on the canvas', pill)
+    await ev(`window.__ember.closeTab(${JSON.stringify(t2)})`)
   }
 
   // ================================================================== Codex
