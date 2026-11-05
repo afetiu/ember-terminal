@@ -38,14 +38,17 @@ exactly as in any other terminal:
 **Claude Code · Codex CLI · Gemini CLI · Cursor Agent · OpenCode · Copilot CLI · Qwen Code · Amp · Aider · Crush**
 
 The first run lists the ones you have installed. Every tab starts as a plain terminal
-(`+` or `Ctrl+Shift+T`). Run `claude` in it and the tab becomes Claude Code's canvas: your
-messages go in through Ember's own input box, permission requests and questions come up as
-cards, and the reply is drawn on the canvas. Exit Claude Code and the tab is a terminal
-again. `Ctrl+K` › **New Claude tab** opens a terminal that starts `claude` by itself.
+(`+` or `Ctrl+Shift+T`). Run `claude` or `codex` in it and the tab becomes that agent's
+canvas: your messages go in through Ember's own input box, permission requests and
+questions come up as cards, and the reply is drawn on the canvas. Exit the agent and the
+tab is a terminal again. `Ctrl+K` › **New Claude tab** opens a terminal that starts
+`claude` by itself.
 
-Claude Code and Codex get the most: their replies, tool calls and objects are read from
-their own session logs. The others run in their own screen, with Ember's tools available
-to them. How each CLI is run lives in `src/shared/agents.ts`.
+Claude Code and Codex get the canvas: their replies, tool calls and objects are read from
+their own session logs, and their hooks bring permission requests to Ember. Codex runs
+hooks only after you approve them once on its own *Hooks need review* screen; until then
+its approvals stay in the CLI view. The others run in their own screen, with Ember's tools
+available to them. How each CLI is run lives in `src/shared/agents.ts`.
 
 ## Install
 
@@ -89,13 +92,12 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 - **Pictures:** `Ctrl+V` an image into the input and it shows as a thumbnail above it
   until you send, then it is part of your message.
 - **Queued messages**, sent while the agent works, wait right above the input; **Send now**
-  sends them without waiting for the turn to end.
+  sends one without waiting for the turn to end, and **×** drops it.
 - **Questions** a reply ends with get their options as buttons and a field each; **Send**
   answers them all in one message.
-- **Preview: the canvas drives Claude Code directly.** Settings › Agent › *Canvas drives
-  Claude directly* runs Claude Code in its structured mode instead of under the canvas:
-  the input, `/` and `@` menus, permission prompts, questions and plan approval are
-  Ember's own, and ``Ctrl+` `` opens the same conversation in the real CLI and back.
+- **`/` and `@`** open Ember's own menus of commands and files, and `!` runs a command in
+  the agent's shell mode. Anything only the CLI can show (a picker, `/login`) says so, and
+  ``Ctrl+` `` takes you there.
 
 | Keys | With an object selected (`Ctrl+↑` from the input) |
 | --- | --- |
