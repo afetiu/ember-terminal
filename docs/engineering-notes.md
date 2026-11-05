@@ -840,7 +840,7 @@ tools). Ember is a terminal for agents, not a desktop driver; the history has th
 - `scripts/bench-pty.cjs` — the same firehose through node-pty alone: ConPTY's floor
 - `scripts/probe-latency.mjs` — keystroke-to-echo, on a real pty, under load
 - `scripts/probe-perf.mjs` — the canvas's numbers: start, idle and streaming CPU, keypress → echo in the CLI, memory per tab, 30 diagrams
-- `scripts/probe-hybrid.mjs` — the hybrid tab with the real Claude Code (and `--codex`): the PTY fits the CLI's box, nothing covers it, the CLI grows for pickers, dialogs, menus, long prompts and the queue, pictures, the divider, Ctrl+`
+- `scripts/probe-engine.mjs` — the agent tab with the real Claude Code (and `--codex`): the real terminal runs the whole tab, the CLI box shows exactly the live region the stream engine reads (docs/specs/stream-engine.md), nothing covers it, no conversation in it, every frame of every transition sampled. `scripts/test-stream-engine.mjs` replays the recorded streams.
 - `scripts/probe-frames.mjs` — frame pacing of every animation (late frames, worst gap, p95)
 - `scripts/probe-notes-cli.mjs` — the `notes` command from inside a real Ember shell, PowerShell and Git Bash
 - `scripts/shot.mjs` — screenshots of the chrome (shell, notes, todo, palette, settings)

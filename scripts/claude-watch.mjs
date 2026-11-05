@@ -228,7 +228,7 @@ try {
   for (const k of newControls) check(k, 'control request', names.has(k))
   for (const k of newCaps) check(k, 'capability', names.has(k))
   out.push('- [ ] Read the changelog for transcript (JSONL) format changes, TUI layout changes (input box, dialogs, pickers, queue: `tuiScreen.ts` reads them to size the CLI), and hook input changes.')
-  out.push('- [ ] Run `scripts/probe-hybrid.mjs` and `scripts/probe-clear.mjs` against the new `claude`.')
+  out.push('- [ ] Re-record the streams (`scripts/record-stream.mjs`), run `scripts/test-stream-engine.mjs`, `scripts/probe-engine.mjs` and `scripts/probe-clear.mjs` against the new `claude`.')
   out.push(`- [ ] Update \`docs/specs/claude-version.txt\` to \`${latest}\` and \`docs/specs/sdk.d.ts\` to SDK \`${now.version}\` in a PR.`)
   out.push('')
   out.push('<details><summary>Everything on the wire today, and whether Ember names it</summary>')

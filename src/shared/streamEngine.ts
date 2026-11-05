@@ -320,8 +320,10 @@ export class StreamEngine {
       top = animTop
       why = 'animated row'
     } else {
-      top = this.floor
-      why = 'frame floor'
+      // Nothing to place the top by (the app between two drawings): it stays where it was,
+      // never up to the floor and the conversation's rows.
+      top = this.top >= this.floor ? this.top : this.floor
+      why = this.top >= this.floor ? 'held' : 'frame floor'
     }
     // The caret is always the app's: never left out.
     if (cursor.visible && cursor.y >= this.floor && cursor.y < top) {
@@ -396,8 +398,11 @@ export class StreamEngine {
     this.anim = new Map()
     this.queue = null
     this.expectQueue = 0
-    this.prev = []
-    this.prevBase = undefined
+    // What is on screen now (the shell, the command that started the agent) is not the
+    // agent's: only what changes from here is.
+    this.prev = this.rows()
+    this.prevBase = this.buf.baseY
+    this.lastBase = this.buf.baseY
     this.last = null
     this.committedTo = this.buf.baseY + this.buf.cursorY
     this.pending = []

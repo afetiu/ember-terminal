@@ -11,18 +11,18 @@ import { Snaps } from './loom/snaps'
 import { Stage } from './loom/stage'
 import { FrameSleeper } from './loom/frames'
 import { div, reduced, viewSwitch, sameTitle, type Browser, type Mode, type Piece } from './loom/shared'
-import { pasteIntoTui } from './tuiScreen'
+import { pasteIntoTui } from './liveRead'
 
 /**
  * A tab's canvas: a real shell whose output space becomes a canvas while an agent runs.
  *
  * It starts as a plain PowerShell, drawn exactly as PowerShell draws it. Type `claude` and
  * the real Claude Code starts in that shell, exactly as in any terminal — and the tab
- * splits: the canvas above, the real CLI below (the same terminal, its PTY resized to the
- * bottom box). The person types into Claude Code's own prompt; the canvas shows the
+ * splits: the canvas above, the real CLI's live area below (the same terminal, still the
+ * whole tab underneath; the stream engine says which of its rows are live, liveView.ts). The person types into Claude Code's own prompt; the canvas shows the
  * conversation drawn from the session's own transcript (replies as rich text, diagrams as
- * diagrams, edits as diffs, whatever the session chose to show). The CLI grows while it
- * shows a picker or a dialog, and Ctrl+` gives it the whole tab. When Claude Code exits,
+ * diagrams, edits as diffs, whatever the session chose to show). The box is as tall as the
+ * CLI's live area — its prompt, a picker, a dialog — and Ctrl+` shows the whole terminal. When Claude Code exits,
  * the tab is the shell again.
  *
  * Codex gets the same layout. Other agents get the switch and their whole screen; no
@@ -32,7 +32,7 @@ import { pasteIntoTui } from './tuiScreen'
  * parts share (the pieces by title, what is pinned, the frames), wires the events, and
  * hands the work to the parts in ./loom:
  *
- * - host.ts      the agent in the shell, the mode, the split (canvas above, CLI below), the CLI sized to the TUI's bottom area
+ * - host.ts      the agent in the shell, the mode, the split (canvas above, the CLI's live area below: liveView.ts)
  * - stage.ts     the turn on screen, the rail, the wheel between turns, the live line, trail and subagents
  * - plan.ts      the plan piece
  * - pieces.ts    a piece made, dragged out, placed, sized, minimized, full screen and zoomed
@@ -111,7 +111,7 @@ export class LoomView {
     // The view the person last chose: the canvas unless they picked the agent's own screen.
     this.raw = config.agentView === 'cli'
 
-    this.host = new AgentHost(this)
+    this.host = new AgentHost(this, config.theme.cursor)
     this.stage = new Stage(this)
     this.plan = new Plan(this)
     this.objects = new Pieces(this)
@@ -316,7 +316,6 @@ export class LoomView {
     })
 
     const onKey = (e: KeyboardEvent) => {
-      if (this.hooks.isActive() && (e.target as HTMLElement | null)?.closest?.('.xterm')) this.host.keyDown(e)
       input.key(e)
     }
     window.addEventListener('keydown', onKey, true)
@@ -703,14 +702,15 @@ export class LoomView {
         pty: this.session.ptySize,
         cellH: (term as unknown as { _core?: { _renderService?: { dimensions?: { css?: { cell?: { height?: number } } } } } })._core?._renderService?.dimensions?.css?.cell?.height ?? 0,
         padY: x ? (parseFloat(getComputedStyle(x).paddingTop) || 0) + (parseFloat(getComputedStyle(x).paddingBottom) || 0) : 0,
-        need: this.host.read?.need ?? 0,
-        dock: this.host.read?.dock ?? 0,
-        cut: this.host.read?.cut ?? false,
-        more: this.host.read?.more ?? 0,
-        key: this.host.read?.key ?? '',
-        idleRows: this.host.idleRows,
-        sizes: this.host.sizes.slice(-40),
-        wantRows: this.host.wantRows,
+        region: this.host.liveView.region,
+        shown: this.host.liveView.shown,
+        liveText: this.host.liveView.text(),
+        liveRows: this.host.liveView.liveRows(),
+        liveLog: this.host.liveView.log.slice(-60),
+        liveH: this.host.liveView.el.getBoundingClientRect().height,
+        liveTop: this.host.liveView.el.getBoundingClientRect().top - this.panes.getBoundingClientRect().top,
+        liveOn: this.host.liveView.el.classList.contains('is-on'),
+        under: pane.classList.contains('is-under'),
         paneTop: pane.offsetTop,
         paneH: pane.clientHeight,
         paneW: pane.clientWidth,
@@ -718,8 +718,7 @@ export class LoomView {
         screenH: (x?.querySelector('.xterm-screen') as HTMLElement | null)?.offsetHeight ?? 0,
         canvasH: this.el.clientHeight,
         canvasOn: this.el.classList.contains('is-on'),
-        grown: this.host.grown,
-        why: this.host.read?.why ?? '',
+        why: this.host.liveView.region?.why ?? '',
         prompt: this.host.read?.prompt ?? false,
         promptSeen: this.host.promptSeen,
         live: this.host.live,

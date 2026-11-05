@@ -335,10 +335,10 @@ export class App {
         return el?.innerText ?? ''
       },
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
-      /** Hold an agent tab's CLI at `rows` rows (0: sized from its screen again). */
-      loomRows: (id: string, rows: number) => this.groups.find((g) => g.id === id)?.loom?.host.setRows(rows),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
+      /** A Loom tab's CLI box (the live area of its real terminal), for probes sampling every frame. */
+      loomLive: (id: string) => this.groups.find((g) => g.id === id)?.loom?.host.liveView ?? null,
       /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
       loomSwitch: (id: string, first = false, fresh = false) => this.groups.find((g) => g.id === id)?.loom?.switchForProbe(first, fresh),
       /** A pasted picture's thumbnail, as Ctrl+V gives the canvas one, without the clipboard. */

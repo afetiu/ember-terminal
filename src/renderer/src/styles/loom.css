@@ -5460,3 +5460,51 @@ body.is-light .loom-answers {
 .ember-group-panes[data-loom='raw'] .ember-block-header {
   display: none;
 }
+
+/* ==========================================================================
+   The CLI box (liveView.ts): the agent CLI's live area, copied row for row from the tab's
+   real terminal, which runs the whole tab underneath and keeps the keyboard. The box is as
+   tall as the live area; it is never drawn over (docs/specs/stream-engine.md).
+   ========================================================================== */
+.loom-live {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: 5;
+  display: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  cursor: text;
+}
+.loom-live.is-on {
+  display: block;
+}
+.loom-live .xterm {
+  padding: 0;
+}
+.loom-live .xterm-viewport {
+  overflow: hidden !important;
+}
+/* The real terminal under the canvas: running, focused, not seen. */
+.ember-pane.is-under {
+  opacity: 0;
+  pointer-events: none;
+}
+/* A live area taller than the box shows its bottom part; the seam says there is more. */
+.loom-divider.is-more .loom-divider-line {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--c-accent) 45%, transparent) 12%,
+    color-mix(in srgb, var(--c-accent) 45%, transparent) 88%,
+    transparent
+  );
+}
+/* The box is on the window's glass, as the real terminal is. */
+.loom-live .xterm-viewport,
+.loom-live .xterm-screen,
+.loom-live .xterm-rows {
+  background: transparent !important;
+}

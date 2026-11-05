@@ -66,6 +66,9 @@ interface Entry {
   pauses: number
   pausedMs: number
   exited: boolean
+  /** OpenConsole's start-up DA1 has been answered (or the window for it has passed). */
+  da1: boolean
+  spawnedAt: number
 }
 
 /** Resolve a bare command name against PATH/PATHEXT so we can fall back gracefully. */
@@ -338,21 +341,33 @@ ${opts.startup}`
       rows: Math.max(1, opts.rows),
       cwd: opts.cwd,
       env,
-      // Use the conpty.dll shipped in the package rather than the OS one — it is the
-      // same component Windows Terminal bundles and is newer than the in-box copy.
-      // The OS's ConPTY, not the OpenConsole bundled with node-pty. Under the bundled one
-      // PowerShell took 4-7 s to reach its prompt against 1.2-1.8 s in-box (measured
-      // 2026-09-05, scripts/bench-spawn.cjs) — the "PowerShell is slower in Ember than in
-      // Windows Terminal" that was felt for weeks. Throughput is a wash either way
-      // (scripts/bench-pty.cjs --inbox). EMBER_BUNDLED_CONPTY=1 brings the bundled one back.
-      useConptyDll: !!process.env['EMBER_BUNDLED_CONPTY'],
+      // The OpenConsole bundled with node-pty, not the OS's ConPTY. The OS one re-renders
+      // its own buffer (absolute moves, spaces as cursor steps) and drops scroll regions,
+      // so what an agent CLI says about its live area never reaches us; the bundled one
+      // passes the app's own sequences through, which the stream engine reads
+      // (docs/specs/stream-engine.md). Its slow start (4-7 s for PowerShell, 2026-09-05)
+      // was its DA1 query waiting 3 s for an answer — answered below, it starts as fast as
+      // the OS one. EMBER_INBOX_CONPTY=1 brings the OS one back.
+      useConptyDll: !process.env['EMBER_INBOX_CONPTY'],
     })
 
     const session: PtySession = { sessionId: opts.sessionId, pid: pty.pid, shell: resolved }
-    const entry: Entry = { pty, session, pending: '', timer: null, lastFlushAt: 0, unacked: 0, lastWriteAt: 0, bulk: false, paused: false, pausedAt: 0, pauses: 0, pausedMs: 0, exited: false }
+    const entry: Entry = { pty, session, pending: '', timer: null, lastFlushAt: 0, unacked: 0, lastWriteAt: 0, bulk: false, paused: false, pausedAt: 0, pauses: 0, pausedMs: 0, exited: false, da1: false, spawnedAt: Date.now() }
     this.sessions.set(opts.sessionId, entry)
 
     pty.onData((chunk) => {
+      // OpenConsole's first words are a DA1 query, and it waits 3 s for the answer before it
+      // runs anything. Answered here at once (as a VT terminal would) and kept from xterm,
+      // which would answer it a second time into the shell's input.
+      if (!entry.da1) {
+        const at = chunk.indexOf('\x1b[c')
+        if (at !== -1) {
+          entry.da1 = true
+          pty.write('\x1b[?61;4c')
+          chunk = chunk.slice(0, at) + chunk.slice(at + 3)
+          if (!chunk) return
+        } else if (Date.now() - entry.spawnedAt > 2000) entry.da1 = true
+      }
       entry.pending += chunk
       entry.unacked += chunk.length
       if (!entry.paused && entry.unacked > HIGH_WATER) {

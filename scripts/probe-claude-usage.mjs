@@ -11,7 +11,7 @@ import { join, basename } from 'node:path'
  *   2. The shell was handed EMBER_SETTINGS, the file names a status line, and running
  *      that .cmd with a sample of the JSON Claude Code sends prints the line, and the
  *      bridge takes that status with the token. (The card shows it while Claude Code runs
- *      in the tab — `Fable · 8%` — which probe-hybrid's run carries.)
+ *      in the tab — `Fable · 8%` — which probe-engine's run carries.)
  *   3. A POST to /status without the token is refused.
  *
  *   node scripts/probe-claude-usage.mjs [outfile.png]
@@ -185,7 +185,7 @@ try {
   if (!/Fable\s+·\s+ctx 8%\s+·\s+\$0\.01\s+·\s+5h 24%\s+·\s+wk 41%/.test(run.stdout)) fail(`unexpected status line: ${run.stdout}`)
 
   // The card shows it only while Claude Code runs in the tab (App: `g.loom.isClaude`), which
-  // needs a real session (probe-hybrid's screenshots carry it). Here: the bridge takes
+  // needs a real session (probe-engine's screenshots carry it). Here: the bridge takes
   // the status the wrapper sent, with the token.
   const withToken = await fetch(`${wire.origin}/status`, {
     method: 'POST',
