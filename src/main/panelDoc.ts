@@ -791,6 +791,8 @@ const MERMAID_CSS = [
   '.edgeLabel, .edgeLabel p, .edgeLabel span { font-size: 12px; }',
   '.edgeLabel rect, .labelBkg { rx: 6px; ry: 6px; }',
   '.edgeLabel .label, .labelBkg { padding: 2px 6px; border-radius: 6px; }',
+  // An edge with no label still gets an empty one; the pill padding above would draw it as a stray dash.
+  '.edgeLabel foreignObject:has(span.edgeLabel:empty) { display: none; }',
   '.cluster rect { rx: 10px; ry: 10px; stroke-width: 1px; stroke-dasharray: 0; }',
   '.cluster-label, .cluster .label { font-size: 12px; font-weight: 500; }',
   '.nodeLabel, .label { font-size: 13px; }',
