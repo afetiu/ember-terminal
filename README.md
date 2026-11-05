@@ -21,10 +21,11 @@ Free · MIT · no account · no telemetry · Windows 10/11 x64
 - **Right-click to ask or to change.** Every object has a menu. Ask a question about it, or
   about the part you clicked, and the answer comes right there without interrupting the
   session. Say what to change instead, and the agent changes it in place.
-- **The real CLI at the bottom, its output on a canvas above.** You type into the agent's
-  own prompt, exactly as in any terminal: its `/` commands, pickers, permission prompts and
-  queue are its own. Ember formats what it says and shows on the canvas above. The CLI grows
-  while it shows a picker or a dialog, and ``Ctrl+` `` gives it the whole tab.
+- **The real CLI's input and menus at the bottom; everything it produces on the canvas.**
+  You type into the agent's own prompt, exactly as in any terminal: its `/` commands,
+  pickers, permission prompts and queue are its own. The CLI's box is only as tall as that
+  prompt and whatever menu or dialog it shows, so the conversation itself — replies, tool
+  calls, notices — is drawn on the canvas above. ``Ctrl+` `` gives the CLI the whole tab.
 - **Keyboard first.** `Ctrl+↑` walks the objects, `Enter` opens one full screen, `Esc`
   is always the way back, and `Ctrl+K` does the rest.
 - **Notes and a todo list, outside sessions.** A sticky note with `Ctrl+Shift+N`, a todo
@@ -82,10 +83,11 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 - **Type in the CLI** at the bottom: it is the agent's own prompt. The current turn fills
   the canvas; earlier turns are a step away with `Ctrl+Shift+↑` / `↓`, or keep scrolling
   past the top or bottom.
-- **The divider** between canvas and CLI drags to size the CLI (double-click resets it to
-  15 rows, it never goes below 10). The CLI grows by itself while the agent shows a picker,
-  a permission prompt, a question, the `/` list, a long prompt or a queue that would not
-  fit, and goes back once its prompt is plain again.
+- **The CLI sizes itself** to the agent's own bottom area: the prompt box and its footer at
+  rest, plus the working line, the queue or the todo list while a turn runs, and the whole
+  picker, permission prompt, question, `/` list or long prompt while one shows. It grows
+  the moment that area needs more rows and shrinks back once it needs fewer; there is no
+  divider to drag. ``Ctrl+` `` shows the full CLI, conversation and all, and back.
 - **Objects in a reply** resize from any edge. **Drag out** takes one out of the reply:
   drop it anywhere, or at an edge to snap it there (up to four per edge, each where you drop
   it), and the text moves out of the way.
@@ -95,7 +97,7 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
   the work into later turns, and can be moved, snapped, minimized or removed.
 - **Subagents** show as pills while they work. Click one to see the steps it took.
 - **Pictures:** `Ctrl+V` an image (or drop one) and the agent attaches it as
-  `[Image #1]`; the canvas shows its thumbnail just above the divider until you send, then
+  `[Image #1]`; the canvas shows its thumbnail just above the CLI until you send, then
   in your turn.
 - **Questions** a reply ends with get their options as buttons and a field each; **Send**
   types the answers into the agent's prompt as one message.

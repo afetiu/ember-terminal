@@ -32,7 +32,7 @@ import { pasteIntoTui } from './tuiScreen'
  * parts share (the pieces by title, what is pinned, the frames), wires the events, and
  * hands the work to the parts in ./loom:
  *
- * - host.ts      the agent in the shell, the mode, the split (canvas above, CLI below), the divider, auto-grow
+ * - host.ts      the agent in the shell, the mode, the split (canvas above, CLI below), the CLI sized to the TUI's bottom area
  * - stage.ts     the turn on screen, the rail, the wheel between turns, the live line, trail and subagents
  * - plan.ts      the plan piece
  * - pieces.ts    a piece made, dragged out, placed, sized, minimized, full screen and zoomed
@@ -68,7 +68,7 @@ export class LoomView {
   private readonly steps: HTMLElement
   readonly jump: HTMLElement
   readonly rawPill: HTMLElement
-  /** Pictures attached to the message being written in the CLI, shown just above the divider. */
+  /** Pictures attached to the message being written in the CLI, shown just above the CLI. */
   readonly pastedEl: HTMLElement
   private pasted: Array<{ src: string; n: number | null; at: number; goneAt: number; el: HTMLElement }> = []
 
@@ -448,7 +448,7 @@ export class LoomView {
   /**
    * Files dropped on the tab while an agent runs: their paths go into its prompt, the way a
    * drop on a terminal puts them (Claude Code makes an image's path an `[Image #n]`), and a
-   * picture gets its thumbnail above the divider.
+   * picture gets its thumbnail above the CLI.
    */
   dropFiles(files: File[]): void {
     const paths = files.map((f) => window.ember.platform.pathForFile(f)).filter(Boolean)
@@ -510,7 +510,7 @@ export class LoomView {
     this.pastedEl.classList.remove('is-on')
   }
 
-  /** For probes: the thumbnails waiting above the divider, by their labels. */
+  /** For probes: the thumbnails waiting above the CLI, by their labels. */
   get pastedLabels(): string[] {
     return this.pasted.map((p) => (p.n == null ? 'Image' : `Image #${p.n}`))
   }

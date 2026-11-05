@@ -310,9 +310,12 @@ function readCodex(v: View): TuiRead {
   let pEnd = top
   while (pEnd + 1 <= last && /^\s{2}\S/.test(L[pEnd + 1]!) && !CODEX_FOOT.test(L[pEnd + 1]!)) pEnd++
   const marks = marksIn(L.slice(top, pEnd + 1))
-  const cut = first < v.vp
-  const base = { prompt: top >= v.vp, live, dock, need: dock, cut, more: moreIn(foot), text, marks }
-  const why = (w: string) => (cut ? `${w || 'bottom area'} (scrolled up)` : w)
+  // No footer under the prompt: Codex has dropped it for want of a row (it never draws the
+  // prompt without one) — the area is two rows taller than what shows.
+  const footless = !foot.length
+  const cut = first < v.vp || footless
+  const base = { prompt: top >= v.vp, live, dock: footless ? dock + 2 : dock, need: footless ? dock + 2 : dock, cut, more: moreIn(foot), text, marks }
+  const why = (w: string) => (footless ? `${w || 'bottom area'} (no footer yet)` : cut ? `${w || 'bottom area'} (scrolled up)` : w)
   // Codex's `/` popup: above the prompt in 0.156 (under it, above the footer, before).
   if (/^\/[\w-]*$/.test(text)) {
     if (L.some((r, y) => y >= first && y !== top && /^\s*(?:›\s*)?\/[\w-]+\s{2,}\S/.test(r))) return { ...base, room: true, why: why('slash menu'), key: 'slash menu' }

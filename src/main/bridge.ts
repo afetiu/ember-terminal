@@ -116,9 +116,11 @@ function writeSettings(): string {
   const emberHooks = {
     SessionStart: [{ hooks: [started] }],
   }
-  // Full screen, always: Claude Code then keeps its prompt at the bottom of the CLI's box
-  // whatever its size, which is what the CLI's height is read from (the plain prompt, or
-  // a dialog that needs more room). Passed only inside Ember, so other terminals keep theirs.
+  // The classic screen, always: it prints the conversation above its bottom area and lets
+  // it scroll away, so a box as tall as that area shows the prompt, menus and dialogs and
+  // nothing of the conversation (the canvas has it). The full-screen renderer keeps half the
+  // screen for the conversation whatever the size, which is what 1.7.0 showed in the box.
+  // Passed only inside Ember, so other terminals keep the person's own setting.
   const tui = { tui: 'default' }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
   writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')

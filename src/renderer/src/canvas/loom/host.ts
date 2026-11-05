@@ -389,12 +389,15 @@ export class AgentHost {
   keyDown(e: KeyboardEvent): void {
     if (!this.onAgent || this.v.raw || this.v.mode !== 'claude' || !this.read?.prompt) return
     const text = this.read.text.trim()
-    let pre = false
-    if ((e.key === '/' || e.key === '@') && !e.ctrlKey && !e.altKey && !text) pre = true
-    else if (e.key === 'Enter' && !e.shiftKey && /^\/[\w:.-]+$/.test(text)) pre = true
+    let pre = 0
+    if ((e.key === '/' || e.key === '@') && !e.ctrlKey && !e.altKey && !text) pre = PRE_ROWS
+    else if (e.key === 'Enter' && !e.shiftKey && /^\/[\w:.-]+$/.test(text)) pre = PRE_ROWS
+    // Codex leaves its working line out when the box has no row for it (nothing on screen
+    // says a turn is on): a message sent gets the rows for it now, and keeps them once drawn.
+    else if (e.key === 'Enter' && !e.shiftKey && this.onAgent === 'codex' && text) pre = 3
     if (!pre) return
-    this.preUntil = Date.now() + 700
-    this.preRows = this.wantRows + PRE_ROWS
+    this.preUntil = Date.now() + (pre === PRE_ROWS ? 700 : 2500)
+    this.preRows = this.wantRows + pre
     this.layoutSplit()
   }
 

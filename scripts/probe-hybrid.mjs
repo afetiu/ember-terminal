@@ -289,7 +289,9 @@ try {
     for (const g of growth) console.log(`  ${g.ms == null ? '   -' : `${Math.round(g.ms)} ms`.padStart(6)}  ${g.what}${g.note ? `  (${g.note})` : ''}`)
   }
   /** Run `fn` with every frame sampled; check that at most one frame in a row lacked the prompt or a dialog's keys. */
-  const sampled = async (tab, label, fn, agent = 'claude') => {
+  // Codex clears its viewport when the screen's height changes and draws it again on its next
+  // frame (~30 ms): one frame more is allowed there.
+  const sampled = async (tab, label, fn, agent = 'claude', allow = agent === 'codex' ? 2 : 1) => {
     await ev(SAMPLER)
     await ev(`window.__tight.start(window.__ember.loom(${JSON.stringify(tab)}).sessionId, ${JSON.stringify(agent)})`)
     const t0 = Date.now()
@@ -299,7 +301,7 @@ try {
     } finally {
       const s = await ev(`window.__tight.stop()`)
       worstFrames.push({ label, worst: s.worst, frames: s.frames, sizes: s.sizes })
-      check(`${label}: every frame shows the prompt or the dialog's keys (worst ${s.worst} frame${s.worst === 1 ? '' : 's'} without)`, s.worst <= 1, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.sizes.join('→')}`)
+      check(`${label}: every frame shows the prompt or the dialog's keys (worst ${s.worst} frame${s.worst === 1 ? '' : 's'} without)`, s.worst <= allow, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.sizes.join('→')}`)
       if (s.worst > 1 && VERBOSE) console.log(s.worstText.map((r, i) => `   ${String(i).padStart(2)}|${r}`).join('\n'))
     }
     return out
