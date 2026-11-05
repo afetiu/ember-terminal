@@ -215,17 +215,37 @@ try {
   await idle()
   rmSync(PROBE_FILE, { force: true })
 
-  // ---- 6. AskUserQuestion
-  await say('Use the AskUserQuestion tool once to ask me "Which color?" with exactly two options, Red and Blue. After I answer, reply with only the color I chose.')
+  // ---- 6. AskUserQuestion: two questions, the deck shared with the reply's answer card
+  await say('Use the AskUserQuestion tool once, with two questions in the same call: "Which color?" with exactly two options, Red and Blue; and "Which size?" with exactly two options, Small and Large. After I answer, reply with only the color and the size I chose, like "Blue Large".')
   const q = await until(async () => ((await w())?.askKinds ?? []).includes('question') && (await loom()), 90_000)
-  check('AskUserQuestion shows as Ember\'s question card', !!q)
+  check("AskUserQuestion shows as Ember's question card", !!q)
+  const deck = await ev(`(() => { const c = document.querySelector('.loom-ask-card.is-question'); if (!c) return null; return {
+    shared: !!c.querySelector('.loom-qd'),
+    pages: [...c.querySelectorAll('.loom-qd-page[data-q]')].map((p) => [...p.querySelectorAll('.loom-qd-opt[data-o] .loom-qd-label')].map((l) => l.textContent)),
+    other: c.querySelectorAll('.loom-qd-opt.is-other').length,
+    tabs: [...c.querySelectorAll('.loom-qd-tab')].map((t) => t.textContent),
+  } })()`)
+  check('the question card is the shared deck: 2 questions, their options, Other', !!deck && deck.shared && deck.pages.length === 2 && deck.other === 2 && deck.pages.every((p) => p.length === 2), JSON.stringify(deck))
   await shot('5-question-card')
-  await ev(`document.querySelector('.loom-ask-card .loom-ask-chip[data-o="1"]').click()`)
+  // Keys: 2 picks Blue (and moves on), 2 picks Large, the review has Submit focused.
+  await send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await ev(`document.querySelector('.loom-ask-card.is-question .loom-qd-opt[data-o="0"]').focus()`)
+  await key('2', 'Digit2', 50, 0, '2')
+  await wait(400)
+  await shot('5b-question-card-2')
+  await key('2', 'Digit2', 50, 0, '2')
+  await wait(400)
+  const sum = await ev(`[...document.querySelectorAll('.loom-ask-card.is-question .loom-qd-sum-a')].map((a) => a.textContent)`)
+  check('keys pick both answers; the review lists them', JSON.stringify(sum) === JSON.stringify(['Blue', 'Large']), JSON.stringify(sum))
+  await shot('5c-question-review')
+  await enter()
   const blue = await until(async () => {
     const x = await loom()
-    return /User answered|Blue/.test(x?.text ?? '') && x.wrapper.phase === 'idle' && /\bBlue\b/.test((x.text ?? '').split(/Which color/).pop() ?? '') && x
+    const after = (x?.text ?? '').split(/like .Blue Large..?/).pop() ?? ''
+    return x?.wrapper.phase === 'idle' && /\bBlue\b/.test(after) && /\bLarge\b/.test(after) && x
   }, 90_000)
-  check('the answer reaches Claude (it replies Blue)', !!blue)
+  check('the answers reach Claude (it replies Blue Large)', !!blue)
+  await send('Emulation.setFocusEmulationEnabled', { enabled: false })
   await idle()
 
   // ---- 7. an image pasted into the composer

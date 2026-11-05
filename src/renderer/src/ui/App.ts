@@ -304,6 +304,8 @@ export class App {
       // window back: the focus is where it was put, and the document's press needs it there.
       const at = document.activeElement
       if (at instanceof HTMLIFrameElement || at?.tagName === 'WEBVIEW') return
+      // Half way through answering a question card: it keeps the keyboard.
+      if (at?.closest('.loom-answers, .loom-ask-card')) return
       this.activeGroup?.focusFirst()
     })
   }

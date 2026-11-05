@@ -5803,83 +5803,6 @@ body.is-light .loom-zoom {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
 }
 
-/* Claude's questions: each with its options as chips, numbered as their keys. */
-.loom-ask-qs {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 10px;
-  max-height: 46vh;
-  overflow-y: auto;
-}
-.loom-ask-q-head {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
-  color: var(--c-fg);
-}
-.loom-ask-q-tag {
-  padding: 1px 7px;
-  border-radius: 6px;
-  font: 600 0.72em var(--l-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--l-accent);
-  background: color-mix(in srgb, var(--c-accent) 13%, transparent);
-}
-.loom-ask-q-text {
-  font-weight: 600;
-}
-.loom-ask-q-multi {
-  font-size: 0.8em;
-  color: var(--l-faint);
-}
-.loom-ask-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.loom-ask-chip {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 8px;
-  align-items: baseline;
-  max-width: 100%;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 9px;
-  text-align: left;
-  font: 0.92em var(--l-prose);
-  color: var(--c-fg);
-  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 8%, transparent);
-  cursor: pointer;
-}
-.loom-ask-chip .l {
-  font-weight: 600;
-}
-.loom-ask-chip .d {
-  grid-column: 2;
-  font-size: 0.86em;
-  color: var(--l-faint);
-}
-.loom-ask-chip:hover {
-  background: color-mix(in srgb, var(--c-fg) 10%, transparent);
-}
-.loom-ask-chip:focus-visible {
-  outline: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 60%, transparent);
-}
-.loom-ask-chip.is-on {
-  background: color-mix(in srgb, var(--c-accent) 20%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 60%, transparent);
-}
-.loom-ask-chip.is-on .l {
-  color: var(--l-accent);
-}
-
 /* The plan, as it will be followed. */
 .loom-ask-plan {
   margin-top: 10px;
@@ -5962,147 +5885,6 @@ body.is-light .loom-zoom {
   border: solid var(--c-bg);
   border-width: 0 0 2px 2px;
   transform: rotate(-45deg);
-}
-
-/* ---------------------------------------------------------------- answers to questions
-
-   Under the questions a reply ends with: each one's options as chips, a field for
-   anything else, one Send. Quiet until touched; the chosen chip takes the accent. */
-
-.loom-answers {
-  margin: 4px 0 14px;
-  padding: 6px 14px 10px;
-  border-radius: var(--l-r-card);
-  border: 1px solid var(--l-line-strong);
-  background: var(--l-card-2);
-  font: 0.9em var(--l-prose);
-  line-height: 1.4;
-  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.loom-answers.is-stale {
-  display: none;
-}
-.loom-ans-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 0;
-}
-.loom-ans-row + .loom-ans-row {
-  border-top: 1px solid var(--l-line);
-}
-.loom-ans-n {
-  flex: none;
-  width: 1.4em;
-  padding-top: 6px;
-  font: 0.9em var(--l-mono);
-  color: var(--l-faint);
-  text-align: right;
-}
-.loom-ans-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.loom-ans-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 11px;
-  border-radius: var(--l-r-ctl);
-  border: 1px solid var(--l-line-strong);
-  background: transparent;
-  color: var(--l-ink);
-  font: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms,
-    color 120ms;
-}
-.loom-ans-chip:hover {
-  border-color: color-mix(in srgb, var(--c-accent) 45%, var(--l-line-strong));
-  color: var(--l-strong);
-}
-.loom-ans-chip[aria-pressed='true'] {
-  border-color: var(--c-accent);
-  background: color-mix(in srgb, var(--c-accent) 16%, transparent);
-  color: var(--l-strong);
-}
-.loom-ans-tag {
-  font: 0.78em var(--l-mono);
-  color: var(--l-faint);
-}
-.loom-ans-other {
-  flex: 1 1 140px;
-  min-width: 120px;
-  max-width: 320px;
-  padding: 4px 10px;
-  border-radius: var(--l-r-ctl);
-  border: 1px solid transparent;
-  border-bottom-color: var(--l-line-strong);
-  background: transparent;
-  color: var(--l-strong);
-  font: inherit;
-  outline: none;
-}
-.loom-ans-other.is-only {
-  max-width: none;
-  border-color: var(--l-line-strong);
-}
-.loom-ans-other:focus {
-  border-bottom-color: var(--c-accent);
-}
-.loom-ans-other.is-only:focus {
-  border-color: color-mix(in srgb, var(--c-accent) 60%, var(--l-line-strong));
-}
-.loom-ans-other::placeholder {
-  color: var(--l-faint);
-}
-.loom-ans-chip:focus-visible,
-.loom-ans-send:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--c-accent) 70%, transparent);
-  outline-offset: 2px;
-}
-.loom-ans-foot {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--l-line);
-}
-.loom-ans-note {
-  font-size: 0.9em;
-  color: var(--l-faint);
-}
-.loom-ans-send {
-  padding: 4px 16px;
-  border: 0;
-  border-radius: var(--l-r-ctl);
-  font: 600 1em var(--l-prose);
-  color: var(--c-bg);
-  background: var(--c-accent);
-  cursor: pointer;
-}
-.loom-ans-send:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-.loom-ans-send:disabled {
-  background: var(--l-card-2);
-  color: var(--l-faint);
-  cursor: default;
-}
-.loom-answers.is-sent .loom-ans-chip:not([aria-pressed='true']),
-.loom-answers.is-sent .loom-ans-other:placeholder-shown {
-  opacity: 0.4;
-}
-.loom-answers.is-sent .loom-ans-chip,
-.loom-answers.is-sent .loom-ans-other {
-  cursor: default;
 }
 
 /* ---------------------------------------------------------------- native mode: the bar's switches
@@ -6188,6 +5970,7 @@ body.is-light .loom-zoom {
    the rim. The prompt keeps the terminal's font and a plain `>`. */
 .loom-frame-box.is-native,
 .loom-ask-card,
+.loom-answers,
 .loom-native-queue,
 .loom-native-menu,
 .loom-elsewhere {
@@ -6202,7 +5985,8 @@ body.is-light .loom-zoom {
     0 18px 48px -30px rgba(0, 0, 0, 0.65);
 }
 .loom-frame-box.is-native.is-focus,
-.loom-ask-card:focus-within {
+.loom-ask-card:focus-within,
+.loom-answers:focus-within:not(.is-sent) {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
@@ -6210,6 +5994,7 @@ body.is-light .loom-zoom {
 }
 body.is-light .loom-frame-box.is-native,
 body.is-light .loom-ask-card,
+body.is-light .loom-answers,
 body.is-light .loom-native-queue,
 body.is-light .loom-native-menu,
 body.is-light .loom-elsewhere {
@@ -6237,4 +6022,414 @@ body.is-light .loom-elsewhere {
 .loom-native-input::placeholder {
   font-family: var(--term-font), 'Cascadia Code', Consolas, monospace;
   color: color-mix(in srgb, var(--c-fg) 36%, transparent);
+}
+
+/* ---------------------------------------------------------------- questions: the deck
+
+   Claude's AskUserQuestion and the questions a reply ends with, as one card
+   (questionDeck.ts): a question at a time, its options as full-width rows with their key at
+   the left, "Other…" as the last row, a tab strip and a review when there are several.
+   Glass like the composer's cards; the accent only marks the chosen row and the primary
+   button. */
+
+.loom-answers {
+  margin: 6px 0 16px;
+  padding: 14px 16px 12px;
+  max-width: 640px;
+  animation: loom-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-answers.is-stale {
+  display: none;
+}
+.loom-ask-card.is-question {
+  padding: 14px 16px 12px;
+}
+.loom-qd {
+  --qd-row: color-mix(in srgb, var(--c-fg) 4.5%, transparent);
+  --qd-rim: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  display: flex;
+  flex-direction: column;
+  font: 0.92rem / 1.45 var(--l-prose);
+  color: var(--l-ink, var(--c-fg));
+  outline: 0;
+}
+.loom-qd-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.loom-qd-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  animation: loom-queue-wait 2s ease-in-out infinite;
+}
+.loom-qd-title {
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--l-dim);
+}
+.loom-qd-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
+}
+.loom-qd-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--l-faint);
+  font: 600 0.76em var(--l-prose);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 140ms, color 140ms;
+}
+.loom-qd-tab:hover:not(:disabled) {
+  color: var(--l-ink, var(--c-fg));
+}
+.loom-qd-tab.is-at {
+  color: var(--l-strong, var(--c-fg));
+  background: color-mix(in srgb, var(--c-fg) 11%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.loom-qd-tab-mark {
+  display: none;
+  width: 11px;
+  height: 11px;
+}
+.loom-qd-tab-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.loom-qd-tab.is-done {
+  color: var(--l-dim);
+}
+.loom-qd-tab.is-done .loom-qd-tab-mark {
+  display: inline-block;
+}
+.loom-qd-tab.is-done.is-at {
+  color: var(--l-strong, var(--c-fg));
+}
+.loom-qd-tab.is-submit {
+  padding: 0 10px;
+}
+.loom-qd-page {
+  margin-top: 10px;
+  animation: loom-qd-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-qd-page[hidden] {
+  display: none;
+}
+@keyframes loom-qd-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+.loom-qd-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.loom-qd-count,
+.loom-qd-multi {
+  font-size: 0.76em;
+  font-weight: 500;
+  color: var(--l-faint);
+  font-variant-numeric: tabular-nums;
+}
+.loom-qd-text {
+  margin: 0 0 12px;
+  font-size: 1.04em;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--l-strong, var(--c-fg));
+  text-wrap: pretty;
+}
+.loom-qd-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.loom-qd-opt {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr 16px;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--qd-row);
+  box-shadow: inset 0 0 0 1px var(--qd-rim);
+  color: var(--l-ink, var(--c-fg));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms, box-shadow 140ms;
+}
+.loom-qd-opt:hover {
+  background: color-mix(in srgb, var(--c-fg) 7.5%, transparent);
+}
+.loom-qd-opt:focus-visible,
+.loom-qd-opt:focus,
+.loom-qd-opt.is-other:focus-within {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 24%, transparent);
+}
+.loom-qd-key {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  color: var(--l-dim);
+  font: 600 0.74em var(--l-prose);
+  font-variant-numeric: tabular-nums;
+  transition: background 140ms, color 140ms;
+}
+.loom-qd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.loom-qd-label {
+  font-weight: 450;
+  color: var(--l-strong, var(--c-fg));
+}
+.loom-qd-tag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.78em;
+  font-weight: 500;
+  color: var(--l-dim);
+  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  vertical-align: 1px;
+}
+.loom-qd-desc {
+  font-size: 0.88em;
+  color: var(--l-dim);
+}
+.loom-qd-check {
+  width: 16px;
+  height: 16px;
+  color: var(--c-accent);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 140ms, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-qd-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.loom-qd-opt.is-on {
+  background: color-mix(in srgb, var(--c-accent) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 52%, transparent);
+}
+.loom-qd-opt.is-on .loom-qd-key {
+  background: var(--c-accent);
+  color: var(--c-bg);
+}
+.loom-qd-opt.is-on .loom-qd-check {
+  opacity: 1;
+  transform: none;
+}
+.loom-qd-opt.is-other {
+  cursor: text;
+}
+.loom-qd-other {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--l-strong, var(--c-fg));
+  font: inherit;
+  font-weight: 450;
+}
+.loom-qd-other::placeholder {
+  color: var(--l-faint);
+  font-weight: 400;
+}
+.loom-qd-opt.is-other.is-only {
+  grid-template-columns: 1fr 16px;
+  padding-left: 12px;
+}
+.loom-qd-opt.is-other.is-only .loom-qd-key {
+  display: none;
+}
+
+/* The review: each question and what it was answered with. */
+.loom-qd-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.loom-qd-sum-row {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  column-gap: 12px;
+  align-items: start;
+  width: 100%;
+  padding: 8px 12px 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--qd-row);
+  box-shadow: inset 0 0 0 1px var(--qd-rim);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms, box-shadow 140ms;
+}
+.loom-qd-sum-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-fg) 7.5%, transparent);
+}
+.loom-qd-sum-row:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 24%, transparent);
+}
+.loom-qd-sum-n {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c-fg) 7%, transparent);
+  color: var(--l-dim);
+  font: 600 0.74em var(--l-prose);
+}
+.loom-qd-sum-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.loom-qd-sum-q {
+  overflow: hidden;
+  font-size: 0.86em;
+  color: var(--l-dim);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.loom-qd-sum-a {
+  font-weight: 450;
+  color: var(--l-strong, var(--c-fg));
+}
+.loom-qd-sum-a.is-skip {
+  font-weight: 400;
+  color: var(--l-faint);
+}
+
+.loom-qd-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.loom-qd-hint {
+  margin-right: auto;
+  font-size: 0.76em;
+  color: var(--l-faint);
+}
+.loom-qd-hint.is-sent {
+  color: var(--l-dim);
+  font-weight: 500;
+}
+.loom-qd-hint.is-sent::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--l-ok, #5fbf8f);
+  vertical-align: 1px;
+}
+.loom-qd-btn {
+  height: 28px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  font: 600 0.86em var(--l-prose);
+  color: var(--l-ink, var(--c-fg));
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+  cursor: pointer;
+  transition: filter 140ms, background 140ms, color 140ms;
+}
+.loom-qd-btn[hidden] {
+  display: none;
+}
+.loom-qd-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
+}
+.loom-qd-btn.is-primary {
+  color: var(--c-bg);
+  background: var(--c-accent);
+}
+.loom-qd-btn.is-primary:hover:not(:disabled) {
+  background: var(--c-accent);
+  filter: brightness(1.1);
+}
+.loom-qd-btn.is-primary.is-quiet {
+  color: var(--l-ink, var(--c-fg));
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.loom-qd-btn.is-primary:disabled {
+  color: var(--l-faint);
+  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
+  cursor: default;
+}
+.loom-qd-btn:focus-visible,
+.loom-qd-tab:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+.loom-qd.is-sent .loom-qd-tab,
+.loom-qd.is-sent .loom-qd-sum-row,
+.loom-qd.is-sent .loom-qd-opt {
+  cursor: default;
+}
+.loom-qd.is-sent .loom-qd-opt:not(.is-on) {
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loom-qd-page,
+  .loom-qd-check {
+    animation: none;
+    transition: none;
+  }
+}
+.loom-qd .loom-qd-other:focus,
+.loom-qd .loom-qd-other:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.loom-qd.is-sent .loom-qd-tabs {
+  display: none;
 }

@@ -1,144 +1,37 @@
 /**
- * Questions at the end of a reply, answered with a click.
+ * Questions at the end of a reply, answered on a card.
  *
  * When Claude ends a turn by asking things — a numbered list under "Questions", or a last
- * sentence ending in `?` — the canvas puts an answer card right under them: each question
- * gets the options its own words name (Yes / No, "X or Y", "the other options are A, B
- * and C", "(A, B or C)") as chips, and a field for anything else. Send composes one line
- * ("1. Platform; 2. All repos; 3. Yes — ask him") and types it into the session as the
- * user would. The reply's text is left as it is; the card only adds to it.
+ * sentence ending in `?` — the canvas puts an answer card right under them, the same card
+ * as Claude's own AskUserQuestion (questionDeck.ts): one question at a time, its options
+ * as rows (the ones it lettered, A / B / C, or named, or Yes / No), "Other…" last, then a
+ * review and Submit. Submit composes one line ("1. A — yes, both; 2. …") and types it into
+ * the session as the user would. The reply's text is left as it is; the card only adds.
  *
- * All of this is heuristics over the rendered reply. A question it cannot read options
- * from still gets a field, so the card is never worse than the prompt.
+ * Reading the options is heuristics over the rendered reply (questionParse.ts). A question
+ * it cannot read options from gets a field only, so the card is never worse than the prompt.
  */
-
-export interface Question {
-  /** The question as written, for the row's label. */
-  text: string
-  options: string[]
-  /** The option the question says is set now ("Is X correct?"). */
-  current?: string
-}
-
-const YESNO = /^(?:is|are|am|was|were|should|shall|can|could|do|does|did|will|would|have|has|had|may|might|must|want|ok|okay|need|any|anything)\b/i
-const PREPS = new Set(['for', 'in', 'to', 'on', 'at', 'with', 'by', 'from', 'into', 'via', 'as', 'under', 'over', 'through'])
-const ARTICLES = new Set(['the', 'a', 'an', 'my', 'your', 'our', 'his', 'her', 'their', 'this', 'that', 'these', 'those'])
-
-const clean = (s: string): string =>
-  s
-    .replace(/[`"“”‘’]/g, '')
-    .replace(/^[\s'(]+|[\s')?.!,;:]+$/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-/** "A, B, C and D" / "A, B or C" — the names, or nothing if it does not read as a list of names. */
-function names(list: string): string[] {
-  const parts = list
-    .replace(/\betc\.?$/i, '')
-    .split(/\s*,\s*(?:and\s+|or\s+)?|\s+(?:and|or)\s+|\s*\/\s*/i)
-    .map(clean)
-    .filter(Boolean)
-  if (parts.length < 2 || parts.length > 8) return []
-  if (parts.some((p) => p.length > 40 || p.split(' ').length > 6)) return []
-  return parts
-}
-
-function sentences(text: string): string[] {
-  return text
-    .split(/(?<=[.?!])\s+(?=[A-Z0-9"'`(“])/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-function words(s: string): string[] {
-  return s.split(/\s+/).filter(Boolean)
-}
-
-/** "for the 3 pilot repos, or for all repos" → the two sides, as the user would name them. */
-function alternatives(q: string): string[] | 'yesno' | null {
-  const body = q.replace(/\?\s*$/, '')
-  const re = /,?\s+or\s+/gi
-  let m: RegExpExecArray | null
-  let last: RegExpExecArray | null = null
-  while ((m = re.exec(body))) last = m
-  if (!last) return null
-  const right = body.slice(last.index + last[0].length).trim()
-  if (/^not\b/i.test(right)) return 'yesno'
-  if (/^(?:so|something|anything|other)\b/i.test(right) || words(right).length > 7) return null
-  const segs = body.slice(0, last.index).split(/\s*,\s*/)
-  const head = segs[0] ?? ''
-  const middle = segs.slice(1)
-  const w = (words(right)[0] ?? '').toLowerCase()
-  let first: string
-  let rest = [...middle, right]
-  const at = head.toLowerCase().lastIndexOf(` ${w} `)
-  if (w && PREPS.has(w) && at >= 0) {
-    first = head.slice(at + w.length + 2)
-    rest = rest.map((r) => (r.toLowerCase().startsWith(`${w} `) ? r.slice(w.length + 1) : r))
-  } else if (w && ARTICLES.has(w) && at >= 0) {
-    first = head.slice(at + 1)
-  } else {
-    const n = Math.max(1, Math.min(4, words(right).length))
-    first = words(head).slice(-n).join(' ')
-  }
-  const out = [first, ...rest].map(clean).filter(Boolean)
-  if (out.length < 2 || out.some((o) => o.split(' ').length > 8)) return null
-  return out
-}
-
-/**
- * The options one question names. `codes` are the code spans in it, which is usually how
- * a value is marked ("Is Product Line `Platform` correct?").
- */
-export function readQuestion(text: string, codes: string[] = []): Question {
-  const all = text.replace(/\s+/g, ' ').trim()
-  const ss = sentences(all)
-  const q = ss.find((s) => /\?\s*$/.test(s)) ?? ss.find((s) => s.includes('?')) ?? all
-  const base: Question = { text: q, options: [] }
-
-  // "Is X correct? The other options are A, B and C."
-  const others = /\b(?:the\s+)?(?:other|alternative)\s+(?:options|choices|values)\s+(?:are|would be|include)\s*:?\s*([^.?!]+)|\b(?:other\s+)?options\s*:\s*([^.?!]+)/i.exec(all)
-  if (others) {
-    const rest = names(others[1] ?? others[2] ?? '')
-    if (rest.length) {
-      const is = /^(?:is|are)\s+(.+?)\s+(?:correct|right|ok|okay|fine|good|the right one)\b/i.exec(q)
-      let current: string | undefined
-      if (is) {
-        const x = is[1] ?? ''
-        current = [...codes].reverse().find((c) => x.includes(c)) ?? /["“']([^"”']+)["”']/.exec(x)?.[1] ?? clean(x)
-      }
-      const opts = current ? [current, ...rest.filter((r) => r.toLowerCase() !== current!.toLowerCase())] : rest
-      return { ...base, options: opts, current }
-    }
-  }
-
-  // "(A, B or C)" or ": A, B or C?"
-  const paren = /\(([^()]*(?:,|\bor\b)[^()]*)\)[^()]*$/.exec(q)
-  if (paren) {
-    const opts = names(paren[1] ?? '')
-    if (opts.length) return { ...base, options: opts }
-  }
-  const colon = /:\s*([^:]+?)\?\s*$/.exec(q)
-  if (colon && /,|\bor\b/.test(colon[1] ?? '')) {
-    const opts = names(colon[1] ?? '')
-    if (opts.length) return { ...base, options: opts }
-  }
-
-  const alt = alternatives(q)
-  if (Array.isArray(alt)) return { ...base, options: alt }
-  if (alt === 'yesno' || YESNO.test(q)) return { ...base, options: ['Yes', 'No'] }
-  return base
-}
-
-/** First letter up, unless the word is already cased on purpose (iOS, npm's `x`). */
-function label(s: string): string {
-  return /^[a-z][a-z\s]/.test(s) ? s[0]!.toUpperCase() + s.slice(1) : s
-}
+import { compose, label, readQuestion, type Question } from './questionParse'
+import { questionDeck, type DeckQuestion } from './questionDeck'
 
 interface Found {
   after: HTMLElement
-  items: Array<{ text: string; codes: string[] }>
+  items: Array<{ text: string; codes: string[]; subs: string[] }>
 }
+
+/** A list item's own words, without the lists nested in it. */
+function ownText(li: HTMLElement): string {
+  const c = li.cloneNode(true) as HTMLElement
+  c.querySelectorAll('ul, ol').forEach((l) => l.remove())
+  return c.textContent ?? ''
+}
+
+function subItems(li: HTMLElement): string[] {
+  const nested = li.querySelector(':scope > ul, :scope > ol')
+  return nested ? (Array.from(nested.children).filter((c) => c.tagName === 'LI') as HTMLElement[]).map((c) => c.textContent ?? '') : []
+}
+
+const SENTENCE = /(?<=[.?!])\s+(?=[A-Z0-9"'`(“])/
 
 /** Where the questions are in a rendered reply, if it ends by asking. */
 function find(say: HTMLElement): Found | null {
@@ -154,119 +47,87 @@ function find(say: HTMLElement): Found | null {
     const tail = blocks.slice(pos + 1)
     const nearEnd = tail.length <= 1 && tail.every((b) => b.tagName === 'P' && (b.textContent ?? '').length < 240)
     const lis = Array.from(list.children).filter((c) => c.tagName === 'LI') as HTMLElement[]
-    const asks = lis.filter((li) => (li.textContent ?? '').includes('?'))
+    const asks = lis.filter((li) => ownText(li).includes('?'))
     if (asks.length && asks.length * 2 >= lis.length && (titled || nearEnd)) {
-      return { after: list, items: asks.map((li) => ({ text: li.textContent ?? '', codes: codesOf(li) })) }
+      return { after: list, items: asks.map((li) => ({ text: ownText(li), codes: codesOf(li), subs: subItems(li) })) }
+    }
+    // "Which one?" with its options as the list under it, at the very end.
+    const lead = prev?.tagName === 'P' ? (prev.textContent ?? '').trim() : ''
+    if (!tail.length && !asks.length && /\?\s*:?$/.test(lead) && lis.length >= 2 && lis.length <= 8) {
+      const ss = lead.split(SENTENCE)
+      return { after: list, items: [{ text: ss[ss.length - 1] ?? lead, codes: codesOf(prev!), subs: lis.map((li) => li.textContent ?? '') }] }
     }
   }
-  // No list: the reply's last paragraph ends with a question.
+  // No list: the reply's last paragraph asks — ends with a question, or with its options.
   const last = blocks[blocks.length - 1]
-  if (last && last.tagName === 'P' && /\?\s*$/.test(last.textContent ?? '')) {
-    const ss = sentences((last.textContent ?? '').trim())
-    return { after: last, items: [{ text: ss[ss.length - 1] ?? '', codes: codesOf(last) }] }
+  if (last && last.tagName === 'P') {
+    const text = (last.textContent ?? '').trim()
+    const whole = readQuestion(text, codesOf(last))
+    if (whole.keys && whole.text.includes('?')) return { after: last, items: [{ text, codes: codesOf(last), subs: [] }] }
+    if (/\?\s*$/.test(text)) {
+      const ss = text.split(SENTENCE)
+      return { after: last, items: [{ text: ss[ss.length - 1] ?? '', codes: codesOf(last), subs: [] }] }
+    }
+    const q = text.lastIndexOf('?')
+    if (q > 0) {
+      // "… Which do you want? A) x B) y." — the question sentence and its options after it.
+      const ss = text.slice(0, q + 1).split(SENTENCE)
+      const from = text.slice(0, q + 1).length - (ss[ss.length - 1] ?? '').length
+      const asked = text.slice(from)
+      if (readQuestion(asked, codesOf(last)).keys) return { after: last, items: [{ text: asked, codes: codesOf(last), subs: [] }] }
+    }
   }
   return null
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string): HTMLElementTagNameMap[K] {
-  const e = document.createElement(tag)
-  e.className = cls
-  if (text !== undefined) e.textContent = text
-  return e
-}
-
-/** The line a set of answers goes out as: numbered when there is more than one question. */
-export function compose(answers: Array<{ n: number; choice: string; text: string }>, total: number): string {
-  const one = (a: { choice: string; text: string }) => (a.choice && a.text ? `${a.choice} — ${a.text}` : a.choice || a.text)
-  const given = answers.filter((a) => a.choice || a.text)
-  if (total === 1) return given[0] ? one(given[0]) : ''
-  return given.map((a) => `${a.n}. ${one(a)}`).join('; ')
+/** A read question as the deck shows it: the reply's own keys, else 1 2 3. */
+function toDeck(q: Question): DeckQuestion {
+  return {
+    text: q.text,
+    options: q.options.map((o, i) => ({
+      label: label(o),
+      key: q.keys?.[i] ?? String(i + 1),
+      tag: q.current && o === q.current ? 'current' : undefined,
+    })),
+  }
 }
 
 /**
  * Put an answer card under the questions in `say`, if it asks any. Returns the card.
- * `send` is called with the composed line when the user presses Send.
+ * `send` is called with the composed line when the user submits.
  */
 export function answerCard(say: HTMLElement, send: (text: string) => void): HTMLElement | null {
   const found = find(say)
   if (!found) return null
-  const questions = found.items.map((i) => readQuestion(i.text, i.codes))
-  const card = el('div', 'loom-answers')
-  card.setAttribute('role', 'group')
-  card.setAttribute('aria-label', 'Answer the questions')
-  const total = questions.length
-  const rows: Array<{ n: number; chosen: () => string; input: HTMLInputElement }> = []
-  const go = el('button', 'loom-ans-send', 'Send')
-  go.type = 'button'
-  go.disabled = true
-  const note = el('span', 'loom-ans-note', questions.some((q) => q.options.length) ? 'Pick or type, then send' : 'Type, then send')
-
-  const value = () =>
-    compose(
-      rows.map((r) => ({ n: r.n, choice: r.chosen(), text: r.input.value.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').trim() })),
-      total,
-    )
-  const update = () => {
-    go.disabled = card.classList.contains('is-sent') || !value()
-  }
-
-  questions.forEach((q, i) => {
-    const n = i + 1
-    const row = el('div', 'loom-ans-row')
-    row.dataset['n'] = String(n)
-    row.title = q.text
-    if (total > 1) row.appendChild(el('span', 'loom-ans-n', String(n)))
-    const body = el('div', 'loom-ans-body')
-    const chips: HTMLButtonElement[] = []
-    for (const opt of q.options) {
-      const chip = el('button', 'loom-ans-chip')
-      chip.type = 'button'
-      chip.dataset['value'] = label(opt)
-      chip.setAttribute('aria-pressed', 'false')
-      chip.appendChild(document.createTextNode(label(opt)))
-      if (q.current && opt === q.current) {
-        chip.classList.add('is-current')
-        chip.appendChild(el('span', 'loom-ans-tag', 'now'))
-      }
-      chip.addEventListener('click', () => {
-        const on = chip.getAttribute('aria-pressed') !== 'true'
-        for (const c of chips) c.setAttribute('aria-pressed', 'false')
-        chip.setAttribute('aria-pressed', on ? 'true' : 'false')
-        update()
-      })
-      chips.push(chip)
-      body.appendChild(chip)
-    }
-    const input = el('input', 'loom-ans-other')
-    input.type = 'text'
-    input.spellcheck = false
-    input.placeholder = q.options.length ? 'Other…' : 'Your answer…'
-    if (!q.options.length) input.classList.add('is-only')
-    input.setAttribute('aria-label', `Answer ${n}: ${q.text}`)
-    input.addEventListener('input', update)
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-        e.preventDefault()
-        if (!go.disabled) go.click()
-      }
-    })
-    body.appendChild(input)
-    row.appendChild(body)
-    card.appendChild(row)
-    rows.push({ n, chosen: () => chips.find((c) => c.getAttribute('aria-pressed') === 'true')?.dataset['value'] ?? '', input })
+  const questions = found.items.map((i) => readQuestion(i.text, i.codes, i.subs))
+  const card = document.createElement('div')
+  card.className = 'loom-answers'
+  const deck = questionDeck(questions.map(toDeck), {
+    title: questions.length > 1 ? `${questions.length} questions` : 'Question',
+    submit: (picks) => {
+      if (card.classList.contains('is-sent')) return
+      const text = compose(
+        picks.map((p, i) => {
+          const q = questions[i]!
+          const o = p.picked[0]
+          if (p.other || o === undefined) return { n: i + 1, text: p.other }
+          // A lettered option goes as the reply wrote it, with its key; one read from prose by its label.
+          return q.keys ? { n: i + 1, key: q.keys[o], text: q.options[o]! } : { n: i + 1, text: label(q.options[o]!) }
+        }),
+        questions.length,
+      )
+      if (!text) return
+      card.classList.add('is-sent')
+      deck.lock()
+      send(text)
+    },
   })
-
-  const foot = el('div', 'loom-ans-foot')
-  foot.append(note, go)
-  card.appendChild(foot)
-  go.addEventListener('click', () => {
-    const text = value()
-    if (!text || card.classList.contains('is-sent')) return
-    card.classList.add('is-sent')
-    for (const b of card.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input')) b.disabled = true
-    note.textContent = 'Sent'
-    go.hidden = true
-    send(text)
+  card.appendChild(deck.el)
+  card.addEventListener('keydown', (e) => {
+    if (deck.key(e)) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
   })
   found.after.after(card)
   return card

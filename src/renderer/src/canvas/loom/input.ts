@@ -45,7 +45,7 @@ export class CanvasInput {
     }
     const tgt = e.target as HTMLElement | null
     const inLoomInput =
-      tgt?.closest?.('.loom-pop, .loom-note-edit, .loom-picker, .loom-menu, .loom-drawer') != null ||
+      tgt?.closest?.('.loom-pop, .loom-note-edit, .loom-picker, .loom-menu, .loom-drawer, .loom-answers') != null ||
       (!!tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable) && !tgt.closest('.xterm'))
     if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyN' && (v.mode === 'claude' || v.mode === 'shell')) {
       e.preventDefault()
@@ -192,7 +192,7 @@ export class CanvasInput {
       return
     }
     // A click that selected nothing hands the keyboard back to the prompt.
-    const interactive = t.closest('button, a, input, textarea, iframe, webview, video, audio, summary, .loom-pop, .loom-steps')
+    const interactive = t.closest('button, a, input, textarea, iframe, webview, video, audio, summary, .loom-pop, .loom-steps, .loom-answers')
     if (!interactive && !(window.getSelection()?.toString() ?? '').trim()) v.session.focus()
   }
 

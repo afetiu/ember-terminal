@@ -1,4 +1,5 @@
 import { escapeHtml, renderMarkdown } from './markdown'
+import { questionDeck } from './questionDeck'
 
 /**
  * What Claude Code asks the person, as cards over the composer: a tool it wants to run,
@@ -218,117 +219,43 @@ export class Asks {
   private question(id: string, req: Json): Card {
     const input = (req['input'] ?? {}) as Json
     const qs = (Array.isArray(input['questions']) ? (input['questions'] as Json[]) : []).slice(0, 4)
-    const el = card(`${escapeHtml(this.ctx.who ?? 'Claude')} asks${qs.length > 1 ? ` ${qs.length} questions` : ''}`, 'is-question')
-    const picked: Array<Set<number>> = qs.map(() => new Set())
-    const body = document.createElement('div')
-    body.className = 'loom-ask-qs'
-    qs.forEach((q, qi) => {
-      const multi = q['multiSelect'] === true
-      const opts = (Array.isArray(q['options']) ? (q['options'] as Json[]) : []).slice(0, 6)
-      const block = document.createElement('div')
-      block.className = 'loom-ask-q'
-      block.dataset['q'] = String(qi)
-      block.innerHTML =
-        `<div class="loom-ask-q-head">${q['header'] ? `<span class="loom-ask-q-tag">${escapeHtml(String(q['header']))}</span>` : ''}<span class="loom-ask-q-text">${escapeHtml(String(q['question'] ?? ''))}</span>${multi ? '<span class="loom-ask-q-multi">pick any</span>' : ''}</div>` +
-        `<div class="loom-ask-chips">` +
-        opts
-          .map(
-            (o, oi) =>
-              `<button type="button" class="loom-ask-chip" data-o="${oi}"${qi === 0 && oi === 0 ? ' data-autofocus' : ''} aria-pressed="false"><kbd>${oi + 1}</kbd><span class="l">${escapeHtml(String(o['label'] ?? ''))}</span>` +
-              (o['description'] ? `<span class="d">${escapeHtml(String(o['description']))}</span>` : '') +
-              `</button>`
-          )
-          .join('') +
-        `</div>` +
-        `<input class="loom-ask-other" type="text" spellcheck="false" placeholder="Other…" aria-label="Another answer">`
-      body.appendChild(block)
-    })
-    el.appendChild(body)
-    el.insertAdjacentHTML('beforeend', acts([['submit', 'Submit', true]], 'Enter submit · Esc dismiss', false))
-    const single = qs.length === 1 && qs[0]!['multiSelect'] !== true
-    const blocks = [...body.querySelectorAll<HTMLElement>('.loom-ask-q')]
-    const answers = (): Record<string, string> => {
-      const out: Record<string, string> = {}
-      qs.forEach((q, qi) => {
-        const opts = Array.isArray(q['options']) ? (q['options'] as Json[]) : []
-        const other = blocks[qi]!.querySelector<HTMLInputElement>('.loom-ask-other')!.value.trim()
-        const labels = [...picked[qi]!].sort((a, b) => a - b).map((i) => String(opts[i]?.['label'] ?? ''))
-        const multi = q['multiSelect'] === true
-        const value = multi ? [...labels, ...(other ? [other] : [])].join(', ') : other || labels[0] || ''
-        if (value) out[String(q['question'] ?? '')] = value
-      })
-      return out
-    }
-    const submit = () => {
-      const a = answers()
-      if (!Object.keys(a).length) {
-        blocks[0]?.querySelector<HTMLElement>('.loom-ask-chip')?.focus()
-        return
+    const opts = qs.map((q) => (Array.isArray(q['options']) ? (q['options'] as Json[]) : []).slice(0, 6))
+    const el = document.createElement('div')
+    el.className = 'loom-ask-card is-question'
+    const who = this.ctx.who ?? 'Claude'
+    const deck = questionDeck(
+      qs.map((q, qi) => ({
+        text: String(q['question'] ?? ''),
+        header: q['header'] ? String(q['header']) : undefined,
+        multi: q['multiSelect'] === true,
+        options: opts[qi]!.map((o, oi) => ({
+          label: String(o['label'] ?? ''),
+          description: o['description'] ? String(o['description']) : undefined,
+          key: String(oi + 1),
+        })),
+      })),
+      {
+        title: `${who} asks${qs.length > 1 ? ` ${qs.length} questions` : ''}`,
+        live: true,
+        // One question, one answer: picking it is answering, as in Claude Code.
+        quickSingle: true,
+        submit: (picks) => {
+          const answers: Record<string, string> = {}
+          picks.forEach((p, qi) => {
+            const labels = p.picked.map((i) => String(opts[qi]![i]?.['label'] ?? ''))
+            const value = qs[qi]!['multiSelect'] === true ? [...labels, ...(p.other ? [p.other] : [])].join(', ') : p.other || labels[0] || ''
+            if (value) answers[String(qs[qi]!['question'] ?? '')] = value
+          })
+          if (Object.keys(answers).length) this.reply(id, { behavior: 'allow', updatedInput: { ...input, answers } })
+        },
       }
-      this.reply(id, { behavior: 'allow', updatedInput: { ...input, answers: a } })
-    }
-    const toggle = (qi: number, oi: number) => {
-      const multi = qs[qi]!['multiSelect'] === true
-      const set = picked[qi]!
-      if (multi) {
-        if (set.has(oi)) set.delete(oi)
-        else set.add(oi)
-      } else {
-        set.clear()
-        set.add(oi)
-        blocks[qi]!.querySelector<HTMLInputElement>('.loom-ask-other')!.value = ''
-      }
-      blocks[qi]!.querySelectorAll<HTMLElement>('.loom-ask-chip').forEach((c) => {
-        const on = set.has(Number(c.dataset['o']))
-        c.classList.toggle('is-on', on)
-        c.setAttribute('aria-pressed', String(on))
-      })
-      // One question, one answer: picking it is answering.
-      if (single) submit()
-    }
-    body.addEventListener('click', (e) => {
-      const chip = (e.target as HTMLElement).closest<HTMLElement>('.loom-ask-chip')
-      if (!chip) return
-      toggle(Number(chip.closest<HTMLElement>('[data-q]')!.dataset['q']), Number(chip.dataset['o']))
-    })
-    body.addEventListener('input', (e) => {
-      const t = e.target as HTMLInputElement
-      if (!t.classList.contains('loom-ask-other')) return
-      const qi = Number(t.closest<HTMLElement>('[data-q]')!.dataset['q'])
-      // A typed answer replaces a single choice.
-      if (qs[qi]!['multiSelect'] !== true && t.value.trim() && picked[qi]!.size) {
-        picked[qi]!.clear()
-        blocks[qi]!.querySelectorAll('.loom-ask-chip').forEach((c) => c.classList.remove('is-on'))
-      }
-    })
-    el.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('button[data-a="submit"]')) submit()
-    })
-    /** The question the keys are for: the one with focus in it, else the first unanswered. */
-    const current = (): number => {
-      const f = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('[data-q]')
-      if (f && el.contains(f)) return Number(f.dataset['q'])
-      const i = picked.findIndex((s) => s.size === 0)
-      return i < 0 ? 0 : i
-    }
+    )
+    el.appendChild(deck.el)
     return {
       el,
       kind: 'question',
       no: () => this.reply(id, { behavior: 'deny', message: 'The user dismissed the question without answering.' }),
-      key: (e) => {
-        if (e.key === 'Enter') {
-          submit()
-          return true
-        }
-        if (isField(e.target)) return false
-        if (/^[1-9]$/.test(e.key)) {
-          const qi = current()
-          const n = Number(e.key) - 1
-          if (blocks[qi]?.querySelector(`.loom-ask-chip[data-o="${n}"]`)) toggle(qi, n)
-          return true
-        }
-        return false
-      },
+      key: (e) => deck.key(e),
     }
   }
 
