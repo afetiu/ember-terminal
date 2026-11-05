@@ -1,0 +1,181 @@
+{"meta":{"agent":"claude","name":"claude-fullscreen","bundledConpty":true,"cols":120,"rows":45,"cmd":"C:\\Users\\Agon-MiniPc\\.local\\bin\\claude.exe","args":["--model","haiku","--permission-mode","default","--settings","C:\\Users\\AGON-M~1\\AppData\\Local\\Temp\\ember-record\\settings-fullscreen.json"],"at":"2026-11-05T21:40:53.206Z"}}
+{"t":135,"o":"\u001b[1t"}
+{"t":136,"o":"\u001b[c\u001b[?1004h\u001b[?9001h"}
+{"t":507,"o":"\u001b]0;claude\u001b\\"}
+{"t":1527,"o":"\u001b7\u001b[r\u001b8\u001b[?25h"}
+{"t":2221,"o":"\u001b[?2004h\u001b[?2031h\u001b[?1004h"}
+{"t":2221,"o":"\u001b[?9001l\u001b[?9001h"}
+{"t":2222,"o":"\u001b]0;✳ Claude Code\u001b\\"}
+{"t":2372,"o":"\u001b[?1049h\u001b[2J\u001b[H\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h\u001b[?25l\u001b[?25l\u001b[H\r\u001b[1B\u001b[38;2;215;119;87m ▐\u001b[48;2;0;0;0m▛███▛█\u001b[12G\u001b[39m\u001b[49m\u001b[1mClaude Code\u001b[24G\u001b[22m\u001b[38;2;153;153;153mv2.1.318\r\u001b[1B\u001b[38;2;215;119;87m▝▜\u001b[48;2;0;0;0m█████\u001b[49m█▀\u001b[12G\u001b[38;2;153;153;153mHaiku 5.5 · Claude Ultra\r\u001b[1B\u001b[38;2;215;119;87m ▝▝   ▝▝ \u001b[12G\u001b[38;2;153;153;153m~\\agent-box · \u001b[38;2;255;193;7m/rc connecting…\r\u001b[100C\u001b[37B\u001b[38;2;153;153;153m◐ medium · /effort\r\u001b[1B\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\r\u001b[1B\u001b[39m❯ \u001b[2mTry \"how do I log an error?\"\r\u001b[1B\u001b[22m\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\r\u001b[2C\u001b[1B\u001b[38;2;153;153;153m⏸ manual mode on · ? for shortcuts · ← for agents\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":2927,"o":"\u001b[>0q"}
+{"t":2927,"o":"\u001b[?u\u001b]7501;?\u0007\u001b[c"}
+{"t":4289,"o":"\u001b[?25l\u001b[H\r\u001b[25C\u001b[3B\u001b[38;2;78;186;101m/rc\u001b[39m\u001b[K\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":6825,"mark":"idle","screen":[""," ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box · /rc","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","                                                                                                    ◐ medium · /effort","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ Try \"how do I log an error?\"","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on · ? for shortcuts · ← for agents"],"cursor":[2,42]}
+{"t":6826,"i":"W"}
+{"t":6855,"o":"\u001b[?25l\u001b[H\r\u001b[2C\u001b[42BW\u001b[K\r\u001b[18C\u001b[2B\u001b[K\u001b[45;1H\u001b[43;4H\u001b[?25h"}
+{"t":6871,"i":"r"}
+{"t":6879,"o":"\u001b[?25l\u001b[H\r\u001b[3C\u001b[42Br\u001b[45;1H\u001b[43;5H\u001b[?25h"}
+{"t":6917,"i":"i"}
+{"t":6925,"o":"\u001b[?25l\u001b[H\r\u001b[4C\u001b[42Bi\u001b[45;1H\u001b[43;6H\u001b[?25h"}
+{"t":6964,"i":"t"}
+{"t":6973,"o":"\u001b[?25l\u001b[H\r\u001b[5C\u001b[42Bt\u001b[45;1H\u001b[43;7H\u001b[?25h"}
+{"t":7011,"i":"e"}
+{"t":7031,"o":"\u001b[?25l\u001b[H\r\u001b[6C\u001b[42Be\u001b[45;1H\u001b[43;8H\u001b[?25h"}
+{"t":7057,"i":" "}
+{"t":7062,"o":"\u001b[?25l\u001b[43;9H\u001b[?25h"}
+{"t":7104,"i":"t"}
+{"t":7112,"o":"\u001b[?25l\u001b[H\r\u001b[8C\u001b[42Bt\u001b[45;1H\u001b[43;10H\u001b[?25h"}
+{"t":7150,"i":"h"}
+{"t":7157,"o":"\u001b[?25l\u001b[H\r\u001b[9C\u001b[42Bh\u001b[45;1H\u001b[43;11H\u001b[?25h"}
+{"t":7196,"i":"r"}
+{"t":7203,"o":"\u001b[?25l\u001b[H\r\u001b[10C\u001b[42Br\u001b[45;1H\u001b[43;12H\u001b[?25h"}
+{"t":7242,"i":"e"}
+{"t":7256,"o":"\u001b[?25l\u001b[H\r\u001b[11C\u001b[42Be\u001b[45;1H\u001b[43;13H\u001b[?25h"}
+{"t":7290,"i":"e"}
+{"t":7298,"o":"\u001b[?25l\u001b[H\r\u001b[12C\u001b[42Be\u001b[45;1H\u001b[43;14H\u001b[?25h"}
+{"t":7336,"i":" "}
+{"t":7344,"o":"\u001b[?25l\u001b[43;15H\u001b[?25h"}
+{"t":7383,"i":"s"}
+{"t":7390,"o":"\u001b[?25l\u001b[H\r\u001b[14C\u001b[42Bs\u001b[45;1H\u001b[43;16H\u001b[?25h"}
+{"t":7430,"i":"h"}
+{"t":7437,"o":"\u001b[?25l\u001b[H\r\u001b[15C\u001b[42Bh\u001b[45;1H\u001b[43;17H\u001b[?25h"}
+{"t":7477,"i":"o"}
+{"t":7483,"o":"\u001b[?25l\u001b[H\r\u001b[16C\u001b[42Bo\u001b[45;1H\u001b[43;18H\u001b[?25h"}
+{"t":7525,"i":"r"}
+{"t":7530,"o":"\u001b[?25l\u001b[H\r\u001b[17C\u001b[42Br\u001b[45;1H\u001b[43;19H\u001b[?25h"}
+{"t":7571,"i":"t"}
+{"t":7579,"o":"\u001b[?25l\u001b[H\r\u001b[18C\u001b[42Bt\u001b[45;1H\u001b[43;20H\u001b[?25h"}
+{"t":7619,"i":" "}
+{"t":7625,"o":"\u001b[?25l\u001b[43;21H\u001b[?25h"}
+{"t":7665,"i":"p"}
+{"t":7670,"o":"\u001b[?25l\u001b[H\r\u001b[20C\u001b[42Bp\u001b[45;1H\u001b[43;22H\u001b[?25h"}
+{"t":7713,"i":"a"}
+{"t":7721,"o":"\u001b[?25l\u001b[H\r\u001b[21C\u001b[42Ba\u001b[45;1H\u001b[43;23H\u001b[?25h"}
+{"t":7760,"i":"r"}
+{"t":7765,"o":"\u001b[?25l\u001b[H\r\u001b[22C\u001b[42Br\u001b[45;1H\u001b[43;24H\u001b[?25h"}
+{"t":7805,"i":"a"}
+{"t":7810,"o":"\u001b[?25l\u001b[H\r\u001b[23C\u001b[42Ba\u001b[45;1H\u001b[43;25H\u001b[?25h"}
+{"t":7858,"i":"g"}
+{"t":7876,"o":"\u001b[?25l\u001b[H\r\u001b[24C\u001b[42Bg\u001b[45;1H\u001b[43;26H\u001b[?25h"}
+{"t":7898,"i":"r"}
+{"t":7905,"o":"\u001b[?25l\u001b[H\r\u001b[25C\u001b[42Br\u001b[45;1H\u001b[43;27H\u001b[?25h"}
+{"t":7945,"i":"a"}
+{"t":7953,"o":"\u001b[?25l\u001b[H\r\u001b[26C\u001b[42Ba\u001b[45;1H\u001b[43;28H\u001b[?25h"}
+{"t":7993,"i":"p"}
+{"t":7998,"o":"\u001b[?25l\u001b[H\r\u001b[27C\u001b[42Bp\u001b[45;1H\u001b[43;29H\u001b[?25h"}
+{"t":8039,"i":"h"}
+{"t":8045,"o":"\u001b[?25l\u001b[H\r\u001b[28C\u001b[42Bh\u001b[45;1H\u001b[43;30H\u001b[?25h"}
+{"t":8086,"i":"s"}
+{"t":8091,"o":"\u001b[?25l\u001b[H\r\u001b[29C\u001b[42Bs\u001b[45;1H\u001b[43;31H\u001b[?25h"}
+{"t":8133,"i":" "}
+{"t":8139,"o":"\u001b[?25l\u001b[43;32H\u001b[?25h"}
+{"t":8181,"i":"a"}
+{"t":8193,"o":"\u001b[?25l\u001b[H\r\u001b[31C\u001b[42Ba\u001b[45;1H\u001b[43;33H\u001b[?25h"}
+{"t":8228,"i":"b"}
+{"t":8244,"o":"\u001b[?25l\u001b[H\r\u001b[32C\u001b[42Bb\u001b[45;1H\u001b[43;34H\u001b[?25h"}
+{"t":8274,"i":"o"}
+{"t":8279,"o":"\u001b[?25l\u001b[H\r\u001b[33C\u001b[42Bo\u001b[45;1H\u001b[43;35H\u001b[?25h"}
+{"t":8321,"i":"u"}
+{"t":8326,"o":"\u001b[?25l\u001b[H\r\u001b[34C\u001b[42Bu\u001b[45;1H\u001b[43;36H\u001b[?25h"}
+{"t":8367,"i":"t"}
+{"t":8374,"o":"\u001b[?25l\u001b[H\r\u001b[35C\u001b[42Bt\u001b[45;1H\u001b[43;37H\u001b[?25h"}
+{"t":8414,"i":" "}
+{"t":8419,"o":"\u001b[?25l\u001b[43;38H\u001b[?25h"}
+{"t":8459,"i":"l"}
+{"t":8464,"o":"\u001b[?25l\u001b[H\r\u001b[37C\u001b[42Bl\u001b[45;1H\u001b[43;39H\u001b[?25h"}
+{"t":8507,"i":"a"}
+{"t":8512,"o":"\u001b[?25l\u001b[H\r\u001b[38C\u001b[42Ba\u001b[45;1H\u001b[43;40H\u001b[?25h"}
+{"t":8553,"i":"k"}
+{"t":8562,"o":"\u001b[?25l\u001b[H\r\u001b[39C\u001b[42Bk\u001b[45;1H\u001b[43;41H\u001b[?25h"}
+{"t":8600,"i":"e"}
+{"t":8605,"o":"\u001b[?25l\u001b[H\r\u001b[40C\u001b[42Be\u001b[45;1H\u001b[43;42H\u001b[?25h"}
+{"t":8646,"i":"s"}
+{"t":8654,"o":"\u001b[?25l\u001b[H\r\u001b[41C\u001b[42Bs\u001b[45;1H\u001b[43;43H\u001b[?25h"}
+{"t":8693,"i":"."}
+{"t":8699,"o":"\u001b[?25l\u001b[H\r\u001b[42C\u001b[42B.\u001b[45;1H\u001b[43;44H\u001b[?25h"}
+{"t":8741,"i":" "}
+{"t":8747,"o":"\u001b[?25l\u001b[43;45H\u001b[?25h"}
+{"t":8787,"i":"N"}
+{"t":8791,"o":"\u001b[?25l\u001b[H\r\u001b[44C\u001b[42BN\u001b[45;1H\u001b[43;46H\u001b[?25h"}
+{"t":8834,"i":"o"}
+{"t":8840,"o":"\u001b[?25l\u001b[H\r\u001b[45C\u001b[42Bo\u001b[45;1H\u001b[43;47H\u001b[?25h"}
+{"t":8881,"i":" "}
+{"t":8886,"o":"\u001b[?25l\u001b[43;48H\u001b[?25h"}
+{"t":8927,"i":"t"}
+{"t":8931,"o":"\u001b[?25l\u001b[H\r\u001b[47C\u001b[42Bt\u001b[45;1H\u001b[43;49H\u001b[?25h"}
+{"t":8975,"i":"o"}
+{"t":8981,"o":"\u001b[?25l\u001b[H\r\u001b[48C\u001b[42Bo\u001b[45;1H\u001b[43;50H\u001b[?25h"}
+{"t":9022,"i":"o"}
+{"t":9028,"o":"\u001b[?25l\u001b[H\r\u001b[49C\u001b[42Bo\u001b[45;1H\u001b[43;51H\u001b[?25h"}
+{"t":9068,"i":"l"}
+{"t":9073,"o":"\u001b[?25l\u001b[H\r\u001b[50C\u001b[42Bl\u001b[45;1H\u001b[43;52H\u001b[?25h"}
+{"t":9116,"i":"s"}
+{"t":9129,"o":"\u001b[?25l\u001b[H\r\u001b[51C\u001b[42Bs\u001b[45;1H\u001b[43;53H\u001b[?25h"}
+{"t":9164,"i":"."}
+{"t":9172,"o":"\u001b[?25l\u001b[H\r\u001b[52C\u001b[42B.\u001b[45;1H\u001b[43;54H\u001b[?25h"}
+{"t":9211,"i":"\r"}
+{"t":9489,"o":"\u001b]0;◐ Claude Code\u001b\\"}
+{"t":9513,"o":"\u001b[?25l\u001b[H\r\u001b[6B\u001b[48;2;55;55;55m\u001b[38;2;153;153;153m❯ \u001b[38;2;255;255;255mWrite three short paragraphs about lakes. No tools.\u001b[39m                                                                   \r\u001b[33B\u001b[49m\u001b[38;2;215;119;87m✻\u001b[3GActualizing… \r\u001b[3B\u001b[38;2;153;153;153m❯ \u001b[39m\u001b[K\r\u001b[18C\u001b[2B\u001b[38;2;153;153;153m · esc to interrupt · ← for agents\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":9543,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✶\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":9636,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m*\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":9849,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✢\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":9965,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m·\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10218,"o":"\u001b]0;◐ Short paragraphs about lakes\u001b\\"}
+{"t":10235,"o":"\u001b[?25l\u001b[H\r\u001b[2C\u001b[39B\u001b[38;2;215;119;87mContemplating… \u001b[38;2;153;153;153m(1s · \u001b[38;2;165;165;165mthinking\u001b[38;2;153;153;153m)\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10341,"o":"\u001b[?25l\u001b[H\r\u001b[23C\u001b[39B\u001b[38;2;153;153;153m↓\u001b[39m \u001b[38;2;153;153;153m25 tokens · \u001b[38;2;161;161;161mthinking\u001b[38;2;153;153;153m)\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10414,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✢\u001b[26G\u001b[38;2;153;153;153m63\u001b[38G\u001b[38;2;157;157;157mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10451,"o":"\u001b]0;◑ Short paragraphs about lakes\u001b\\"}
+{"t":10543,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m*\u001b[26G\u001b[38;2;153;153;153m88\u001b[38Gthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10643,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✶\u001b[26G\u001b[38;2;153;153;153m113 tokens · thinking)\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10744,"o":"\u001b[?25l\u001b[H\r\u001b[26C\u001b[39B\u001b[38;2;153;153;153m38\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10863,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✻\u001b[27G\u001b[38;2;153;153;153m75\u001b[39G\u001b[38;2;157;157;157mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":10976,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✽\u001b[16G\u001b[38;2;235;159;127m…\u001b[26G\u001b[38;2;153;153;153m200\u001b[39G\u001b[38;2;161;161;161mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11077,"o":"\u001b[?25l\u001b[H\r\u001b[26C\u001b[39B\u001b[38;2;153;153;153m12\u001b[39G\u001b[38;2;165;165;165mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11202,"o":"\u001b[?25l\u001b[H\r\u001b[14C\u001b[39B\u001b[38;2;235;159;127mg\u001b[27G\u001b[38;2;153;153;153m21\u001b[39G\u001b[38;2;173;173;173mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11304,"o":"\u001b[?25l\u001b[H\r\u001b[18C\u001b[39B\u001b[38;2;153;153;153m2\u001b[28G8\u001b[39G\u001b[38;2;177;177;177mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11411,"o":"\u001b]0;◐ Short paragraphs about lakes\u001b\\"}
+{"t":11420,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✻\u001b[14G\u001b[38;2;235;159;127mn\u001b[27G\u001b[38;2;153;153;153m53\u001b[39G\u001b[38;2;181;181;181mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11538,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✶\u001b[13G\u001b[38;2;235;159;127mi\u001b[16G\u001b[38;2;215;119;87m…\u001b[27G\u001b[38;2;153;153;153m64\u001b[39G\u001b[38;2;185;185;185mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11642,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m*\u001b[27G\u001b[38;2;153;153;153m73\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11756,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✢\u001b[12G\u001b[38;2;235;159;127mt\u001b[15G\u001b[38;2;215;119;87mg\u001b[28G\u001b[38;2;153;153;153m7\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11864,"o":"\u001b[?25l\u001b[H\r\u001b[25C\u001b[39B\u001b[38;2;153;153;153m302\u001b[39G\u001b[38;2;181;181;181mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":11986,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m·\u001b[11G\u001b[38;2;235;159;127ma\u001b[14G\u001b[38;2;215;119;87mn\u001b[27G\u001b[38;2;153;153;153m15\u001b[39G\u001b[38;2;177;177;177mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12088,"o":"\u001b[?25l\u001b[H\r\u001b[26C\u001b[39B\u001b[38;2;153;153;153m2\u001b[39G\u001b[38;2;169;169;169mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12203,"o":"\u001b[?25l\u001b[H\r\u001b[9C\u001b[39B\u001b[38;2;235;159;127ml\u001b[13G\u001b[38;2;215;119;87mi\u001b[27G\u001b[38;2;153;153;153m32\u001b[39G\u001b[38;2;165;165;165mthinking\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12230,"o":"\u001b[?25l\u001b[H\r\u001b[18C\u001b[39B\u001b[38;2;153;153;153m3\u001b[39Gthought for 1s)\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12247,"o":"\u001b[?25l\u001b[H\r\u001b[100C\u001b[40B\u001b[K\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12267,"o":"\u001b[?25l\u001b[H\r\u001b[37C\u001b[44B\u001b[K\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12322,"o":"\u001b[?25l\u001b[H\r\u001b[27C\u001b[39B\u001b[38;2;153;153;153m4\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12372,"o":"\u001b]0;◑ Short paragraphs about lakes\u001b\\"}
+{"t":12426,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✢\u001b[9G\u001b[38;2;235;159;127mp\u001b[12G\u001b[38;2;215;119;87mt\u001b[27G\u001b[38;2;153;153;153m59\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12538,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m*\u001b[8G\u001b[38;2;235;159;127mm\u001b[11G\u001b[38;2;215;119;87ma\u001b[27G\u001b[38;2;153;153;153m71\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12658,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✶\u001b[28G\u001b[38;2;153;153;153m9\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12757,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✻\u001b[7G\u001b[38;2;235;159;127me\u001b[10G\u001b[38;2;215;119;87ml\u001b[27G\u001b[38;2;153;153;153m86\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":12873,"o":"\u001b[?25l\u001b[H\r\u001b[25C\u001b[39B\u001b[38;2;153;153;153m411\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13001,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✽\u001b[6G\u001b[38;2;235;159;127mt\u001b[9G\u001b[38;2;215;119;87mp\u001b[27G\u001b[38;2;153;153;153m3\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13101,"o":"\u001b[?25l\u001b[H\r\u001b[26C\u001b[39B\u001b[38;2;153;153;153m42\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13218,"o":"\u001b[?25l\u001b[H\r\u001b[4C\u001b[39B\u001b[38;2;235;159;127mn\u001b[8G\u001b[38;2;215;119;87mm\u001b[27G\u001b[38;2;153;153;153m54\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13321,"o":"\u001b[?25l\u001b[H\r\u001b[3C\u001b[39B\u001b[38;2;235;159;127mo\u001b[7G\u001b[38;2;215;119;87me\u001b[19G\u001b[38;2;153;153;153m4\u001b[28G5\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13334,"o":"\u001b]0;◐ Short paragraphs about lakes\u001b\\"}
+{"t":13436,"o":"\u001b[?25l\u001b[H\r\u001b[39B\u001b[38;2;215;119;87m✻\u001b[27G\u001b[38;2;153;153;153m80\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":13632,"o":"\u001b]0;✳ Short paragraphs about lakes\u001b\\"}
+{"t":13643,"o":"\u001b[?25l\u001b[H\r\u001b[8B\u001b[38;2;255;255;255m●\u001b[3G\u001b[39mLakes\u001b[9Gare\u001b[13Gsome\u001b[18Gof\u001b[21Gthe\u001b[25Gmost\u001b[30Gvaried\u001b[37Gbodies\u001b[44Gof\u001b[47Gwater\u001b[53Gon\u001b[56GEarth.\u001b[63GSome\u001b[68Gsit\u001b[72Gin\u001b[75Gtectonic\u001b[84Grifts,\u001b[91Glike\u001b[96GLake\u001b[101GBaikal\u001b[108Gin\u001b[111GSiberia,\r\u001b[2C\u001b[1Bwhich\u001b[9Gholds\u001b[15Gabout\u001b[21Ga\u001b[23Gfifth\u001b[29Gof\u001b[32Gthe\u001b[36Gworld's\u001b[44Gunfrozen\u001b[53Gfresh\u001b[59Gwater\u001b[65Gand\u001b[69Gis\u001b[72Galso\u001b[77Gthe\u001b[81Gdeepest\u001b[89Glake\u001b[94Gat\u001b[97Gover\u001b[102G1,600\u001b[108Gmeters.\r\u001b[2C\u001b[1BOthers\u001b[10Gformed\u001b[17Gwhen\u001b[22Gglaciers\u001b[31Gscraped\u001b[39Gout\u001b[43Gbasins\u001b[50Gand\u001b[54Gthen\u001b[59Gmelted,\u001b[67Gleaving\u001b[75Gbehind\u001b[82Gthe\u001b[86Glong,\u001b[92Gnarrow\u001b[99Glakes\u001b[105Gof\u001b[108GScotland\u001b[117Gand\r\u001b[2C\u001b[1Bthe\u001b[7GFinger\u001b[14GLakes\u001b[20Gof\u001b[23GNew\u001b[27GYork.\u001b[33GStill\u001b[39Gothers\u001b[46Gare\u001b[50Gshaped\u001b[57Gby\u001b[60Gvolcanoes,\u001b[71Glandslides,\u001b[83Gor\u001b[86Gbeavers,\u001b[95Gand\u001b[99Gmany\u001b[104Gare\u001b[108Gtemporary,\r\u001b[2C\u001b[1Bfilling\u001b[11Gand\u001b[15Gvanishing\u001b[25Gwith\u001b[30Gthe\u001b[34Gseasons.\r\u001b[2C\u001b[2BLakes\u001b[9Galso\u001b[14Gwork\u001b[19Gas\u001b[22Gsmall,\u001b[29Gself-contained\u001b[44Gworlds.\u001b[52GWater\u001b[58Glayers\u001b[65Gby\u001b[68Gtemperature\u001b[80Gin\u001b[83Gsummer,\u001b[91Gwith\u001b[96Gwarm,\u001b[102Goxygen-rich\u001b[114Gwater\r\u001b[2C\u001b[1Bon\u001b[6Gtop\u001b[10Gand\u001b[14Gcold,\u001b[20Gdense\u001b[26Gwater\u001b[32Gsinking\u001b[40Gbelow,\u001b[47Gand\u001b[51Gthese\u001b[57Glayers\u001b[64Gmix\u001b[68Gagain\u001b[74Gin\u001b[77Gspring\u001b[84Gand\u001b[88Gautumn.\u001b[96GThat\u001b[101Gcycle\u001b[107Gdrives\u001b[114Gthe\r\u001b[2C\u001b[1Bnutrient\u001b[12Gflow\u001b[17Gthat\u001b[22Gfeeds\u001b[28Gfish,\u001b[34Ginsects,\u001b[43Gbirds,\u001b[50Gand\u001b[54Gthe\u001b[58Gplants\u001b[65Galong\u001b[71Gthe\u001b[75Gshore.\u001b[82GBecause\u001b[90Glakes\u001b[96Gtrap\u001b[101Gsediment,\u001b[111Gthey\u001b[116Galso\r\u001b[2C\u001b[1Bact\u001b[7Gas\u001b[10Gnatural\u001b[18Garchives:\u001b[28Gscientists\u001b[39Gread\u001b[44Gpollen,\u001b[52Gash,\u001b[57Gand\u001b[61Gchemical\u001b[70Gtraces\u001b[77Gin\u001b[80Gtheir\u001b[86Gmuddy\u001b[92Gbottoms\u001b[100Gto\u001b[103Greconstruct\r\u001b[2C\u001b[1Bclimate\u001b[11Gand\u001b[15Gvegetation\u001b[26Ggoing\u001b[32Gback\u001b[37Gthousands\u001b[47Gof\u001b[50Gyears.\r\u001b[2C\u001b[2BPeople\u001b[10Ghave\u001b[15Galways\u001b[22Gbeen\u001b[27Gdrawn\u001b[33Gto\u001b[36Glakes,\u001b[43Gfor\u001b[47Gdrinking\u001b[56Gwater,\u001b[63Gfishing,\u001b[72Gtrade\u001b[78Groutes,\u001b[86Gand\u001b[90Gsimply\u001b[97Gfor\u001b[101Gthe\u001b[105Gstillness\u001b[115Gthey\r\u001b[2C\u001b[1Boffer.\u001b[10GThey\u001b[15Gare\u001b[19Galso\u001b[24Gfragile.\u001b[33GRunoff\u001b[40Gfrom\u001b[45Gfarms\u001b[51Gand\u001b[55Gcities\u001b[62Gadds\u001b[67Gnutrients\u001b[77Gthat\u001b[82Gcan\u001b[86Gtrigger\u001b[94Galgae\u001b[100Gblooms,\u001b[108Gwarming\r\u001b[2C\u001b[1Btemperatures\u001b[16Gchange\u001b[23Ghow\u001b[27Gwater\u001b[33Gmixes,\u001b[40Gand\u001b[44Gdrought\u001b[52Gcan\u001b[56Gshrink\u001b[63Ga\u001b[65Glake\u001b[70Guntil\u001b[76Gits\u001b[80Gshoreline\u001b[90Gis\u001b[93Gfar\u001b[97Gfrom\u001b[102Gwhere\u001b[108Git\u001b[111Gonce\u001b[116Gwas.\r\u001b[2C\u001b[1BLakes\u001b[9Gcan\u001b[13Gtake\u001b[18Ga\u001b[20Glong\u001b[25Gtime\u001b[30Gto\u001b[33Grecover\u001b[41Gonce\u001b[46Gdamaged,\u001b[55Gwhich\u001b[61Gis\u001b[64Gwhy\u001b[68Gprotecting\u001b[79Gthem\u001b[84Gtends\u001b[90Gto\u001b[93Gpay\u001b[97Goff\u001b[101Gover\u001b[106Ggenerations.\r\u001b[2B\u001b[38;2;153;153;153m✻\u001b[3GCooked for 4s · done 22:41\r\u001b[14B\u001b[39m\u001b[K\r\u001b[3B❯ \r\u001b[21C\u001b[2B\u001b[38;2;153;153;153m? for shortcuts\u001b[39m\u001b[K\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":16194,"mark":"replied","screen":[""," ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box · /rc","","","❯ Write three short paragraphs about lakes. No tools.                                                                   ","","● Lakes are some of the most varied bodies of water on Earth. Some sit in tectonic rifts, like Lake Baikal in Siberia,","  which holds about a fifth of the world's unfrozen fresh water and is also the deepest lake at over 1,600 meters.","  Others formed when glaciers scraped out basins and then melted, leaving behind the long, narrow lakes of Scotland and","  the Finger Lakes of New York. Still others are shaped by volcanoes, landslides, or beavers, and many are temporary,","  filling and vanishing with the seasons.","","  Lakes also work as small, self-contained worlds. Water layers by temperature in summer, with warm, oxygen-rich water","  on top and cold, dense water sinking below, and these layers mix again in spring and autumn. That cycle drives the","  nutrient flow that feeds fish, insects, birds, and the plants along the shore. Because lakes trap sediment, they also","  act as natural archives: scientists read pollen, ash, and chemical traces in their muddy bottoms to reconstruct","  climate and vegetation going back thousands of years.","","  People have always been drawn to lakes, for drinking water, fishing, trade routes, and simply for the stillness they","  offer. They are also fragile. Runoff from farms and cities adds nutrients that can trigger algae blooms, warming","  temperatures change how water mixes, and drought can shrink a lake until its shoreline is far from where it once was.","  Lakes can take a long time to recover once damaged, which is why protecting them tends to pay off over generations.","","✻ Cooked for 4s · done 22:41","","","","","","","","","","","","","","","","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ ","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on · ? for shortcuts"],"cursor":[2,42]}
+{"t":16194,"i":"/"}
+{"t":16196,"o":"\u001b(B\u000f\u001b[?2004h\u001b[?1000h\u001b[?1002h\u001b[?1003h\u001b[?1006h"}
+{"t":16247,"o":"\u001b[?25l\u001b[H\r\u001b[2C\u001b[36B\u001b[38;2;177;185;249m❯ /claude-in-chrome                               Let Claude browse and interact with pages in your Chrome\r\u001b[2C\u001b[1B\u001b[38;2;153;153;153m  /studio                                         Agon's animation studio at ~/studio, explainer videos (history,\r\u001b[52C\u001b[1Bscience, engineering) made with Remotion + ElevenLabs and reviewe…\r\u001b[2C\u001b[1B  /design-taste-frontend                          tasteskill v2, the anti-slop frontend skill. Art direction for\r\u001b[52C\u001b[1Bwebsites, distilled from a study of 247 curated gallery sites (On…\r\u001b[2C\u001b[2B\u001b[39m/\r\u001b[18C\u001b[2B\u001b[K\u001b[45;1H\u001b[43;4H\u001b[?25h"}
+{"t":17064,"mark":"slash","screen":[""," ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box · /rc","","","❯ Write three short paragraphs about lakes. No tools.                                                                   ","","● Lakes are some of the most varied bodies of water on Earth. Some sit in tectonic rifts, like Lake Baikal in Siberia,","  which holds about a fifth of the world's unfrozen fresh water and is also the deepest lake at over 1,600 meters.","  Others formed when glaciers scraped out basins and then melted, leaving behind the long, narrow lakes of Scotland and","  the Finger Lakes of New York. Still others are shaped by volcanoes, landslides, or beavers, and many are temporary,","  filling and vanishing with the seasons.","","  Lakes also work as small, self-contained worlds. Water layers by temperature in summer, with warm, oxygen-rich water","  on top and cold, dense water sinking below, and these layers mix again in spring and autumn. That cycle drives the","  nutrient flow that feeds fish, insects, birds, and the plants along the shore. Because lakes trap sediment, they also","  act as natural archives: scientists read pollen, ash, and chemical traces in their muddy bottoms to reconstruct","  climate and vegetation going back thousands of years.","","  People have always been drawn to lakes, for drinking water, fishing, trade routes, and simply for the stillness they","  offer. They are also fragile. Runoff from farms and cities adds nutrients that can trigger algae blooms, warming","  temperatures change how water mixes, and drought can shrink a lake until its shoreline is far from where it once was.","  Lakes can take a long time to recover once damaged, which is why protecting them tends to pay off over generations.","","✻ Cooked for 4s · done 22:41","","","","","","","","","","","  ❯ /claude-in-chrome                               Let Claude browse and interact with pages in your Chrome","    /studio                                         Agon's animation studio at ~/studio, explainer videos (history,","                                                    science, engineering) made with Remotion + ElevenLabs and reviewe…","    /design-taste-frontend                          tasteskill v2, the anti-slop frontend skill. Art direction for","                                                    websites, distilled from a study of 247 curated gallery sites (On…","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ /","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on"],"cursor":[3,42]}
+{"t":17065,"i":"\u001b"}
+{"t":17065,"i":"\u0015"}
+{"t":17065,"i":"\u0003"}
+{"t":17093,"o":"\u001b[?25l\u001b[H\r\u001b[2C\u001b[36B\u001b[K\r\u001b[2C\u001b[1B\u001b[K\r\u001b[52C\u001b[1B\u001b[K\r\u001b[2C\u001b[1B\u001b[K\r\u001b[52C\u001b[1B\u001b[K\r\u001b[2C\u001b[2B\u001b[K\r\u001b[2C\u001b[2B\u001b[38;2;153;153;153mPress Ctrl-C again to exit\u001b[39m\u001b[45;1H\u001b[43;3H\u001b[?25h"}
+{"t":17379,"i":"\u0003"}
+{"t":17384,"o":"\u001b[?1006l\u001b[?1003l\u001b[?1002l\u001b[?1000l"}
+{"t":17384,"o":"\u001b[?25h"}
+{"t":17385,"o":"\u001b[?1004l\u001b[?1004h\u001b[?1049l\u001b[>4m\u001b[>4m\u001b[?2031l\u001b[?2004l\u001b(B\u000f\u001b[?1016l\u001b[?1006l\u001b[?1003l\u001b[?1002l\u001b[?1000l\u001b[?25h\u001b7\u001b[r\u001b8"}
+{"t":17386,"o":"\u001b[?25h"}
+{"t":17401,"o":"\u001b(B\u000f\u001b[?1016l\u001b[?1006l\u001b[?1003l\u001b[?1002l\u001b[?1000l\u001b[>4m\u001b[?1004l\u001b[?1004h\u001b[?2031l\u001b[?2004l\u001b[?25h\u001b7\u001b[r\u001b8"}
+{"t":17401,"o":"\u001b]0;\u001b\\"}
+{"t":17401,"o":"\u001b[2m\u001b[22m\r\n\u001b[2mResume this session with:\u001b[22m\r\n\u001b[2mclaude --resume c7ae1ecb-34f1-426a-96ba-c87b7496e206\u001b[22m\r\n\u001b[2m\u001b[22m"}
+{"t":18336,"o":"\u001b[?25h"}
+{"t":18348,"o":"\u001b[?1004l\u001b[?9001l"}

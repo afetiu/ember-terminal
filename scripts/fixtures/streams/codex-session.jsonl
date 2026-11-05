@@ -1,0 +1,2404 @@
+{"meta":{"agent":"codex","name":"codex-session","bundledConpty":true,"cols":120,"rows":45,"cmd":"C:\\Users\\Agon-MiniPc\\AppData\\Roaming\\npm\\codex.cmd","args":["-a","on-request","-s","read-only"],"at":"2026-11-05T21:43:12.678Z"}}
+{"t":140,"o":"\u001b[1t"}
+{"t":140,"o":"\u001b[c\u001b[?1004h\u001b[?9001h"}
+{"t":144,"o":"\u001b[?7l"}
+{"t":144,"o":"\u001b[?7h"}
+{"t":174,"o":"\u001b]0;C:\\windows\\system32\\cmd.exe \u001b\\"}
+{"t":369,"o":"\u001b[?2004h"}
+{"t":369,"o":"\u001b[?1004l\u001b[?1004h"}
+{"t":372,"o":"\u001b[?2026h\u001b[?2026h\u001b[1;1H"}
+{"t":372,"o":"\u001b[J"}
+{"t":373,"o":"\u001b[?25l"}
+{"t":373,"o":"\u001b[1;42H\u001b[0m\u001b[49m\u001b[K\u001b[2;42H\u001b[0m\u001b[49m\u001b[K\u001b[3;42H\u001b[0m\u001b[49m\u001b[K\u001b[4;42H\u001b[0m\u001b[49m\u001b[K\u001b[5;42H\u001b[0m\u001b[49m\u001b[K\u001b[6;42H\u001b[0m\u001b[49m\u001b[K\u001b[7;2H\u001b[0m\u001b[49m\u001b[K\u001b[8;2H\u001b[0m\u001b[49m\u001b[K\u001b[9;27H\u001b[0m\u001b[49m\u001b[K\u001b[10;2H\u001b[0m\u001b[49m\u001b[K\u001b[11;2H\u001b[0m\u001b[49m\u001b[K\u001b[1;1H\u001b[2m╭───────────────────────────────────────╮\u001b[2;1H│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)            │\u001b[3;1H│                                       │\u001b[4;1H│ model:     \u001b[3mloading\u001b[23m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[5;1H│ directory: \u001b[22mloading\u001b[2m                    │\u001b[6;1H╰───────────────────────────────────────╯\u001b[7;1H\u001b[22m \u001b[8;1H \u001b[9;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[10;1H\u001b[22m \u001b[11;1H \u001b[39m\u001b[49m\u001b[0m\u001b[1;1H"}
+{"t":373,"o":"\u001b[0 q\u001b[1;1H\u001b[2m╭\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h\u001b[?2026l"}
+{"t":373,"o":"\u001b[?2026l"}
+{"t":374,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":374,"o":"\u001b[?25h"}
+{"t":374,"o":"\u001b[?2026l"}
+{"t":375,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":376,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":376,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":376,"o":"\u001b[?25h"}
+{"t":377,"o":"\u001b[?2026l"}
+{"t":379,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":379,"o":"\u001b[?25h"}
+{"t":379,"o":"\u001b[?2026l"}
+{"t":380,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":380,"o":"\u001b[?25h"}
+{"t":380,"o":"\u001b[?2026l"}
+{"t":398,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":398,"o":"\u001b[5;14H~\\\u001b[5;17Hge\u001b[5;20Ht-box\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":398,"o":"\u001b[?25h"}
+{"t":398,"o":"\u001b[?2026l"}
+{"t":399,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":399,"o":"\u001b[?25h"}
+{"t":399,"o":"\u001b[?2026l"}
+{"t":400,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":400,"o":"\u001b[?25h"}
+{"t":400,"o":"\u001b[?2026l"}
+{"t":403,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h"}
+{"t":403,"o":"\u001b[?2026l"}
+{"t":420,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":420,"o":"\u001b[?25h"}
+{"t":420,"o":"\u001b[?2026l"}
+{"t":461,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":461,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":463,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":464,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":483,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":483,"o":"\u001b[?25h"}
+{"t":483,"o":"\u001b[?2026l"}
+{"t":849,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":850,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":850,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":850,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":852,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":852,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":854,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":854,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":855,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":855,"o":"\u001b[?25h"}
+{"t":856,"o":"\u001b[?2026l"}
+{"t":859,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":859,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1138,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1138,"o":"\u001b[?25h"}
+{"t":1138,"o":"\u001b[?2026l"}
+{"t":1165,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1165,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1168,"o":"\u001b]0;agent-box\u0007"}
+{"t":1171,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1171,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1171,"o":"\u001b]10;?\u001b\\\u001b]11;?\u001b\\"}
+{"t":1432,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":1432,"o":"\u001b[11;3H\u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[11;23H\u001b[39;49m·\u001b[11;25H\u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h"}
+{"t":1433,"o":"\u001b[?2026l"}
+{"t":1435,"o":"\u001b[?2026h\u001b[1;45r\u001b[1;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;7r\u001b[1;1H"}
+{"t":1435,"o":"\r\n\u001b[39;49m\u001b[K\u001b[2m╭─────────────────────────────────────────────────╮\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":1435,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22m\u001b[1m\u001b[38;2;99;168;248;49m✨ Update available!\u001b[22m\u001b[39;49m \u001b[1m0.156.1 -> 0.166.0\u001b[22m\u001b[2m\u001b[2m         │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":1435,"o":"\r\n"}
+{"t":1435,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22mRun \u001b[38;2;99;168;248;49mnpm install -g @openai/codex\u001b[39;49m to update.\u001b[2m     │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":1435,"o":"\r\n"}
+{"t":1436,"o":"\u001b[39;49m\u001b[K\u001b[2m│                                                 │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":1436,"o":"\r\n"}
+{"t":1436,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22mSee full release notes:\u001b[2m                         │\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":1436,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22m\u001b[4m\u001b[38;2;99;168;248;49m\u001b]8;;https://github.com/openai/codex/releases/latest\u0007https://github.com/openai/codex/releases/latest\u001b]8;;\u0007\u001b[24m\u001b[2m\u001b[39;49m │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":1437,"o":"\r\n"}
+{"t":1437,"o":"\u001b[39;49m\u001b[K\u001b[2m╰─────────────────────────────────────────────────╯\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[9;3H\u001b[?25l"}
+{"t":1438,"o":"\u001b[8;42H\u001b[0m\u001b[49m\u001b[K\u001b[9;42H\u001b[0m\u001b[49m\u001b[K\u001b[10;42H\u001b[0m\u001b[49m\u001b[K\u001b[11;42H\u001b[0m\u001b[49m\u001b[K\u001b[12;42H\u001b[0m\u001b[49m\u001b[K\u001b[13;42H\u001b[0m\u001b[49m\u001b[K\u001b[14;2H\u001b[0m\u001b[49m\u001b[K\u001b[15;2H\u001b[0m\u001b[49m\u001b[K\u001b[16;27H\u001b[0m\u001b[49m\u001b[K\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;36H\u001b[0m\u001b[49m\u001b[K\u001b[8;1H\u001b[2m╭───────────────────────────────────────╮\u001b[9;1H│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)            │\u001b[10;1H│                                       │\u001b[11;1H│ model:     \u001b[3mloading\u001b[23m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[12;1H│ directory: \u001b[22m~\\agent-box\u001b[2m                │\u001b[13;1H╰───────────────────────────────────────╯\u001b[14;1H\u001b[22m \u001b[15;1H \u001b[16;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[17;1H\u001b[22m \u001b[18;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[8;1H\u001b[0 q\u001b[8;1H\u001b[2m╭\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H\u001b[?25h"}
+{"t":1438,"o":"\u001b[?2026l"}
+{"t":1442,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":1443,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1887,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":1887,"o":"\u001b[?25h"}
+{"t":1887,"o":"\u001b[?2026l"}
+{"t":2433,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":2433,"o":"\u001b[?25h"}
+{"t":2434,"o":"\u001b[?2026l"}
+{"t":3496,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":3496,"o":"\u001b[?25h"}
+{"t":3496,"o":"\u001b[?2026l"}
+{"t":3936,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":4050,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":4522,"o":"\u001b]0;npm\u001b\\"}
+{"t":4657,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":4663,"o":"\u001b[?2026h\u001b[8;1H"}
+{"t":4663,"o":"\u001b[J"}
+{"t":4664,"o":"\u001b[8;45r\u001b[8;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;16r\u001b[7;1H"}
+{"t":4664,"o":"\r\n"}
+{"t":4665,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":4665,"o":"\u001b[39;49m\u001b[K\u001b[2m╭───────────────────────────────────────────╮\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4666,"o":"\r\n"}
+{"t":4667,"o":"\u001b[39;49m\u001b[K\u001b[2m│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)                │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4667,"o":"\r\n"}
+{"t":4667,"o":"\u001b[39;49m\u001b[K\u001b[2m│                                           │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4667,"o":"\r\n"}
+{"t":4667,"o":"\u001b[39;49m\u001b[K\u001b[2m│ model:     \u001b[22mGPT-6-Astra\u001b[2m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4667,"o":"\r\n"}
+{"t":4667,"o":"\u001b[39;49m\u001b[K\u001b[2m│ directory: \u001b[22m~\\agent-box\u001b[2m                    │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4668,"o":"\r\n"}
+{"t":4668,"o":"\u001b[39;49m\u001b[K\u001b[2m╰───────────────────────────────────────────╯\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4668,"o":"\r\n"}
+{"t":4668,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":4668,"o":"\r\n"}
+{"t":4669,"o":"\u001b[39;49m\u001b[K  \u001b[1mTip:\u001b[22m Try the \u001b[1mDesktop app\u001b[22m. Run 'codex app' or visit \u001b[4m\u001b[38;2;99;168;248;49m\u001b]8;;https://chatgpt.com/codex?app-landing-page=true\u0007https://chatgpt.com/codex?app-landing-page=true\u001b]8;;\u0007\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[16;3H\u001b[?25l"}
+{"t":4669,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m4 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":4669,"o":"\u001b[?25h"}
+{"t":4669,"o":"\u001b[?2026l"}
+{"t":4670,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":4670,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":4670,"o":"\u001b[?25h"}
+{"t":4670,"o":"\u001b[?2026l"}
+{"t":4671,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":4671,"o":"\u001b[?25h"}
+{"t":4671,"o":"\u001b[?2026l"}
+{"t":4675,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":4677,"o":"\u001b[21;97H\u001b[38;2;196;167;103;49m6\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H\u001b[?25h\u001b[?2026l"}
+{"t":4694,"o":"\u001b]0;npm exec @playwright/mcp@latest\u001b\\"}
+{"t":4777,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":4878,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":4973,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":4974,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":4974,"o":"\u001b[?25h"}
+{"t":4974,"o":"\u001b[?2026l"}
+{"t":5009,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":5009,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":5050,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":5050,"o":"\u001b[?25h"}
+{"t":5050,"o":"\u001b[?2026l"}
+{"t":5152,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":5256,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":5301,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":5315,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":5316,"o":"\u001b[?25h"}
+{"t":5316,"o":"\u001b[?2026l"}
+{"t":5418,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":5521,"o":"\u001b]0;⠸ agent-box\u0007"}
+{"t":5625,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":5727,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":5828,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":5930,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":6031,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":6136,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":6245,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":6354,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":6464,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":6574,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":6601,"o":"\u001b]0;C:\\windows\\system32\\cmd.exe \u001b\\"}
+{"t":6684,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":6792,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":6900,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":7002,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":7118,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":7228,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":7337,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":7366,"o":"\u001b]0;agent-box\u0007"}
+{"t":7367,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7367,"o":"\u001b[?25h"}
+{"t":7368,"o":"\u001b[?2026l"}
+{"t":7384,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7384,"o":"\u001b[?25h"}
+{"t":7384,"o":"\u001b[?2026l"}
+{"t":40090,"mark":"idle","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,18]}
+{"t":40090,"i":"h"}
+{"t":40115,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40115,"o":"\u001b[19;4H\u001b[0m\u001b[49m\u001b[K\u001b[19;3Hh\u001b[39m\u001b[49m\u001b[0m\u001b[19;4H\u001b[?25h"}
+{"t":40115,"o":"\u001b[?2026l"}
+{"t":40137,"i":"e"}
+{"t":40169,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40169,"o":"\u001b[19;4He\u001b[39m\u001b[49m\u001b[0m\u001b[19;5H\u001b[?25h\u001b[?2026l"}
+{"t":40184,"i":"l"}
+{"t":40217,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40217,"o":"\u001b[19;5Hl\u001b[39m\u001b[49m\u001b[0m\u001b[19;6H"}
+{"t":40217,"o":"\u001b[?25h"}
+{"t":40217,"o":"\u001b[?2026l"}
+{"t":40232,"i":"l"}
+{"t":40264,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40264,"o":"\u001b[19;6Hl\u001b[39m\u001b[49m\u001b[0m\u001b[19;7H\u001b[?25h\u001b[?2026l"}
+{"t":40279,"i":"o"}
+{"t":40311,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40311,"o":"\u001b[19;7Ho\u001b[39m\u001b[49m\u001b[0m\u001b[19;8H"}
+{"t":40311,"o":"\u001b[?25h"}
+{"t":40311,"o":"\u001b[?2026l"}
+{"t":40326,"i":" "}
+{"t":40358,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;9H"}
+{"t":40358,"o":"\u001b[?25h"}
+{"t":40358,"o":"\u001b[?2026l"}
+{"t":40372,"i":"t"}
+{"t":40404,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40404,"o":"\u001b[19;9Ht\u001b[39m\u001b[49m\u001b[0m\u001b[19;10H\u001b[?25h"}
+{"t":40404,"o":"\u001b[?2026l"}
+{"t":40420,"i":"y"}
+{"t":40452,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40452,"o":"\u001b[19;10Hy\u001b[39m\u001b[49m\u001b[0m\u001b[19;11H"}
+{"t":40452,"o":"\u001b[?25h"}
+{"t":40452,"o":"\u001b[?2026l"}
+{"t":40466,"i":"p"}
+{"t":40498,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40498,"o":"\u001b[19;11Hp\u001b[39m\u001b[49m\u001b[0m\u001b[19;12H"}
+{"t":40498,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":40513,"i":"i"}
+{"t":40545,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40545,"o":"\u001b[19;12Hi\u001b[39m\u001b[49m\u001b[0m\u001b[19;13H\u001b[?25h"}
+{"t":40546,"o":"\u001b[?2026l"}
+{"t":40560,"i":"n"}
+{"t":40591,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40591,"o":"\u001b[19;13Hn\u001b[39m\u001b[49m\u001b[0m\u001b[19;14H\u001b[?25h"}
+{"t":40591,"o":"\u001b[?2026l"}
+{"t":40607,"i":"g"}
+{"t":40639,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40639,"o":"\u001b[19;14Hg\u001b[39m\u001b[49m\u001b[0m\u001b[19;15H"}
+{"t":40639,"o":"\u001b[?25h"}
+{"t":40639,"o":"\u001b[?2026l"}
+{"t":40654,"i":" "}
+{"t":40686,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;16H"}
+{"t":40686,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":40700,"i":"t"}
+{"t":40731,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40732,"o":"\u001b[19;16Ht\u001b[39m\u001b[49m\u001b[0m\u001b[19;17H\u001b[?25h"}
+{"t":40732,"o":"\u001b[?2026l"}
+{"t":40747,"i":"e"}
+{"t":40779,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40779,"o":"\u001b[19;17He\u001b[39m\u001b[49m\u001b[0m\u001b[19;18H"}
+{"t":40779,"o":"\u001b[?25h"}
+{"t":40779,"o":"\u001b[?2026l"}
+{"t":40793,"i":"s"}
+{"t":40825,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40825,"o":"\u001b[19;18Hs\u001b[39m\u001b[49m\u001b[0m\u001b[19;19H"}
+{"t":40825,"o":"\u001b[?25h"}
+{"t":40825,"o":"\u001b[?2026l"}
+{"t":40839,"i":"t"}
+{"t":40871,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":40871,"o":"\u001b[19;19Ht\u001b[39m\u001b[49m\u001b[0m\u001b[19;20H\u001b[?25h"}
+{"t":40872,"o":"\u001b[?2026l"}
+{"t":41337,"mark":"typing","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","› hello typing test"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[19,18]}
+{"t":41337,"i":"\u0015"}
+{"t":41337,"i":"/"}
+{"t":41369,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":41369,"o":"\u001b[J"}
+{"t":41370,"o":"\u001b[?25l"}
+{"t":41370,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;43H\u001b[0m\u001b[49m\u001b[K\u001b[20;88H\u001b[0m\u001b[49m\u001b[K\u001b[21;52H\u001b[0m\u001b[49m\u001b[K\u001b[22;37H\u001b[0m\u001b[49m\u001b[K\u001b[23;50H\u001b[0m\u001b[49m\u001b[K\u001b[24;46H\u001b[0m\u001b[49m\u001b[K\u001b[25;66H\u001b[0m\u001b[49m\u001b[K\u001b[26;2H\u001b[0m\u001b[49m\u001b[K\u001b[27;4H\u001b[0m\u001b[49m\u001b[K\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[29;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model         \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                          \u001b[19;1H\u001b[27m\u001b[22m  /fast          \u001b[2m2x speed, increased usage\u001b[20;1H\u001b[22m  /ide           \u001b[2minclude current selection, open files, and other context from your IDE\u001b[21;1H\u001b[22m  /permissions   \u001b[2mchoose what Codex is allowed to do\u001b[22;1H\u001b[22m  /keymap        \u001b[2mremap TUI shortcuts\u001b[23;1H\u001b[22m  /vim           \u001b[2mtoggle Vim mode for the composer\u001b[24;1H\u001b[22m  /experimental  \u001b[2mtoggle experimental features\u001b[25;1H\u001b[22m  /approve       \u001b[2mapprove one retry of a recent auto-review denial\u001b[26;1H\u001b[22m \u001b[27;1H\u001b[1m›\u001b[22m /\u001b[28;1H \u001b[29;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m"}
+{"t":41370,"o":"\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":41370,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[27;4H"}
+{"t":41370,"o":"\u001b[?25h"}
+{"t":41370,"o":"\u001b[?2026l"}
+{"t":42022,"mark":"slash","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","› /model         choose what model and reasoning effort to use                                                          ","  /fast          2x speed, increased usage","  /ide           include current selection, open files, and other context from your IDE","  /permissions   choose what Codex is allowed to do","  /keymap        remap TUI shortcuts","  /vim           toggle Vim mode for the composer","  /experimental  toggle experimental features","  /approve       approve one retry of a recent auto-review denial"," ","› /"," ","  GPT-6-Astra default · ~\\agent-box","","","","","","","","","","","","","","","",""],"cursor":[3,26]}
+{"t":42023,"i":"\u001b"}
+{"t":42023,"i":"\u0015"}
+{"t":42025,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":42025,"mark":"esc","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","› /model         choose what model and reasoning effort to use                                                          ","  /fast          2x speed, increased usage","  /ide           include current selection, open files, and other context from your IDE","  /permissions   choose what Codex is allowed to do","  /keymap        remap TUI shortcuts","  /vim           toggle Vim mode for the composer","  /experimental  toggle experimental features","  /approve       approve one retry of a recent auto-review denial"," ","› /"," ","  GPT-6-Astra default · ~\\agent-box","","","","","","","","","","","","","","","",""],"cursor":[0,16]}
+{"t":42025,"i":"/"}
+{"t":42026,"o":"\u001b[J\u001b[?25l\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":42026,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":42026,"o":"\u001b[?25h"}
+{"t":42026,"o":"\u001b[?2026l"}
+{"t":42047,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":42048,"o":"\u001b[19;4H\u001b[0m\u001b[49m\u001b[K\u001b[19;3H/\u001b[39m\u001b[49m\u001b[0m\u001b[19;4H\u001b[?25h"}
+{"t":42048,"o":"\u001b[?2026l"}
+{"t":42069,"i":"m"}
+{"t":42101,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":42101,"o":"\u001b[J"}
+{"t":42102,"o":"\u001b[?25l"}
+{"t":42102,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;49H\u001b[0m\u001b[49m\u001b[K\u001b[20;28H\u001b[0m\u001b[49m\u001b[K\u001b[21;69H\u001b[0m\u001b[49m\u001b[K\u001b[22;2H\u001b[0m\u001b[49m\u001b[K\u001b[23;5H\u001b[0m\u001b[49m\u001b[K\u001b[24;2H\u001b[0m\u001b[49m\u001b[K\u001b[25;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model     \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                              \u001b[19;1H\u001b[27m\u001b[22m  /\u001b[1mm\u001b[22memories  \u001b[2mconfigure memory use and generation\u001b[20;1H\u001b[22m  /\u001b[1mm\u001b[22mention   \u001b[2mmention a file\u001b[21;1H\u001b[22m  /\u001b[1mm\u001b[22mcp       \u001b[2mlist configured MCP tools; use /mcp verbose for details\u001b[22;1H\u001b[22m \u001b[23;1H\u001b[1m›\u001b[22m /m\u001b[24;1H \u001b[25;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":42103,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[23;5H"}
+{"t":42103,"o":"\u001b[?25h"}
+{"t":42103,"o":"\u001b[?2026l"}
+{"t":42116,"i":"o"}
+{"t":42150,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":42150,"o":"\u001b[J"}
+{"t":42150,"o":"\u001b[?25l"}
+{"t":42150,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;2H\u001b[0m\u001b[49m\u001b[K\u001b[20;6H\u001b[0m\u001b[49m\u001b[K\u001b[21;2H\u001b[0m\u001b[49m\u001b[K\u001b[22;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model  \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                                 \u001b[19;1H\u001b[27m\u001b[22m \u001b[20;1H\u001b[1m›\u001b[22m /mo\u001b[21;1H \u001b[22;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":42150,"i":"d"}
+{"t":42151,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[20;6H\u001b[?25h\u001b[?2026l"}
+{"t":42179,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":42179,"o":"\u001b[20;6Hd\u001b[39m\u001b[49m\u001b[0m\u001b[20;7H\u001b[?25h\u001b[?2026l"}
+{"t":42194,"i":"e"}
+{"t":42219,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":42219,"o":"\u001b[20;7He\u001b[39m\u001b[49m\u001b[0m\u001b[20;8H\u001b[?25h"}
+{"t":42219,"o":"\u001b[?2026l"}
+{"t":42241,"i":"l"}
+{"t":42273,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":42273,"o":"\u001b[20;8Hl\u001b[39m\u001b[49m\u001b[0m\u001b[20;9H"}
+{"t":42274,"o":"\u001b[?25h"}
+{"t":42274,"o":"\u001b[?2026l"}
+{"t":42724,"i":"\r"}
+{"t":42763,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":42763,"o":"\u001b[J"}
+{"t":42767,"o":"\u001b[?25l"}
+{"t":42767,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;26H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;2H\u001b[0m\u001b[49m\u001b[K\u001b[23;65H\u001b[0m\u001b[49m\u001b[K\u001b[24;72H\u001b[0m\u001b[49m\u001b[K\u001b[25;62H\u001b[0m\u001b[49m\u001b[K\u001b[26;75H\u001b[0m\u001b[49m\u001b[K\u001b[27;60H\u001b[0m\u001b[49m\u001b[K\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H  \u001b[1mSelect Model and Effort\u001b[20;1H\u001b[22m \u001b[21;1H \u001b[22;1H\u001b[7m\u001b[1m› 1. GPT-6-Astra (current)  \u001b[22mFrontier intelligence for the most demanding work.\u001b[1m                                          \u001b[23;1H\u001b[27m\u001b[22m  2. GPT-6-Sol              \u001b[2mPrevious generation workhorse model.\u001b[24;1H\u001b[22m  3. GPT-6-Luna             \u001b[2mFast and affordable model for easier tasks.\u001b[25;1H\u001b[22m  4. GPT-5.6-Sol            \u001b[2mOlder generation workhorse model.\u001b[26;1H\u001b[22m  5. GPT-5.6-Terra          \u001b[2mOlder balanced model for straightforward work.\u001b[27;1H\u001b[22m  6. GPT-5.6-Luna           \u001b[2mOlder fast and efficient model.\u001b[28;1H\u001b[22m \u001b[29;1H  \u001b[1menter\u001b[22m\u001b[2m\u001b[2m select · \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m back                                                                                           "}
+{"t":42768,"o":"    \u001b[39m\u001b[49m\u001b[0m\u001b[?2026l"}
+{"t":42772,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m"}
+{"t":42772,"o":"\u001b[?2026l"}
+{"t":44010,"mark":"model","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","  Select Model and Effort"," "," ","› 1. GPT-6-Astra (current)  Frontier intelligence for the most demanding work.                                          ","  2. GPT-6-Sol              Previous generation workhorse model.","  3. GPT-6-Luna             Fast and affordable model for easier tasks.","  4. GPT-5.6-Sol            Older generation workhorse model.","  5. GPT-5.6-Terra          Older balanced model for straightforward work.","  6. GPT-5.6-Luna           Older fast and efficient model."," ","  enter select · esc back                                                                                               ","","","","","","","","","","","","","","","",""],"cursor":[120,28]}
+{"t":44010,"i":"\u001b"}
+{"t":44013,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":44013,"mark":"model-closed","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","  Select Model and Effort"," "," ","› 1. GPT-6-Astra (current)  Frontier intelligence for the most demanding work.                                          ","  2. GPT-6-Sol              Previous generation workhorse model.","  3. GPT-6-Luna             Fast and affordable model for easier tasks.","  4. GPT-5.6-Sol            Older generation workhorse model.","  5. GPT-5.6-Terra          Older balanced model for straightforward work.","  6. GPT-5.6-Luna           Older fast and efficient model."," ","  enter select · esc back                                                                                               ","","","","","","","","","","","","","","","",""],"cursor":[0,16]}
+{"t":44013,"i":"/"}
+{"t":44013,"o":"\u001b[J\u001b[?25l"}
+{"t":44013,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":44014,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H\u001b[?25h"}
+{"t":44014,"o":"\u001b[?2026l"}
+{"t":44043,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":44043,"o":"\u001b[J"}
+{"t":44048,"o":"\u001b[?25l"}
+{"t":44048,"i":"m"}
+{"t":44049,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;43H\u001b[0m\u001b[49m\u001b[K\u001b[20;88H\u001b[0m\u001b[49m\u001b[K\u001b[21;52H\u001b[0m\u001b[49m\u001b[K\u001b[22;37H\u001b[0m\u001b[49m\u001b[K\u001b[23;50H\u001b[0m\u001b[49m\u001b[K\u001b[24;46H\u001b[0m\u001b[49m\u001b[K\u001b[25;66H\u001b[0m\u001b[49m\u001b[K\u001b[26;2H\u001b[0m\u001b[49m\u001b[K\u001b[27;4H\u001b[0m\u001b[49m\u001b[K\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[29;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model         \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                          \u001b[19;1H\u001b[27m\u001b[22m  /fast          \u001b[2m2x speed, increased usage\u001b[20;1H\u001b[22m  /ide           \u001b[2minclude current selection, open files, and other context from your IDE\u001b[21;1H\u001b[22m  /permissions   \u001b[2mchoose what Codex is allowed to do\u001b[22;1H\u001b[22m  /keymap        \u001b[2mremap TUI shortcuts\u001b[23;1H\u001b[22m  /vim           \u001b[2mtoggle Vim mode for the composer\u001b[24;1H\u001b[22m  /experimental  \u001b[2mtoggle experimental features\u001b[25;1H\u001b[22m  /approve       \u001b[2mapprove one retry of a recent auto-review denial\u001b[26;1H\u001b[22m \u001b[27;1H\u001b[1m›\u001b[22m /\u001b[28;1H \u001b[29;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[27;4H\u001b[?25h\u001b[?2026l"}
+{"t":44082,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":44082,"o":"\u001b[J"}
+{"t":44083,"o":"\u001b[?25l"}
+{"t":44083,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;49H\u001b[0m\u001b[49m\u001b[K\u001b[20;28H\u001b[0m\u001b[49m\u001b[K\u001b[21;69H\u001b[0m\u001b[49m\u001b[K\u001b[22;2H\u001b[0m\u001b[49m\u001b[K\u001b[23;5H\u001b[0m\u001b[49m\u001b[K\u001b[24;2H\u001b[0m\u001b[49m\u001b[K\u001b[25;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model     \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                              \u001b[19;1H\u001b[27m\u001b[22m  /\u001b[1mm\u001b[22memories  \u001b[2mconfigure memory use and generation\u001b[20;1H\u001b[22m  /\u001b[1mm\u001b[22mention   \u001b[2mmention a file\u001b[21;1H\u001b[22m  /\u001b[1mm\u001b[22mcp       \u001b[2mlist configured MCP tools; use /mcp verbose for details\u001b[22;1H\u001b[22m \u001b[23;1H\u001b[1m›\u001b[22m /m\u001b[24;1H \u001b[25;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":44083,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[23;5H"}
+{"t":44083,"i":"c"}
+{"t":44084,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":44113,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":44113,"o":"\u001b[J"}
+{"t":44113,"o":"\u001b[?25l"}
+{"t":44114,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;2H\u001b[0m\u001b[49m\u001b[K\u001b[20;6H\u001b[0m\u001b[49m\u001b[K\u001b[21;2H\u001b[0m\u001b[49m\u001b[K\u001b[22;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /mcp  \u001b[22mlist configured MCP tools; use /mcp verbose for details\u001b[1m                                                         \u001b[19;1H\u001b[27m\u001b[22m \u001b[20;1H\u001b[1m›\u001b[22m /mc\u001b[21;1H \u001b[22;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":44114,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[20;6H"}
+{"t":44114,"o":"\u001b[?25h"}
+{"t":44114,"o":"\u001b[?2026l"}
+{"t":44133,"i":"p"}
+{"t":44166,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":44166,"o":"\u001b[20;6Hp\u001b[39m\u001b[49m\u001b[0m\u001b[20;7H\u001b[?25h\u001b[?2026l"}
+{"t":44618,"i":"\r"}
+{"t":44632,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":44632,"o":"\u001b[J"}
+{"t":44633,"o":"\u001b[?25l"}
+{"t":44633,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;25H\u001b[0m\u001b[49m\u001b[K\u001b[19;2H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;27H\u001b[0m\u001b[49m\u001b[K\u001b[22;2H\u001b[0m\u001b[49m\u001b[K\u001b[23;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[1mLoading MCP inventory\u001b[22m\u001b[2m\u001b[2m…\u001b[19;1H\u001b[22m \u001b[20;1H \u001b[21;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[22;1H\u001b[22m \u001b[23;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":44633,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[21;3H"}
+{"t":44633,"o":"\u001b[?25h"}
+{"t":44633,"o":"\u001b[?2026l"}
+{"t":45870,"mark":"mcp","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","• Loading MCP inventory…"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,20]}
+{"t":45870,"i":"\u001b[200~line one\nline two\nline three\nline four\nline five\nline six\u001b[201~"}
+{"t":45886,"mark":"multiline","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","• Loading MCP inventory…"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,20]}
+{"t":45887,"resize":[100,34]}
+{"t":45892,"mark":"resized","screen":["│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","• Loading MCP inventory…"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 wa","rnings · f2 to view","","","","","","","","","","",""],"cursor":[2,20]}
+{"t":45892,"resize":[120,45]}
+{"t":45900,"o":"\u001b[6n"}
+{"t":45901,"mark":"resized-back","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," ","• Loading MCP inventory…"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,20]}
+{"t":45901,"i":"\u0015"}
+{"t":45901,"i":"\u001b"}
+{"t":46414,"o":"\u001b[6n"}
+{"t":46915,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":46915,"o":"\u001b[J"}
+{"t":46916,"o":"\u001b[?25l"}
+{"t":46916,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;25H\u001b[0m\u001b[49m\u001b[K\u001b[19;2H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;11H\u001b[0m\u001b[49m\u001b[K\u001b[22;11H\u001b[0m\u001b[49m\u001b[K\u001b[23;13H\u001b[0m\u001b[49m\u001b[K\u001b[24;12H\u001b[0m\u001b[49m\u001b[K\u001b[25;12H\u001b[0m\u001b[49m\u001b[K\u001b[26;11H\u001b[0m\u001b[49m\u001b[K\u001b[27;2H\u001b[0m\u001b[49m\u001b[K\u001b[28;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[1mLoading MCP inventory\u001b[22m\u001b[2m\u001b[2m…\u001b[19;1H\u001b[22m \u001b[20;1H \u001b[21;1H\u001b[1m›\u001b[22m line one\u001b[22;1H  line two\u001b[23;1H  line three\u001b[24;1H  line four\u001b[25;1H  line five\u001b[26;1H  line six\u001b[27;1H \u001b[28;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[26;11H"}
+{"t":46916,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":46916,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;11H"}
+{"t":46917,"o":"\u001b[?25h\u001b[?2026l\u001b[6n"}
+{"t":47455,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":47459,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[26;11H"}
+{"t":47459,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":47461,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;11H"}
+{"t":47462,"o":"\u001b[?25h"}
+{"t":47462,"o":"\u001b[?2026l"}
+{"t":47463,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;11H"}
+{"t":47465,"o":"\u001b[?25h"}
+{"t":47465,"o":"\u001b[?2026l"}
+{"t":47467,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":47468,"o":"\u001b[26;2H\u001b[0m\u001b[49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[26;3H\u001b[?25h\u001b[?2026l"}
+{"t":47485,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;3H"}
+{"t":47486,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":47511,"o":"\u001b[6n"}
+{"t":48017,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":48017,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[26;3H"}
+{"t":48018,"o":"\u001b[?25h"}
+{"t":48018,"o":"\u001b[?2026l"}
+{"t":48081,"o":"\u001b[6n"}
+{"t":48722,"i":"W"}
+{"t":48755,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":48755,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[26;3H\u001b[22m\u001b[39;49mW\u001b[39m\u001b[49m\u001b[0m\u001b[26;4H"}
+{"t":48755,"o":"\u001b[?25h"}
+{"t":48755,"o":"\u001b[?2026l"}
+{"t":48769,"i":"r"}
+{"t":48801,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":48801,"o":"\u001b[26;4Hr\u001b[39m\u001b[49m\u001b[0m\u001b[26;5H\u001b[?25h"}
+{"t":48801,"o":"\u001b[?2026l"}
+{"t":48816,"i":"i"}
+{"t":48820,"o":"\u001b[6n"}
+{"t":48867,"i":"t"}
+{"t":48911,"i":"e"}
+{"t":48957,"i":" "}
+{"t":49004,"i":"t"}
+{"t":49073,"i":"h"}
+{"t":49114,"i":"r"}
+{"t":49160,"i":"e"}
+{"t":49206,"i":"e"}
+{"t":49254,"i":" "}
+{"t":49302,"i":"s"}
+{"t":49348,"i":"h"}
+{"t":49396,"i":"o"}
+{"t":49442,"i":"r"}
+{"t":49483,"o":"\u001b]0;npm\u001b\\"}
+{"t":49483,"i":"t"}
+{"t":49518,"i":" "}
+{"t":49565,"i":"p"}
+{"t":49607,"o":"\u001b]0;npm exec @playwright/mcp@latest\u001b\\"}
+{"t":49607,"i":"a"}
+{"t":49644,"i":"r"}
+{"t":49692,"i":"a"}
+{"t":49738,"i":"g"}
+{"t":49786,"i":"r"}
+{"t":49832,"i":"a"}
+{"t":49879,"i":"p"}
+{"t":49934,"i":"h"}
+{"t":49974,"i":"s"}
+{"t":50020,"i":" "}
+{"t":50069,"i":"a"}
+{"t":50113,"i":"b"}
+{"t":50159,"i":"o"}
+{"t":50209,"i":"u"}
+{"t":50254,"i":"t"}
+{"t":50330,"i":" "}
+{"t":50367,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50367,"i":"r"}
+{"t":50367,"o":"\u001b[26;5Hite\u001b[26;9Hthree\u001b[26;15Hshort\u001b[26;21Hparagraphs\u001b[26;32Habout\u001b[39m\u001b[49m\u001b[0m\u001b[26;38H\u001b[?25h\u001b[?2026l"}
+{"t":50412,"i":"i"}
+{"t":50425,"o":"\u001b[?2026h\u001b[?25l\u001b[26;38Hr\u001b[39m\u001b[49m\u001b[0m\u001b[26;39H\u001b[?25h\u001b[?2026l"}
+{"t":50456,"i":"v"}
+{"t":50491,"o":"\u001b[?2026h\u001b[?25l\u001b[26;39Hiv\u001b[39m\u001b[49m\u001b[0m\u001b[26;41H\u001b[?25h\u001b[?2026l"}
+{"t":50491,"i":"e"}
+{"t":50535,"i":"r"}
+{"t":50569,"o":"\u001b[?2026h\u001b[?25l\u001b[26;41Her\u001b[39m\u001b[49m\u001b[0m\u001b[26;43H\u001b[?25h\u001b[?2026l"}
+{"t":50581,"i":"s"}
+{"t":50620,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50620,"i":"."}
+{"t":50620,"o":"\u001b[26;43Hs\u001b[39m\u001b[49m\u001b[0m\u001b[26;44H\u001b[?25h\u001b[?2026l"}
+{"t":50661,"i":" "}
+{"t":50730,"i":"D"}
+{"t":50733,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50733,"o":"\u001b[26;44H.\u001b[39m\u001b[49m\u001b[0m\u001b[26;46H\u001b[?25h\u001b[?2026l"}
+{"t":50747,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;46H"}
+{"t":50747,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":50772,"i":"o"}
+{"t":50780,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50781,"o":"\u001b[26;46HD\u001b[39m\u001b[49m\u001b[0m\u001b[26;47H"}
+{"t":50781,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":50819,"i":" "}
+{"t":50819,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50819,"o":"\u001b[26;47Ho\u001b[39m\u001b[49m\u001b[0m\u001b[26;48H\u001b[?25h\u001b[?2026l"}
+{"t":50850,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;49H"}
+{"t":50851,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":50865,"i":"n"}
+{"t":50900,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50900,"i":"o"}
+{"t":50902,"o":"\u001b[26;49Hn\u001b[39m\u001b[49m\u001b[0m\u001b[26;50H"}
+{"t":50902,"o":"\u001b[?25h"}
+{"t":50904,"o":"\u001b[?2026l"}
+{"t":50942,"i":"t"}
+{"t":50944,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50944,"o":"\u001b[26;50Ho\u001b[39m\u001b[49m\u001b[0m\u001b[26;51H\u001b[?25h\u001b[?2026l"}
+{"t":50975,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":50975,"o":"\u001b[26;51Ht\u001b[39m\u001b[49m\u001b[0m\u001b[26;52H"}
+{"t":50975,"o":"\u001b[?25h"}
+{"t":50975,"o":"\u001b[?2026l"}
+{"t":50988,"i":" "}
+{"t":51020,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;53H"}
+{"t":51020,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":51035,"i":"r"}
+{"t":51068,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51068,"o":"\u001b[26;53Hr\u001b[39m\u001b[49m\u001b[0m\u001b[26;54H"}
+{"t":51068,"o":"\u001b[?25h"}
+{"t":51069,"o":"\u001b[?2026l"}
+{"t":51082,"i":"u"}
+{"t":51114,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51115,"o":"\u001b[26;54Hu\u001b[39m\u001b[49m\u001b[0m\u001b[26;55H"}
+{"t":51115,"o":"\u001b[?25h"}
+{"t":51115,"o":"\u001b[?2026l"}
+{"t":51129,"i":"n"}
+{"t":51160,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51160,"o":"\u001b[26;55Hn\u001b[39m\u001b[49m\u001b[0m\u001b[26;56H"}
+{"t":51160,"o":"\u001b[?25h"}
+{"t":51160,"o":"\u001b[?2026l"}
+{"t":51175,"i":" "}
+{"t":51207,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51207,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[26;57H"}
+{"t":51208,"o":"\u001b[?25h"}
+{"t":51208,"o":"\u001b[?2026l"}
+{"t":51224,"i":"a"}
+{"t":51258,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51260,"o":"\u001b[26;57Ha\u001b[39m\u001b[49m\u001b[0m\u001b[26;58H\u001b[?25h\u001b[?2026l"}
+{"t":51260,"i":"n"}
+{"t":51286,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51287,"o":"\u001b[26;58Hn\u001b[39m\u001b[49m\u001b[0m\u001b[26;59H\u001b[?25h\u001b[?2026l"}
+{"t":51300,"i":"y"}
+{"t":51340,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51340,"i":" "}
+{"t":51340,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[26;59H\u001b[22m\u001b[39;49my\u001b[39m\u001b[49m\u001b[0m\u001b[26;60H"}
+{"t":51340,"o":"\u001b[?25h"}
+{"t":51341,"o":"\u001b[?2026l"}
+{"t":51378,"i":"c"}
+{"t":51380,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[26;61H"}
+{"t":51380,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":51429,"i":"o"}
+{"t":51438,"o":"\u001b[?2026h\u001b[?25l\u001b[18;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[26;61H\u001b[22m\u001b[39;49mc\u001b[39m\u001b[49m\u001b[0m\u001b[26;62H\u001b[?25h\u001b[?2026l"}
+{"t":51474,"i":"m"}
+{"t":51474,"o":"\u001b[?2026h\u001b[?25l\u001b[26;62Ho\u001b[39m\u001b[49m\u001b[0m\u001b[26;63H\u001b[?25h\u001b[?2026l"}
+{"t":51505,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51505,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[26;63H\u001b[22m\u001b[39;49mm\u001b[39m\u001b[49m\u001b[0m\u001b[26;64H\u001b[?25h\u001b[?2026l"}
+{"t":51519,"i":"m"}
+{"t":51559,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51559,"i":"a"}
+{"t":51559,"o":"\u001b[26;64Hm\u001b[39m\u001b[49m\u001b[0m\u001b[26;65H\u001b[?25h"}
+{"t":51559,"o":"\u001b[?2026l"}
+{"t":51598,"i":"n"}
+{"t":51665,"i":"d"}
+{"t":51672,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51672,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[26;65H\u001b[22m\u001b[39;49man\u001b[39m\u001b[49m\u001b[0m\u001b[26;67H\u001b[?25h\u001b[?2026l"}
+{"t":51708,"i":"s"}
+{"t":51723,"o":"\u001b[?2026h\u001b[?25l\u001b[18;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[26;67H\u001b[22m\u001b[39;49md\u001b[39m\u001b[49m\u001b[0m\u001b[26;68H\u001b[?25h\u001b[?2026l"}
+{"t":51755,"i":"."}
+{"t":51770,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51770,"o":"\u001b[26;68Hs\u001b[39m\u001b[49m\u001b[0m\u001b[26;69H\u001b[?25h\u001b[?2026l"}
+{"t":51805,"i":"\r"}
+{"t":51805,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":51806,"o":"\u001b[18;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[26;69H\u001b[22m\u001b[39;49m.\u001b[39m\u001b[49m\u001b[0m\u001b[26;70H"}
+{"t":51807,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":51826,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":51827,"o":"\u001b[J"}
+{"t":51827,"o":"\u001b[?25l"}
+{"t":51827,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":51827,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":51827,"o":"\u001b[?25h"}
+{"t":51827,"o":"\u001b[?2026l"}
+{"t":51828,"o":"\u001b[?2026h\u001b[17;45r\u001b[17;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;27r\u001b[16;1H"}
+{"t":51829,"o":"\r\n\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\r\n\u001b[39;49m\u001b[K\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[22m\u001b[39;49m \u001b[1mLoading MCP inventory\u001b[22m\u001b[2m\u001b[2m…\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51829,"o":"\r\n"}
+{"t":51829,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51829,"o":"\r\n\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[2m› \u001b[22m\u001b[22mline one\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K  line two\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K  line three\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K  line four\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K  line five\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51830,"o":"\u001b[39;49m\u001b[K  Write three short paragraphs about rivers. Do not run any commands.\u001b[39m\u001b[49m\u001b[0m"}
+{"t":51830,"o":"\r\n"}
+{"t":51831,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[19;3H\u001b[39m\u001b[49m\u001b[0m\u001b[?25l"}
+{"t":51831,"o":"\u001b[28;1H\u001b[0 q\u001b[28;1H \u001b[39m\u001b[49m\u001b[0m\u001b[30;3H\u001b[?25h\u001b[?2026l"}
+{"t":52001,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[30;3H"}
+{"t":52004,"o":"\u001b[?25h"}
+{"t":52004,"o":"\u001b[?2026l"}
+{"t":52007,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[30;3H"}
+{"t":52007,"o":"\u001b[?25h"}
+{"t":52007,"o":"\u001b[?2026l"}
+{"t":52022,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[30;3H"}
+{"t":52022,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":52261,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":52287,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":52293,"o":"\u001b[?2026h\u001b[28;1H\u001b[J"}
+{"t":52296,"o":"\u001b[?25l"}
+{"t":52296,"o":"\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[29;34H\u001b[0m\u001b[49m\u001b[K\u001b[30;2H\u001b[0m\u001b[49m\u001b[K\u001b[31;2H\u001b[0m\u001b[49m\u001b[K\u001b[32;27H\u001b[0m\u001b[49m\u001b[K\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;120H\u001b[0m\u001b[49m\u001b[K\u001b[28;1H \u001b[29;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(0s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[30;1H\u001b[22m \u001b[31;1H \u001b[32;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[33;1H\u001b[22m \u001b[34;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[28;1H\u001b[0 q\u001b[28;1H \u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":52296,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":52334,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":52334,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":52380,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":52381,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":52381,"o":"\u001b[?25h"}
+{"t":52381,"o":"\u001b[?2026l"}
+{"t":52430,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h\u001b[?2026l"}
+{"t":52484,"o":"\u001b]0;⠸ agent-box\u0007"}
+{"t":52484,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":52484,"o":"\u001b[?25h"}
+{"t":52484,"o":"\u001b[?2026l"}
+{"t":52523,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h\u001b[?2026l"}
+{"t":52542,"o":"\u001b]0;C:\\windows\\system32\\cmd.exe \u001b\\"}
+{"t":52565,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":52565,"o":"\u001b[?25h"}
+{"t":52565,"o":"\u001b[?2026l"}
+{"t":52601,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":52601,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h\u001b[?2026l"}
+{"t":52606,"o":"\u001b[6n"}
+{"t":53115,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53115,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53115,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":53169,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":53169,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53169,"o":"\u001b[?25h"}
+{"t":53169,"o":"\u001b[?2026l"}
+{"t":53209,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53209,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53209,"o":"\u001b[?25h"}
+{"t":53209,"o":"\u001b[?2026l"}
+{"t":53251,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53251,"o":"\u001b[?25h"}
+{"t":53251,"o":"\u001b[?2026l"}
+{"t":53303,"o":"\u001b]0;⠙ ⠙ | agent-box\u0007"}
+{"t":53304,"o":"\u001b[?2026h\u001b[?25l\u001b[29;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[29;12H\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m1\u001b[34;37H\u001b[22m·\u001b[34;39H\u001b[38;2;137;220;235;49m⠙\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h"}
+{"t":53304,"o":"\u001b[?2026l"}
+{"t":53305,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h\u001b[?2026l"}
+{"t":53338,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53338,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53381,"o":"\u001b]0;⠹ ⠹ | agent-box\u0007"}
+{"t":53384,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53388,"o":"\u001b[?25h"}
+{"t":53394,"o":"\u001b[?2026l"}
+{"t":53435,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53435,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h\u001b[?2026l"}
+{"t":53479,"o":"\u001b]0;⠸ ⠸ | agent-box\u0007"}
+{"t":53483,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53483,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53521,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53521,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h"}
+{"t":53521,"o":"\u001b[?2026l"}
+{"t":53574,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53574,"o":"\u001b[?25h"}
+{"t":53574,"o":"\u001b[?2026l"}
+{"t":53615,"o":"\u001b]0;⠼ ⠼ | agent-box\u0007"}
+{"t":53615,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53616,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53616,"o":"\u001b[?25h"}
+{"t":53616,"o":"\u001b[?2026l"}
+{"t":53659,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53659,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53705,"o":"\u001b]0;⠴ ⠴ | agent-box\u0007"}
+{"t":53706,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53706,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53706,"o":"\u001b[?25h"}
+{"t":53706,"o":"\u001b[?2026l"}
+{"t":53750,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53750,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53799,"o":"\u001b]0;⠦ ⠦ | agent-box\u0007"}
+{"t":53800,"o":"\u001b[?2026h\u001b[?25l\u001b[29;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h"}
+{"t":53800,"o":"\u001b[?2026l"}
+{"t":53845,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53845,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53889,"o":"\u001b]0;⠧ ⠧ | agent-box\u0007"}
+{"t":53889,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53889,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53890,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53924,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53924,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":53970,"o":"\u001b]0;⠇ ⠇ | agent-box\u0007"}
+{"t":53971,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":53971,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":53971,"o":"\u001b[?25h"}
+{"t":53972,"o":"\u001b[?2026l"}
+{"t":54018,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":54018,"o":"\u001b[?25h"}
+{"t":54018,"o":"\u001b[?2026l"}
+{"t":54063,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54064,"o":"\u001b[29;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H\u001b[?25h"}
+{"t":54064,"o":"\u001b[?2026l"}
+{"t":54106,"o":"\u001b]0;⠏ ⠏ | agent-box\u0007"}
+{"t":54106,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":54106,"o":"\u001b[?25h"}
+{"t":54106,"o":"\u001b[?2026l"}
+{"t":54141,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[32;3H"}
+{"t":54142,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":54172,"o":"\u001b]0;⠋ ⠋ | agent-box\u0007"}
+{"t":54172,"o":"\u001b[?2026h\u001b[28;45r\u001b[28;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;38r\u001b[27;1H"}
+{"t":54173,"o":"\r\n"}
+{"t":54173,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54173,"o":"\r\n"}
+{"t":54173,"o":"\u001b[39;49m\u001b[K\u001b[38;5;5;49m/mcp\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54173,"o":"\r\n"}
+{"t":54174,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54174,"o":"\r\n"}
+{"t":54174,"o":"\u001b[39;49m\u001b[K🔌  \u001b[1mMCP Tools\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54174,"o":"\r\n"}
+{"t":54174,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54174,"o":"\r\n"}
+{"t":54175,"o":"\u001b[39;49m\u001b[K\u001b[1m  • cloudflare\u001b[22m: \u001b[1mauthentication required\u001b[22m\u001b[2m\u001b[2m (0 tools)\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":54175,"o":"\u001b[39;49m\u001b[K\u001b[2m  • \u001b[22m\u001b[1mcodex_app\u001b[22m: \u001b[2mdisabled (0 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54175,"o":"\r\n"}
+{"t":54175,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;2;49m  • \u001b[39;49mcodex_apps\u001b[22m: \u001b[1m\u001b[38;5;2;49mconnected\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (259 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54175,"o":"\r\n"}
+{"t":54175,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;1;49m  • \u001b[39;49mcua_repl\u001b[22m: \u001b[1m\u001b[38;5;1;49mfailed\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (0 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54176,"o":"\r\n"}
+{"t":54176,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;2;49m  • \u001b[39;49mgodaddy\u001b[22m: \u001b[1m\u001b[38;5;2;49mconnected\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (2 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54176,"o":"\r\n"}
+{"t":54176,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;1;49m  • \u001b[39;49mnode_repl\u001b[22m: \u001b[1m\u001b[38;5;1;49mfailed\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (0 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54176,"o":"\r\n"}
+{"t":54177,"o":"\u001b[39;49m\u001b[K\u001b[1m  • paddle-docs\u001b[22m: \u001b[1mauthentication required\u001b[22m\u001b[2m\u001b[2m (0 tools)\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":54177,"o":"\u001b[39;49m\u001b[K\u001b[1m  • paddle-live\u001b[22m: \u001b[1mauthentication required\u001b[22m\u001b[2m\u001b[2m (0 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54177,"o":"\r\n"}
+{"t":54177,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;1;49m  • \u001b[39;49mpaddle-sandbox\u001b[22m: \u001b[1m\u001b[38;5;1;49mfailed\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (0 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54177,"o":"\r\n"}
+{"t":54178,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;2;49m  • \u001b[39;49mplaywright\u001b[22m: \u001b[1m\u001b[38;5;2;49mconnected\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m (25 tools)\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54178,"o":"\r\n"}
+{"t":54178,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":54178,"o":"\r\n"}
+{"t":54179,"o":"\u001b[39;49m\u001b[K\u001b[2m  Use /mcp verbose for tools and resources.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[32;3H\u001b[39m\u001b[49m\u001b[0m\u001b[?25l"}
+{"t":54179,"o":"\u001b[39;1H"}
+{"t":54179,"o":"\u001b[0 q\u001b[39;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54179,"o":"\u001b[?25h"}
+{"t":54179,"o":"\u001b[?2026l"}
+{"t":54219,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54219,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":54265,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54265,"o":"\u001b[40;12H\u001b[2m2\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54266,"o":"\u001b[?25h"}
+{"t":54266,"o":"\u001b[?2026l"}
+{"t":54312,"o":"\u001b]0;⠙ ⠙ | agent-box\u0007"}
+{"t":54312,"mark":"working","screen":["╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true","","• Loading MCP inventory…","","","› line one","  line two","  line three","  line four","  line five","  Write three short paragraphs about rivers. Do not run any commands.","","","/mcp","","🔌  MCP Tools","","  • cloudflare: authentication required (0 tools)","  • codex_app: disabled (0 tools)","  • codex_apps: connected (259 tools)","  • cua_repl: failed (0 tools)","  • godaddy: connected (2 tools)","  • node_repl: failed (0 tools)","  • paddle-docs: authentication required (0 tools)","  • paddle-live: authentication required (0 tools)","  • paddle-sandbox: failed (0 tools)","  • playwright: connected (25 tools)","","  Use /mcp verbose for tools and resources."," ","• Working (2s • esc to interrupt)"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box · ⠙                                                       ⚠ 6 warnings · f2 to view"],"cursor":[2,42]}
+{"t":54313,"i":"f"}
+{"t":54313,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54313,"o":"\u001b[?25h"}
+{"t":54313,"o":"\u001b[?2026l"}
+{"t":54344,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54344,"o":"\u001b[43;4H\u001b[0m\u001b[49m\u001b[K\u001b[45;119H\u001b[0m\u001b[49m\u001b[K\u001b[43;3Hf\u001b[45;3H\u001b[1mtab\u001b[22m to queue message \u001b[45;25H           \u001b[45;37H \u001b[45;39H \u001b[45;95H \u001b[45;97H     100% contex\u001b[45;114H left\u001b[39m\u001b[49m\u001b[0m\u001b[43;4H"}
+{"t":54345,"o":"\u001b[?25h"}
+{"t":54345,"o":"\u001b[?2026l"}
+{"t":54358,"i":"i"}
+{"t":54384,"o":"\u001b]0;⠹ ⠹ | agent-box\u0007"}
+{"t":54384,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54385,"o":"\u001b[43;4Hi\u001b[39m\u001b[49m\u001b[0m\u001b[43;5H\u001b[?25h"}
+{"t":54385,"o":"\u001b[?2026l"}
+{"t":54404,"i":"r"}
+{"t":54436,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54437,"o":"\u001b[43;5Hr\u001b[39m\u001b[49m\u001b[0m\u001b[43;6H"}
+{"t":54437,"o":"\u001b[?25h"}
+{"t":54437,"o":"\u001b[?2026l"}
+{"t":54451,"i":"s"}
+{"t":54482,"o":"\u001b]0;⠸ ⠸ | agent-box\u0007"}
+{"t":54483,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54483,"o":"\u001b[43;6Hs\u001b[39m\u001b[49m\u001b[0m\u001b[43;7H"}
+{"t":54483,"o":"\u001b[?25h"}
+{"t":54483,"o":"\u001b[?2026l"}
+{"t":54498,"i":"t"}
+{"t":54531,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54531,"o":"\u001b[43;7Ht\u001b[39m\u001b[49m\u001b[0m\u001b[43;8H\u001b[?25h\u001b[?2026l"}
+{"t":54545,"i":" "}
+{"t":54577,"o":"\u001b]0;⠼ ⠼ | agent-box\u0007"}
+{"t":54578,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;9H"}
+{"t":54578,"o":"\u001b[?25h"}
+{"t":54578,"o":"\u001b[?2026l"}
+{"t":54592,"i":"q"}
+{"t":54639,"i":"u"}
+{"t":54642,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54648,"o":"\u001b[43;9Hq\u001b[39m\u001b[49m\u001b[0m\u001b[43;10H"}
+{"t":54652,"o":"\u001b[?25h"}
+{"t":54652,"o":"\u001b[?2026l"}
+{"t":54685,"i":"e"}
+{"t":54686,"o":"\u001b]0;⠴ ⠴ | agent-box\u0007"}
+{"t":54686,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54687,"o":"\u001b[43;10Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H"}
+{"t":54687,"o":"\u001b[?25h"}
+{"t":54688,"o":"\u001b[?2026l"}
+{"t":54716,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54716,"o":"\u001b[43;11He\u001b[39m\u001b[49m\u001b[0m\u001b[43;12H\u001b[?25h"}
+{"t":54716,"o":"\u001b[?2026l"}
+{"t":54732,"i":"u"}
+{"t":54764,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54764,"o":"\u001b[43;12Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;13H"}
+{"t":54764,"o":"\u001b[?25h"}
+{"t":54764,"o":"\u001b[?2026l"}
+{"t":54779,"i":"e"}
+{"t":54810,"o":"\u001b]0;⠦ ⠦ | agent-box\u0007"}
+{"t":54811,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54811,"o":"\u001b[43;13He\u001b[39m\u001b[49m\u001b[0m\u001b[43;14H"}
+{"t":54811,"o":"\u001b[?25h"}
+{"t":54811,"o":"\u001b[?2026l"}
+{"t":54825,"i":"d"}
+{"t":54857,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":54857,"o":"\u001b[43;14Hd\u001b[39m\u001b[49m\u001b[0m\u001b[43;15H\u001b[?25h"}
+{"t":54857,"o":"\u001b[?2026l"}
+{"t":54872,"i":"\t"}
+{"t":54874,"o":"\u001b]0;⠧ ⠧ | agent-box\u0007"}
+{"t":54875,"o":"\u001b[?2026h\u001b[1;38r\u001b[38;1H"}
+{"t":54875,"o":"\r\n"}
+{"t":54875,"o":"\r\n"}
+{"t":54875,"o":"\r\n"}
+{"t":54875,"o":"\u001b[r\u001b[43;15H\u001b[36;1H"}
+{"t":54876,"o":"\u001b[J"}
+{"t":54876,"o":"\u001b[?25l"}
+{"t":54876,"o":"\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;34H\u001b[0m\u001b[49m\u001b[K\u001b[38;2H\u001b[0m\u001b[49m\u001b[K\u001b[39;26H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H \u001b[37;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(2s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[38;1H\u001b[22m \u001b[39;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[40;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49m⠙\u001b[39;49m                                                       ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[36;1H"}
+{"t":54877,"o":"\u001b[0 q\u001b[36;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":54877,"o":"\u001b[?2026l"}
+{"t":54889,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54889,"o":"\u001b[?25h"}
+{"t":54889,"o":"\u001b[?2026l"}
+{"t":54936,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54936,"o":"\u001b[?25h"}
+{"t":54936,"o":"\u001b[?2026l"}
+{"t":54982,"o":"\u001b]0;⠇ ⠇ | agent-box\u0007"}
+{"t":54982,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":54982,"o":"\u001b[?25h"}
+{"t":54982,"o":"\u001b[?2026l"}
+{"t":55029,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55029,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":55078,"o":"\u001b]0;⠏ ⠏ | agent-box\u0007"}
+{"t":55079,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55080,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":55094,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55094,"o":"\u001b[37;4H\u001b[0m\u001b[49m\u001b[K\u001b[37;1H\u001b[2m• \u001b[22mR\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":55118,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55118,"o":"\u001b[37;4Hivers\u001b[37;10Hcarry\u001b[37;16Hwater\u001b[37;22Hfrom\u001b[37;27Hhills\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":55187,"i":"s"}
+{"t":55218,"o":"\u001b]0;⠋ ⠋ | agent-box\u0007"}
+{"t":55218,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55219,"o":"\u001b[43;4H\u001b[0m\u001b[49m\u001b[K\u001b[45;119H\u001b[0m\u001b[49m\u001b[K\u001b[43;3Hs\u001b[45;3H\u001b[1mtab\u001b[22m to queue message \u001b[45;25H           \u001b[45;37H \u001b[45;39H \u001b[45;95H \u001b[45;97H     100% contex\u001b[45;114H left\u001b[39m\u001b[49m\u001b[0m\u001b[43;4H"}
+{"t":55219,"o":"\u001b[?25h"}
+{"t":55219,"o":"\u001b[?2026l"}
+{"t":55233,"i":"e"}
+{"t":55267,"o":"\u001b]0;⠙ ⠙ | agent-box\u0007"}
+{"t":55268,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55268,"o":"\u001b[43;4He\u001b[39m\u001b[49m\u001b[0m\u001b[43;5H\u001b[?25h"}
+{"t":55268,"i":"c"}
+{"t":55268,"o":"\u001b[?2026l"}
+{"t":55297,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55297,"o":"\u001b[37;33Hand\u001b[37;37Hmountains\u001b[37;47Htoward\u001b[43;5Hc\u001b[39m\u001b[49m\u001b[0m\u001b[43;6H"}
+{"t":55297,"o":"\u001b[?25h"}
+{"t":55298,"o":"\u001b[?2026l"}
+{"t":55311,"i":"o"}
+{"t":55343,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55343,"o":"\u001b[43;6Ho\u001b[39m\u001b[49m\u001b[0m\u001b[43;7H"}
+{"t":55343,"o":"\u001b[?25h"}
+{"t":55343,"o":"\u001b[?2026l"}
+{"t":55356,"i":"n"}
+{"t":55388,"o":"\u001b]0;⠹ ⠹ | agent-box\u0007"}
+{"t":55389,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55389,"o":"\u001b[43;7Hn\u001b[39m\u001b[49m\u001b[0m\u001b[43;8H"}
+{"t":55389,"o":"\u001b[?25h"}
+{"t":55389,"o":"\u001b[?2026l"}
+{"t":55403,"i":"d"}
+{"t":55435,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55435,"o":"\u001b[43;8Hd\u001b[39m\u001b[49m\u001b[0m\u001b[43;9H"}
+{"t":55436,"o":"\u001b[?25h"}
+{"t":55436,"o":"\u001b[?2026l"}
+{"t":55450,"i":" "}
+{"t":55482,"o":"\u001b]0;⠸ ⠸ | agent-box\u0007"}
+{"t":55483,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;10H"}
+{"t":55483,"o":"\u001b[?25h"}
+{"t":55483,"o":"\u001b[?2026l"}
+{"t":55497,"i":"q"}
+{"t":55524,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55524,"o":"\u001b[43;10Hq\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H\u001b[?25h"}
+{"t":55524,"o":"\u001b[?2026l"}
+{"t":55544,"i":"u"}
+{"t":55546,"o":"\u001b[?2026h\u001b[?25l\u001b[37;54Hlakes\u001b[37;60Hand\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H\u001b[?25h\u001b[?2026l"}
+{"t":55572,"o":"\u001b]0;⠼ ⠼ | agent-box\u0007"}
+{"t":55573,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55573,"o":"\u001b[43;11Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;12H"}
+{"t":55573,"o":"\u001b[?25h"}
+{"t":55573,"o":"\u001b[?2026l"}
+{"t":55591,"i":"e"}
+{"t":55623,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55623,"o":"\u001b[43;12He\u001b[39m\u001b[49m\u001b[0m\u001b[43;13H"}
+{"t":55623,"o":"\u001b[?25h"}
+{"t":55623,"o":"\u001b[?2026l"}
+{"t":55637,"i":"u"}
+{"t":55669,"o":"\u001b]0;⠴ ⠴ | agent-box\u0007"}
+{"t":55669,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55669,"o":"\u001b[43;13Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;14H"}
+{"t":55669,"o":"\u001b[?25h"}
+{"t":55669,"o":"\u001b[?2026l"}
+{"t":55684,"i":"e"}
+{"t":55715,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55715,"o":"\u001b[37;64Hseas.\u001b[37;70HAlong\u001b[37;76Hthe\u001b[43;14He\u001b[39m\u001b[49m\u001b[0m\u001b[43;15H"}
+{"t":55716,"o":"\u001b[?25h"}
+{"t":55716,"o":"\u001b[?2026l"}
+{"t":55730,"i":"d"}
+{"t":55756,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55757,"o":"\u001b[43;15Hd\u001b[39m\u001b[49m\u001b[0m\u001b[43;16H"}
+{"t":55757,"o":"\u001b[?25h"}
+{"t":55757,"o":"\u001b[?2026l"}
+{"t":55777,"i":"\t"}
+{"t":55793,"o":"\u001b]0;⠦ ⠦ | agent-box\u0007"}
+{"t":55793,"o":"\u001b[?2026h\u001b[1;35r\u001b[35;1H"}
+{"t":55793,"o":"\r\n"}
+{"t":55793,"o":"\u001b[r\u001b[43;16H\u001b[35;1H"}
+{"t":55793,"o":"\u001b[J"}
+{"t":55794,"o":"\u001b[?25l"}
+{"t":55794,"o":"\u001b[35;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;79H\u001b[0m\u001b[49m\u001b[K\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;26H\u001b[0m\u001b[49m\u001b[K\u001b[39;17H\u001b[0m\u001b[49m\u001b[K\u001b[40;18H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[35;1H \u001b[36;1H\u001b[2m• \u001b[22mRivers carry water from hills and mountains toward lakes and seas. Along the\u001b[37;1H \u001b[38;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[39;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[40;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49m⠙\u001b[39;49m                                                       ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[35;1H"}
+{"t":55794,"o":"\u001b[0 q\u001b[35;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55795,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":55824,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55824,"o":"\u001b[36;80Hway,\u001b[36;85Hthey\u001b[36;90Hcarve\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55824,"o":"\u001b[?25h"}
+{"t":55824,"o":"\u001b[?2026l"}
+{"t":55934,"o":"\u001b]0;⠧ ⠧ | agent-box\u0007"}
+{"t":55950,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55950,"o":"\u001b[45;39H\u001b[38;2;137;220;235;49m⠧\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55950,"o":"\u001b[?25h"}
+{"t":55950,"o":"\u001b[?2026l"}
+{"t":55960,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55960,"o":"\u001b[36;96Hvalleys\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55960,"o":"\u001b[?25h"}
+{"t":55960,"o":"\u001b[?2026l"}
+{"t":55983,"o":"\u001b]0;⠇ ⠇ | agent-box\u0007"}
+{"t":55983,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":55983,"o":"\u001b[36;103H,\u001b[36;105Hmove\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":55983,"o":"\u001b[?25h"}
+{"t":55984,"o":"\u001b[?2026l"}
+{"t":56089,"i":"t"}
+{"t":56090,"o":"\u001b]0;⠏ ⠏ | agent-box\u0007"}
+{"t":56123,"o":"\u001b[?2026h\u001b[?25l\u001b[36;8H\u001b[0m\u001b[49m\u001b[K\u001b[43;4H\u001b[0m\u001b[49m\u001b[K\u001b[45;119H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H  \u001b[43;3Ht\u001b[45;3H\u001b[1mtab\u001b[22m to queue message \u001b[45;25H           \u001b[45;37H \u001b[45;39H \u001b[45;95H \u001b[45;97H     100% contex\u001b[45;114H left\u001b[39m\u001b[49m\u001b[0m\u001b[43;4H\u001b[?25h\u001b[?2026l"}
+{"t":56124,"i":"h"}
+{"t":56153,"o":"\u001b[?2026h\u001b[1;34r\u001b[34;1H"}
+{"t":56153,"o":"\r\n"}
+{"t":56153,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":56153,"o":"\r\n"}
+{"t":56153,"o":"\u001b[39;49m\u001b[K\u001b[2m• \u001b[22mRivers carry water from hills and mountains toward lakes and seas. Along the way, they carve valleys, move sediment,\u001b[39m\u001b[49m\u001b[0m"}
+{"t":56154,"o":"\r\n"}
+{"t":56154,"o":"\u001b[39;49m\u001b[K  and shape the land.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;4H\u001b[?25l"}
+{"t":56154,"o":"\u001b[43;4Hh\u001b[39m\u001b[49m\u001b[0m\u001b[43;5H"}
+{"t":56155,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":56168,"i":"i"}
+{"t":56200,"o":"\u001b]0;⠋ ⠋ | agent-box\u0007"}
+{"t":56200,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56201,"o":"\u001b[43;5Hi\u001b[39m\u001b[49m\u001b[0m\u001b[43;6H"}
+{"t":56201,"o":"\u001b[?25h"}
+{"t":56201,"o":"\u001b[?2026l"}
+{"t":56215,"i":"r"}
+{"t":56263,"i":"d"}
+{"t":56268,"o":"\u001b]0;⠙ ⠙ | agent-box\u0007"}
+{"t":56269,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56269,"o":"\u001b[43;6Hr\u001b[39m\u001b[49m\u001b[0m\u001b[43;7H"}
+{"t":56269,"o":"\u001b[?25h"}
+{"t":56269,"o":"\u001b[?2026l"}
+{"t":56296,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56296,"o":"\u001b[36;9Hhabitats\u001b[43;7Hd\u001b[39m\u001b[49m\u001b[0m\u001b[43;8H\u001b[?25h"}
+{"t":56296,"o":"\u001b[?2026l"}
+{"t":56310,"i":" "}
+{"t":56342,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;9H"}
+{"t":56342,"o":"\u001b[?25h"}
+{"t":56342,"o":"\u001b[?2026l"}
+{"t":56356,"i":"q"}
+{"t":56390,"o":"\u001b]0;⠹ ⠹ | agent-box\u0007"}
+{"t":56392,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56392,"i":"u"}
+{"t":56392,"o":"\u001b[43;9Hq\u001b[39m\u001b[49m\u001b[0m\u001b[43;10H\u001b[?25h"}
+{"t":56392,"o":"\u001b[?2026l"}
+{"t":56413,"o":"\u001b[?2026h\u001b[?25l\u001b[36;18Hsupport\u001b[36;26Hfish\u001b[43;10Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H\u001b[?25h\u001b[?2026l"}
+{"t":56429,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56429,"i":"e"}
+{"t":56429,"o":"\u001b[36;30H,\u001b[36;32Hbirds\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H\u001b[?25h\u001b[?2026l"}
+{"t":56465,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56465,"i":"u"}
+{"t":56465,"o":"\u001b[43;11He\u001b[39m\u001b[49m\u001b[0m\u001b[43;12H\u001b[?25h\u001b[?2026l"}
+{"t":56475,"o":"\u001b]0;⠸ ⠸ | agent-box\u0007"}
+{"t":56503,"o":"\u001b]0;⠸ agent-box\u0007"}
+{"t":56503,"i":"e"}
+{"t":56526,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":56527,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56527,"o":"\u001b[43;12Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;13H"}
+{"t":56528,"o":"\u001b[?25h"}
+{"t":56528,"o":"\u001b[?2026l"}
+{"t":56544,"i":"d"}
+{"t":56571,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":56572,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56572,"o":"\u001b[36;37H,\u001b[36;39Hinsects,\u001b[36;48Hand\u001b[36;52Hplants\u001b[43;13Hed\u001b[39m\u001b[49m\u001b[0m\u001b[43;15H"}
+{"t":56572,"o":"\u001b[?25h"}
+{"t":56572,"o":"\u001b[?2026l"}
+{"t":56591,"i":"\t"}
+{"t":56607,"o":"\u001b[?2026h\u001b[1;34r\u001b[34;1H"}
+{"t":56607,"o":"\r\n"}
+{"t":56607,"o":"\u001b[r\u001b[43;15H\u001b[34;1H"}
+{"t":56607,"o":"\u001b[J"}
+{"t":56608,"o":"\u001b[?25l"}
+{"t":56608,"o":"\u001b[34;2H\u001b[0m\u001b[49m\u001b[K\u001b[35;58H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;26H\u001b[0m\u001b[49m\u001b[K\u001b[38;17H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[34;1H \u001b[35;1H  River habitats support fish, birds, insects, and plants\u001b[36;1H \u001b[37;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[38;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[39;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[34;1H"}
+{"t":56608,"o":"\u001b[0 q\u001b[34;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56609,"o":"\u001b[?25h"}
+{"t":56609,"o":"\u001b[?2026l"}
+{"t":56664,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56664,"o":"\u001b[35;58H.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56664,"o":"\u001b[?25h"}
+{"t":56664,"o":"\u001b[?2026l"}
+{"t":56686,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":56687,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56687,"o":"\u001b[35;60HTheir\u001b[35;66Hflowing\u001b[35;74Hwaters\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56687,"o":"\u001b[?25h"}
+{"t":56687,"o":"\u001b[?2026l"}
+{"t":56796,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":56799,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56800,"o":"\u001b[35;81Hconnect\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56800,"o":"\u001b[?25h"}
+{"t":56800,"o":"\u001b[?2026l"}
+{"t":56812,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56812,"o":"\u001b[35;89Hecosystems\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56812,"o":"\u001b[?25h"}
+{"t":56813,"o":"\u001b[?2026l"}
+{"t":56923,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":56937,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":56937,"o":"\u001b[35;100Hand\u001b[35;104Hbring\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56937,"o":"\u001b[?25h"}
+{"t":56937,"o":"\u001b[?2026l"}
+{"t":56955,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":56955,"o":"\u001b[?25h"}
+{"t":56955,"o":"\u001b[?2026l"}
+{"t":57016,"mark":"queued","screen":["","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true","","• Loading MCP inventory…","","","› line one","  line two","  line three","  line four","  line five","  Write three short paragraphs about rivers. Do not run any commands.","","","/mcp","","🔌  MCP Tools","","  • cloudflare: authentication required (0 tools)","  • codex_app: disabled (0 tools)","  • codex_apps: connected (259 tools)","  • cua_repl: failed (0 tools)","  • godaddy: connected (2 tools)","  • node_repl: failed (0 tools)","  • paddle-docs: authentication required (0 tools)","  • paddle-live: authentication required (0 tools)","  • paddle-sandbox: failed (0 tools)","  • playwright: connected (25 tools)","","  Use /mcp verbose for tools and resources.","","• Rivers carry water from hills and mountains toward lakes and seas. Along the way, they carve valleys, move sediment,","  and shape the land."," ","  River habitats support fish, birds, insects, and plants. Their flowing waters connect ecosystems and bring"," ","• Queued follow-up inputs","  ↳ first queued","  ↳ second queued","  ↳ third queued","    alt+↑ edit last queued message"," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box · Write three paragraphs about rivers                     ⚠ 6 warnings · f2 to view"],"cursor":[2,42]}
+{"t":57063,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57091,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57092,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57092,"o":"\u001b[35;110Hnutrients\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":57092,"o":"\u001b[?2026l"}
+{"t":57112,"o":"\u001b[?2026h\u001b[1;33r\u001b[33;1H"}
+{"t":57112,"o":"\r\n"}
+{"t":57112,"o":"\u001b[r\u001b[43;3H\u001b[33;1H"}
+{"t":57113,"o":"\u001b[J"}
+{"t":57113,"o":"\u001b[?25l"}
+{"t":57113,"o":"\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;119H\u001b[0m\u001b[49m\u001b[K\u001b[35;17H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;26H\u001b[0m\u001b[49m\u001b[K\u001b[38;17H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[33;1H \u001b[34;1H  River habitats support fish, birds, insects, and plants. Their flowing waters connect ecosystems and bring nutrients\u001b[35;1H  to surrounding\u001b[36;1H \u001b[37;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[38;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[39;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[33;1H"}
+{"t":57114,"o":"\u001b[0 q\u001b[33;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57114,"o":"\u001b[?25h"}
+{"t":57114,"o":"\u001b[?2026l"}
+{"t":57221,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57328,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57408,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57417,"o":"\u001b[?2026h\u001b[33;1H"}
+{"t":57417,"o":"\u001b[J\u001b[33;45r\u001b[33;1H\u001bM\u001b[r\u001b[1;33r\u001b[32;1H\r\n"}
+{"t":57418,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":57418,"o":"\u001b[34;2H\u001b[0m\u001b[49m\u001b[K\u001b[35;14H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;26H\u001b[0m\u001b[49m\u001b[K\u001b[38;17H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[34;1H \u001b[35;1H  People rely\u001b[36;1H \u001b[37;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[38;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[39;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[34;1H"}
+{"t":57418,"o":"\u001b[0 q\u001b[34;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57418,"o":"\u001b[?25h"}
+{"t":57419,"o":"\u001b[?2026l"}
+{"t":57423,"o":"\u001b[?2026h\u001b[1;33r\u001b[33;1H"}
+{"t":57423,"o":"\r\n"}
+{"t":57424,"o":"\u001b[39;49m\u001b[K  River habitats support fish, birds, insects, and plants. Their flowing waters connect ecosystems and bring nutrients\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57424,"o":"\u001b[?25h"}
+{"t":57424,"o":"\u001b[?2026l"}
+{"t":57440,"o":"\u001b[?2026h\u001b[1;33r\u001b[33;1H"}
+{"t":57440,"o":"\r\n"}
+{"t":57441,"o":"\u001b[39;49m\u001b[K  to surrounding soil.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57441,"o":"\u001b[?25h"}
+{"t":57441,"o":"\u001b[?2026l"}
+{"t":57455,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57455,"o":"\u001b[?25h"}
+{"t":57455,"o":"\u001b[?2026l"}
+{"t":57521,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57522,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57522,"o":"\u001b[35;15Hon\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57522,"o":"\u001b[?25h"}
+{"t":57522,"o":"\u001b[?2026l"}
+{"t":57533,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57533,"o":"\u001b[35;18Hrivers\u001b[35;25Hfor\u001b[35;29Hdrinking\u001b[35;38Hwater,\u001b[35;45Hfarming,\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57533,"o":"\u001b[?25h"}
+{"t":57533,"o":"\u001b[?2026l"}
+{"t":57641,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57658,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57658,"o":"\u001b[35;54Htransport,\u001b[35;65Hand\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57658,"o":"\u001b[?25h"}
+{"t":57658,"o":"\u001b[?2026l"}
+{"t":57672,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57672,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57673,"o":"\u001b[35;69Hrecreation.\u001b[35;81HKeeping\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57673,"o":"\u001b[?25h"}
+{"t":57673,"o":"\u001b[?2026l"}
+{"t":57780,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57891,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57930,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57930,"o":"\u001b[35;89Hthem\u001b[35;94Hclean\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57930,"o":"\u001b[?25h"}
+{"t":57931,"o":"\u001b[?2026l"}
+{"t":57954,"o":"\u001b[?2026h\u001b[1;33r\u001b[33;1H\r\n"}
+{"t":57954,"o":"\u001b[r\u001b[43;3H\u001b[33;1H\u001b[J"}
+{"t":57955,"o":"\u001b[?25l"}
+{"t":57956,"o":"\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;110H\u001b[0m\u001b[49m\u001b[K\u001b[35;14H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;26H\u001b[0m\u001b[49m\u001b[K\u001b[38;17H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[33;1H \u001b[34;1H  People rely on rivers for drinking water, farming, transport, and recreation. Keeping them clean helps both\u001b[35;1H  communities\u001b[36;1H \u001b[37;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[38;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[39;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[33;1H"}
+{"t":57956,"o":"\u001b[0 q\u001b[33;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":57981,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":57982,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":57982,"o":"\u001b[35;15Hand\u001b[35;19Hwildlife\u001b[35;28Hthrive\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":57982,"o":"\u001b[?25h"}
+{"t":57982,"o":"\u001b[?2026l"}
+{"t":58000,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":58000,"o":"\u001b[35;34H.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58001,"o":"\u001b[?25h"}
+{"t":58001,"o":"\u001b[?2026l"}
+{"t":58047,"o":"\u001b[?2026h\u001b[33;1H"}
+{"t":58047,"o":"\u001b[J"}
+{"t":58047,"o":"\u001b[33;45r\u001b[33;1H\u001bM\u001bM\u001bM\u001b[r\u001b[1;35r\u001b[32;1H"}
+{"t":58047,"o":"\r\n"}
+{"t":58048,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58048,"o":"\r\n"}
+{"t":58048,"o":"\u001b[39;49m\u001b[K  People rely on rivers for drinking water, farming, transport, and recreation. Keeping them clean helps both\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58048,"o":"\r\n"}
+{"t":58049,"o":"\u001b[39;49m\u001b[K  communities and wildlife thrive.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":58049,"o":"\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;26H\u001b[0m\u001b[49m\u001b[K\u001b[38;17H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H \u001b[37;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[38;1H\u001b[2m  ↳ \u001b[3mfirst queued\u001b[39;1H\u001b[23m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[36;1H"}
+{"t":58049,"o":"\u001b[0 q\u001b[36;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58049,"o":"\u001b[?25h"}
+{"t":58049,"o":"\u001b[?2026l"}
+{"t":58077,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58079,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58079,"o":"\u001b[?25h"}
+{"t":58079,"o":"\u001b[?2026l"}
+{"t":58116,"o":"\u001b]0;Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58127,"o":"\u001b[?2026h\u001b[36;1H"}
+{"t":58127,"o":"\u001b[J"}
+{"t":58127,"o":"\u001b[36;45r\u001b[36;1H\u001bM\u001b[r\u001b[1;36r\u001b[35;1H"}
+{"t":58127,"o":"\r\n"}
+{"t":58127,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58127,"o":"\r\n"}
+{"t":58128,"o":"\u001b[39;49m\u001b[K\u001b[2m  10:44 PM\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":58128,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58128,"o":"\r\n"}
+{"t":58128,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58128,"o":"\r\n"}
+{"t":58129,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[2m› \u001b[22m\u001b[22mfirst queued\u001b[39m\u001b[49m\u001b[0m"}
+{"t":58129,"o":"\r\n"}
+{"t":58129,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":58129,"o":"\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;26H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[37;1H \u001b[38;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[39;1H\u001b[2m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[37;1H"}
+{"t":58130,"o":"\u001b[0 q\u001b[37;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":58130,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58130,"o":"\u001b[?25h"}
+{"t":58130,"o":"\u001b[?2026l"}
+{"t":58200,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58200,"o":"\u001b[?25h"}
+{"t":58200,"o":"\u001b[?2026l"}
+{"t":58207,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58217,"o":"\u001b[?2026h\u001b[1;36r\u001b[36;1H"}
+{"t":58217,"o":"\r\n\r\n\u001b[r\u001b[43;3H\u001b[35;1H\u001b[J"}
+{"t":58218,"o":"\u001b[?25l"}
+{"t":58218,"o":"\u001b[35;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;34H\u001b[0m\u001b[49m\u001b[K\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;26H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[35;1H \u001b[36;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(0s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[37;1H\u001b[22m \u001b[38;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[39;1H\u001b[2m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[35;1H"}
+{"t":58218,"o":"\u001b[0 q\u001b[35;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58219,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58253,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58253,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58287,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58287,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58288,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58331,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58331,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58378,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58379,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58379,"o":"\u001b[?25h"}
+{"t":58379,"o":"\u001b[?2026l"}
+{"t":58413,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58413,"o":"\u001b[?25h"}
+{"t":58413,"o":"\u001b[?2026l"}
+{"t":58493,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58499,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58499,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58535,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58535,"o":"\u001b[?25h"}
+{"t":58535,"o":"\u001b[?2026l"}
+{"t":58581,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58581,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58581,"o":"\u001b[?25h"}
+{"t":58581,"o":"\u001b[?2026l"}
+{"t":58627,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58627,"o":"\u001b[?25h"}
+{"t":58628,"o":"\u001b[?2026l"}
+{"t":58670,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58671,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58671,"o":"\u001b[?25h"}
+{"t":58671,"o":"\u001b[?2026l"}
+{"t":58705,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58705,"o":"\u001b[?25h"}
+{"t":58705,"o":"\u001b[?2026l"}
+{"t":58751,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58751,"o":"\u001b[?25h"}
+{"t":58751,"o":"\u001b[?2026l"}
+{"t":58797,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58798,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58798,"o":"\u001b[?25h"}
+{"t":58798,"o":"\u001b[?2026l"}
+{"t":58836,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58836,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58875,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58875,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58875,"o":"\u001b[?25h"}
+{"t":58875,"o":"\u001b[?2026l"}
+{"t":58922,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58922,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":58968,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":58968,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":58969,"o":"\u001b[?25h"}
+{"t":58969,"o":"\u001b[?2026l"}
+{"t":59006,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59006,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59050,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59050,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59096,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59097,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59097,"o":"\u001b[?25h"}
+{"t":59097,"o":"\u001b[?2026l"}
+{"t":59144,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59144,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59189,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59190,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59190,"o":"\u001b[?25h"}
+{"t":59190,"o":"\u001b[?2026l"}
+{"t":59224,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59225,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[36;12H\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m1\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59226,"o":"\u001b[?25h"}
+{"t":59226,"o":"\u001b[?2026l"}
+{"t":59269,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59270,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59270,"o":"\u001b[?25h"}
+{"t":59270,"o":"\u001b[?2026l"}
+{"t":59317,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59317,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59317,"o":"\u001b[?25h"}
+{"t":59317,"o":"\u001b[?2026l"}
+{"t":59364,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59364,"o":"\u001b[?25h"}
+{"t":59364,"o":"\u001b[?2026l"}
+{"t":59409,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59410,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59410,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59410,"o":"\u001b[?25h"}
+{"t":59410,"o":"\u001b[?2026l"}
+{"t":59456,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59456,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59501,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59502,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59502,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59502,"o":"\u001b[?25h"}
+{"t":59502,"o":"\u001b[?2026l"}
+{"t":59549,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59549,"o":"\u001b[?25h"}
+{"t":59549,"o":"\u001b[?2026l"}
+{"t":59596,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59597,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59597,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59597,"o":"\u001b[?25h"}
+{"t":59597,"o":"\u001b[?2026l"}
+{"t":59643,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59644,"o":"\u001b[?25h"}
+{"t":59644,"o":"\u001b[?2026l"}
+{"t":59690,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59690,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59690,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59691,"o":"\u001b[?25h"}
+{"t":59691,"o":"\u001b[?2026l"}
+{"t":59737,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59737,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59783,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59784,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59784,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59784,"o":"\u001b[?25h"}
+{"t":59784,"o":"\u001b[?2026l"}
+{"t":59830,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59830,"o":"\u001b[?25h"}
+{"t":59830,"o":"\u001b[?2026l"}
+{"t":59878,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59879,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59879,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59879,"o":"\u001b[?25h"}
+{"t":59879,"o":"\u001b[?2026l"}
+{"t":59925,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59925,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":59972,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":59972,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":59972,"o":"\u001b[36;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":59972,"o":"\u001b[?25h"}
+{"t":59973,"o":"\u001b[?2026l"}
+{"t":60010,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60011,"o":"\u001b[?25h"}
+{"t":60011,"o":"\u001b[?2026l"}
+{"t":60019,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":60019,"o":"\u001b[36;11H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H\u001b[2m• \u001b[22mReceived\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":60019,"o":"\u001b[?2026l"}
+{"t":60130,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60165,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":60165,"o":"\u001b[36;11H:\u001b[36;13Hfirst\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":60165,"o":"\u001b[?2026l"}
+{"t":60180,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60181,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":60181,"o":"\u001b[36;19Hqueued.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":60181,"o":"\u001b[?2026l"}
+{"t":60240,"o":"\u001b[?2026h\u001b[35;1H"}
+{"t":60240,"o":"\u001b[J"}
+{"t":60241,"o":"\u001b[35;45r\u001b[35;1H\u001bM\u001bM\u001b[r\u001b[1;36r\u001b[34;1H"}
+{"t":60241,"o":"\r\n"}
+{"t":60241,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60241,"o":"\r\n"}
+{"t":60242,"o":"\u001b[39;49m\u001b[K\u001b[2m• \u001b[22mReceived: first queued.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":60242,"o":"\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;26H\u001b[0m\u001b[49m\u001b[K\u001b[39;18H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[37;1H \u001b[38;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[39;1H\u001b[2m  ↳ \u001b[3msecond queued\u001b[40;1H\u001b[23m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[37;1H"}
+{"t":60242,"o":"\u001b[0 q\u001b[37;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60242,"o":"\u001b[?25h"}
+{"t":60242,"o":"\u001b[?2026l"}
+{"t":60280,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60287,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60287,"o":"\u001b[?25h"}
+{"t":60288,"o":"\u001b[?2026l"}
+{"t":60296,"o":"\u001b]0;Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60297,"o":"\u001b[?2026h\u001b[37;1H"}
+{"t":60297,"o":"\u001b[J"}
+{"t":60297,"o":"\u001b[37;45r\u001b[37;1H\u001bM\u001b[r\u001b[1;37r\u001b[36;1H"}
+{"t":60297,"o":"\r\n"}
+{"t":60298,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60298,"o":"\r\n"}
+{"t":60298,"o":"\u001b[39;49m\u001b[K\u001b[2m  10:44 PM\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60298,"o":"\r\n"}
+{"t":60298,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60298,"o":"\r\n"}
+{"t":60298,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60299,"o":"\r\n"}
+{"t":60299,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[2m› \u001b[22m\u001b[22msecond queued\u001b[39m\u001b[49m\u001b[0m"}
+{"t":60299,"o":"\r\n"}
+{"t":60299,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":60300,"o":"\u001b[38;2H\u001b[0m\u001b[49m\u001b[K\u001b[39;26H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[38;1H \u001b[39;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[40;1H\u001b[2m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[38;1H"}
+{"t":60300,"o":"\u001b[0 q\u001b[38;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":60349,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":60358,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60359,"o":"\u001b[?2026h\u001b[1;37r\u001b[37;1H"}
+{"t":60359,"o":"\r\n"}
+{"t":60359,"o":"\r\n"}
+{"t":60359,"o":"\u001b[r\u001b[43;3H\u001b[36;1H"}
+{"t":60359,"o":"\u001b[J"}
+{"t":60360,"o":"\u001b[?25l"}
+{"t":60360,"o":"\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;34H\u001b[0m\u001b[49m\u001b[K\u001b[38;2H\u001b[0m\u001b[49m\u001b[K\u001b[39;26H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H \u001b[37;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(0s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[38;1H\u001b[22m \u001b[39;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[40;1H\u001b[2m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[36;1H"}
+{"t":60360,"o":"\u001b[0 q\u001b[36;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60360,"o":"\u001b[?25h"}
+{"t":60361,"o":"\u001b[?2026l"}
+{"t":60367,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60368,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60368,"o":"\u001b[?25h"}
+{"t":60368,"o":"\u001b[?2026l"}
+{"t":60410,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60410,"o":"\u001b[?25h"}
+{"t":60411,"o":"\u001b[?2026l"}
+{"t":60457,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60457,"o":"\u001b[?25h"}
+{"t":60457,"o":"\u001b[?2026l"}
+{"t":60503,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60504,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60504,"o":"\u001b[?25h"}
+{"t":60504,"o":"\u001b[?2026l"}
+{"t":60545,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60546,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":60597,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60597,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60597,"o":"\u001b[?25h"}
+{"t":60597,"o":"\u001b[?2026l"}
+{"t":60651,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60651,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":60697,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60698,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60698,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":60753,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60753,"o":"\u001b[?25h"}
+{"t":60754,"o":"\u001b[?2026l"}
+{"t":60788,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60788,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60788,"o":"\u001b[?25h"}
+{"t":60788,"o":"\u001b[?2026l"}
+{"t":60833,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60833,"o":"\u001b[?25h"}
+{"t":60834,"o":"\u001b[?2026l"}
+{"t":60866,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60866,"o":"\u001b[?25h"}
+{"t":60866,"o":"\u001b[?2026l"}
+{"t":60915,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":60916,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60916,"o":"\u001b[?25h"}
+{"t":60916,"o":"\u001b[?2026l"}
+{"t":60961,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":60961,"o":"\u001b[?25h"}
+{"t":60961,"o":"\u001b[?2026l"}
+{"t":61009,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61009,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61009,"o":"\u001b[?25h"}
+{"t":61009,"o":"\u001b[?2026l"}
+{"t":61049,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61050,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":61086,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61087,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61087,"o":"\u001b[?25h"}
+{"t":61087,"o":"\u001b[?2026l"}
+{"t":61134,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61134,"o":"\u001b[?25h"}
+{"t":61134,"o":"\u001b[?2026l"}
+{"t":61180,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61181,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61181,"o":"\u001b[?25h"}
+{"t":61181,"o":"\u001b[?2026l"}
+{"t":61231,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61231,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":61231,"o":"\u001b[?2026l"}
+{"t":61276,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61276,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61277,"o":"\u001b[?25h"}
+{"t":61277,"o":"\u001b[?2026l"}
+{"t":61323,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61323,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61324,"o":"\u001b[?25h"}
+{"t":61324,"o":"\u001b[?2026l"}
+{"t":61370,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61370,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61371,"o":"\u001b[37;12H\u001b[2m1\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61371,"o":"\u001b[?25h"}
+{"t":61371,"o":"\u001b[?2026l"}
+{"t":61417,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61417,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61417,"o":"\u001b[?25h"}
+{"t":61417,"o":"\u001b[?2026l"}
+{"t":61465,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61465,"o":"\u001b[?25h"}
+{"t":61465,"o":"\u001b[?2026l"}
+{"t":61512,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61513,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61513,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61513,"o":"\u001b[?25h"}
+{"t":61513,"o":"\u001b[?2026l"}
+{"t":61559,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61559,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":61606,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61606,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61606,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61607,"o":"\u001b[?25h"}
+{"t":61607,"o":"\u001b[?2026l"}
+{"t":61653,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61653,"o":"\u001b[?25h"}
+{"t":61653,"o":"\u001b[?2026l"}
+{"t":61698,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61699,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61699,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61699,"o":"\u001b[?25h"}
+{"t":61699,"o":"\u001b[?2026l"}
+{"t":61748,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61748,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":61792,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61792,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61792,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61793,"o":"\u001b[?25h"}
+{"t":61793,"o":"\u001b[?2026l"}
+{"t":61839,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61839,"o":"\u001b[?25h"}
+{"t":61839,"o":"\u001b[?2026l"}
+{"t":61885,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61885,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61885,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61885,"o":"\u001b[?25h"}
+{"t":61886,"o":"\u001b[?2026l"}
+{"t":61932,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61932,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":61979,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":61979,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":61979,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":61979,"o":"\u001b[?25h"}
+{"t":61980,"o":"\u001b[?2026l"}
+{"t":62024,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62024,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62070,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62070,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":62071,"o":"\u001b[37;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62071,"o":"\u001b[?25h"}
+{"t":62071,"o":"\u001b[?2026l"}
+{"t":62117,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62117,"o":"\u001b[?25h"}
+{"t":62117,"o":"\u001b[?2026l"}
+{"t":62164,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62164,"o":"\u001b[?25h"}
+{"t":62164,"o":"\u001b[?2026l"}
+{"t":62212,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62213,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62213,"o":"\u001b[?25h"}
+{"t":62213,"o":"\u001b[?2026l"}
+{"t":62247,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62247,"o":"\u001b[?25h"}
+{"t":62247,"o":"\u001b[?2026l"}
+{"t":62290,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62291,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62291,"o":"\u001b[?25h"}
+{"t":62291,"o":"\u001b[?2026l"}
+{"t":62337,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62338,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62352,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":62352,"o":"\u001b[37;27H\u001b[0m\u001b[49m\u001b[K\u001b[37;1H\u001b[2m• \u001b[22mReceived: second queued.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62352,"o":"\u001b[?25h"}
+{"t":62352,"o":"\u001b[?2026l"}
+{"t":62414,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62414,"o":"\u001b[?2026h\u001b[36;1H"}
+{"t":62414,"o":"\u001b[J"}
+{"t":62414,"o":"\u001b[36;45r\u001b[36;1H\u001bM\u001bM\u001b[r\u001b[1;37r\u001b[35;1H"}
+{"t":62414,"o":"\r\n"}
+{"t":62414,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62415,"o":"\r\n"}
+{"t":62415,"o":"\u001b[39;49m\u001b[K\u001b[2m• \u001b[22mReceived: second queued.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":62415,"o":"\u001b[38;2H\u001b[0m\u001b[49m\u001b[K\u001b[39;26H\u001b[0m\u001b[49m\u001b[K\u001b[40;17H\u001b[0m\u001b[49m\u001b[K\u001b[41;35H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[38;1H \u001b[39;1H\u001b[2m• \u001b[22mQueued follow-up inputs\u001b[40;1H\u001b[2m  ↳ \u001b[3mthird queued\u001b[41;1H\u001b[23m\u001b[22m    \u001b[1malt+↑\u001b[22m\u001b[2m\u001b[2m edit last queued message\u001b[42;1H\u001b[22m \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[38;1H"}
+{"t":62415,"o":"\u001b[0 q\u001b[38;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62415,"o":"\u001b[?25h"}
+{"t":62416,"o":"\u001b[?2026l"}
+{"t":62445,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62445,"o":"\u001b[?25h"}
+{"t":62446,"o":"\u001b[?2026l"}
+{"t":62454,"o":"\u001b]0;Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62455,"o":"\u001b[?2026h\u001b[38;1H"}
+{"t":62455,"o":"\u001b[J"}
+{"t":62455,"o":"\u001b[38;45r\u001b[38;1H\u001bM\u001bM\u001bM\u001b[r\u001b[1;40r\u001b[37;1H"}
+{"t":62455,"o":"\r\n"}
+{"t":62456,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62456,"o":"\r\n"}
+{"t":62456,"o":"\u001b[39;49m\u001b[K\u001b[2m  10:44 PM\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62456,"o":"\r\n"}
+{"t":62456,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62456,"o":"\r\n"}
+{"t":62456,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62457,"o":"\r\n"}
+{"t":62457,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[2m› \u001b[22m\u001b[22mthird queued\u001b[39m\u001b[49m\u001b[0m"}
+{"t":62457,"o":"\r\n"}
+{"t":62457,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":62458,"o":"\u001b[41;2H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[41;1H \u001b[42;1H \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[41;1H"}
+{"t":62458,"o":"\u001b[0 q\u001b[41;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62458,"o":"\u001b[?25h"}
+{"t":62458,"o":"\u001b[?2026l"}
+{"t":62502,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62502,"o":"\u001b[?25h"}
+{"t":62502,"o":"\u001b[?2026l"}
+{"t":62502,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62502,"o":"\u001b[?25h"}
+{"t":62503,"o":"\u001b[?2026l"}
+{"t":62508,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62523,"o":"\u001b[?2026h\u001b[1;40r\u001b[40;1H"}
+{"t":62523,"o":"\r\n"}
+{"t":62523,"o":"\r\n"}
+{"t":62523,"o":"\u001b[r\u001b[43;3H\u001b[39;1H"}
+{"t":62523,"o":"\u001b[J"}
+{"t":62523,"o":"\u001b[?25l"}
+{"t":62524,"o":"\u001b[39;2H\u001b[0m\u001b[49m\u001b[K\u001b[40;34H\u001b[0m\u001b[49m\u001b[K\u001b[41;2H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[39;1H \u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(0s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[41;1H\u001b[22m \u001b[42;1H \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[39;1H"}
+{"t":62524,"o":"\u001b[0 q\u001b[39;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62524,"o":"\u001b[?25h"}
+{"t":62524,"o":"\u001b[?2026l"}
+{"t":62570,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62570,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62570,"o":"\u001b[?25h"}
+{"t":62570,"o":"\u001b[?2026l"}
+{"t":62604,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62604,"o":"\u001b[?25h"}
+{"t":62604,"o":"\u001b[?2026l"}
+{"t":62648,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62648,"o":"\u001b[?25h"}
+{"t":62648,"o":"\u001b[?2026l"}
+{"t":62682,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62682,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62682,"o":"\u001b[?25h"}
+{"t":62682,"o":"\u001b[?2026l"}
+{"t":62727,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62727,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62760,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62760,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62803,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62804,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62804,"o":"\u001b[?25h"}
+{"t":62804,"o":"\u001b[?2026l"}
+{"t":62851,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62851,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62898,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62898,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62898,"o":"\u001b[?25h"}
+{"t":62898,"o":"\u001b[?2026l"}
+{"t":62940,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62940,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":62975,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":62975,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":62975,"o":"\u001b[?25h"}
+{"t":62975,"o":"\u001b[?2026l"}
+{"t":63008,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63008,"o":"\u001b[?25h"}
+{"t":63008,"o":"\u001b[?2026l"}
+{"t":63044,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63044,"o":"\u001b[?25h"}
+{"t":63044,"o":"\u001b[?2026l"}
+{"t":63082,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63082,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63083,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":63120,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63120,"o":"\u001b[?25h"}
+{"t":63120,"o":"\u001b[?2026l"}
+{"t":63161,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63161,"o":"\u001b[?25h"}
+{"t":63161,"o":"\u001b[?2026l"}
+{"t":63218,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63219,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63219,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63219,"o":"\u001b[?25h"}
+{"t":63219,"o":"\u001b[?2026l"}
+{"t":63254,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63254,"o":"\u001b[?25h"}
+{"t":63254,"o":"\u001b[?2026l"}
+{"t":63301,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63301,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63301,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63301,"o":"\u001b[?25h"}
+{"t":63302,"o":"\u001b[?2026l"}
+{"t":63337,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63338,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":63379,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63380,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":63437,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63437,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63438,"o":"\u001b[?25h"}
+{"t":63438,"o":"\u001b[?2026l"}
+{"t":63473,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63474,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63474,"o":"\u001b[?25h"}
+{"t":63474,"o":"\u001b[?2026l"}
+{"t":63521,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63521,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[40;12H\u001b[22m\u001b[2m\u001b[2m\u001b[39;49m1\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63522,"o":"\u001b[?25h"}
+{"t":63522,"o":"\u001b[?2026l"}
+{"t":63568,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63569,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63569,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":63615,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63615,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63615,"o":"\u001b[?25h"}
+{"t":63615,"o":"\u001b[?2026l"}
+{"t":63661,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63661,"o":"\u001b[?25h"}
+{"t":63662,"o":"\u001b[?2026l"}
+{"t":63707,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63708,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63708,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63708,"o":"\u001b[?25h"}
+{"t":63708,"o":"\u001b[?2026l"}
+{"t":63755,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63755,"o":"\u001b[?25h"}
+{"t":63755,"o":"\u001b[?2026l"}
+{"t":63801,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63801,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63802,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63802,"o":"\u001b[?25h"}
+{"t":63802,"o":"\u001b[?2026l"}
+{"t":63849,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63849,"o":"\u001b[?25h"}
+{"t":63849,"o":"\u001b[?2026l"}
+{"t":63882,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63883,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63883,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63883,"o":"\u001b[?25h"}
+{"t":63883,"o":"\u001b[?2026l"}
+{"t":63929,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63929,"o":"\u001b[?25h"}
+{"t":63929,"o":"\u001b[?2026l"}
+{"t":63975,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":63975,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":63975,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":63975,"o":"\u001b[?25h"}
+{"t":63975,"o":"\u001b[?2026l"}
+{"t":64025,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64025,"o":"\u001b[?25h"}
+{"t":64025,"o":"\u001b[?2026l"}
+{"t":64069,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64069,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":64069,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64069,"o":"\u001b[?25h"}
+{"t":64069,"o":"\u001b[?2026l"}
+{"t":64116,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64116,"o":"\u001b[?25h"}
+{"t":64116,"o":"\u001b[?2026l"}
+{"t":64162,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64163,"o":"\u001b[?25h"}
+{"t":64163,"o":"\u001b[?2026l"}
+{"t":64209,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64209,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64209,"o":"\u001b[?25h"}
+{"t":64209,"o":"\u001b[?2026l"}
+{"t":64256,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64256,"o":"\u001b[?25h"}
+{"t":64256,"o":"\u001b[?2026l"}
+{"t":64302,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64303,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64303,"o":"\u001b[?25h"}
+{"t":64303,"o":"\u001b[?2026l"}
+{"t":64349,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64349,"o":"\u001b[?25h"}
+{"t":64349,"o":"\u001b[?2026l"}
+{"t":64397,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64397,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64397,"o":"\u001b[?25h"}
+{"t":64397,"o":"\u001b[?2026l"}
+{"t":64444,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64444,"o":"\u001b[?25h"}
+{"t":64444,"o":"\u001b[?2026l"}
+{"t":64484,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64491,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64504,"o":"\u001b[?25h"}
+{"t":64504,"o":"\u001b[?2026l"}
+{"t":64527,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":64528,"o":"\u001b[40;12H\u001b[2m2\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":64571,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64571,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64571,"o":"\u001b[?25h"}
+{"t":64571,"o":"\u001b[?2026l"}
+{"t":64619,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64619,"o":"\u001b[?25h"}
+{"t":64619,"o":"\u001b[?2026l"}
+{"t":64665,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64665,"o":"\u001b[?25h"}
+{"t":64665,"o":"\u001b[?2026l"}
+{"t":64719,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64719,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64719,"o":"\u001b[?25h"}
+{"t":64719,"o":"\u001b[?2026l"}
+{"t":64760,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64760,"o":"\u001b[?25h"}
+{"t":64760,"o":"\u001b[?2026l"}
+{"t":64806,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64806,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64806,"o":"\u001b[?25h"}
+{"t":64806,"o":"\u001b[?2026l"}
+{"t":64853,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64853,"o":"\u001b[?25h"}
+{"t":64853,"o":"\u001b[?2026l"}
+{"t":64900,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64900,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64900,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":64947,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64947,"o":"\u001b[?25h"}
+{"t":64947,"o":"\u001b[?2026l"}
+{"t":64992,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":64993,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":64993,"o":"\u001b[?25h"}
+{"t":64993,"o":"\u001b[?2026l"}
+{"t":65040,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65040,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":65086,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":65087,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65087,"o":"\u001b[?25h"}
+{"t":65087,"o":"\u001b[?2026l"}
+{"t":65133,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65133,"o":"\u001b[?25h"}
+{"t":65133,"o":"\u001b[?2026l"}
+{"t":65164,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":65164,"o":"\u001b[40;26H\u001b[0m\u001b[49m\u001b[K\u001b[40;1H\u001b[2m• \u001b[22mReceived: third queued.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65165,"o":"\u001b[?25h"}
+{"t":65165,"o":"\u001b[?2026l"}
+{"t":65273,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":65285,"o":"\u001b[?2026h\u001b[39;1H"}
+{"t":65286,"o":"\u001b[J"}
+{"t":65286,"o":"\u001b[39;45r\u001b[39;1H\u001bM\u001bM\u001b[r\u001b[1;40r\u001b[38;1H"}
+{"t":65286,"o":"\r\n"}
+{"t":65286,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":65286,"o":"\r\n"}
+{"t":65286,"o":"\u001b[39;49m\u001b[K\u001b[2m• \u001b[22mReceived: third queued.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":65287,"o":"\u001b[41;2H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[41;1H \u001b[42;1H \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[41;1H"}
+{"t":65287,"o":"\u001b[0 q\u001b[41;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65287,"o":"\u001b[?25h"}
+{"t":65287,"o":"\u001b[?2026l"}
+{"t":65334,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65334,"o":"\u001b[?25h"}
+{"t":65334,"o":"\u001b[?2026l"}
+{"t":65345,"o":"\u001b]0;Write three paragraphs about rivers | agent-box\u0007"}
+{"t":65353,"o":"\u001b[?2026h\u001b[1;40r\u001b[40;1H"}
+{"t":65353,"o":"\r\n"}
+{"t":65353,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":65353,"o":"\r\n"}
+{"t":65354,"o":"\u001b[39;49m\u001b[K\u001b[2m  10:44 PM\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":65354,"o":"\u001b[?25h"}
+{"t":65354,"o":"\u001b[?2026l"}
+{"t":69428,"mark":"replied","screen":["  • paddle-live: authentication required (0 tools)","  • paddle-sandbox: failed (0 tools)","  • playwright: connected (25 tools)","","  Use /mcp verbose for tools and resources.","","• Rivers carry water from hills and mountains toward lakes and seas. Along the way, they carve valleys, move sediment,","  and shape the land.","","  River habitats support fish, birds, insects, and plants. Their flowing waters connect ecosystems and bring nutrients","  to surrounding soil.","","  People rely on rivers for drinking water, farming, transport, and recreation. Keeping them clean helps both","  communities and wildlife thrive.","","  10:44 PM","","","› first queued","","","• Received: first queued.","","  10:44 PM","","","› second queued","","","• Received: second queued.","","  10:44 PM","","","› third queued","","","• Received: third queued.","","  10:44 PM"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box · Write three paragraphs about rivers                     ⚠ 6 warnings · f2 to view"],"cursor":[2,42]}
+{"t":69429,"i":"R"}
+{"t":69460,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69460,"o":"\u001b[43;4H\u001b[0m\u001b[49m\u001b[K\u001b[43;3HR\u001b[39m\u001b[49m\u001b[0m\u001b[43;4H"}
+{"t":69460,"o":"\u001b[?25h"}
+{"t":69460,"o":"\u001b[?2026l"}
+{"t":69475,"i":"u"}
+{"t":69509,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69509,"o":"\u001b[43;4Hu\u001b[39m\u001b[49m\u001b[0m\u001b[43;5H"}
+{"t":69509,"o":"\u001b[?25h"}
+{"t":69509,"o":"\u001b[?2026l"}
+{"t":69523,"i":"n"}
+{"t":69556,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69556,"o":"\u001b[43;5Hn\u001b[39m\u001b[49m\u001b[0m\u001b[43;6H\u001b[?25h\u001b[?2026l"}
+{"t":69571,"i":" "}
+{"t":69601,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;7H"}
+{"t":69601,"o":"\u001b[?25h"}
+{"t":69601,"o":"\u001b[?2026l"}
+{"t":69617,"i":"t"}
+{"t":69648,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69648,"o":"\u001b[43;7Ht\u001b[39m\u001b[49m\u001b[0m\u001b[43;8H"}
+{"t":69648,"o":"\u001b[?25h"}
+{"t":69649,"o":"\u001b[?2026l"}
+{"t":69664,"i":"h"}
+{"t":69696,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69696,"o":"\u001b[43;8Hh\u001b[39m\u001b[49m\u001b[0m\u001b[43;9H\u001b[?25h"}
+{"t":69696,"o":"\u001b[?2026l"}
+{"t":69710,"i":"e"}
+{"t":69741,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69741,"o":"\u001b[43;9He\u001b[39m\u001b[49m\u001b[0m\u001b[43;10H"}
+{"t":69742,"o":"\u001b[?25h"}
+{"t":69742,"o":"\u001b[?2026l"}
+{"t":69757,"i":" "}
+{"t":69788,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;11H"}
+{"t":69788,"o":"\u001b[?25h"}
+{"t":69788,"o":"\u001b[?2026l"}
+{"t":69803,"i":"P"}
+{"t":69835,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69836,"o":"\u001b[43;11HP\u001b[39m\u001b[49m\u001b[0m\u001b[43;12H"}
+{"t":69836,"o":"\u001b[?25h"}
+{"t":69836,"o":"\u001b[?2026l"}
+{"t":69850,"i":"o"}
+{"t":69882,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69882,"o":"\u001b[43;12Ho\u001b[39m\u001b[49m\u001b[0m\u001b[43;13H"}
+{"t":69882,"o":"\u001b[?25h"}
+{"t":69882,"o":"\u001b[?2026l"}
+{"t":69897,"i":"w"}
+{"t":69929,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69929,"o":"\u001b[43;13Hw\u001b[39m\u001b[49m\u001b[0m\u001b[43;14H"}
+{"t":69929,"o":"\u001b[?25h"}
+{"t":69929,"o":"\u001b[?2026l"}
+{"t":69943,"i":"e"}
+{"t":69974,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":69975,"o":"\u001b[43;14He\u001b[39m\u001b[49m\u001b[0m\u001b[43;15H"}
+{"t":69975,"o":"\u001b[?25h"}
+{"t":69975,"o":"\u001b[?2026l"}
+{"t":69989,"i":"r"}
+{"t":70024,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70024,"o":"\u001b[43;15Hr\u001b[39m\u001b[49m\u001b[0m\u001b[43;16H"}
+{"t":70024,"o":"\u001b[?25h"}
+{"t":70026,"o":"\u001b[?2026l"}
+{"t":70026,"i":"S"}
+{"t":70052,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70052,"o":"\u001b[43;16HS\u001b[39m\u001b[49m\u001b[0m\u001b[43;17H"}
+{"t":70052,"o":"\u001b[?25h"}
+{"t":70053,"o":"\u001b[?2026l"}
+{"t":70067,"i":"h"}
+{"t":70100,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70100,"o":"\u001b[43;17Hh\u001b[39m\u001b[49m\u001b[0m\u001b[43;18H"}
+{"t":70100,"o":"\u001b[?25h"}
+{"t":70100,"o":"\u001b[?2026l"}
+{"t":70114,"i":"e"}
+{"t":70146,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70147,"o":"\u001b[43;18He\u001b[39m\u001b[49m\u001b[0m\u001b[43;19H"}
+{"t":70147,"o":"\u001b[?25h"}
+{"t":70147,"o":"\u001b[?2026l"}
+{"t":70161,"i":"l"}
+{"t":70193,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70193,"o":"\u001b[43;19Hl\u001b[39m\u001b[49m\u001b[0m\u001b[43;20H"}
+{"t":70193,"o":"\u001b[?25h"}
+{"t":70193,"o":"\u001b[?2026l"}
+{"t":70208,"i":"l"}
+{"t":70240,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70240,"o":"\u001b[43;20Hl\u001b[39m\u001b[49m\u001b[0m\u001b[43;21H"}
+{"t":70240,"o":"\u001b[?25h"}
+{"t":70240,"o":"\u001b[?2026l"}
+{"t":70255,"i":" "}
+{"t":70292,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;22H"}
+{"t":70292,"i":"c"}
+{"t":70293,"o":"\u001b[?25h"}
+{"t":70293,"o":"\u001b[?2026l"}
+{"t":70318,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70318,"o":"\u001b[43;22Hc\u001b[39m\u001b[49m\u001b[0m\u001b[43;23H"}
+{"t":70318,"o":"\u001b[?25h"}
+{"t":70318,"o":"\u001b[?2026l"}
+{"t":70333,"i":"o"}
+{"t":70364,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70364,"o":"\u001b[43;23Ho\u001b[39m\u001b[49m\u001b[0m\u001b[43;24H"}
+{"t":70364,"o":"\u001b[?25h"}
+{"t":70364,"o":"\u001b[?2026l"}
+{"t":70379,"i":"m"}
+{"t":70411,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70411,"o":"\u001b[43;24Hm\u001b[39m\u001b[49m\u001b[0m\u001b[43;25H"}
+{"t":70411,"o":"\u001b[?25h"}
+{"t":70412,"o":"\u001b[?2026l"}
+{"t":70426,"i":"m"}
+{"t":70458,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70458,"o":"\u001b[43;25Hm\u001b[39m\u001b[49m\u001b[0m\u001b[43;26H"}
+{"t":70458,"o":"\u001b[?25h"}
+{"t":70458,"o":"\u001b[?2026l"}
+{"t":70472,"i":"a"}
+{"t":70505,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70505,"o":"\u001b[43;26Ha\u001b[39m\u001b[49m\u001b[0m\u001b[43;27H\u001b[?25h\u001b[?2026l"}
+{"t":70519,"i":"n"}
+{"t":70552,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70552,"o":"\u001b[43;27Hn\u001b[39m\u001b[49m\u001b[0m\u001b[43;28H"}
+{"t":70552,"o":"\u001b[?25h"}
+{"t":70552,"o":"\u001b[?2026l"}
+{"t":70566,"i":"d"}
+{"t":70598,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70598,"o":"\u001b[43;28Hd\u001b[39m\u001b[49m\u001b[0m\u001b[43;29H\u001b[?25h"}
+{"t":70599,"o":"\u001b[?2026l"}
+{"t":70613,"i":":"}
+{"t":70644,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70644,"o":"\u001b[43;29H:\u001b[39m\u001b[49m\u001b[0m\u001b[43;30H\u001b[?25h"}
+{"t":70645,"o":"\u001b[?2026l"}
+{"t":70659,"i":" "}
+{"t":70691,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;31H"}
+{"t":70691,"o":"\u001b[?25h"}
+{"t":70691,"o":"\u001b[?2026l"}
+{"t":70705,"i":"N"}
+{"t":70737,"o":"\u001b[?2026h\u001b[?25l\u001b[43;31HN\u001b[39m\u001b[49m\u001b[0m\u001b[43;32H\u001b[?25h\u001b[?2026l"}
+{"t":70751,"i":"e"}
+{"t":70799,"i":"w"}
+{"t":70799,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70799,"o":"\u001b[43;32He\u001b[39m\u001b[49m\u001b[0m\u001b[43;33H"}
+{"t":70800,"o":"\u001b[?25h"}
+{"t":70800,"o":"\u001b[?2026l"}
+{"t":70831,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70831,"o":"\u001b[43;33Hw\u001b[39m\u001b[49m\u001b[0m\u001b[43;34H"}
+{"t":70831,"o":"\u001b[?25h"}
+{"t":70831,"o":"\u001b[?2026l"}
+{"t":70846,"i":"-"}
+{"t":70879,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70880,"o":"\u001b[43;34H-\u001b[39m\u001b[49m\u001b[0m\u001b[43;35H"}
+{"t":70880,"o":"\u001b[?25h"}
+{"t":70880,"o":"\u001b[?2026l"}
+{"t":70894,"i":"I"}
+{"t":70925,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70925,"o":"\u001b[43;35HI\u001b[39m\u001b[49m\u001b[0m\u001b[43;36H"}
+{"t":70925,"o":"\u001b[?25h"}
+{"t":70925,"o":"\u001b[?2026l"}
+{"t":70940,"i":"t"}
+{"t":70972,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":70972,"o":"\u001b[43;36Ht\u001b[39m\u001b[49m\u001b[0m\u001b[43;37H"}
+{"t":70972,"o":"\u001b[?25h"}
+{"t":70972,"o":"\u001b[?2026l"}
+{"t":70987,"i":"e"}
+{"t":71020,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71020,"o":"\u001b[43;37He\u001b[39m\u001b[49m\u001b[0m\u001b[43;38H"}
+{"t":71020,"o":"\u001b[?25h"}
+{"t":71020,"o":"\u001b[?2026l"}
+{"t":71034,"i":"m"}
+{"t":71067,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71068,"o":"\u001b[43;38Hm\u001b[39m\u001b[49m\u001b[0m\u001b[43;39H"}
+{"t":71068,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":71081,"i":" "}
+{"t":71112,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;40H"}
+{"t":71113,"o":"\u001b[?25h"}
+{"t":71113,"o":"\u001b[?2026l"}
+{"t":71128,"i":"p"}
+{"t":71160,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71160,"o":"\u001b[43;40Hp\u001b[39m\u001b[49m\u001b[0m\u001b[43;41H\u001b[?25h"}
+{"t":71160,"o":"\u001b[?2026l"}
+{"t":71174,"i":"r"}
+{"t":71206,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71206,"o":"\u001b[43;41Hr\u001b[39m\u001b[49m\u001b[0m\u001b[43;42H"}
+{"t":71206,"o":"\u001b[?25h"}
+{"t":71206,"o":"\u001b[?2026l"}
+{"t":71220,"i":"o"}
+{"t":71252,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71252,"o":"\u001b[43;42Ho\u001b[39m\u001b[49m\u001b[0m\u001b[43;43H\u001b[?25h"}
+{"t":71252,"o":"\u001b[?2026l"}
+{"t":71267,"i":"b"}
+{"t":71314,"i":"e"}
+{"t":71320,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71324,"o":"\u001b[43;43Hb\u001b[39m\u001b[49m\u001b[0m\u001b[43;44H"}
+{"t":71324,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":71360,"i":"-"}
+{"t":71361,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71361,"o":"\u001b[43;44He\u001b[39m\u001b[49m\u001b[0m\u001b[43;45H"}
+{"t":71362,"o":"\u001b[?25h"}
+{"t":71362,"o":"\u001b[?2026l"}
+{"t":71393,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71393,"o":"\u001b[43;45H-\u001b[39m\u001b[49m\u001b[0m\u001b[43;46H"}
+{"t":71393,"o":"\u001b[?25h"}
+{"t":71393,"o":"\u001b[?2026l"}
+{"t":71408,"i":"s"}
+{"t":71439,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71439,"o":"\u001b[43;46Hs\u001b[39m\u001b[49m\u001b[0m\u001b[43;47H\u001b[?25h\u001b[?2026l"}
+{"t":71455,"i":"e"}
+{"t":71501,"i":"."}
+{"t":71503,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71503,"o":"\u001b[43;47He\u001b[39m\u001b[49m\u001b[0m\u001b[43;48H\u001b[?25h"}
+{"t":71503,"o":"\u001b[?2026l"}
+{"t":71533,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71533,"o":"\u001b[43;48H.\u001b[39m\u001b[49m\u001b[0m\u001b[43;49H"}
+{"t":71533,"o":"\u001b[?25h"}
+{"t":71533,"o":"\u001b[?2026l"}
+{"t":71548,"i":"t"}
+{"t":71580,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71580,"o":"\u001b[43;49Ht\u001b[39m\u001b[49m\u001b[0m\u001b[43;50H"}
+{"t":71580,"o":"\u001b[?25h"}
+{"t":71580,"o":"\u001b[?2026l"}
+{"t":71594,"i":"x"}
+{"t":71627,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71627,"o":"\u001b[43;50Hx\u001b[39m\u001b[49m\u001b[0m\u001b[43;51H"}
+{"t":71627,"o":"\u001b[?25h"}
+{"t":71627,"o":"\u001b[?2026l"}
+{"t":71642,"i":"t"}
+{"t":71688,"i":"\r"}
+{"t":71689,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71689,"o":"\u001b[43;51Ht\u001b[39m\u001b[49m\u001b[0m\u001b[43;52H\u001b[?25h\u001b[?2026l"}
+{"t":71691,"o":"\u001b[?2026h\u001b[1;40r\u001b[40;1H"}
+{"t":71691,"o":"\r\n"}
+{"t":71691,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":71691,"o":"\r\n"}
+{"t":71691,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":71691,"o":"\r\n"}
+{"t":71692,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[2m› \u001b[22m\u001b[22mRun the PowerShell command: New-Item probe-se.txt\u001b[39m\u001b[49m\u001b[0m"}
+{"t":71692,"o":"\r\n"}
+{"t":71692,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;52H\u001b[?25l"}
+{"t":71692,"o":"\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[43;3H\u001b[2mAsk Codex to do anything\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71692,"o":"\u001b[?25h"}
+{"t":71692,"o":"\u001b[?2026l"}
+{"t":71738,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71738,"o":"\u001b[?25h"}
+{"t":71738,"o":"\u001b[?2026l"}
+{"t":71744,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":71755,"o":"\u001b[?2026h\u001b[1;40r\u001b[40;1H"}
+{"t":71756,"o":"\r\n\r\n"}
+{"t":71756,"o":"\u001b[r\u001b[43;3H\u001b[39;1H"}
+{"t":71756,"o":"\u001b[J"}
+{"t":71756,"o":"\u001b[?25l"}
+{"t":71756,"o":"\u001b[39;2H\u001b[0m\u001b[49m\u001b[K\u001b[40;34H\u001b[0m\u001b[49m\u001b[K\u001b[41;2H\u001b[0m\u001b[49m\u001b[K\u001b[42;2H\u001b[0m\u001b[49m\u001b[K\u001b[43;27H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[45;120H\u001b[0m\u001b[49m\u001b[K\u001b[39;1H \u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(0s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[41;1H\u001b[22m \u001b[42;1H \u001b[43;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[44;1H\u001b[22m \u001b[45;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[39;1H"}
+{"t":71756,"o":"\u001b[0 q\u001b[39;1H \u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71756,"o":"\u001b[?25h"}
+{"t":71757,"o":"\u001b[?2026l"}
+{"t":71798,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":71799,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71799,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":71845,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71846,"o":"\u001b[?25h"}
+{"t":71846,"o":"\u001b[?2026l"}
+{"t":71892,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":71893,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71893,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71893,"o":"\u001b[?25h"}
+{"t":71893,"o":"\u001b[?2026l"}
+{"t":71926,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":71926,"o":"\u001b[?25h"}
+{"t":71926,"o":"\u001b[?2026l"}
+{"t":71971,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":71972,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":71972,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":71972,"o":"\u001b[?2026l"}
+{"t":72019,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72019,"o":"\u001b[?25h"}
+{"t":72019,"o":"\u001b[?2026l"}
+{"t":72065,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":72065,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72066,"o":"\u001b[?25h"}
+{"t":72066,"o":"\u001b[?2026l"}
+{"t":72112,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72112,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72113,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72159,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72159,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72206,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72207,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72207,"o":"\u001b[?25h"}
+{"t":72207,"o":"\u001b[?2026l"}
+{"t":72250,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72250,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72285,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72285,"o":"\u001b[?25h"}
+{"t":72285,"o":"\u001b[?2026l"}
+{"t":72331,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72331,"o":"\u001b[?25h"}
+{"t":72331,"o":"\u001b[?2026l"}
+{"t":72384,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72388,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72388,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72424,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72424,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72470,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72471,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72471,"o":"\u001b[?25h"}
+{"t":72471,"o":"\u001b[?2026l"}
+{"t":72517,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72517,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72551,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72551,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72595,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72595,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72596,"o":"\u001b[?25h"}
+{"t":72596,"o":"\u001b[?2026l"}
+{"t":72642,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72643,"o":"\u001b[?25h"}
+{"t":72643,"o":"\u001b[?2026l"}
+{"t":72688,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72689,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72689,"o":"\u001b[?25h"}
+{"t":72689,"o":"\u001b[?2026l"}
+{"t":72736,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72736,"o":"\u001b[?25h"}
+{"t":72736,"o":"\u001b[?2026l"}
+{"t":72783,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72783,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":72784,"o":"\u001b[40;12H\u001b[2m1\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72784,"o":"\u001b[?25h"}
+{"t":72784,"o":"\u001b[?2026l"}
+{"t":72829,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72830,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72875,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72876,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72876,"o":"\u001b[?25h"}
+{"t":72876,"o":"\u001b[?2026l"}
+{"t":72922,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72922,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":72969,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":72970,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":72970,"o":"\u001b[?25h"}
+{"t":72970,"o":"\u001b[?2026l"}
+{"t":73016,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73016,"o":"\u001b[?25h"}
+{"t":73016,"o":"\u001b[?2026l"}
+{"t":73063,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":73110,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73110,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73110,"o":"\u001b[?25h"}
+{"t":73110,"o":"\u001b[?2026l"}
+{"t":73156,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73157,"o":"\u001b[?25h"}
+{"t":73157,"o":"\u001b[?2026l"}
+{"t":73203,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73203,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73203,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73204,"o":"\u001b[?25h"}
+{"t":73204,"o":"\u001b[?2026l"}
+{"t":73250,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73250,"o":"\u001b[?25h"}
+{"t":73251,"o":"\u001b[?2026l"}
+{"t":73296,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73297,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73297,"o":"\u001b[?25h"}
+{"t":73297,"o":"\u001b[?2026l"}
+{"t":73344,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73344,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73344,"o":"\u001b[?25h"}
+{"t":73344,"o":"\u001b[?2026l"}
+{"t":73391,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73392,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73392,"o":"\u001b[?25h"}
+{"t":73392,"o":"\u001b[?2026l"}
+{"t":73439,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73439,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73439,"o":"\u001b[?25h"}
+{"t":73439,"o":"\u001b[?2026l"}
+{"t":73487,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73487,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73487,"o":"\u001b[?25h"}
+{"t":73487,"o":"\u001b[?2026l"}
+{"t":73533,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73533,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73533,"o":"\u001b[?25h"}
+{"t":73533,"o":"\u001b[?2026l"}
+{"t":73579,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73579,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73579,"o":"\u001b[?25h"}
+{"t":73579,"o":"\u001b[?2026l"}
+{"t":73630,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73630,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":73674,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73674,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73674,"o":"\u001b[?25h"}
+{"t":73675,"o":"\u001b[?2026l"}
+{"t":73721,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73721,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":73768,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73769,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73769,"o":"\u001b[40;12H\u001b[2m2\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73769,"o":"\u001b[?25h"}
+{"t":73769,"o":"\u001b[?2026l"}
+{"t":73815,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73816,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73816,"o":"\u001b[?25h"}
+{"t":73816,"o":"\u001b[?2026l"}
+{"t":73865,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73865,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":73911,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":73912,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":73912,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":73912,"o":"\u001b[?2026l"}
+{"t":73959,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":73959,"o":"\u001b[?25h"}
+{"t":73959,"o":"\u001b[?2026l"}
+{"t":74004,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74004,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74004,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74004,"o":"\u001b[?25h"}
+{"t":74004,"o":"\u001b[?2026l"}
+{"t":74050,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74050,"o":"\u001b[?25h"}
+{"t":74050,"o":"\u001b[?2026l"}
+{"t":74096,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74096,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74097,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74097,"o":"\u001b[?25h"}
+{"t":74097,"o":"\u001b[?2026l"}
+{"t":74135,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74135,"o":"\u001b[?25h"}
+{"t":74135,"o":"\u001b[?2026l"}
+{"t":74175,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74175,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74175,"o":"\u001b[?25h"}
+{"t":74175,"o":"\u001b[?2026l"}
+{"t":74223,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74223,"o":"\u001b[?25h"}
+{"t":74223,"o":"\u001b[?2026l"}
+{"t":74271,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74271,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74271,"o":"\u001b[?25h"}
+{"t":74271,"o":"\u001b[?2026l"}
+{"t":74318,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74318,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":74365,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74365,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":74410,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74411,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74411,"o":"\u001b[?25h"}
+{"t":74411,"o":"\u001b[?2026l"}
+{"t":74444,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74444,"o":"\u001b[40;21H\u001b[0m\u001b[49m\u001b[K\u001b[40;1H\u001b[2m• \u001b[22mI’ll run the Power\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":74444,"o":"\u001b[?2026l"}
+{"t":74553,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74631,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74631,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74631,"o":"\u001b[40;21HShell\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74632,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":74641,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74641,"o":"\u001b[40;27Hcommand\u001b[40;35Hto\u001b[40;38Hcreate\u001b[40;45H\u001b[38;2;166;227;161;49mprobe-se.txt\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74641,"o":"\u001b[?25h"}
+{"t":74641,"o":"\u001b[?2026l"}
+{"t":74659,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":74659,"o":"\u001b[40;58Hin\u001b[40;61Hthe\u001b[40;65Hcurrent\u001b[40;73Hfolder.\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74659,"o":"\u001b[?25h"}
+{"t":74659,"o":"\u001b[?2026l"}
+{"t":74768,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74879,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74971,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":74971,"o":"\u001b[?2026h\u001b[1;38r\u001b[38;1H"}
+{"t":74971,"o":"\r\n"}
+{"t":74972,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":74972,"o":"\r\n"}
+{"t":74972,"o":"\u001b[39;49m\u001b[K\u001b[2m• \u001b[22mI’ll run the PowerShell command to create \u001b[38;2;166;227;161;49mprobe-se.txt\u001b[39;49m in the current folder.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[43;3H\u001b[?25l"}
+{"t":74972,"o":"\u001b[40;34H\u001b[0m\u001b[49m\u001b[K\u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(3s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":74972,"o":"\u001b[?25h"}
+{"t":74972,"o":"\u001b[?2026l"}
+{"t":75018,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75018,"o":"\u001b[?25h"}
+{"t":75018,"o":"\u001b[?2026l"}
+{"t":75064,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75064,"o":"\u001b[?25h"}
+{"t":75064,"o":"\u001b[?2026l"}
+{"t":75110,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75110,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75110,"o":"\u001b[?25h"}
+{"t":75111,"o":"\u001b[?2026l"}
+{"t":75157,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75157,"o":"\u001b[?25h"}
+{"t":75157,"o":"\u001b[?2026l"}
+{"t":75205,"o":"\u001b]0;⠋ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75206,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75206,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75206,"o":"\u001b[?25h"}
+{"t":75206,"o":"\u001b[?2026l"}
+{"t":75252,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75252,"o":"\u001b[?25h"}
+{"t":75252,"o":"\u001b[?2026l"}
+{"t":75298,"o":"\u001b]0;⠙ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75299,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75299,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75299,"o":"\u001b[?25h"}
+{"t":75299,"o":"\u001b[?2026l"}
+{"t":75344,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75344,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":75390,"o":"\u001b]0;⠹ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75391,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75391,"o":"\u001b[?25h"}
+{"t":75391,"o":"\u001b[?2026l"}
+{"t":75438,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75438,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h"}
+{"t":75438,"o":"\u001b[?2026l"}
+{"t":75485,"o":"\u001b]0;⠸ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75485,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75485,"o":"\u001b[?25h"}
+{"t":75485,"o":"\u001b[?2026l"}
+{"t":75531,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75531,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":75584,"o":"\u001b]0;⠼ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75584,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75584,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;242;242;242;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75584,"o":"\u001b[?25h"}
+{"t":75584,"o":"\u001b[?2026l"}
+{"t":75626,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75626,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":75672,"o":"\u001b]0;⠴ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75672,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75673,"o":"\u001b[?25h"}
+{"t":75673,"o":"\u001b[?2026l"}
+{"t":75718,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75718,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;231;231;231;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75718,"o":"\u001b[?25h"}
+{"t":75719,"o":"\u001b[?2026l"}
+{"t":75764,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75764,"o":"\u001b[40;12H\u001b[2m4\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75764,"o":"\u001b[?25h"}
+{"t":75764,"o":"\u001b[?2026l"}
+{"t":75803,"o":"\u001b]0;⠦ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75803,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75804,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;202;202;202;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75804,"o":"\u001b[?25h"}
+{"t":75804,"o":"\u001b[?2026l"}
+{"t":75847,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75847,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":75886,"o":"\u001b]0;⠧ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":75887,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":75887,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;167;167;167;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75887,"o":"\u001b[?25h"}
+{"t":75887,"o":"\u001b[?2026l"}
+{"t":75923,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":75958,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":75958,"o":"\u001b[?25h"}
+{"t":75958,"o":"\u001b[?2026l"}
+{"t":75999,"o":"\u001b]0;⠇ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":76000,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":76000,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;138;138;138;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":76000,"o":"\u001b[?25h"}
+{"t":76000,"o":"\u001b[?2026l"}
+{"t":76050,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H\u001b[?25h\u001b[?2026l"}
+{"t":76093,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":76094,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":76094,"o":"\u001b[40;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":76094,"o":"\u001b[?25h"}
+{"t":76094,"o":"\u001b[?2026l"}
+{"t":76141,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[43;3H"}
+{"t":76141,"o":"\u001b[?25h"}
+{"t":76141,"o":"\u001b[?2026l"}
+{"t":76206,"o":"\u001b]0;[ . ] Action Required | Write three paragraphs about rivers | agent-box\u0007"}
+{"t":76208,"o":"\u001b[?2026h\u001b[1;38r\u001b[38;1H"}
+{"t":76208,"o":"\r\n"}
+{"t":76208,"o":"\r\n"}
+{"t":76208,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76209,"o":"\r\n"}
+{"t":76210,"o":"\r\n"}
+{"t":76210,"o":"\u001b[r\u001b[43;3H\u001b[28;1H"}
+{"t":76210,"o":"\u001b[J"}
+{"t":76212,"o":"\u001b[?25l"}
+{"t":76212,"o":"\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[29;32H\u001b[0m\u001b[49m\u001b[K\u001b[30;2H\u001b[0m\u001b[49m\u001b[K\u001b[31;2H\u001b[0m\u001b[49m\u001b[K\u001b[32;47H\u001b[0m\u001b[49m\u001b[K\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;21H\u001b[0m\u001b[49m\u001b[K\u001b[35;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;102H\u001b[0m\u001b[49m\u001b[K\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;26H\u001b[0m\u001b[49m\u001b[K\u001b[39;2H\u001b[0m\u001b[49m\u001b[K\u001b[40;2H\u001b[0m\u001b[49m\u001b[K\u001b[42;87H\u001b[0m\u001b[49m\u001b[K\u001b[43;53H\u001b[0m\u001b[49m\u001b[K\u001b[44;2H\u001b[0m\u001b[49m\u001b[K\u001b[28;1H \u001b[29;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[1mRunning\u001b[22m \u001b[38;2;137;180;250;49mNew-Item\u001b[38;2;205;214;244;49m probe-se.txt\u001b[30;1H\u001b[39;49m \u001b[31;1H \u001b[32;1H  \u001b[1mWould you like to run the following command?\u001b[33;1H\u001b[22m \u001b[34;1H  Environment: \u001b[1mlocal\u001b[35;1H\u001b[22m \u001b[36;1H  Reason: \u001b[3mMay I create probe-se.txt in the current folder? The filesystem is configured as read-only.\u001b[37;1H\u001b[23m \u001b[38;1H  $ \u001b[38;2;137;180;250;49mNew-Item\u001b[38;2;205;214;244;49m probe-se.txt\u001b[39;1H\u001b[39;49m \u001b[40;1H \u001b[41;1H\u001b[7m\u001b[1m› 1. Yes, proceed (y)                                                                                                   \u001b[42;1H\u001b[27m\u001b[22m  2. Yes, and don't ask again for commands that start w"}
+{"t":76212,"o":"ith `New-Item probe-se.txt` (\u001b[1mp\u001b[22m)\u001b[43;1H  3. No, and tell Codex what to do differently (\u001b[1mesc\u001b[22m)\u001b[44;1H \u001b[45;1H  \u001b[2mPress \u001b[22m\u001b[1menter\u001b[22m\u001b[2m\u001b[2m to confirm or \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to cancel                                                                               \u001b[39m\u001b[49m\u001b[0m"}
+{"t":76212,"o":"\u001b[?2026l"}
+{"t":76219,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m"}
+{"t":76219,"o":"\u001b[?2026l"}
+{"t":77062,"mark":"permission","screen":["","","• Received: first queued.","","  10:44 PM","","","› second queued","","","• Received: second queued.","","  10:44 PM","","","› third queued","","","• Received: third queued.","","  10:44 PM","","","› Run the PowerShell command: New-Item probe-se.txt","","","• I’ll run the PowerShell command to create probe-se.txt in the current folder."," ","• Running New-Item probe-se.txt"," "," ","  Would you like to run the following command?"," ","  Environment: local"," ","  Reason: May I create probe-se.txt in the current folder? The filesystem is configured as read-only."," ","  $ New-Item probe-se.txt"," "," ","› 1. Yes, proceed (y)                                                                                                   ","  2. Yes, and don't ask again for commands that start with `New-Item probe-se.txt` (p)","  3. No, and tell Codex what to do differently (esc)"," ","  Press enter to confirm or esc to cancel                                                                               "],"cursor":[120,44]}
+{"t":77062,"i":"\u001b"}
+{"t":77067,"o":"\u001b]0;⠏ Write three paragraphs about rivers | agent-box\u0007"}
+{"t":77068,"o":"\u001b[?2026h\u001b[28;1H"}
+{"t":77068,"o":"\u001b[J"}
+{"t":77068,"o":"\u001b[28;45r\u001b[28;1H\u001bM\u001bM\u001b[r\u001b[1;29r\u001b[27;1H"}
+{"t":77068,"o":"\r\n"}
+{"t":77068,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":77068,"o":"\r\n"}
+{"t":77069,"o":"\u001b[39;49m\u001b[K\u001b[38;5;1;49m✗ \u001b[39;49mYou \u001b[1mcanceled\u001b[22m the request to run \u001b[2mNew-Item probe-se.txt\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[45;120H\u001b[?25l"}
+{"t":77069,"o":"\u001b[30;2H\u001b[0m\u001b[49m\u001b[K\u001b[31;32H\u001b[0m\u001b[49m\u001b[K\u001b[32;2H\u001b[0m\u001b[49m\u001b[K\u001b[33;34H\u001b[0m\u001b[49m\u001b[K\u001b[34;2H\u001b[0m\u001b[49m\u001b[K\u001b[35;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;27H\u001b[0m\u001b[49m\u001b[K\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;120H\u001b[0m\u001b[49m\u001b[K\u001b[30;1H \u001b[31;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[1mRunning\u001b[22m \u001b[38;2;137;180;250;49mNew-Item\u001b[38;2;205;214;244;49m probe-se.txt\u001b[32;1H\u001b[39;49m \u001b[33;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(4s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[34;1H\u001b[22m \u001b[35;1H \u001b[36;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[37;1H\u001b[22m \u001b[38;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[30;1H"}
+{"t":77070,"o":"\u001b[0 q\u001b[30;1H \u001b[39m\u001b[49m\u001b[0m\u001b[36;3H"}
+{"t":77070,"o":"\u001b[?25h"}
+{"t":77070,"o":"\u001b[?2026l"}
+{"t":77077,"o":"\u001b[?2026h\u001b[30;1H"}
+{"t":77077,"o":"\u001b[J"}
+{"t":77077,"o":"\u001b[30;45r\u001b[30;1H\u001bM\u001bM\u001bM\u001b[r\u001b[1;32r\u001b[29;1H"}
+{"t":77077,"o":"\r\n"}
+{"t":77077,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":77078,"o":"\r\n"}
+{"t":77078,"o":"\u001b[39;49m\u001b[K\u001b[1m\u001b[38;5;1;49m•\u001b[22m\u001b[39;49m \u001b[1mRan\u001b[22m \u001b[38;2;137;180;250;49mNew-Item\u001b[38;2;205;214;244;49m probe-se.txt\u001b[39m\u001b[49m\u001b[0m"}
+{"t":77078,"o":"\r\n"}
+{"t":77079,"o":"\u001b[39;49m\u001b[K\u001b[2m  └ (no output)\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[36;3H\u001b[?25l"}
+{"t":77079,"o":"\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;34H\u001b[0m\u001b[49m\u001b[K\u001b[35;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;27H\u001b[0m\u001b[49m\u001b[K\u001b[38;2H\u001b[0m\u001b[49m\u001b[K\u001b[39;120H\u001b[0m\u001b[49m\u001b[K\u001b[33;1H \u001b[34;1H\u001b[1m\u001b[38;2;128;128;128;49m•\u001b[22m\u001b[39;49m \u001b[2mWorking\u001b[22m \u001b[2m(4s • \u001b[22m\u001b[1mesc\u001b[22m\u001b[2m\u001b[2m to interrupt)\u001b[35;1H\u001b[22m \u001b[36;1H \u001b[37;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[38;1H\u001b[22m \u001b[39;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[33;1H"}
+{"t":77079,"o":"\u001b[0 q\u001b[33;1H \u001b[39m\u001b[49m\u001b[0m\u001b[37;3H"}
+{"t":77079,"o":"\u001b[?25h"}
+{"t":77079,"o":"\u001b[?2026l"}
+{"t":77093,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[37;3H"}
+{"t":77093,"o":"\u001b[?25h"}
+{"t":77093,"o":"\u001b[?2026l"}
+{"t":77111,"o":"\u001b]0;Write three paragraphs about rivers | agent-box\u0007"}
+{"t":77112,"o":"\u001b[?2026h\u001b[33;1H"}
+{"t":77112,"o":"\u001b[J"}
+{"t":77112,"o":"\u001b[?25l"}
+{"t":77113,"o":"\u001b[33;2H\u001b[0m\u001b[49m\u001b[K\u001b[34;2H\u001b[0m\u001b[49m\u001b[K\u001b[35;27H\u001b[0m\u001b[49m\u001b[K\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;120H\u001b[0m\u001b[49m\u001b[K\u001b[33;1H \u001b[34;1H \u001b[35;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[36;1H\u001b[22m \u001b[37;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m · \u001b[38;2;137;220;235;49mWrite three paragraphs about rivers\u001b[39;49m                     ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[33;1H"}
+{"t":77113,"o":"\u001b[0 q\u001b[33;1H \u001b[39m\u001b[49m\u001b[0m\u001b[35;3H"}
+{"t":77113,"o":"\u001b[?25h"}
+{"t":77113,"o":"\u001b[?2026l"}
+{"t":77123,"o":"\u001b[?2026h\u001b[33;45r\u001b[33;1H\u001bM\u001bM\u001bM\u001b[r\u001b[1;35r\u001b[32;1H"}
+{"t":77123,"o":"\r\n"}
+{"t":77123,"o":"\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m"}
+{"t":77123,"o":"\r\n"}
+{"t":77123,"o":"\u001b[39;49m\u001b[K\u001b[38;5;1;49m■ Conversation interrupted - tell the model what to do differently. Something went wrong? Hit `/feedback` to report the\u001b[39m\u001b[49m\u001b[0m"}
+{"t":77123,"o":"\r\n"}
+{"t":77124,"o":"\u001b[39;49m\u001b[K\u001b[38;5;1;49missue.\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[35;3H\u001b[39m\u001b[49m\u001b[0m\u001b[?25l"}
+{"t":77124,"o":"\u001b[36;1H"}
+{"t":77124,"o":"\u001b[0 q\u001b[36;1H \u001b[39m\u001b[49m\u001b[0m\u001b[38;3H"}
+{"t":77124,"o":"\u001b[?25h"}
+{"t":77124,"o":"\u001b[?2026l"}
+{"t":79185,"mark":"permission-denied","screen":["","","• Received: first queued.","","  10:44 PM","","","› second queued","","","• Received: second queued.","","  10:44 PM","","","› third queued","","","• Received: third queued.","","  10:44 PM","","","› Run the PowerShell command: New-Item probe-se.txt","","","• I’ll run the PowerShell command to create probe-se.txt in the current folder.","","✗ You canceled the request to run New-Item probe-se.txt","","• Ran New-Item probe-se.txt","  └ (no output)","","■ Conversation interrupted - tell the model what to do differently. Something went wrong? Hit `/feedback` to report the","issue."," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box · Write three paragraphs about rivers                     ⚠ 6 warnings · f2 to view","","","","",""],"cursor":[2,37]}
+{"t":79185,"i":"\u0003"}
+{"t":79187,"o":"\u001b[?2026h\u001b[36;1H"}
+{"t":79187,"o":"\u001b[J"}
+{"t":79187,"o":"\u001b[?25l"}
+{"t":79187,"o":"\u001b[36;2H\u001b[0m\u001b[49m\u001b[K\u001b[37;2H\u001b[0m\u001b[49m\u001b[K\u001b[38;19H\u001b[0m\u001b[49m\u001b[K\u001b[39;2H\u001b[0m\u001b[49m\u001b[K\u001b[36;1H \u001b[37;1H \u001b[38;1H\u001b[2m›\u001b[22m \u001b[2mShutting down...\u001b[39;1H\u001b[22m \u001b[39m\u001b[49m\u001b[0m"}
+{"t":79187,"o":"\u001b[?2026l"}
+{"t":79234,"o":"\u001b[36;1H"}
+{"t":79234,"o":"\u001b[J"}
+{"t":79235,"o":"\u001b]0;\u0007"}
+{"t":79253,"o":"\u001b[?2004l"}
+{"t":79253,"o":"\u001b[?1004l\u001b[?1004h"}
+{"t":79253,"o":"\u001b[0 q\u001b[?25h"}
+{"t":79254,"o":"\u001b[0 q\u001b[?25h"}
+{"t":79411,"o":"Token usage: total=23,101 input=22,910 (+ 88,192 cached) output=191\r\n"}
+{"t":79411,"o":"To continue this session, run:\r\n  \u001b[36mcodex resume 01a1adaa-7cc8-7de0-87d3-8982d3dcd998\u001b[39m\r\n"}
+{"t":79411,"o":"Or run \u001b[36mcodex resume\u001b[39m and select \u001b[36mWrite three paragraphs about rivers\u001b[39m.\r\n"}
+{"t":79513,"o":"\u001b[?1004l\u001b[?9001l"}

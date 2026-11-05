@@ -1,0 +1,199 @@
+{"meta":{"agent":"codex","name":"codex-short","bundledConpty":true,"cols":120,"rows":45,"cmd":"C:\\Users\\Agon-MiniPc\\AppData\\Roaming\\npm\\codex.cmd","args":["-a","on-request","-s","read-only"],"at":"2026-11-05T21:42:30.024Z"}}
+{"t":163,"o":"\u001b[1t"}
+{"t":164,"o":"\u001b[c\u001b[?1004h\u001b[?9001h"}
+{"t":169,"o":"\u001b[?7l"}
+{"t":169,"o":"\u001b[?7h"}
+{"t":200,"o":"\u001b]0;C:\\windows\\system32\\cmd.exe \u001b\\"}
+{"t":800,"o":"\u001b[?2004h"}
+{"t":802,"o":"\u001b[?1004l\u001b[?1004h"}
+{"t":834,"o":"\u001b[?2026h\u001b[?2026h\u001b[1;1H"}
+{"t":834,"o":"\u001b[J"}
+{"t":867,"o":"\u001b[?25l"}
+{"t":868,"o":"\u001b[1;42H\u001b[0m\u001b[49m\u001b[K\u001b[2;42H\u001b[0m\u001b[49m\u001b[K\u001b[3;42H\u001b[0m\u001b[49m\u001b[K\u001b[4;42H\u001b[0m\u001b[49m\u001b[K\u001b[5;42H\u001b[0m\u001b[49m\u001b[K\u001b[6;42H\u001b[0m\u001b[49m\u001b[K\u001b[7;2H\u001b[0m\u001b[49m\u001b[K\u001b[8;2H\u001b[0m\u001b[49m\u001b[K\u001b[9;27H\u001b[0m\u001b[49m\u001b[K\u001b[10;2H\u001b[0m\u001b[49m\u001b[K\u001b[11;2H\u001b[0m\u001b[49m\u001b[K\u001b[1;1H\u001b[2m╭───────────────────────────────────────╮\u001b[2;1H│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)            │\u001b[3;1H│                                       │\u001b[4;1H│ model:     \u001b[3mloading\u001b[23m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[5;1H│ directory: \u001b[22mloading\u001b[2m                    │\u001b[6;1H╰───────────────────────────────────────╯\u001b[7;1H\u001b[22m \u001b[8;1H \u001b[9;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[10;1H\u001b[22m \u001b[11;1H \u001b[39m\u001b[49m\u001b[0m\u001b[1;1H"}
+{"t":871,"o":"\u001b[0 q\u001b[1;1H\u001b[2m╭\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h\u001b[?2026l\u001b[?2026l\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h\u001b[?2026l"}
+{"t":875,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":876,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":880,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":880,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":882,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":883,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":903,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":903,"o":"\u001b[?25h"}
+{"t":903,"o":"\u001b[?2026l"}
+{"t":1032,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":1032,"o":"\u001b[5;14H~\\\u001b[5;17Hge\u001b[5;20Ht-box\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h"}
+{"t":1032,"o":"\u001b[?2026l"}
+{"t":1033,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1033,"o":"\u001b[?25h"}
+{"t":1033,"o":"\u001b[?2026l"}
+{"t":1035,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1035,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1063,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1063,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1227,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1228,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1245,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1245,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":1570,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":1570,"o":"\u001b[?25h"}
+{"t":1570,"o":"\u001b[?2026l"}
+{"t":2035,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2035,"o":"\u001b[?25h"}
+{"t":2035,"o":"\u001b[?2026l"}
+{"t":2036,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2036,"o":"\u001b[?25h"}
+{"t":2036,"o":"\u001b[?2026l"}
+{"t":2042,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2042,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":2046,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2046,"o":"\u001b[?25h"}
+{"t":2046,"o":"\u001b[?2026l"}
+{"t":2047,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2048,"o":"\u001b[?25h"}
+{"t":2048,"o":"\u001b[?2026l"}
+{"t":2051,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2051,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":2053,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2053,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":2677,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2677,"o":"\u001b[?25h"}
+{"t":2677,"o":"\u001b[?2026l"}
+{"t":2719,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2719,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":2738,"o":"\u001b]0;agent-box\u0007"}
+{"t":2743,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2743,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":2744,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H"}
+{"t":2744,"o":"\u001b[?25h"}
+{"t":2744,"o":"\u001b[?2026l"}
+{"t":2747,"o":"\u001b]10;?\u001b\\\u001b]11;?\u001b\\"}
+{"t":3010,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":3011,"o":"\u001b[11;3H\u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[11;23H\u001b[39;49m·\u001b[11;25H\u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[9;3H\u001b[?25h"}
+{"t":3011,"o":"\u001b[?2026l"}
+{"t":3035,"o":"\u001b[?2026h\u001b[1;45r\u001b[1;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;7r\u001b[1;1H"}
+{"t":3035,"o":"\r\n"}
+{"t":3036,"o":"\u001b[39;49m\u001b[K\u001b[2m╭─────────────────────────────────────────────────╮\u001b[39m\u001b[49m\u001b[0m\r\n\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22m\u001b[1m\u001b[38;2;99;168;248;49m✨ Update available!\u001b[22m\u001b[39;49m \u001b[1m0.156.1 -> 0.166.0\u001b[22m\u001b[2m\u001b[2m         │\u001b[39m\u001b[49m\u001b[0m\r\n\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22mRun \u001b[38;2;99;168;248;49mnpm install -g @openai/codex\u001b[39;49m to update.\u001b[2m     │\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":3036,"o":"\u001b[39;49m\u001b[K\u001b[2m│                                                 │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":3036,"o":"\r\n"}
+{"t":3037,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22mSee full release notes:\u001b[2m                         │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":3037,"o":"\r\n"}
+{"t":3039,"o":"\u001b[39;49m\u001b[K\u001b[2m│ \u001b[22m\u001b[4m\u001b[38;2;99;168;248;49m\u001b]8;;https://github.com/openai/codex/releases/latest\u0007https://github.com/openai/codex/releases/latest\u001b]8;;\u0007\u001b[24m\u001b[2m\u001b[39;49m │\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":3039,"o":"\u001b[39;49m\u001b[K\u001b[2m╰─────────────────────────────────────────────────╯\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[9;3H\u001b[?25l"}
+{"t":3040,"o":"\u001b[8;42H\u001b[0m\u001b[49m\u001b[K\u001b[9;42H\u001b[0m\u001b[49m\u001b[K\u001b[10;42H\u001b[0m\u001b[49m\u001b[K\u001b[11;42H\u001b[0m\u001b[49m\u001b[K\u001b[12;42H\u001b[0m\u001b[49m\u001b[K\u001b[13;42H\u001b[0m\u001b[49m\u001b[K\u001b[14;2H\u001b[0m\u001b[49m\u001b[K\u001b[15;2H\u001b[0m\u001b[49m\u001b[K\u001b[16;27H\u001b[0m\u001b[49m\u001b[K\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;36H\u001b[0m\u001b[49m\u001b[K\u001b[8;1H\u001b[2m╭───────────────────────────────────────╮\u001b[9;1H│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)            │\u001b[10;1H│                                       │\u001b[11;1H│ model:     \u001b[3mloading\u001b[23m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[12;1H│ directory: \u001b[22m~\\agent-box\u001b[2m                │\u001b[13;1H╰───────────────────────────────────────╯\u001b[14;1H\u001b[22m \u001b[15;1H \u001b[16;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[17;1H\u001b[22m \u001b[18;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m\u001b[49m\u001b[0m\u001b[8;1H"}
+{"t":3044,"o":"\u001b[0 q\u001b[8;1H\u001b[2m╭\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H\u001b[?25h\u001b[?2026l\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H\u001b[?25h\u001b[?2026l"}
+{"t":3561,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":3561,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":3654,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":3654,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":5621,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[16;3H"}
+{"t":5621,"o":"\u001b[?25h"}
+{"t":5621,"o":"\u001b[?2026l"}
+{"t":6689,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":7056,"o":"\u001b]0;npm\u001b\\"}
+{"t":7228,"o":"\u001b]0;npm exec @playwright/mcp@latest\u001b\\"}
+{"t":7310,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":7332,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":7356,"o":"\u001b[?2026h\u001b[8;1H"}
+{"t":7356,"o":"\u001b[J"}
+{"t":7357,"o":"\u001b[8;45r\u001b[8;1H\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001bM\u001b[r\u001b[1;16r\u001b[7;1H"}
+{"t":7359,"o":"\r\n\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\r\n\u001b[39;49m\u001b[K\u001b[2m╭───────────────────────────────────────────╮\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7359,"o":"\r\n"}
+{"t":7359,"o":"\u001b[39;49m\u001b[K\u001b[2m│ >_ \u001b[22m\u001b[1mOpenAI Codex\u001b[22m\u001b[2m\u001b[2m (v0.156.1)                │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7360,"o":"\r\n"}
+{"t":7360,"o":"\u001b[39;49m\u001b[K\u001b[2m│                                           │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7360,"o":"\r\n"}
+{"t":7360,"o":"\u001b[39;49m\u001b[K\u001b[2m│ model:     \u001b[22mGPT-6-Astra\u001b[2m   \u001b[22m\u001b[38;2;99;168;248;49m/model\u001b[2m\u001b[39;49m to change │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7360,"o":"\r\n"}
+{"t":7364,"o":"\u001b[39;49m\u001b[K\u001b[2m│ directory: \u001b[22m~\\agent-box\u001b[2m                    │\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7364,"o":"\r\n"}
+{"t":7365,"o":"\u001b[39;49m\u001b[K\u001b[2m╰───────────────────────────────────────────╯\u001b[39m\u001b[49m\u001b[0m"}
+{"t":7365,"o":"\r\n\u001b[39;49m\u001b[K\u001b[39m\u001b[49m\u001b[0m\r\n"}
+{"t":7368,"o":"\u001b[39;49m\u001b[K  \u001b[1mTip:\u001b[22m Try the \u001b[1mDesktop app\u001b[22m. Run 'codex app' or visit \u001b[4m\u001b[38;2;99;168;248;49m\u001b]8;;https://chatgpt.com/codex?app-landing-page=true\u0007https://chatgpt.com/codex?app-landing-page=true\u001b]8;;\u0007\u001b[39m\u001b[49m\u001b[0m\u001b[r\u001b[16;3H\u001b[?25l"}
+{"t":7368,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m4 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":7368,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7369,"o":"\u001b[?25h"}
+{"t":7370,"o":"\u001b[?2026l"}
+{"t":7372,"o":"\u001b[?2026h\u001b[?25l"}
+{"t":7372,"o":"\u001b[21;97H\u001b[38;2;196;167;103;49m6\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7372,"o":"\u001b[?25h"}
+{"t":7372,"o":"\u001b[?2026l"}
+{"t":7373,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7374,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":7481,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":7589,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":7691,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":7751,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":7751,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7751,"o":"\u001b[?25h"}
+{"t":7751,"o":"\u001b[?2026l"}
+{"t":7864,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":7929,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":7930,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7930,"o":"\u001b[?25h"}
+{"t":7930,"o":"\u001b[?2026l"}
+{"t":7969,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":7969,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":8069,"o":"\u001b]0;⠸ agent-box\u0007"}
+{"t":8170,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":8284,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":8388,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":8491,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":8605,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":8714,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":8821,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":8923,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":9026,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":9135,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":9243,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":9353,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":9445,"o":"\u001b]0;C:\\windows\\system32\\cmd.exe \u001b\\"}
+{"t":9461,"o":"\u001b]0;⠧ agent-box\u0007"}
+{"t":9570,"o":"\u001b]0;⠇ agent-box\u0007"}
+{"t":9674,"o":"\u001b]0;⠏ agent-box\u0007"}
+{"t":9776,"o":"\u001b]0;⠋ agent-box\u0007"}
+{"t":9880,"o":"\u001b]0;⠙ agent-box\u0007"}
+{"t":9991,"o":"\u001b]0;⠹ agent-box\u0007"}
+{"t":10101,"o":"\u001b]0;⠸ agent-box\u0007"}
+{"t":10210,"o":"\u001b]0;⠼ agent-box\u0007"}
+{"t":10258,"o":"\u001b]0;⠴ agent-box\u0007"}
+{"t":10274,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":10274,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":10341,"o":"\u001b]0;⠦ agent-box\u0007"}
+{"t":10342,"o":"\u001b]0;agent-box\u0007"}
+{"t":10351,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":10351,"o":"\u001b[?25h\u001b[?2026l"}
+{"t":40159,"mark":"idle","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,18]}
+{"t":40159,"i":"/"}
+{"t":40216,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":40216,"mark":"slash","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[0,16]}
+{"t":40216,"i":"\u001b"}
+{"t":40216,"i":"\u0015"}
+{"t":40216,"o":"\u001b[J"}
+{"t":40218,"o":"\u001b[?25l"}
+{"t":40218,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;43H\u001b[0m\u001b[49m\u001b[K\u001b[20;88H\u001b[0m\u001b[49m\u001b[K\u001b[21;52H\u001b[0m\u001b[49m\u001b[K\u001b[22;37H\u001b[0m\u001b[49m\u001b[K\u001b[23;50H\u001b[0m\u001b[49m\u001b[K\u001b[24;46H\u001b[0m\u001b[49m\u001b[K\u001b[25;66H\u001b[0m\u001b[49m\u001b[K\u001b[26;2H\u001b[0m\u001b[49m\u001b[K\u001b[27;4H\u001b[0m\u001b[49m\u001b[K\u001b[28;2H\u001b[0m\u001b[49m\u001b[K\u001b[29;36H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H\u001b[7m\u001b[1m› /model         \u001b[22mchoose what model and reasoning effort to use\u001b[1m                                                          \u001b[19;1H\u001b[27m\u001b[22m  /fast          \u001b[2m2x speed, increased usage\u001b[20;1H\u001b[22m  /ide           \u001b[2minclude current selection, open files, and other context from your IDE\u001b[21;1H\u001b[22m  /permissions   \u001b[2mchoose what Codex is allowed to do\u001b[22;1H\u001b[22m  /keymap        \u001b[2mremap TUI shortcuts\u001b[23;1H\u001b[22m  /vim           \u001b[2mtoggle Vim mode for the composer\u001b[24;1H\u001b[22m  /experimental  \u001b[2mtoggle experimental features\u001b[25;1H\u001b[22m  /approve       \u001b[2mapprove one retry of a recent auto-review denial\u001b[26;1H\u001b[22m \u001b[27;1H\u001b[1m›\u001b[22m /\u001b[28;1H \u001b[29;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39m"}
+{"t":40218,"o":"\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":40219,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[27;4H"}
+{"t":40219,"o":"\u001b[?25h"}
+{"t":40219,"o":"\u001b[?2026l"}
+{"t":40232,"o":"\u001b[?2026h\u001b[17;1H"}
+{"t":40232,"o":"\u001b[J"}
+{"t":40232,"o":"\u001b[?25l"}
+{"t":40233,"o":"\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;27H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[21;120H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[1m›\u001b[22m \u001b[2mAsk Codex to do anything\u001b[20;1H\u001b[22m \u001b[21;1H  \u001b[38;2;246;226;183;49mGPT-6-Astra default\u001b[39;49m · \u001b[38;2;171;223;167;49m~\\agent-box\u001b[39;49m                                                           ⚠ \u001b[38;2;196;167;103;49m6 warnings\u001b[39;49m · \u001b[1mf2\u001b[22m to view\u001b[39m\u001b[49m\u001b[0m\u001b[17;1H"}
+{"t":40233,"o":"\u001b[0 q\u001b[17;1H \u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":40233,"o":"\u001b[?25h"}
+{"t":40233,"o":"\u001b[?2026l"}
+{"t":40238,"o":"\u001b[?2026h\u001b[39m\u001b[49m\u001b[0m\u001b[19;3H"}
+{"t":40238,"o":"\u001b[?25h"}
+{"t":40238,"o":"\u001b[?2026l"}
+{"t":40915,"mark":"esc","screen":["╭─────────────────────────────────────────────────╮","│ ✨ Update available! 0.156.1 -> 0.166.0         │","│ Run npm install -g @openai/codex to update.     │","│                                                 │","│ See full release notes:                         │","│ https://github.com/openai/codex/releases/latest │","╰─────────────────────────────────────────────────╯","","╭───────────────────────────────────────────╮","│ >_ OpenAI Codex (v0.156.1)                │","│                                           │","│ model:     GPT-6-Astra   /model to change │","│ directory: ~\\agent-box                    │","╰───────────────────────────────────────────╯","","  Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true"," "," ","› Ask Codex to do anything"," ","  GPT-6-Astra default · ~\\agent-box                                                           ⚠ 6 warnings · f2 to view","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,18]}
+{"t":40916,"i":"\u0003"}
+{"t":40927,"o":"\u001b[?2026h\u001b[17;1H\u001b[J\u001b[?25l\u001b[17;2H\u001b[0m\u001b[49m\u001b[K\u001b[18;2H\u001b[0m\u001b[49m\u001b[K\u001b[19;19H\u001b[0m\u001b[49m\u001b[K\u001b[20;2H\u001b[0m\u001b[49m\u001b[K\u001b[17;1H \u001b[18;1H \u001b[19;1H\u001b[2m›\u001b[22m \u001b[2mShutting down...\u001b[20;1H\u001b[22m \u001b[39m\u001b[49m\u001b[0m\u001b[?2026l"}
+{"t":41142,"o":"\u001b[17;1H"}
+{"t":41142,"o":"\u001b[J"}
+{"t":41144,"o":"\u001b]0;\u0007"}
+{"t":41156,"o":"\u001b[?2004l"}
+{"t":41156,"o":"\u001b[?1004l\u001b[?1004h"}
+{"t":41156,"o":"\u001b[0 q\u001b[?25h"}
+{"t":41159,"o":"\u001b[0 q\u001b[?25h"}
+{"t":41327,"i":"\u0003"}
+{"t":41393,"o":"\u001b[?1004l\u001b[?9001l"}

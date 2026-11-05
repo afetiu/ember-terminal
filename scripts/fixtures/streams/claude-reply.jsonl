@@ -1,0 +1,176 @@
+{"meta":{"agent":"claude","name":"claude-reply","bundledConpty":true,"cols":120,"rows":45,"cmd":"C:\\Users\\Agon-MiniPc\\.local\\bin\\claude.exe","args":["--model","haiku","--permission-mode","default","--settings","C:\\Users\\AGON-M~1\\AppData\\Local\\Temp\\ember-record\\settings-default.json"],"at":"2026-11-05T21:41:21.087Z"}}
+{"t":115,"o":"\u001b[1t"}
+{"t":116,"o":"\u001b[c\u001b[?1004h\u001b[?9001h"}
+{"t":540,"o":"\u001b]0;claude\u001b\\"}
+{"t":1666,"o":"\u001b7\u001b[r\u001b8\u001b[?25h"}
+{"t":1955,"o":"\u001b[?25l"}
+{"t":1955,"o":"\u001b[?2004h\u001b[?2031h\u001b[?1004h"}
+{"t":1955,"o":"\u001b[?9001l\u001b[?9001h"}
+{"t":1956,"o":"\u001b]0;✳ Claude Code\u001b\\"}
+{"t":2029,"o":"\u001b[38;2;215;119;87m ▐\u001b[48;2;0;0;0m▛███▛█\u001b[12G\u001b[39m\u001b[49m\u001b[1mClaude\u001b[19GCode\u001b[24G\u001b[22m\u001b[38;2;153;153;153mv2.1.318\u001b[39m\r\n\u001b[38;2;215;119;87m▝▜\u001b[48;2;0;0;0m█████\u001b[49m█▀\u001b[12G\u001b[38;2;153;153;153mHaiku\u001b[18G5.5\u001b[22G·\u001b[24GClaude\u001b[31GUltra\u001b[39m\r\n\u001b[38;2;215;119;87m ▝▝\u001b[7G▝▝\u001b[12G\u001b[38;2;153;153;153m~\\agent-box\u001b[39m\r\n\r\n\r\n\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n❯ \u001b[2mTry\u001b[7G\"how\u001b[12Gdo\u001b[15GI\u001b[17Glog\u001b[21Gan\u001b[24Gerror?\"\u001b[22m\r\n\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n\u001b[3G\u001b[38;2;153;153;153m⏸\u001b[5Gmanual\u001b[12Gmode\u001b[17Gon\u001b[20G·\u001b[22G?\u001b[24Gfor\u001b[28Gshortcuts\u001b[38G·\u001b[40G←\u001b[42Gfor\u001b[46Gagents\u001b[101G◐\u001b[103Gmedium\u001b[110G·\u001b[112G/effort\u001b[39m\r\n\u001b[104G\u001b[38;2;255;193;7m/rc\u001b[108Gconnecting…\u001b[39m\r\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":2957,"o":"\u001b[>0q"}
+{"t":2957,"o":"\u001b[?u\u001b]7501;?\u0007\u001b[c"}
+{"t":3859,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[103C\u001b[1A            \u001b[38;2;78;186;101m/rc\u001b[39m\r\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":6421,"mark":"idle","screen":[" ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box","","","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ Try \"how do I log an error?\"","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on · ? for shortcuts · ← for agents                                                 ◐ medium · /effort","                                                                                                                   /rc","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,6]}
+{"t":6421,"i":"W"}
+{"t":6453,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[2C\u001b[4AW\u001b[K\r\u001b[18C\u001b[2B                                 \r\n\n\u001b[3C\u001b[4A\u001b[?25h"}
+{"t":6468,"i":"r"}
+{"t":6476,"o":"\u001b[?25l\u001b[3D\u001b[4B\r\u001b[3C\u001b[4Ar\r\n\n\n\n\u001b[4C\u001b[4A\u001b[?25h"}
+{"t":6514,"i":"i"}
+{"t":6520,"o":"\u001b[?25l\u001b[4D\u001b[4B\r\u001b[4C\u001b[4Ai\r\n\n\n\n\u001b[5C\u001b[4A\u001b[?25h"}
+{"t":6561,"i":"t"}
+{"t":6571,"o":"\u001b[?25l\u001b[5D\u001b[4B\r\u001b[5C\u001b[4At\r\n\n\n\n\u001b[6C\u001b[4A\u001b[?25h"}
+{"t":6608,"i":"e"}
+{"t":6613,"o":"\u001b[?25l\u001b[6D\u001b[4B\r\u001b[6C\u001b[4Ae\r\n\n\n\n\u001b[7C\u001b[4A\u001b[?25h"}
+{"t":6655,"i":" "}
+{"t":6668,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":6703,"i":"f"}
+{"t":6708,"o":"\u001b[?25l\u001b[8D\u001b[4B\r\u001b[8C\u001b[4Af\r\n\n\n\n\u001b[9C\u001b[4A\u001b[?25h"}
+{"t":6750,"i":"o"}
+{"t":6758,"o":"\u001b[?25l\u001b[9D\u001b[4B\r\u001b[9C\u001b[4Ao\r\n\n\n\n\u001b[10C\u001b[4A\u001b[?25h"}
+{"t":6796,"i":"u"}
+{"t":6803,"o":"\u001b[?25l\u001b[10D\u001b[4B\r\u001b[10C\u001b[4Au\r\n\n\n\n\u001b[11C\u001b[4A\u001b[?25h"}
+{"t":6842,"i":"r"}
+{"t":6847,"o":"\u001b[?25l\u001b[11D\u001b[4B\r\u001b[11C\u001b[4Ar\r\n\n\n\n\u001b[12C\u001b[4A\u001b[?25h"}
+{"t":6888,"i":" "}
+{"t":6895,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":6935,"i":"s"}
+{"t":6941,"o":"\u001b[?25l\u001b[13D\u001b[4B\r\u001b[13C\u001b[4As\r\n\n\n\n\u001b[14C\u001b[4A\u001b[?25h"}
+{"t":6982,"i":"h"}
+{"t":6988,"o":"\u001b[?25l\u001b[14D\u001b[4B\r\u001b[14C\u001b[4Ah\r\n\n\n\n\u001b[15C\u001b[4A\u001b[?25h"}
+{"t":7028,"i":"o"}
+{"t":7032,"o":"\u001b[?25l\u001b[15D\u001b[4B\r\u001b[15C\u001b[4Ao\r\n\n\n\n\u001b[16C\u001b[4A\u001b[?25h"}
+{"t":7075,"i":"r"}
+{"t":7104,"o":"\u001b[?25l\u001b[16D\u001b[4B\r\u001b[16C\u001b[4Ar\r\n\n\n\n\u001b[17C\u001b[4A\u001b[?25h"}
+{"t":7120,"i":"t"}
+{"t":7127,"o":"\u001b[?25l\u001b[17D\u001b[4B\r\u001b[17C\u001b[4At\r\n\n\n\n\u001b[18C\u001b[4A\u001b[?25h"}
+{"t":7168,"i":" "}
+{"t":7175,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":7216,"i":"p"}
+{"t":7221,"o":"\u001b[?25l\u001b[19D\u001b[4B\r\u001b[19C\u001b[4Ap\r\n\n\n\n\u001b[20C\u001b[4A\u001b[?25h"}
+{"t":7263,"i":"a"}
+{"t":7269,"o":"\u001b[?25l\u001b[20D\u001b[4B\r\u001b[20C\u001b[4Aa\r\n\n\n\n\u001b[21C\u001b[4A\u001b[?25h"}
+{"t":7309,"i":"r"}
+{"t":7316,"o":"\u001b[?25l\u001b[21D\u001b[4B\r\u001b[21C\u001b[4Ar\r\n\n\n\n\u001b[22C\u001b[4A\u001b[?25h"}
+{"t":7356,"i":"a"}
+{"t":7362,"o":"\u001b[?25l\u001b[22D\u001b[4B\r\u001b[22C\u001b[4Aa\r\n\n\n\n\u001b[23C\u001b[4A\u001b[?25h"}
+{"t":7403,"i":"g"}
+{"t":7407,"o":"\u001b[?25l\u001b[23D\u001b[4B\r\u001b[23C\u001b[4Ag\r\n\n\n\n\u001b[24C\u001b[4A\u001b[?25h"}
+{"t":7449,"i":"r"}
+{"t":7455,"o":"\u001b[?25l\u001b[24D\u001b[4B\r\u001b[24C\u001b[4Ar\r\n\n\n\n\u001b[25C\u001b[4A\u001b[?25h"}
+{"t":7495,"i":"a"}
+{"t":7501,"o":"\u001b[?25l\u001b[25D\u001b[4B\r\u001b[25C\u001b[4Aa\r\n\n\n\n\u001b[26C\u001b[4A\u001b[?25h"}
+{"t":7542,"i":"p"}
+{"t":7548,"o":"\u001b[?25l\u001b[26D\u001b[4B\r\u001b[26C\u001b[4Ap\r\n\n\n\n\u001b[27C\u001b[4A\u001b[?25h"}
+{"t":7590,"i":"h"}
+{"t":7597,"o":"\u001b[?25l\u001b[27D\u001b[4B\r\u001b[27C\u001b[4Ah\r\n\n\n\n\u001b[28C\u001b[4A\u001b[?25h"}
+{"t":7637,"i":"s"}
+{"t":7646,"o":"\u001b[?25l\u001b[28D\u001b[4B\r\u001b[28C\u001b[4As\r\n\n\n\n\u001b[29C\u001b[4A\u001b[?25h"}
+{"t":7685,"i":" "}
+{"t":7692,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":7732,"i":"a"}
+{"t":7737,"o":"\u001b[?25l\u001b[30D\u001b[4B\r\u001b[30C\u001b[4Aa\r\n\n\n\n\u001b[31C\u001b[4A\u001b[?25h"}
+{"t":7778,"i":"b"}
+{"t":7784,"o":"\u001b[?25l\u001b[31D\u001b[4B\r\u001b[31C\u001b[4Ab\r\n\n\n\n\u001b[32C\u001b[4A\u001b[?25h"}
+{"t":7826,"i":"o"}
+{"t":7832,"o":"\u001b[?25l\u001b[32D\u001b[4B\r\u001b[32C\u001b[4Ao\r\n\n\n\n\u001b[33C\u001b[4A\u001b[?25h"}
+{"t":7873,"i":"u"}
+{"t":7879,"o":"\u001b[?25l\u001b[33D\u001b[4B\r\u001b[33C\u001b[4Au\r\n\n\n\n\u001b[34C\u001b[4A\u001b[?25h"}
+{"t":7919,"i":"t"}
+{"t":7925,"o":"\u001b[?25l\u001b[34D\u001b[4B\r\u001b[34C\u001b[4At\r\n\n\n\n\u001b[35C\u001b[4A\u001b[?25h"}
+{"t":7966,"i":" "}
+{"t":7973,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":8013,"i":"r"}
+{"t":8021,"o":"\u001b[?25l\u001b[36D\u001b[4B\r\u001b[36C\u001b[4Ar\r\n\n\n\n\u001b[37C\u001b[4A\u001b[?25h"}
+{"t":8060,"i":"i"}
+{"t":8071,"o":"\u001b[?25l\u001b[37D\u001b[4B\r\u001b[37C\u001b[4Ai\r\n\n\n\n\u001b[38C\u001b[4A\u001b[?25h"}
+{"t":8108,"i":"v"}
+{"t":8118,"o":"\u001b[?25l\u001b[38D\u001b[4B\r\u001b[38C\u001b[4Av\r\n\n\n\n\u001b[39C\u001b[4A\u001b[?25h"}
+{"t":8154,"i":"e"}
+{"t":8160,"o":"\u001b[?25l\u001b[39D\u001b[4B\r\u001b[39C\u001b[4Ae\r\n\n\n\n\u001b[40C\u001b[4A\u001b[?25h"}
+{"t":8201,"i":"r"}
+{"t":8213,"o":"\u001b[?25l\u001b[40D\u001b[4B\r\u001b[40C\u001b[4Ar\r\n\n\n\n\u001b[41C\u001b[4A\u001b[?25h"}
+{"t":8249,"i":"s"}
+{"t":8253,"o":"\u001b[?25l\u001b[41D\u001b[4B\r\u001b[41C\u001b[4As\r\n\n\n\n\u001b[42C\u001b[4A\u001b[?25h"}
+{"t":8295,"i":"."}
+{"t":8302,"o":"\u001b[?25l\u001b[42D\u001b[4B\r\u001b[42C\u001b[4A.\r\n\n\n\n\u001b[43C\u001b[4A\u001b[?25h"}
+{"t":8343,"i":" "}
+{"t":8348,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":8390,"i":"N"}
+{"t":8395,"o":"\u001b[?25l\u001b[44D\u001b[4B\r\u001b[44C\u001b[4AN\r\n\n\n\n\u001b[45C\u001b[4A\u001b[?25h"}
+{"t":8437,"i":"o"}
+{"t":8444,"o":"\u001b[?25l\u001b[45D\u001b[4B\r\u001b[45C\u001b[4Ao\r\n\n\n\n\u001b[46C\u001b[4A\u001b[?25h"}
+{"t":8484,"i":" "}
+{"t":8490,"o":"\u001b[?25l\u001b[1C\u001b[?25h"}
+{"t":8531,"i":"t"}
+{"t":8539,"o":"\u001b[?25l\u001b[47D\u001b[4B\r\u001b[47C\u001b[4At\r\n\n\n\n\u001b[48C\u001b[4A\u001b[?25h"}
+{"t":8577,"i":"o"}
+{"t":8581,"o":"\u001b[?25l\u001b[48D\u001b[4B\r\u001b[48C\u001b[4Ao\r\n\n\n\n\u001b[49C\u001b[4A\u001b[?25h"}
+{"t":8623,"i":"o"}
+{"t":8629,"o":"\u001b[?25l\u001b[49D\u001b[4B\r\u001b[49C\u001b[4Ao\r\n\n\n\n\u001b[50C\u001b[4A\u001b[?25h"}
+{"t":8671,"i":"l"}
+{"t":8677,"o":"\u001b[?25l\u001b[50D\u001b[4B\r\u001b[50C\u001b[4Al\r\n\n\n\n\u001b[51C\u001b[4A\u001b[?25h"}
+{"t":8717,"i":"s"}
+{"t":8724,"o":"\u001b[?25l\u001b[51D\u001b[4B\r\u001b[51C\u001b[4As\r\n\n\n\n\u001b[52C\u001b[4A\u001b[?25h"}
+{"t":8762,"i":"."}
+{"t":8767,"o":"\u001b[?25l\u001b[52D\u001b[4B\r\u001b[52C\u001b[4A.\r\n\n\n\n\u001b[53C\u001b[4A\u001b[?25h"}
+{"t":8810,"i":"\r"}
+{"t":9088,"o":"\u001b]0;◐ Claude Code\u001b\\"}
+{"t":9099,"o":"\u001b[?25l\u001b[53D\u001b[4B\r\u001b[5A\u001b[48;2;55;55;55m\u001b[38;2;153;153;153m❯ \u001b[38;2;255;255;255mWrite four short paragraphs about rivers. No tools.\u001b[39m                                                                   \r\u001b[1B\u001b[49m\u001b[K\r\u001b[1B\u001b[38;2;215;119;87m✽\u001b[39m \u001b[38;2;215;119;87mDoodling… \u001b[39m\u001b[K\r\u001b[2C\u001b[1B\u001b[K\r\u001b[1B\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n\u001b[38;2;153;153;153m❯ \u001b[39m\r\n\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n\u001b[3G\u001b[38;2;153;153;153m⏸\u001b[5Gmanual\u001b[12Gmode\u001b[17Gon\u001b[20G·\u001b[22Gesc\u001b[26Gto\u001b[29Ginterrupt\u001b[39G·\u001b[41G←\u001b[43Gfor\u001b[47Gagents\u001b[101G◐\u001b[103Gmedium\u001b[110G·\u001b[112G/effort\u001b[39m\r\n\u001b[116G\u001b[38;2;78;186;101m/rc\u001b[39m\r\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9172,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✻\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9246,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✶\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9355,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m*\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9577,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✢\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9703,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m·\u001b[11G\u001b[38;2;235;159;127m…\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9840,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[2C\u001b[7A\u001b[38;2;215;119;87mActualizing… \u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9856,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[15C\u001b[7A\u001b[38;2;153;153;153m(1s · \u001b[38;2;173;173;173mthinking\u001b[38;2;153;153;153m)\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":9882,"o":"\u001b]0;◐ Four short paragraphs about rivers\u001b\\"}
+{"t":9922,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[21C\u001b[7A\u001b[38;2;165;165;165mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10043,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[21C\u001b[7A\u001b[38;2;153;153;153m↓\u001b[39m \u001b[38;2;153;153;153m38 tokens · \u001b[38;2;161;161;161mthinking\u001b[38;2;153;153;153m)\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10050,"o":"\u001b]0;◑ Four short paragraphs about rivers\u001b\\"}
+{"t":10179,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✢\u001b[24G\u001b[38;2;153;153;153m63\u001b[36G\u001b[38;2;157;157;157mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10260,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m*\u001b[14G\u001b[38;2;235;159;127m…\u001b[24G\u001b[38;2;153;153;153m88\u001b[36Gthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10365,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✶\u001b[24G\u001b[38;2;153;153;153m113 tokens · thinking)\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10485,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[12C\u001b[7A\u001b[38;2;235;159;127mg\u001b[25G\u001b[38;2;153;153;153m50\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10586,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✻\u001b[25G\u001b[38;2;153;153;153m75\u001b[37G\u001b[38;2;157;157;157mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10704,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✽\u001b[12G\u001b[38;2;235;159;127mn\u001b[25G\u001b[38;2;153;153;153m94\u001b[37G\u001b[38;2;161;161;161mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10813,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[23C\u001b[7A\u001b[38;2;153;153;153m205\u001b[37G\u001b[38;2;165;165;165mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":10932,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[10C\u001b[7A\u001b[38;2;235;159;127mi\u001b[14G\u001b[38;2;215;119;87m…\u001b[17G\u001b[38;2;153;153;153m2\u001b[25G1\u001b[37G\u001b[38;2;173;173;173mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11011,"o":"\u001b]0;◐ Four short paragraphs about rivers\u001b\\"}
+{"t":11031,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[25C\u001b[7A\u001b[38;2;153;153;153m7\u001b[37G\u001b[38;2;177;177;177mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11150,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✻\u001b[10G\u001b[38;2;235;159;127mz\u001b[13G\u001b[38;2;215;119;87mg\u001b[26G\u001b[38;2;153;153;153m8\u001b[37G\u001b[38;2;181;181;181mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11254,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✶\u001b[9G\u001b[38;2;235;159;127mi\u001b[12G\u001b[38;2;215;119;87mn\u001b[25G\u001b[38;2;153;153;153m20\u001b[37G\u001b[38;2;185;185;185mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11326,"mark":"working","screen":[" ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box","","","❯ Write four short paragraphs about rivers. No tools.                                                                   ","","✶ Actualizing… (2s · ↓ 220 tokens · thinking)","","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ ","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on · esc to interrupt · ← for agents                                                ◐ medium · /effort","                                                                                                                   /rc","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""],"cursor":[2,10]}
+{"t":11370,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m*\u001b[25G\u001b[38;2;153;153;153m44\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11493,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m✢\u001b[8G\u001b[38;2;235;159;127ml\u001b[11G\u001b[38;2;215;119;87mi\u001b[25G\u001b[38;2;153;153;153m52\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11594,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[25C\u001b[7A\u001b[38;2;153;153;153m8\u001b[37G\u001b[38;2;181;181;181mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11708,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[7A\u001b[38;2;215;119;87m·\u001b[7G\u001b[38;2;235;159;127ma\u001b[10G\u001b[38;2;215;119;87mz\u001b[25G\u001b[38;2;153;153;153m60\u001b[37G\u001b[38;2;177;177;177mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11826,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[24C\u001b[7A\u001b[38;2;153;153;153m97\u001b[37G\u001b[38;2;169;169;169mthinking\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11842,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[16C\u001b[7A\u001b[38;2;153;153;153m3\u001b[37Gthought for 1s)\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11930,"o":"\u001b[?25l\u001b[2D\u001b[4B\r\u001b[5C\u001b[7A\u001b[38;2;235;159;127mu\u001b[9G\u001b[38;2;215;119;87mi\u001b[24G\u001b[38;2;153;153;153m322\u001b[39m\r\n\n\n\n\n\n\n\u001b[2C\u001b[4A\u001b[?25h"}
+{"t":11976,"o":"\u001b[?25l\u001b[2D\u001b[4B\u001b[2K\u001b[G\u001b[1A\r\u001b[100C\u001b[1A               \u001b[38;2;78;186;101m/rc\r\u001b[1B\u001b[39m\u001b[K\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":11980,"o":"\u001b]0;◑ Four short paragraphs about rivers\u001b\\"}
+{"t":11996,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[37C\u001b[1A               \r\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12050,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[24C\u001b[6A\u001b[38;2;153;153;153m41\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12159,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;215;119;87m✢\u001b[5G\u001b[38;2;235;159;127mt\u001b[8G\u001b[38;2;215;119;87ml\u001b[25G\u001b[38;2;153;153;153m50\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12277,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;215;119;87m*\u001b[4G\u001b[38;2;235;159;127mc\u001b[7G\u001b[38;2;215;119;87ma\u001b[26G\u001b[38;2;153;153;153m7\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12376,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;215;119;87m✶\u001b[25G\u001b[38;2;153;153;153m95\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12493,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;215;119;87m✻\u001b[3G\u001b[38;2;235;159;127mA\u001b[6G\u001b[38;2;215;119;87mu\u001b[24G\u001b[38;2;153;153;153m407\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12608,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[24C\u001b[6A\u001b[38;2;153;153;153m15\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12724,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;215;119;87m✽\u001b[5Gt\u001b[25G\u001b[38;2;153;153;153m22\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12824,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[24C\u001b[6A\u001b[38;2;153;153;153m59\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":12939,"o":"\u001b]0;◐ Four short paragraphs about rivers\u001b\\"}
+{"t":12944,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[3C\u001b[6A\u001b[38;2;215;119;87mc\u001b[17G\u001b[38;2;153;153;153m4\u001b[25G72\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":13048,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[2C\u001b[6A\u001b[38;2;215;119;87mA\u001b[25G\u001b[38;2;153;153;153m81\u001b[39m\r\n\n\n\n\n\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":13243,"o":"\u001b]0;✳ Four short paragraphs about rivers\u001b\\"}
+{"t":13254,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[6A\u001b[38;2;255;255;255m●\u001b[3G\u001b[39mRivers are the planet's oldest roads. Long before\u001b[53Gpeople\u001b[60Gdrew\u001b[65Gmaps,\u001b[71Gwater\u001b[77Gcarved\u001b[84Gpaths\u001b[90Gthrough\u001b[98Grock,\u001b[104Gfollowing\u001b[114Gthe\r\u001b[2C\u001b[1Bslope\u001b[9Gof\u001b[12Gthe\u001b[16Gland\u001b[21Gtoward\u001b[28Gthe\u001b[32Gsea.\u001b[37GEach\u001b[42Gone\u001b[46Gbegins\u001b[53Gas\u001b[56Ga\u001b[58Gtrickle\u001b[66Gfrom\u001b[71Ga\u001b[73Gspring,\u001b[81Ga\u001b[83Gmelting\u001b[91Gglacier,\u001b[100Gor\u001b[103Ga\u001b[105Grain-soaked\r\u001b[1B  hillside, then gathers tributaries until it becomes something that can carry soil, sand, and stone for hundreds or\u001b[K\r\u001b[1B  thousands\u001b[13Gof\u001b[16Gkilometers.\r\u001b[1B\u001b[K\r\u001b[2C\u001b[1BA river is always working, even when\u001b[40Git\u001b[43Glooks\u001b[49Gcalm.\u001b[55GIts\u001b[59Gcurrent\u001b[67Glifts\u001b[73Gfine\u001b[78Gsediment\u001b[87Gand\u001b[91Gdrops\u001b[97Gheavier\u001b[105Ggrains\u001b[112Gwhere it\r\n\u001b[3Gslows,\u001b[10Gslowly\u001b[17Greshaping\u001b[27Gthe\u001b[31Gvalley\u001b[38Garound\u001b[45Git.\u001b[49GOver\u001b[54Gcenturies\u001b[64Git\u001b[67Gcuts\u001b[72Gcanyons,\u001b[81Gbuilds\u001b[88Gfloodplains,\u001b[101Gand\u001b[105Gshifts\u001b[112Gits\r\n\u001b[3Gcourse\u001b[10Gacross\u001b[17Gthe\u001b[21Gland,\u001b[27Gleaving\u001b[35Gbehind\u001b[42Goxbow\u001b[48Glakes\u001b[54Gwhere\u001b[60Gold\u001b[64Gbends\u001b[70Gwere\u001b[75Gabandoned.\u001b[86GThe\u001b[90Glandscape\u001b[100Git\u001b[103Gleaves\u001b[110Gis\u001b[113Gthe\r\n\u001b[3Grecord\u001b[10Gof\u001b[13Gthat\u001b[18Gwork.\r\n\r\n\u001b[3GRivers\u001b[10Ghave\u001b[15Galso\u001b[20Gshaped\u001b[27Ghuman\u001b[33Glife\u001b[38Gmore\u001b[43Gthan\u001b[48Galmost\u001b[55Ganything\u001b[64Gelse.\u001b[70GCities\u001b[77Gwere\u001b[82Gfounded\u001b[90Gon\u001b[93Gtheir\u001b[99Gbanks\u001b[105Gbecause\u001b[113Gthey\r\n\u001b[3Goffered\u001b[11Gwater,\u001b[18Gfood,\u001b[24Gand\u001b[28Ga\u001b[30Gway\u001b[34Gto\u001b[37Gmove\u001b[42Ggoods.\u001b[49GFertile\u001b[57Gfloodplains,\u001b[70Grenewed\u001b[78Gby\u001b[81Gseasonal\u001b[90Gfloods,\u001b[98Gsupported\u001b[108Gsome\u001b[113Gof\u001b[116Gthe\r\n\u001b[3Gfirst\u001b[9Gfarming\u001b[17Gsocieties.\u001b[28GRivers\u001b[35Gmarked\u001b[42Gborders,\u001b[51Gpowered\u001b[59Gmills,\u001b[66Gand\u001b[70Gcarried\u001b[78Gtrade\u001b[84Glong\u001b[89Gbefore\u001b[96Groads\u001b[102Gand\u001b[106Grailways\r\n\u001b[3Gexisted.\r\n\r\n\u001b[3GThe\u001b[7Gsame\u001b[12Gqualities\u001b[22Gthat\u001b[27Gmake\u001b[32Grivers\u001b[39Gvaluable\u001b[48Galso\u001b[53Gmake\u001b[58Gthem\u001b[63Gfragile.\u001b[72GDams,\u001b[78Gpollution,\u001b[89Gand\u001b[93Gdrained\u001b[101Gwetlands\u001b[110Gcan\u001b[114Gchange\r\n\u001b[3Ghow\u001b[7Gwater\u001b[13Gflows\u001b[19Gand\u001b[23Gwhat\u001b[28Glives\u001b[34Gin\u001b[37Git.\u001b[41GYet\u001b[45Grivers\u001b[52Ghave\u001b[57Ga\u001b[59Gremarkable\u001b[70Gcapacity\u001b[79Gto\u001b[82Grecover\u001b[90Gwhen\u001b[95Ggiven\u001b[101Groom,\u001b[107Gand\u001b[111Grestoring\r\n\u001b[3Ga\u001b[5Griver\u001b[11Goften\u001b[17Gmeans\u001b[23Ggiving\u001b[30Git\u001b[33Gback\u001b[38Gthe\u001b[42Gspace\u001b[48Gto\u001b[51Gbend,\u001b[57Gflood,\u001b[64Gand\u001b[68Grebuild\u001b[76Gitself.\r\n\r\n\u001b[38;2;153;153;153m✻\u001b[3GCogitated\u001b[13Gfor\u001b[17G4s\u001b[20G·\u001b[22Gdone\u001b[27G22:41\u001b[39m\r\n\r\n\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n❯ \r\n\u001b[38;2;136;136;136m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m\r\n\u001b[3G\u001b[38;2;153;153;153m⏸\u001b[5Gmanual\u001b[12Gmode\u001b[17Gon\u001b[20G·\u001b[22G?\u001b[24Gfor\u001b[28Gshortcuts\u001b[116G\u001b[38;2;78;186;101m/rc\u001b[39m\r\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":15790,"mark":"replied","screen":[" ▐▛███▛█   Claude Code v2.1.318","▝▜██████▀  Haiku 5.5 · Claude Ultra"," ▝▝   ▝▝   ~\\agent-box","","","❯ Write four short paragraphs about rivers. No tools.                                                                   ","","● Rivers are the planet's oldest roads. Long before people drew maps, water carved paths through rock, following the","  slope of the land toward the sea. Each one begins as a trickle from a spring, a melting glacier, or a rain-soaked","  hillside, then gathers tributaries until it becomes something that can carry soil, sand, and stone for hundreds or","  thousands of kilometers.","","  A river is always working, even when it looks calm. Its current lifts fine sediment and drops heavier grains where it","  slows, slowly reshaping the valley around it. Over centuries it cuts canyons, builds floodplains, and shifts its","  course across the land, leaving behind oxbow lakes where old bends were abandoned. The landscape it leaves is the","  record of that work.","","  Rivers have also shaped human life more than almost anything else. Cities were founded on their banks because they","  offered water, food, and a way to move goods. Fertile floodplains, renewed by seasonal floods, supported some of the","  first farming societies. Rivers marked borders, powered mills, and carried trade long before roads and railways","  existed.","","  The same qualities that make rivers valuable also make them fragile. Dams, pollution, and drained wetlands can change","  how water flows and what lives in it. Yet rivers have a remarkable capacity to recover when given room, and restoring","  a river often means giving it back the space to bend, flood, and rebuild itself.","","✻ Cogitated for 4s · done 22:41","","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","❯ ","────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────","  ⏸ manual mode on · ? for shortcuts                                                                               /rc","","","","","","","","","","","","",""],"cursor":[2,29]}
+{"t":15790,"i":"\u0003"}
+{"t":15791,"o":"\u001b(B\u000f\u001b[?2004h"}
+{"t":15796,"o":"\u001b[?25l\u001b[2D\u001b[3B\r\u001b[2C\u001b[1A\u001b[38;2;153;153;153mPress Ctrl-C again\u001b[22Gto exit\u001b[39m        \r\n\u001b[2C\u001b[3A\u001b[?25h"}
+{"t":16100,"i":"\u0003"}
+{"t":16102,"o":"\u001b[?1006l\u001b[?1003l\u001b[?1002l\u001b[?1000l"}
+{"t":16102,"o":"\u001b[2D\u001b[3B"}
+{"t":16103,"o":"\u001b[?1004l\u001b[?1004h\u001b[>4m\u001b[?2031l\u001b[?2004l\u001b(B\u000f\u001b[?1016l\u001b[?1006l\u001b[?1003l\u001b[?1002l\u001b[?1000l\u001b[?25h\u001b7\u001b[r\u001b8"}
+{"t":16103,"o":"\u001b]0;\u001b\\"}
+{"t":16104,"o":"\u001b[2m\u001b[22m\r\n\u001b[2mResume this session with:\u001b[22m\r\n\u001b[2mclaude --resume 1eaeb129-827d-4232-a1bc-81a5499f213e\u001b[22m\r\n\u001b[2m\u001b[22m"}
