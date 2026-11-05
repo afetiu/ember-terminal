@@ -130,3 +130,49 @@ Every frame is also checked: visible caret inside, and no height bounce (A → B
 - Deleted: the tight CLI's measuring and sizing (`tuiScreen.ts`'s dock/cut/kick reading,
   `host.ts`'s grow/shrink/kick/pre-grow logic). What the canvas still reads from the live
   rows (the working line, `[Image #n]` marks, the prompt's text) reads the region's rows.
+
+## Step 2 — live results (`node scripts/probe-engine.mjs --codex`)
+
+Real `claude --model haiku` and real `codex` in Ember tabs in ~/agent-box, 1280×860 window
+(45×139 PTY). 160 checks, 159 pass on the full run; the one failure ("at rest: box text row
+for row") was the probe reading while Claude rewrote its `/rc connecting…` status between the
+box's read and the real terminal's — a re-read 600 ms later was added, and the rest-only rerun
+passes. **Worst frame run without the prompt line or a dialog's keys: 0 frames, over 20
+sampled transitions (3,653 frames). Frames with conversation text in the box: 0.**
+
+| transition | frames | box heights |
+| --- | ---: | --- |
+| Claude turn (working line, reply) | 505 | 5→7→5 |
+| `/` typed, closed | 50, 46 | 5→25, 25→5 |
+| `/mcp` opened, closed | 73, 69 | 10→3→39, 39→5 |
+| `/model` opened, closed | 72, 64 | 21, 21→5 |
+| six-line prompt, cleared | 157, 89 | 5→…→10, 10→5 |
+| permission prompt, denied | 149, 80 | 5→7→13, 13→5 |
+| three queued mid-turn | 561 | 5→7→10→12→14→13→15→5 |
+| window resized and back | 324 | 5→3→5 |
+| Codex `/`, closed | 51, 51 | 11→19, 13→5 |
+| Codex `/model`, closed | 70, 76 | 6→13, 13→5 |
+| Codex turn + three queued | 625 | 5→7→8→5 |
+| Codex approval, denied | 334, 98 | 5→7→18, 18→7→5 |
+
+What the live runs taught, now in the code:
+
+- **Read the frame when it is complete, paint it later**: the box's rows are composed at the
+  write callback (outside any `?2026` frame); by the next paint the real terminal can be
+  halfway through Codex's next frame. Painting from the live buffer showed blank frames.
+- **An empty live area is not a frame** (Codex clears its viewport, then draws it).
+- **An area that moved or changed size waits for 20 ms of quiet (at most 50 ms)**; the same
+  area redrawn (typing, the working line) paints on the next frame.
+- **Reset at the shim's `OSC 133;E` announcement, in the stream**, not when layout learns of the
+  agent a frame later: Codex's first history insert had already gone by.
+- **Codex keeps its session card in its viewport** until the first message (it says
+  `model: loading` and then the model): the box shows it at rest, exactly as Codex has it.
+- The box's cap is the tab less the canvas's 96 px: Claude sizes `/mcp` to the screen (39 of
+  45 rows) and a 60% cap cut it above its selection.
+- The transient 3-row frames (`/mcp`, resize) are Claude's own: its echo line between closing
+  the prompt box and drawing the dialog, and its frame redrawn at the new width.
+
+Kept passing: `smoke.mjs`, `probe-clear.mjs`, `probe-answer-card.mjs`, `probe-security.mjs`.
+Not done: other agents' committed lines on the canvas (the engine hands them over,
+`takeCommitted()`, nothing renders them yet; those agents keep the Canvas | CLI switch over
+their whole screen).
