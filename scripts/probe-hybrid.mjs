@@ -231,7 +231,7 @@ try {
    */
   const SAMPLER = `(() => {
     if (window.__tight) return true
-    const RULE = /^\\s*[─━]{20,}\\s*$/
+    const RULE = /^\\s*(?:[─━]{20,}|[-—]{20,})\\s*$/
     const FOOT = /Esc to (?:cancel|close|exit|go back)|Enter to (?:confirm|set|select|continue)|enter to (?:confirm|continue|select)|esc to (?:cancel|close|skip)|Press enter to confirm|ctrl\\+x ctrl\\+s to send now/i
     const T = { on: false, frames: [] }
     T.start = (sid, agent) => {
@@ -247,7 +247,7 @@ try {
         if (agent === 'codex') line = rows.some((r) => /^›(?:\\s|$)/.test(r))
         else
           for (let y = 0; y < rows.length && !line; y++) {
-            if (!/^❯/.test(rows[y])) continue
+            if (!/^[❯>]/.test(rows[y])) continue
             let e = y + 1
             while (e < rows.length && /^\\s{2}\\S|^\\s*$/.test(rows[e]) && !RULE.test(rows[e])) e++
             line = e < rows.length && RULE.test(rows[e])
@@ -257,7 +257,9 @@ try {
         // closing the box and drawing /mcp's dialog): its own empty frame, not one cut short.
         let blank = 0
         for (let y = rows.length - 1; y >= 0 && !rows[y].trim(); y--) blank++
-        const empty = !line && !foot && blank >= 3
+        // Or nothing yet under the echo of a command just sent (\`❯ /mcp\` while it loads).
+        const last = rows.length - 1 - blank
+        const empty = !line && !foot && (blank >= 3 || (last >= 0 && /^[❯>]\\s*\\/[\\w:.-]+\\s*$/.test(rows[last])))
         T.frames.push({ t: performance.now(), rows: term.rows, ok: line || foot || empty, empty, text: rows })
         requestAnimationFrame(tick)
       }
@@ -394,11 +396,11 @@ try {
     const slashOk = async (where) => {
       const x = await lm()
       // (Claude Code puts a no-break space after its `❯`.)
-      const at = x.rows.findIndex((r) => /^❯\s*\//.test(r))
-      const items = x.rows.filter((r) => /^\s+(?:❯\s*)?\/[\w:.-]+\s{2,}\S/.test(r)).length
+      const at = x.rows.findIndex((r) => /^[❯>]\s*\//.test(r))
+      const items = x.rows.filter((r) => /^\s+(?:[❯>]\s*)?\/[\w:.-]+\s{2,}\S/.test(r)).length
       // All its rows on screen: the box's top rule above the prompt line, the list under the
       // box, and nothing of it cut at the bottom (the last row is the TUI's own blank).
-      const whole = at >= 1 && /^\s*─{20,}/.test(x.rows[at - 1]) && items >= 2
+      const whole = at >= 1 && /^\s*(?:─{20,}|[-—]{20,})/.test(x.rows[at - 1]) && items >= 2
       check(`${where}: the list is fully visible with the prompt line`, whole && x.cli.why.startsWith('slash menu') && !x.cli.cut, `items=${items} rows=${x.cli.rows} dock=${x.cli.dock} why=${x.cli.why}`)
       return x
     }
@@ -428,7 +430,7 @@ try {
       await until(async () => { const c = await cli(); return (c.why.startsWith('slash menu') && !c.cut && c.rows === c.wantRows) || null }, 5000, 50)
       await steady()
     })
-    growth.push({ what: '`/` pasted: list first drawn → box grown', ms: await drawnToGrown(tab, '^\\s+(?:❯\\s*)?/[a-z]', t1) })
+    growth.push({ what: '`/` pasted: list first drawn → box grown', ms: await drawnToGrown(tab, '^\\s+(?:[❯>]\\s*)?/[a-z]', t1) })
     await slashOk('`/` pasted')
     await key('Backspace', 'Backspace', 8)
     await shrunk()
@@ -448,7 +450,7 @@ try {
       growth.push({ what: `${cmd}: picker first drawn → box grown`, ms: g })
       const x = await dump(tab, cmd)
       const title = cmd === '/mcp' ? /Manage MCP servers/ : /Select model/
-      check(`${cmd}: the picker is all on screen, its title to its footer ("Esc to cancel")`, x.rows.some((r) => title.test(r)) && x.rows.some((r) => /Esc to cancel/.test(r)) && x.rows.some((r) => /^\s*❯/.test(r)), `rows=${x.cli.rows} dock=${x.cli.dock}`)
+      check(`${cmd}: the picker is all on screen, its title to its footer ("Esc to cancel")`, x.rows.some((r) => title.test(r)) && x.rows.some((r) => /Esc to cancel/.test(r)) && x.rows.some((r) => /^\s*[❯>]/.test(r)), `rows=${x.cli.rows} dock=${x.cli.dock}`)
       await onlyDock(tab, `${cmd} open`, [ASK1.slice(0, 30), 'Jupiter'])
       await rules(tab, `${cmd} open`)
       if (cmd === '/mcp') console.log('shot', await shot('2b-mcp'))
@@ -534,7 +536,14 @@ try {
     l = await dump(tab, 'queued')
     const queuedShown = [1, 2, 3].every((n) => l.rows.some((r) => r.includes(`queued message number ${n}`)))
     check('three queued messages and the prompt are all in the CLI', queuedShown && l.cli.prompt, `rows=${l.cli.rows} dock=${l.cli.dock} live=${!!l.cli.live}`)
-    if (l.cli.live) await onlyDock(tab, 'queued messages', ['interesting facts about the ocean'])
+    // While messages are queued Claude Code's classic screen redraws the prompt that started
+    // the turn with them (a box without room for it overflows and garbles), so that one echo
+    // may sit above the queue — nothing else of the conversation.
+    if (l.cli.live) {
+      const above = l.rows.slice(0, Math.max(0, l.cli.rows - l.cli.dock))
+      const other = above.filter((r) => r.trim() && !/interesting facts about the ocean|one sentence each|queued message number/.test(r))
+      check("queued messages: above the queue at most the turn's own prompt, nothing else of the conversation", other.length === 0 && !l.cli.cut, `rows=${l.cli.rows} dock=${l.cli.dock} above=${JSON.stringify(above.filter((r) => r.trim()).map((r) => r.slice(0, 50)))}`)
+    }
     await rules(tab, 'queued messages')
     console.log('shot', await shot('4-queued'))
     await sampled(tab, 'the turn and the queue running out', async () => {
@@ -603,7 +612,7 @@ try {
     await focusTerm(tab)
     await typeText("Call the ember-panel MCP tool show_panel once with format markdown, title 'Probe push' and content 'From the panel tool.' Then reply OK.")
     await enter()
-    const asking = (x) => x.rows.some((r) => /Do you want|❯\s*1\./.test(r))
+    const asking = (x) => x.rows.some((r) => /Do you want|[❯>]\s*1\./.test(r))
     const canvasHas = () => ev(`(document.querySelector('.loom.is-on')?.innerText ?? '').includes('From the panel tool')`)
     for (let i = 0; i < 6; i++) {
       const p = await until(async () => { const x = await lm(); return (asking(x) || (await canvasHas())) && x }, 60_000)

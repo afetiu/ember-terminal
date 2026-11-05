@@ -28,6 +28,13 @@ const REDRAW_MS = 150
 const KICK_MS = 90
 /** How many rows a key that opens a menu (`/`, `@`) adds before the TUI has drawn it. */
 const PRE_ROWS = 6
+/** The most of the tab a picker or dialog gets. */
+const PICKER_SHARE = 0.5
+
+/** A dialog or picker in the prompt's place (not the `/` or `@` list, which follows the typing). */
+function isPicker(r: TuiRead): boolean {
+  return r.room && !!r.key && r.key !== 'slash menu' && r.key !== 'file menu'
+}
 
 /** What the bottom area shows, for holding a height while it shows it: a dialog's name, or "working". */
 function floorKey(r: TuiRead): string {
@@ -293,6 +300,10 @@ export class AgentHost {
     // height it had then, while it shows: no shrinking and growing in turn.
     const fk = floorKey(r)
     if (fk && this.floor.key === fk) rows = Math.max(rows, this.floor.rows)
+    // A picker sizes its list to the screen: room given makes it longer, which would ask for
+    // more again. It never gets more than a fixed share of the tab, and the measure brings it
+    // down to what it draws at that height (its title to its footer, nothing above).
+    if (isPicker(r)) rows = Math.min(rows, this.shareRows(PICKER_SHARE))
     // A key the person just pressed is about to open a menu: room for it now, so the TUI
     // draws it into a box it already fits (the measure trims what it did not need).
     if (Date.now() < this.preUntil && !r.room) {
@@ -354,7 +365,7 @@ export class AgentHost {
     }
     if (done) {
       /* the kick is under way, or just made */
-    } else if (r.cut && r.dock && !this.forceRows && target <= this.wantRows && !this.kick && now - this.kickedAt > 400) {
+    } else if (r.cut && r.dock && !this.forceRows && target <= this.wantRows && !this.kick && now - this.kickedAt > 400 && !(isPicker(r) && this.cutKicks >= 3)) {
       // The bottom area fits, but its top has scrolled out of view (it outgrew the box for a
       // moment): Claude Code's classic screen draws it again in place only when the screen
       // gets shorter. One row more, then back — and if that has not done it twice over, a
@@ -362,7 +373,7 @@ export class AgentHost {
       this.kickedAt = now
       this.cutKicks++
       const to = Math.max(target, this.wantRows)
-      if (this.cutKicks > 2) resize(Math.max(to + 1, this.shareRows(GROWN)), 'kick: still scrolled up')
+      if (this.cutKicks > 2 && !isPicker(r)) resize(Math.max(to + 1, this.shareRows(GROWN)), 'kick: still scrolled up')
       else {
         this.kick = { at: now + KICK_MS, to }
         resize(to + 1, 'kick: scrolled up')
@@ -407,8 +418,9 @@ export class AgentHost {
     // says a turn is on): a message sent gets the rows for it now, and keeps them once drawn.
     else if (e.key === 'Enter' && !e.shiftKey && this.onAgent === 'codex' && text) pre = 3
     if (!pre) return
+    // Keys in a row (Enter on each queued message) do not add up.
+    if (Date.now() >= this.preUntil) this.preRows = this.wantRows + pre
     this.preUntil = Date.now() + (pre === PRE_ROWS ? 700 : 2500)
-    this.preRows = this.wantRows + pre
     this.layoutSplit()
   }
 

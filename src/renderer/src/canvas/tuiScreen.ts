@@ -120,7 +120,7 @@ function lastDrawn(v: View): number {
 function moreIn(rows: string[]): number {
   let n = 0
   for (const r of rows) {
-    const m = /(?:↓\s*|…\s*\+)(\d+)\s*(?:more|models?|items?|servers?|files?|commands?|options?)\b/i.exec(r)
+    const m = /(?:↓\s*|(?:…|\.\.\.)\s*\+)(\d+)\s*(?:more|models?|items?|servers?|files?|commands?|options?)\b/i.exec(r)
     if (m) n = Math.max(n, Number(m[1]))
   }
   return n
@@ -130,19 +130,20 @@ const none = (why = ''): TuiRead => ({ prompt: false, room: false, why, live: nu
 
 // ---------------------------------------------------------------- Claude Code
 
-const RULE = /^\s*[─━]{20,}\s*$/
+/** A rule across the screen (`─`, or `-` / `—` in the plain-glyph set some runs use). */
+const RULE = /^\s*(?:[─━]{20,}|[-—]{20,})\s*$/
 const PROMPT_LINE = /^\s?[❯>!]\s?/
 /** The spinner row, mid-turn: one glyph, a verb with an ellipsis, the details. */
-const SPINNER = /^(\S)\s+([A-Z][a-z]+(?:[- ][a-z]+)?…)\s*(.*)$/
+const SPINNER = /^(\S)\s+([A-Z][a-z]+(?:[- ][a-z]+)?(?:…|\.\.\.))\s*(.*)$/
 /** Lines a dialog or picker draws that the plain prompt never does. */
-const DIALOG = /Do you want to|Esc to (?:cancel|close|go back|exit)|Enter to (?:select|confirm|continue|set)|↑\/?↓ to (?:navigate|select)|^\s*❯\s*\d+\.\s|^\s*\d+\.\s+(?:Yes|No)\b|Yes, I trust this folder/i
+const DIALOG = /Do you want to|Esc to (?:cancel|close|go back|exit)|Enter to (?:select|confirm|continue|set)|(?:↑\/?↓|up\/down|arrow keys) to (?:navigate|select)|^\s*[❯>]\s*\d+\.\s|^\s*\d+\.\s+(?:Yes|No)\b|Yes, I trust this folder/i
 /** The rows between the working line and the box: blank, the tip and the todo list (indented). */
 const UNDER_SPINNER = /^(?:\s*|\s+\S.*)$/
 
 function readClaude(v: View): TuiRead {
   const L = v.lines
   const last = lastDrawn(v)
-  // The input box: a rule, the `❯` line (and its continuation lines), a rule — the lowest
+  // The input box: a rule, the `❯` line (`>` in some runs) (and its continuation lines), a rule — the lowest
   // one with its bottom rule drawn.
   let top = -1
   let bottom = -1
@@ -153,6 +154,10 @@ function readClaude(v: View): TuiRead {
     if (end + 1 > last) break
     // The live box has its bottom rule on screen: one wholly in the scrollback is an old frame.
     if (end + 1 < v.vp) break
+    // Your `/mcp` echoed over a dialog's top rule reads like a box (rule, `❯ /mcp`, blank,
+    // rule) — but a box has no blank row in it, and none has a dialog under it in 2.1.3xx.
+    const gap = L.slice(y + 1, end + 1).some((r) => !r.trim())
+    if (gap && L.slice(end + 2, last + 1).some((r) => DIALOG.test(r))) break
     top = y
     bottom = end + 1
     break
@@ -181,8 +186,8 @@ function readClaude(v: View): TuiRead {
       let q = h
       for (let y = h - 1; y >= 0 && y >= h - 40; y--) {
         const r = L[y]!
-        if (/^\s*❯\s/.test(r)) {
-          if (fgAt(v, y, r.indexOf('❯') + 1) !== dim) break
+        if (/^\s*[❯>]\s/.test(r)) {
+          if (fgAt(v, y, r.search(/[❯>]/) + 1) !== dim) break
           q = y
         } else if (r.trim() && !/^\s{2,}\S/.test(r)) break
       }
@@ -198,7 +203,7 @@ function readClaude(v: View): TuiRead {
   const base = { prompt: top - 1 >= v.vp, live, dock, need: dock, cut, more: moreIn(below), text, marks }
   const why = (w: string) => (cut ? `${w || 'bottom area'} (scrolled up)` : w)
   // The `/` commands or `@` files, listed under the box while the prompt holds the word.
-  const menuRow = (r: string) => /^\s*(?:❯\s*)?\/[\w:.-]+\s{2,}\S/.test(r)
+  const menuRow = (r: string) => /^\s*(?:[❯>]\s*)?\/[\w:.-]+\s{2,}\S/.test(r)
   if (/^\/[\w:.-]*$/.test(text) && below.some(menuRow)) return { ...base, room: true, why: why('slash menu'), key: 'slash menu' }
   if (/(?:^|\s)@\S*$/.test(text) && below.length > 3) return { ...base, room: true, why: why('file menu'), key: 'file menu' }
   // A dialog drawn under the box (some pickers keep the box above them).
@@ -217,8 +222,13 @@ function claudeDialog(v: View, last: number): TuiRead {
   const screen = L.slice(v.vp)
   if (!screen.some((r) => DIALOG.test(r))) {
     // Parts of the box without the whole (mid-redraw, or its rules out of view): more room.
-    const parts = screen.some((r) => RULE.test(r)) && screen.some((r) => /^\s?❯/.test(r))
-    return parts ? { ...none('prompt box in part'), cut: true } : none()
+    const parts = screen.some((r) => RULE.test(r)) && screen.some((r) => /^\s?[❯>]/.test(r))
+    if (parts) return { ...none('prompt box in part'), cut: true }
+    // A box redrawn over itself mid-turn (text written into its rule: "──Reply with…─"):
+    // the classic screen lost its place. It fits; a kick makes it draw it afresh.
+    const garbled = screen.some((r) => RULE.test(r)) && screen.some((r) => /[─━]{2,}[^\s─━]/.test(r) && /[^\s─━][─━]/.test(r))
+    if (garbled) return { ...none('prompt box garbled'), cut: true, dock: screen.length - 1, need: screen.length - 1 }
+    return none()
   }
   let rule = -1
   for (let y = last; y >= 0; y--) {

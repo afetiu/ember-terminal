@@ -72,6 +72,15 @@ conversation has no room in it. There is no divider to drag any more.
 - **Pickers are drawn at the size the TUI picks for that height.** Claude Code's `/model` and
   `/mcp` size their lists to the screen and say "… +7 models" / "↓ 33 more"; Ember does not
   chase those (a taller list comes with as many conversation rows above it).
+  A picker or dialog never gets more than half the tab: it sizes its list to the screen, so
+  room given makes it longer and it would ask for more again. At that cap it is kicked to
+  draw at the height it has, then measured down to its own rows.
+- **Claude Code's glyphs vary by run** (same version): the pointer is `❯` or `>`, an
+  ellipsis `…` or `...`. The reader accepts both sets.
+- **While messages are queued** Claude Code redraws the prompt that started the turn with
+  the queue; a box without room for it overflows and garbles, so the box keeps it (the
+  height held after one shrink-grow cycle). That echo is the one conversation line that can
+  show in the CLI, and only then.
 - The box is never under 4 rows nor over the tab less 96 px of canvas. Before the agent's
   first prompt it is 12 rows (the banner, a trust dialog).
 - **The canvas shows everything the conversation has**: your words, the replies, every tool
