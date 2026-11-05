@@ -70,6 +70,12 @@ const TRUTH = {
     replied: { mode: 'full' },
     slash: { mode: 'full' },
   },
+  // Ink log-update (Gemini CLI): its trust dialog, no turns.
+  'gemini-short': {
+    idle: { has: [/Do you trust the files/, /Don't trust/], not: [/Tips for getting started/, /Gemini CLI v\d/] },
+  },
+  // Copilot CLI draws on the alternate screen: shown whole.
+  'copilot-short': { idle: { mode: 'full' }, slash: { mode: 'full' } },
   'codex-short': {
     idle: { has: [/^› /, /default ·/], not: [/OpenAI Codex/, /Tip:/] },
     // Marked before Codex drew its list (the recorder's wait was too short): the prompt only.
@@ -118,7 +124,9 @@ for (const [name, marks] of Object.entries(TRUTH)) {
     const tops = []
     for (const f of r.frames) {
       if (f.mode !== 'split' || f.t >= r.exitAt) continue
-      if (f.cursor.visible && (f.cursor.y < f.top || f.cursor.y > f.bottom)) caretOut++
+      // log-update leaves the cursor at the start of the line under its frame (Ink hides its own).
+      const resting = f.model === 'log-update' && f.cursor.x === 0 && f.cursor.y > f.bottom
+      if (f.cursor.visible && !resting && (f.cursor.y < f.top || f.cursor.y > f.bottom)) caretOut++
       tops.push({ t: f.t, top: f.top, h: f.bottom - f.top + 1 })
     }
     for (let i = 1; i < tops.length; i++) {

@@ -67,6 +67,7 @@ function command(agent, name) {
       args: ['-a', 'on-request', '-s', 'read-only'],
     }
   }
+  if (agent === 'gemini' || agent === 'copilot') return { file: join(process.env.APPDATA ?? '', 'npm', `${agent}.cmd`), args: [] }
   throw new Error(`unknown agent ${agent}`)
 }
 
@@ -442,7 +443,27 @@ const codex = {
   ],
 }
 
-const all = AGENT === 'codex' ? codex : claude
+// Other Ink CLIs, no turns: their idle prompt and `/` list (is the live area log-update's?).
+const inkShort = (agent) => ({
+  [`${agent}-short`]: [
+    ['wait', 12000],
+    ['idle', 1500, 15000],
+    ['mark', 'idle'],
+    ['type', '/'],
+    ['idle', 1200, 5000],
+    ['mark', 'slash'],
+    ['send', ESC],
+    ['wait', 400],
+    ['idle', 800, 4000],
+    ['mark', 'esc'],
+    ['send', '\x03'],
+    ['wait', 400],
+    ['send', '\x03'],
+    ['wait', 1000],
+  ],
+})
+
+const all = AGENT === 'codex' ? codex : AGENT === 'claude' ? claude : inkShort(AGENT)
 for (const [name, steps] of Object.entries(all)) {
   if (ONLY && !name.includes(ONLY)) continue
   await record(name, AGENT, steps)

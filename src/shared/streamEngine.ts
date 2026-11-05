@@ -258,8 +258,7 @@ export class StreamEngine {
       return done({ mode: 'split', top: Math.min(this.top, bottom), bottom, why: 'last erase' })
     }
 
-    // The diff renderer.
-    if (this.model === 'none') this.model = 'diff'
+    // The diff renderer (Claude Code), and the reading for a CLI that has not said which it is.
     // A resize reflows every row: that is xterm's doing, not a frame of the app's.
     if (this.resized) {
       this.resized = false
