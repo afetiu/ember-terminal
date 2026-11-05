@@ -816,6 +816,12 @@ export class Feed {
       this.newTurn()
       return
     }
+    // A slash command and what it printed, as 2.1.3xx writes them: a system line holding the
+    // same <command-name> / <local-command-stdout> a user line used to.
+    if (subtype === 'local_command' && typeof line['text'] === 'string') {
+      this.user({ ...line, type: 'user', message: { role: 'user', content: line['text'] } })
+      return
+    }
     const text = stripAnsi(String(line['text'] ?? '')).trim()
     if (!text || text.length > 600) return
     // Hook chatter and the like: quiet, but there.

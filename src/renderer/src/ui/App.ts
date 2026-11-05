@@ -335,6 +335,8 @@ export class App {
         return el?.innerText ?? ''
       },
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
+      /** Hold an agent tab's CLI at `rows` rows (0: sized from its screen again). */
+      loomRows: (id: string, rows: number) => this.groups.find((g) => g.id === id)?.loom?.host.setRows(rows),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
       /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */

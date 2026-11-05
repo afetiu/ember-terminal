@@ -315,7 +315,10 @@ export class LoomView {
       window.removeEventListener('blur', away)
     })
 
-    const onKey = (e: KeyboardEvent) => input.key(e)
+    const onKey = (e: KeyboardEvent) => {
+      if (this.hooks.isActive() && (e.target as HTMLElement | null)?.closest?.('.xterm')) this.host.keyDown(e)
+      input.key(e)
+    }
     window.addEventListener('keydown', onKey, true)
     this.unsubs.push(() => window.removeEventListener('keydown', onKey, true))
 
@@ -701,6 +704,12 @@ export class LoomView {
         cellH: (term as unknown as { _core?: { _renderService?: { dimensions?: { css?: { cell?: { height?: number } } } } } })._core?._renderService?.dimensions?.css?.cell?.height ?? 0,
         padY: x ? (parseFloat(getComputedStyle(x).paddingTop) || 0) + (parseFloat(getComputedStyle(x).paddingBottom) || 0) : 0,
         need: this.host.read?.need ?? 0,
+        dock: this.host.read?.dock ?? 0,
+        cut: this.host.read?.cut ?? false,
+        more: this.host.read?.more ?? 0,
+        key: this.host.read?.key ?? '',
+        idleRows: this.host.idleRows,
+        sizes: this.host.sizes.slice(-40),
         wantRows: this.host.wantRows,
         paneTop: pane.offsetTop,
         paneH: pane.clientHeight,
@@ -710,7 +719,6 @@ export class LoomView {
         canvasH: this.el.clientHeight,
         canvasOn: this.el.classList.contains('is-on'),
         grown: this.host.grown,
-        userRows: this.host.userRows,
         why: this.host.read?.why ?? '',
         prompt: this.host.read?.prompt ?? false,
         promptSeen: this.host.promptSeen,

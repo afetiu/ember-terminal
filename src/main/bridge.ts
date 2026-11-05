@@ -119,7 +119,7 @@ function writeSettings(): string {
   // Full screen, always: Claude Code then keeps its prompt at the bottom of the CLI's box
   // whatever its size, which is what the CLI's height is read from (the plain prompt, or
   // a dialog that needs more room). Passed only inside Ember, so other terminals keep theirs.
-  const tui = { tui: 'fullscreen' }
+  const tui = { tui: 'default' }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
   writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')
   const file = join(dir, 'ember-settings.json')
