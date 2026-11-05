@@ -118,9 +118,11 @@ Every frame is also checked: visible caret inside, and no height bounce (A → B
 - `canvas/liveView.ts`: the engine on the real terminal; on each complete frame (the write
   callback, a sync frame closed) it copies the live rows (cells, colours, attributes; the
   caret and its shape) into a small display-only xterm, exactly that many rows tall, pinned
-  to the tab's bottom. Its height is the region's, capped at 60% of the tab; a taller region
-  shows its bottom part (the input line and a dialog's footer are at the bottom) with a fade
-  at the top edge. Re-read when an animation lapses.
+  to the tab's bottom. Its height is the region's, up to the whole tab less the canvas's
+  least (96 px): a 60% cap cut Claude's `/mcp` (it sizes its list to the 45-row screen, 39
+  rows) above its selection. A taller region would show its bottom part (the input line and
+  a dialog's footer are at the bottom) and the seam turns accent. Re-read when an animation
+  lapses.
 - `Ctrl+`` shows the real terminal, whole tab; back again.
 - Alt-screen apps (and anything the engine reads as `full`): the real terminal, whole tab.
 - The canvas: Claude Code and Codex from their session logs as before (Feed); for other

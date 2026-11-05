@@ -367,6 +367,23 @@ export class StreamEngine {
     return best
   }
 
+  /** Inside a synchronized-output frame the app has not finished. */
+  get inSync(): boolean {
+    return this.sync
+  }
+
+  /** Whether anything is drawn in the region's rows. */
+  drawnIn(r: LiveRegion): boolean {
+    const b = this.buf
+    for (let y = r.top; y <= r.bottom; y++) if (b.getLine(b.baseY + y)?.translateToString(true).trim()) return true
+    return false
+  }
+
+  /** The agent the engine reads for (as last reset). */
+  get agent(): string | null {
+    return this.opts.agent
+  }
+
   /** The latest region read. */
   get region(): LiveRegion | null {
     return this.last

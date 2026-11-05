@@ -2,7 +2,7 @@ import type { ClaudeStatus, EmberCost } from '@shared/types'
 import { agentSpec } from '@shared/agents'
 import { escapeHtml } from '../markdown'
 import { readLive, type LiveRead } from '../liveRead'
-import { LiveView, LIVE_SHARE } from '../liveView'
+import { LiveView } from '../liveView'
 import type { LoomView } from '../LoomView'
 import { div, type Mode } from './shared'
 
@@ -189,7 +189,9 @@ export class AgentHost {
     const lv = this.liveView
     if (!lv.el.isConnected) v.panes.appendChild(lv.el)
     const { h, padTop, padBottom } = this.cell()
-    lv.setCap(Math.floor((v.panes.clientHeight * LIVE_SHARE - padTop - padBottom) / h))
+    // As many rows as the live area has, up to all the tab but the canvas's least: a picker
+    // Claude sizes to the screen (/mcp) is shown whole, its selection and footer included.
+    lv.setCap(Math.floor((v.panes.clientHeight - MIN_CANVAS - DIVIDER_H - padTop - padBottom) / h))
     lv.show(true)
     this.look()
     this.fit()

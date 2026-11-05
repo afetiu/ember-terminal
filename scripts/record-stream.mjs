@@ -61,6 +61,13 @@ function command(agent, name) {
       args: ['--model', 'haiku', '--permission-mode', 'default', '--settings', settingsFile(name.includes('fullscreen') ? 'fullscreen' : 'default')],
     }
   }
+  // Codex started from a shell with lines on screen above it, as in an Ember tab.
+  if (agent === 'codex' && name.includes('shell')) {
+    return {
+      file: 'powershell.exe',
+      args: ['-NoLogo', '-NoProfile', '-Command', "1..6 | ForEach-Object { \"shell line $_\" }; codex -a on-request -s read-only"],
+    }
+  }
   if (agent === 'codex') {
     return {
       file: join(process.env.APPDATA ?? '', 'npm', 'codex.cmd'),
@@ -353,6 +360,31 @@ const claude = {
 
 const codexReady = /context left|% left|\? for shortcuts|send|Ctrl\+J|esc to/i
 const codex = {
+  'codex-shell': [
+    ['until', codexReady, 40000],
+    ['idle', 2000, 10000],
+    ['mark', 'idle'],
+    ['type', '/'],
+    ['until', /\/model\s{2,}/, 6000],
+    ['idle', 600, 4000],
+    ['mark', 'slash'],
+    ['send', '\x7f'],
+    ['idle', 600, 4000],
+    ['type', '/model'],
+    ['idle', 400, 3000],
+    ['send', ENTER],
+    ['until', /Select Model/, 8000],
+    ['idle', 800, 4000],
+    ['mark', 'model'],
+    ['send', ESC],
+    ['wait', 300],
+    ['idle', 800, 4000],
+    ['mark', 'model-closed'],
+    ['send', '\x03'],
+    ['wait', 400],
+    ['send', '\x03'],
+    ['wait', 1000],
+  ],
   'codex-short': [
     ['until', codexReady, 40000],
     ['idle', 1500, 10000],

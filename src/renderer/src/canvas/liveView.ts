@@ -3,9 +3,6 @@ import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { StreamEngine, type LiveRegion } from '@shared/streamEngine'
 import type { Session } from '../core/Session'
 
-/** The most of the tab the live box takes; a taller live area shows its bottom part. */
-export const LIVE_SHARE = 0.6
-
 /**
  * The CLI box: only the agent CLI's live area (docs/specs/stream-engine.md).
  *
@@ -28,6 +25,9 @@ export class LiveView {
   readonly log: Array<{ t: number; top: number; bottom: number; rows: number; from: number; why: string }> = []
   private readonly subs: Array<{ dispose(): void }> = []
   private redraw = 0
+  private settle = 0
+  private frameOut: { out: string; shown: LiveView['shown']; r: LiveRegion } | null = null
+  private pendingSince = 0
   private lapse = 0
   private cap = 12
   private on = false
@@ -69,7 +69,14 @@ export class LiveView {
     this.subs.push(
       session.term.onWriteParsed(() => this.read()),
       session.term.onResize(() => this.read()),
-      session.term.onData((d) => this.engine.noteInput(d))
+      session.term.onData((d) => this.engine.noteInput(d)),
+      // The shim's announcement comes in the stream just before the agent's first byte: read
+      // its screen from exactly there (layout learns of the agent a frame later).
+      session.term.parser.registerOscHandler(133, (data) => {
+        const a = /^E;ember-agent=([a-z-]+)/.exec(data)
+        if (a?.[1]) this.engine.reset(a[1])
+        return false
+      })
     )
     // A click in the box is a click into the CLI: the keyboard is the real terminal's.
     this.el.addEventListener('mousedown', (e) => {
@@ -91,8 +98,9 @@ export class LiveView {
 
   /** An agent came (or went): read its screen afresh from where it starts drawing. */
   start(agent: string | null): void {
-    this.engine.reset(agent)
+    if (this.engine.agent !== agent) this.engine.reset(agent)
     this.region = null
+    this.frameOut = null
     this.shown = { rows: 0, from: 0, cols: 0, total: 0 }
     this.read()
   }
@@ -112,6 +120,7 @@ export class LiveView {
     const cap = Math.max(4, rows)
     if (cap === this.cap) return
     this.cap = cap
+    this.compose()
     this.draw()
   }
 
@@ -125,21 +134,41 @@ export class LiveView {
   private read(): void {
     const r = this.engine.frame()
     if (!r) return
+    // An app's live area is never empty: one with nothing drawn in it is the app between
+    // clearing it and drawing it again (Codex, when its viewport moves). Not a frame to show.
+    if (r.mode === 'split' && !this.engine.drawnIn(r)) return
     const before = this.rows
+    const was = this.region
     this.region = r
+    this.compose()
     // An animation that lapses changes the area with nothing written: look again then.
     window.clearTimeout(this.lapse)
     this.lapse = window.setTimeout(() => this.read(), 850)
     if (this.rows !== before) this.onHeight?.()
-    if (!this.redraw) this.redraw = requestAnimationFrame(() => this.draw())
+    const go = () => {
+      this.pendingSince = 0
+      if (!this.redraw) this.redraw = requestAnimationFrame(() => this.draw())
+    }
+    // The same area redrawn (typing, the working line): on the next paint. An area that moved
+    // or changed size: once the app has stopped writing for 20 ms (at the latest 50 ms after),
+    // so a layout drawn over two frames is shown only finished.
+    const same = !!was && was.mode === r.mode && was.top === r.top && was.bottom === r.bottom
+    window.clearTimeout(this.settle)
+    if (same && !this.pendingSince) return go()
+    const now = performance.now()
+    if (!this.pendingSince) this.pendingSince = now
+    if (now - this.pendingSince >= 50) go()
+    else this.settle = window.setTimeout(go, 20)
   }
 
-  /** Copy the region's rows from the real terminal into the box, in one write. */
-  draw(): void {
-    if (this.redraw) cancelAnimationFrame(this.redraw)
-    this.redraw = 0
+
+  /**
+   * The region's rows as one write, taken from the real terminal when its frame is complete
+   * (by the paint the real terminal may be halfway through its next one).
+   */
+  private compose(): void {
     const r = this.region
-    if (!this.on || !this.opened || !r || r.mode !== 'split') return
+    if (!r || r.mode !== 'split' || this.engine.inSync) return
     const src = this.session.term
     const buf = src.buffer.active
     const n = this.rows
@@ -147,8 +176,8 @@ export class LiveView {
     // footer are at the bottom).
     const from = r.bottom - n + 1
     const cols = src.cols
-    if (this.term.cols !== cols || this.term.rows !== this.cap) this.term.resize(Math.max(2, cols), this.cap)
-    let out = '\x1b[0m\x1b[H\x1b[2J'
+    // One synchronized frame: xterm paints it whole or not at all.
+    let out = '\x1b[?2026h\x1b[0m\x1b[H\x1b[2J'
     const cell = buf.getNullCell()
     for (let i = 0; i < n; i++) {
       const line = buf.getLine(buf.baseY + from + i)
@@ -157,7 +186,19 @@ export class LiveView {
     const c = r.cursor
     const cy = c.y - from
     out += c.visible && cy >= 0 && cy < n ? `\x1b[${cy + 1};${c.x + 1}H\x1b[?25h` : '\x1b[?25l'
-    const shown = { rows: n, from, cols, total: r.bottom - r.top + 1 }
+    out += '\x1b[?2026l'
+    this.frameOut = { out, shown: { rows: n, from, cols, total: r.bottom - r.top + 1 }, r }
+  }
+
+  /** Copy the last complete frame into the box, in one write. */
+  draw(): void {
+    if (this.redraw) cancelAnimationFrame(this.redraw)
+    this.redraw = 0
+    const f = this.frameOut
+    if (!this.on || !this.opened || !f) return
+    const { out, shown, r } = f
+    const { rows: n, from, cols } = shown
+    if (this.term.cols !== cols || this.term.rows !== this.cap) this.term.resize(Math.max(2, cols), this.cap)
     // The box takes its new height when the frame is in its terminal: both are painted
     // on the same next frame, never a frame of one without the other.
     this.term.write(out, () => {
@@ -189,6 +230,7 @@ export class LiveView {
 
   dispose(): void {
     window.clearTimeout(this.lapse)
+    window.clearTimeout(this.settle)
     if (this.redraw) cancelAnimationFrame(this.redraw)
     for (const s of this.subs) s.dispose()
     this.engine.dispose()

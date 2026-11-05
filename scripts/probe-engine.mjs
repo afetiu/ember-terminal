@@ -199,7 +199,12 @@ const geometry = (tab) =>
 /** The hard rules, now; `words`: conversation text that must not be in the box. */
 const rules = async (tab, where, words = []) => {
   await wait(300)
-  const g = await geometry(tab)
+  let g = await geometry(tab)
+  // Read mid-frame (the real terminal one write ahead of the box): once more, a beat later.
+  if (g.text.join('|') !== g.live.slice(g.shown.from - (g.region?.top ?? 0), g.shown.from - (g.region?.top ?? 0) + g.shown.rows).join('|')) {
+    await wait(600)
+    g = await geometry(tab)
+  }
   const c = g.l.cli
   const r = g.region
   const fullTab = g.pane.top === 0 && Math.abs(g.pane.h - g.panesH) < 1 && c.pty.rows === c.rows && c.pty.cols === c.cols && c.rows * c.cellH <= c.paneH
@@ -214,6 +219,7 @@ const rules = async (tab, where, words = []) => {
   const hits = g.text.filter((t) => words.some((w) => w && t.includes(w)))
   check(`${where}: no conversation in the box`, hits.length === 0, hits.length ? JSON.stringify(hits.slice(0, 3)) : '')
   if (VERBOSE || hits.length || !exact || !same) console.log(`  ---- box (${where})\n${g.text.map((t, i) => `  ${String(g.shown.from + i).padStart(2)}|${t}`).join('\n')}`)
+  if (!same) console.log(`  ---- real live rows ${JSON.stringify(g.live)}\n  box ${JSON.stringify(g.text)}\n  log ${JSON.stringify(g.l.cli.liveLog.slice(-5))}`)
   return g
 }
 
@@ -304,6 +310,7 @@ if (ONLY !== 'codex') {
   check('at rest: the box is the prompt box and its status lines (≤ 7 rows)', g.shown.rows >= 3 && g.shown.rows <= 7 && /^[─━]/.test(g.text[0] ?? ''), `rows=${g.shown.rows} first=${JSON.stringify(g.text[0]?.slice(0, 20))}`)
   check('the keyboard is in the real terminal', (await lm()).cli.focusInTerm)
   await shot('claude-1-rest')
+  if (process.env['PROBE_REST_ONLY']) { kill(); process.exit(failed ? 1 : 0) }
 
   // ---- a reply
   const ASK1 = 'Reply with a one-line intro, then a markdown table of 3 planets and their number of moons. No tools.'
@@ -462,10 +469,16 @@ if (CODEX) {
   const up = await until(async () => { const x = await lm(); return x.mode === 'claude' && x.agent === 'codex' && (await boxHas(tab, /^›/)) && x }, 60_000)
   check('`codex` splits the tab: canvas above, the live area below', !!up)
   await steady(tab, 1500)
-  const W = ['OpenAI Codex (v', 'Tip: ', 'Update available']
+  // (Codex keeps its session card in its viewport while it says "model: loading": its own live cell.)
+  const W = ['Tip: ', 'Update available', 'shell line']
   let g = await rules(tab, 'codex at rest', W)
-  check('codex at rest: the prompt and its footer (≤ 6 rows)', g.shown.rows <= 6 && g.text.some((r) => /^›/.test(r)), `rows=${g.shown.rows}`)
+  if (!check('codex at rest: the prompt and its footer (≤ 6 rows, or with its session card, which Codex keeps live until the first message)', (g.shown.rows <= 6 || g.text.some((r) => /OpenAI Codex/.test(r))) && g.text.some((r) => /^›/.test(r)), `rows=${g.shown.rows}`))
+    console.log(`  region ${JSON.stringify(g.region)}\n${g.l.rows.map((r, i) => `  ${String(i).padStart(2)}|${r}`).join('\n')}\n  log ${JSON.stringify(g.l.cli.liveLog.slice(-12))}`)
   await shot('codex-1-rest')
+  if (process.env['PROBE_REST_ONLY']) {
+    kill()
+    process.exit(failed ? 1 : 0)
+  }
   await focusTerm(tab)
   await sampled(tab, 'codex: `/` typed', async () => {
     await key('/', 'Slash', 191, 0, '/')
