@@ -81,6 +81,16 @@ export class AgentHost {
     return agentSpec(this.onAgent ?? 'claude').name.replace(/ CLI$/, '')
   }
 
+  /** Why the canvas cannot be shown right now, in words for a toast; '' if it can. */
+  noCanvasWhy(): string {
+    const agent = this.v.session.announcedAgent
+    if (!agent) return ''
+    if (!WRAPPED.has(agent)) return `Ember's canvas works with Claude Code and Codex for now. ${agentSpec(agent).name} runs in its own screen.`
+    if (this.v.session.term.buffer.active.type === 'alternate')
+      return `${this.who} is using its full-screen display here, which leaves nothing to put on the canvas. Ember starts it in its classic display: /exit, then run ${agent} again in this tab.`
+    return ''
+  }
+
   rowsText(): string[] {
     const buf = this.v.session.term.buffer.active
     const out: string[] = []

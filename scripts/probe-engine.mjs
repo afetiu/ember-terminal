@@ -435,6 +435,21 @@ if (ONLY !== 'codex') {
   check('Ctrl+` again: the canvas and the box', !!l && l.cli.focusInTerm)
   await rules(tab, 'back from the full terminal', ['facts about the ocean', 'Jupiter'])
 
+  // ---- the Canvas | CLI switch, clicked with the mouse (a real press at the button)
+  const clickView = async (view) => {
+    const r = await ev(`(() => { const b = [...document.querySelectorAll('[data-view="${view}"]')].find((x) => x.offsetParent); if (!b) return null; const q = b.getBoundingClientRect(); const top = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return { x: q.left + q.width / 2, y: q.top + q.height / 2, hit: !!top && (top === b || b.contains(top)), under: top ? top.className : '' } })()`)
+    if (!r) return { found: false }
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: r.x, y: r.y, button: 'left', clickCount: 1 })
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r.x, y: r.y, button: 'left', clickCount: 1 })
+    return { found: true, ...r }
+  }
+  let c = await clickView('cli')
+  l = await until(async () => { const x = await lm(); return x.raw && x }, 5000)
+  check('clicking CLI shows the real terminal', !!l, JSON.stringify(c))
+  c = await clickView('canvas')
+  l = await until(async () => { const x = await lm(); return !x.raw && x.cli.canvasOn && x.cli.liveOn && x }, 5000)
+  check('clicking Canvas brings the canvas and the box back', !!l, JSON.stringify(c))
+
   // ---- the window resized: the page made smaller and back (the panes refit, the PTY with them)
   await sampled(tab, 'the window resized (smaller, back)', async () => {
     await send('Emulation.setDeviceMetricsOverride', { width: 1100, height: 700, deviceScaleFactor: 0, mobile: false })

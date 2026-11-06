@@ -121,7 +121,9 @@ function writeSettings(): string {
   // nothing of the conversation (the canvas has it). The full-screen renderer keeps half the
   // screen for the conversation whatever the size, which is what 1.7.0 showed in the box.
   // Passed only inside Ember, so other terminals keep the person's own setting.
-  const tui = { tui: 'default' }
+  // CLAUDE_CODE_NO_FLICKER=1 (from the environment, or a settings file's `env`) forces the
+  // full-screen renderer ahead of this setting, so it is switched off here too.
+  const tui = { tui: 'default', env: { CLAUDE_CODE_NO_FLICKER: '0' } }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
   writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')
   const file = join(dir, 'ember-settings.json')

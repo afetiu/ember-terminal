@@ -329,7 +329,17 @@ export class LoomView {
     this.scroller.addEventListener('wheel', (e) => stage.wheelTurns(e), { passive: false })
     this.jump.addEventListener('click', () => this.toBottom(true))
     this.rawPill.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('[data-view="canvas"]')) this.setRaw(false)
+      const t = e.target as HTMLElement
+      if (t.closest('[data-view="canvas"]')) {
+        // Already asked for the canvas and still on the agent's whole screen: say why,
+        // rather than a button that does nothing.
+        if (!this.raw) {
+          const why = host.noCanvasWhy()
+          if (why) this.hooks.toast(why)
+          return
+        }
+        this.setRaw(false)
+      } else if (t.closest('[data-view="cli"]')) this.setRaw(true)
     })
 
     this.el.addEventListener('click', (e) => input.click(e))

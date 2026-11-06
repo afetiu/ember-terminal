@@ -328,6 +328,9 @@ ${opts.startup}`
       TERM_PROGRAM: 'Ember',
       COLORTERM: 'truecolor',
     }
+    // Claude Code's full-screen renderer has no live area for the box to show, and this one
+    // turns it on ahead of every setting: never in a shell Ember starts.
+    for (const k of Object.keys(env)) if (k.toUpperCase() === 'CLAUDE_CODE_NO_FLICKER') delete env[k]
     if (opts.bin?.length) {
       // Windows spells it `Path`; node's env object is case-insensitive on read but not
       // on write, so find the key that exists rather than adding a second one.
