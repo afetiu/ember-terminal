@@ -68,8 +68,9 @@ irm https://ember.deepanswerlabs.com/install.ps1 | iex
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepanswerlabs.com/install.ps1 | iex"
 ```
 
-From 1.4.5 Ember updates itself: when a newer release is out, the version at the bottom of
-the sidebar becomes **Update to …**; click it, then **Restart to update**.
+From 1.4.5 Ember updates itself: it looks for a new release every hour, and when one is out
+the version at the bottom of the sidebar becomes **Update to …**; click it, then
+**Restart to update**.
 
 **Not code signed yet.** Windows SmartScreen may warn the first time: choose **More info**,
 then **Run anyway**. Every release is built from this repository by GitHub Actions and
@@ -143,8 +144,8 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 
 Ember makes these calls itself. Everything else is the agent CLI you run in it.
 
-- **Update check:** asks GitHub's releases API for the latest version at start and every
-  6 hours. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check
+- **Update check:** asks GitHub's releases API for the latest version at start, every hour,
+  and when you come back to the window after half an hour. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check
   for updates turns it off; clicking the version in the sidebar still checks.
 - **Plan usage:** polls `api.anthropic.com` every minute with Claude Code's own login, only
   while Settings › Agent › Plan usage is on. Off by default.

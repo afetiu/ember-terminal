@@ -401,7 +401,7 @@ ember diag                   Ember's recent log</code></pre>
   <p>Pasted or pushed images (<code>%TEMP%\ember-&lt;pid&gt;</code>) are deleted when Ember quits.</p>
   <p>Ember has no account and no telemetry. Your work goes wherever your agent CLI already sends it. The calls Ember makes on its own:</p>
   <ul>
-    <li><strong>Update check.</strong> GitHub's releases API, at start and every 6 hours. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check for updates turns it off.</li>
+    <li><strong>Update check.</strong> GitHub's releases API, at start, every hour, and when you come back to the window after half an hour. GitHub sees your IP address and Ember's version. Settings › Behaviour › Check for updates turns it off.</li>
     <li><strong>Plan usage.</strong> <code>api.anthropic.com</code> every minute with Claude Code's own login, only while the readout is on. Off by default.</li>
     <li><strong>Images in agent replies.</strong> An image from the internet loads only when you click it.</li>
   </ul>

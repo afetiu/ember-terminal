@@ -39,7 +39,7 @@ provider, as it would in any terminal. These are the only calls Ember makes itse
 
 | Call | When | What is sent | Turn it off |
 | --- | --- | --- | --- |
-| `api.github.com` releases | At start and every 6 hours | Your IP address and Ember's version | Settings › Behaviour › Check for updates (clicking the version still checks) |
+| `api.github.com` releases | At start, every hour, and when you come back to the window after half an hour | Your IP address and Ember's version | Settings › Behaviour › Check for updates (clicking the version still checks) |
 | `github.com` release download | Only when you click Update | Your IP address | Don't click it |
 | `api.anthropic.com` usage | Every minute, only while the plan-usage readout is on (off by default) | Claude Code's own login token | Settings › Agent › Plan usage in the sidebar |
 | The architecture map | Only for repos and URLs you add to a map | Requests to those addresses | Remove them from the map |
