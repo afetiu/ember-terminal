@@ -4,7 +4,7 @@
  * the first streams a spinner, with the renderer's own frame intervals recorded and a
  * DevTools trace of what each frame did. Also the per-process memory of the app.
  *
- *   node scripts/probe-jank.mjs [--bounds=3840x2160] [--material=none|acrylic|mica] [--opacity=N]
+ *   node scripts/probe-jank.mjs [--bounds=3840x2160]
  *                               [--inject="<css>"] [--idle] [--paints]
  */
 import { spawn, execFileSync } from 'node:child_process'
@@ -20,10 +20,8 @@ mkdirSync(EMBER_HOME, { recursive: true })
 const userCfg = join(process.env.USERPROFILE ?? '', '.ember', 'config.json')
 if (existsSync(userCfg)) {
   const cfg = JSON.parse(readFileSync(userCfg, 'utf8'))
-  if (flags.has('material')) cfg.window.material = flags.get('material')
-  if (flags.has('opacity')) cfg.window.opacity = Number(flags.get('opacity'))
   writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
-  console.log(`config: material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'} bounds=${bounds}`)
+  console.log(`config: basalt bounds=${bounds}`)
 }
 // The same spinner runs in other terminals for comparison: scripts/spinner.ps1.
 const spinner = process.env.SPINNER ?? join(new URL('.', import.meta.url).pathname.slice(1), 'spinner.ps1')

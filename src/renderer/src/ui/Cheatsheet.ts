@@ -23,14 +23,13 @@ export class Cheatsheet {
     {
       title: 'Essentials',
       items: [
-        { keys: 'Ctrl K', what: 'Command line: new, o, split, todo, note, theme, del…' },
+        { keys: 'Ctrl K', what: 'Command line: new, o, split, todo, note, del…' },
         { keys: 'Ctrl Shift P', what: 'The same' },
         { keys: 'Ctrl Shift D', what: 'Todo list over this tab, and back' },
         { keys: '>', what: '…run a command in this pane' },
         { keys: '@', what: '…open a project' },
         { keys: '!', what: '…run a package.json / Makefile task' },
         { keys: '?', what: '…search every open session' },
-        { keys: '#', what: '…switch theme' },
         { keys: 'F1', what: 'This cheatsheet' },
         { keys: 'Ctrl ,', what: 'Settings' },
       ],

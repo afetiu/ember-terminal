@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { loadConfig } from './config.js'
 import { registerIpc } from './ipc.js'
 import { ConPtyHost } from './pty/ConPtyHost.js'
-import { applyGlass, createWindow } from './window.js'
+import { createWindow } from './window.js'
 import { registerPermissions } from './permissions.js'
 import { registerBrain } from './brain.js'
 import { startBridge, stopBridge } from './bridge.js'
@@ -124,12 +124,8 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
     // Before the window: a restored tab spawns its shell almost immediately, and a
     // shell that starts before the bridge is listening never learns where its panel is.
     await startBridge()
-    const win = createWindow(config)
-    // The glass is half main-process: material and window alpha are properties of the
-    // OS window, so a settings change has to reach here as well as the renderer.
-    registerIpc(host, (next) => {
-      applyGlass(win, next)
-    })
+    createWindow(config)
+    registerIpc(host)
     registerPermissions()
     registerBrain()
 

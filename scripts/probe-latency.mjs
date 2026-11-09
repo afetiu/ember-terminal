@@ -20,8 +20,8 @@
  * on the renderer's main thread, gaps between animation frames, main's event-loop delay,
  * and how long the pty spent paused for backpressure.
  *
- *   node scripts/probe-latency.mjs [--scenario=idle|tui|flood|all] [--material=none|acrylic|mica]
- *                                  [--opacity=N] [--no-webgl] [--tabs=N] [--rainbow] [--profile] [--keep]
+ *   node scripts/probe-latency.mjs [--scenario=idle|tui|flood|all]
+ *                                  [--no-webgl] [--tabs=N] [--rainbow] [--profile] [--keep]
  *
  * --tabs=N opens N more tabs first, each running a program that repaints at 4fps, so the
  * tui scenario is measured with the kind of background a day's work has.
@@ -54,8 +54,6 @@ mkdirSync(EMBER_HOME, { recursive: true })
 const userCfg = join(homedir(), '.ember', 'config.json')
 const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 cfg.window ??= {}
-if (args.has('material')) cfg.window.material = args.get('material')
-if (args.has('opacity')) cfg.window.opacity = Number(args.get('opacity'))
 if (args.has('experience')) cfg.experience = args.get('experience')
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
@@ -205,7 +203,7 @@ await sleep(1500)
 const first = await waitForPrompt()
 // --no-park: keep off-screen tabs in layout (the pre-parking behaviour), for A/B.
 if (args.has('no-park')) await ev(`window.__ember.setParking && window.__ember.setParking(false)`)
-console.log(`ember up · pane ${first.cols}x${first.rows} · material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'}${args.has('no-webgl') ? ' · DOM renderer' : ''}${args.has('no-park') ? ' · parking off' : ''}`)
+console.log(`ember up · pane ${first.cols}x${first.rows}${args.has('no-webgl') ? ' · DOM renderer' : ''}${args.has('no-park') ? ' · parking off' : ''}`)
 
 // ---- in-page recorder ------------------------------------------------------------------
 // Installed once per session. Records what was sent, what the tail of the screen said

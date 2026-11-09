@@ -1,12 +1,13 @@
 /**
- * Basalt, looked at. A dev Ember (own EMBER_HOME, Basalt forced in its config) opens a
+ * Basalt, looked at. A dev Ember (own EMBER_HOME, an old config asking for another look) opens a
  * canvas tab and is fed the reply the design mock shows — "why is checkout slow since
  * tuesday?", a headline answer, the latency table, the Client → Orders API → Payments ·
  * lock → Postgres flow and a p95 chart pinned beside it — through window.__ember.loomFeed
  * (no model). Then screenshots of the parts the theme restyles: the whole window, the
  * sidebar, a button held down mid-press (CDP mouse down, no up), a menu, the question
  * deck, Ctrl+K and Settings. Checks the material too: opaque window, no backdrop-filter
- * anywhere, the faces resolved.
+ * anywhere, the faces resolved; and that the look is fixed: an old config's theme, glass and
+ * fonts are ignored, and Settings, Ctrl+K and the title bar offer no way to change it.
  *
  *   npm run build; node scripts/probe-theme-basalt.mjs [out-dir]
  *
@@ -25,13 +26,12 @@ rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 mkdirSync(OUT, { recursive: true })
 
-// The palette out of the source, so the probe follows edits (the shot-themes way).
-let src = readFileSync(join(REPO, 'src/main/themes.ts'), 'utf8')
-for (const [, k, v] of src.matchAll(/export const (\w+) = ('[^']+')/g)) src = src.replaceAll(`name: ${k},`, `name: ${v},`)
-const at = src.indexOf(`name: 'Basalt'`)
-if (at < 0) throw new Error('no Basalt theme in themes.ts')
-const theme = new Function(`return ${src.slice(src.lastIndexOf('{', at), src.indexOf('}', at) + 1)}`)()
-writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ theme, labs: { enabled: true }, font: { family: 'DM Mono', size: 13, weight: 400 } }, null, 2))
+// An old config that asked for another look (a theme, glass, a font of its own): Basalt
+// holds whatever the file says, so none of it may show.
+writeFileSync(
+  join(EMBER_HOME, 'config.json'),
+  JSON.stringify({ theme: { name: 'Ember Day', background: '#FAF6EF', foreground: '#2A231D', cursor: '#B86E0B' }, window: { opacity: 40, material: 'acrylic' }, font: { family: 'Consolas', uiFamily: 'Georgia', size: 13 }, appearance: { night: 'Ember Night', day: 'Ember Day' }, labs: { enabled: true } }, null, 2)
+)
 seedHome(EMBER_HOME)
 
 if (await fetch(`http://127.0.0.1:${PORT}/json/version`).then(() => true, () => false)) {
@@ -278,35 +278,31 @@ try {
     await wait(300)
   }
 
-  // ---- Ctrl+K, with the Basalt command in it
-  await ev(`window.__ember.openPalette('basalt')`)
+  // ---- Ctrl+K: no theme to pick, not by name, not by '#'
+  await ev(`window.__ember.openPalette('theme')`)
   await wait(500)
   const rows = await ev(`[...document.querySelectorAll('.ember-palette-row')].map((r) => r.textContent)`)
-  check('Ctrl+K offers "Theme: Basalt"', rows.some((r) => /Theme: Basalt/.test(r)), JSON.stringify(rows))
+  check('Ctrl+K offers no theme commands', !rows.some((r) => /theme|Night and Day|Basalt/i.test(r)), JSON.stringify(rows))
   await shot('7-palette')
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await wait(300)
 
-  // ---- Settings, on the themes
+  // ---- Settings: nothing to change the look with
   await ev(`window.__ember.openSettings()`)
   await wait(700)
   await shot('8-settings')
-  // Picking another theme applies at once and takes the stone away; Basalt brings it back.
-  const pick = async (name) => {
-    const at = await ev(`(() => { const b = [...document.querySelectorAll('.ember-theme')].find((t) => t.title === ${JSON.stringify(name)}); if (!b) return null; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
-    if (!at) return false
-    await mouse('mousePressed', at.x, at.y)
-    await mouse('mouseReleased', at.x, at.y)
-    await wait(1200)
-    return true
-  }
-  if (await pick('Ember Night')) {
-    check('another theme: stone gone live', !(await ev(`document.body.classList.contains('theme-basalt')`)) && (await ev(`getComputedStyle(document.querySelector('.ember-stack')).borderRadius`)) !== '20px')
-    await pick('Basalt')
-    check('Basalt again: applied live, no restart', await ev(`document.body.classList.contains('theme-basalt') && getComputedStyle(document.querySelector('.ember-stack')).backgroundColor === 'rgb(37, 38, 41)'`))
-    await shot('8b-settings-basalt-picked')
-  } else check('theme tiles in Settings', false)
+  const fixedLook = await ev(`({
+    tabs: [...document.querySelectorAll('.ember-settings-tab')].map((b) => b.textContent),
+    tiles: document.querySelectorAll('.ember-theme, .ember-fontpick').length,
+    labels: [...document.querySelectorAll('.ember-settings-label')].map((e) => e.textContent),
+  })`)
+  check('Settings has no theme, font, opacity or backdrop', fixedLook.tiles === 0 && !fixedLook.tabs.includes('Look') && !fixedLook.labels.some((l) => /theme|^font$|interface font|opacity|backdrop|scanlines|weight/i.test(l)), JSON.stringify(fixedLook))
+  check('no day/night switch in the title bar', !(await ev(`!!document.querySelector('.ember-voicetoggle, .is-mode')`)))
+  // The old config's look did not take: Basalt's palette and faces, an opaque window.
+  const cfg = await ev(`(() => { const c = window.__ember.config(); return { theme: c.theme.name, font: c.font.family, opacity: c.window.opacity, material: c.window.material, appearance: c.appearance } })()`)
+  check("an old config's theme, glass and fonts are ignored", cfg.theme === 'Basalt' && /DM Mono/.test(cfg.font) && cfg.opacity === undefined && cfg.material === undefined && cfg.appearance === undefined, JSON.stringify(cfg))
+  check('interface in Archivo', /Archivo/.test(await ev(`getComputedStyle(document.documentElement).getPropertyValue('--ui-font')`)))
   await ev(`window.__ember.openSettings()`)
   await wait(300)
 

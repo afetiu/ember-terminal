@@ -132,11 +132,11 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
 ## Everything else
 
 - `Ctrl+K` is the command line for everything Ember can do. The same commands work from
-  any shell as `ember`: `ember new`, `ember theme`, `ember set window.opacity 60`…
+  any shell as `ember`: `ember new`, `ember split right`, `ember set font.size 14`…
 - Under every session is a real PowerShell, with command blocks, splits
   (`Alt+Shift+` `+` / `−`), find in scrollback and a task runner.
-- `Ctrl+,` opens Settings: themes (a day and a night pair, plus many more), fonts, window
-  backdrop, motion, agents, sound.
+- One look: Basalt, matte stone, in Archivo and DM Mono. There is no theme to pick.
+- `Ctrl+,` opens Settings: text size and spacing, motion, agents, sound.
 - Notes, todos and settings are plain files in your user folder. Your work goes where your
   agent CLI already sends it; Ember adds no account and no telemetry.
 

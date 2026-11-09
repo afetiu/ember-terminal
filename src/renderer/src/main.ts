@@ -13,7 +13,7 @@ async function boot(): Promise<void> {
   // Wait for the terminal font before the first fit: measuring cell width against a
   // fallback font produces a wrong cols/rows that only corrects on the next resize.
   await loadFont(config.font.family, config.font.weight, config.font.size)
-  if (config.font.uiFamily) await loadFont(config.font.uiFamily, 400, 13)
+  await loadFont("Archivo", 400, 13)
 
   const app = new App(config)
   await app.boot()

@@ -1,6 +1,7 @@
 /**
- * Verifies wave 4: the settings panel edits the real config file, theme switching
- * applies live, the cheatsheet opens, and zen mode hides the chrome.
+ * Verifies wave 4: the settings panel edits the real config file, there is no look to pick
+ * (Basalt is the only one: no themes, fonts, backdrop or opacity), the cheatsheet opens,
+ * and zen mode hides the chrome.
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -85,16 +86,18 @@ for (const t of tabs) {
   const here = await ev(`({
     sections: [...document.querySelectorAll('.ember-settings-section h3')].map(e => e.textContent),
     rows: document.querySelectorAll('.ember-settings-row').length,
-    themes: document.querySelectorAll('.ember-theme').length,
+    themes: document.querySelectorAll('.ember-theme, .ember-fontpick').length,
+    look: [...document.querySelectorAll('.ember-settings-label')].map(e => e.textContent).filter(t => /theme|font$|opacity|backdrop|scanlines/i.test(t)),
   })`)
   panel.sections.push(...here.sections)
   panel.rows += here.rows
   panel.themes = Math.max(panel.themes, here.themes)
+  panel.look = [...(panel.look ?? []), ...here.look]
 }
 check('settings panel opens', panel.open === true)
 check('sections render', panel.sections.length >= 7, JSON.stringify(panel.sections))
-check('controls render', panel.rows > 25, `${panel.rows} rows across ${tabs.length} tabs`)
-check('themes listed', panel.themes >= 5, `${panel.themes} themes`)
+check('controls render', panel.rows > 20, `${panel.rows} rows across ${tabs.length} tabs`)
+check('no theme, font picker, opacity or backdrop in Settings', panel.themes === 0 && !panel.look.length && !tabs.includes('Look'), JSON.stringify({ tiles: panel.themes, look: panel.look, tabs }))
 
 // ---- a control writes the real config file ----
 await tab('Behaviour')
@@ -112,21 +115,14 @@ await sleep(1400)
 const after = JSON.parse(readFileSync(CONFIG, 'utf8')).sound.volume
 check('a slider writes config.json', Math.abs(after - 0.9) < 0.01 && after !== before, `${before} -> ${after}`)
 
-// ---- theme switch applies live ----
-await tab('Look')
-await ev(`(() => {
-  const t = [...document.querySelectorAll('.ember-theme')].find(b => b.textContent.includes('Deep Sea'))
-  t.click()
-  return true
-})()`)
-await sleep(1600)
-const themed = await ev(`({
-  name: window.__ember.config().theme.name,
-  accent: getComputedStyle(document.documentElement).getPropertyValue('--c-accent').trim(),
-})`)
-const onDisk = JSON.parse(readFileSync(CONFIG, 'utf8')).theme.name
-check('theme applies live', themed.name === 'Deep Sea' && themed.accent.toLowerCase() === '#39d3e8', JSON.stringify(themed))
-check('theme persists to disk', onDisk === 'Deep Sea', String(onDisk))
+// ---- a theme written into the file by hand does not take: the look is fixed ----
+{
+  const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'))
+  writeFileSync(CONFIG, JSON.stringify({ ...cfg, theme: { ...cfg.theme, name: 'Deep Sea', background: '#06121f', cursor: '#39d3e8' }, window: { ...cfg.window, opacity: 40, material: 'acrylic' } }, null, 2))
+  await sleep(1600)
+  const now = await ev(`({ name: window.__ember.config().theme.name, accent: getComputedStyle(document.documentElement).getPropertyValue('--c-accent').trim(), basalt: document.body.classList.contains('theme-basalt'), opacity: window.__ember.config().window.opacity })`)
+  check('a hand-edited theme is ignored: still Basalt', now.name === 'Basalt' && now.accent.toLowerCase() === '#ff7a3d' && now.basalt && now.opacity === undefined, JSON.stringify(now))
+}
 
 // ---- reset to defaults is two-step ----
 await ev(`document.querySelector('.ember-settings-reset').click()`)
@@ -142,7 +138,7 @@ await sleep(1600)
 const reset = JSON.parse(readFileSync(CONFIG, 'utf8'))
 check(
   'second click restores shipped defaults',
-  Math.abs(reset.sound.volume - 1) < 0.01 && reset.theme.name === 'Ember Night',
+  Math.abs(reset.sound.volume - 1) < 0.01 && reset.theme.name === 'Basalt',
   `volume ${reset.sound.volume}, theme ${reset.theme.name}`,
 )
 

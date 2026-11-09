@@ -1,85 +1,9 @@
 import { app, BrowserWindow, shell, type WebContents } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { opaqueTheme, type EmberConfig } from '../shared/types.js'
+import type { EmberConfig } from '../shared/types.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
-
-const fades = new WeakMap<BrowserWindow, NodeJS.Timeout>()
-const configs = new WeakMap<BrowserWindow, EmberConfig>()
-/** The system backdrop each window was created with; only these can change it live. */
-const births = new WeakMap<BrowserWindow, EmberConfig['window']['material']>()
-
-/**
- * Ease the window's own alpha, in main, over ~200ms.
- *
- * This is the one animation the renderer cannot own: `setOpacity` is a property of
- * the OS window, not of anything on the page. Stepped on a timer rather than a
- * spring because it runs while Ember is losing focus, when nothing on screen is
- * being looked at closely — it only has to not be a jump cut.
- */
-function fadeTo(win: BrowserWindow, target: number): void {
-  const running = fades.get(win)
-  if (running) clearTimeout(running)
-  const step = () => {
-    if (win.isDestroyed()) return
-    const from = win.getOpacity()
-    const delta = target - from
-    if (Math.abs(delta) < 0.005) {
-      win.setOpacity(target)
-      fades.delete(win)
-      return
-    }
-    win.setOpacity(from + delta * 0.28)
-    fades.set(win, setTimeout(step, 16))
-  }
-  step()
-}
-
-/**
- * Keep the window see-through while it is not the active one.
- *
- * Windows only draws a mica/acrylic system backdrop for the *active* window: the
- * moment Ember loses focus DWM swaps the material for a flat grey fill and the
- * terminal turns into a slab, which is exactly when you are most likely to be
- * looking through it at whatever you switched to. That is DWM
- * policy and the app cannot re-apply its way out of it — re-setting the material on
- * blur, hammering it on a timer and the legacy `SetWindowCompositionAttribute`
- * blur-behind were all measured, and on Windows 11 the accent API does not even blur
- * any more: it paints the region black. `scripts/probe-glass.mjs` has the receipts.
- *
- * What does still work is the window's own alpha. So the blur stays, and the whole
- * window fades to `window.inactiveOpacity` when it deactivates: frosted while you
- * are in it, plain glass while you are not, never a slab.
- */
-export function applyGlass(win: BrowserWindow, config: EmberConfig): void {
-  if (win.isDestroyed()) return
-  const previous = configs.get(win)
-  configs.set(win, config)
-  const { material, inactiveOpacity } = config.window
-  // A stone theme (Basalt) is opaque: its content layer paints every pixel, so a system
-  // backdrop under it would only cost DWM a blur nobody sees — and turn into a grey slab
-  // on blur. The backdrop is switched off while it is on and back on when it is left.
-  const opaque = opaqueTheme(config.theme)
-  // Material can be re-set live between the backdrop modes. Switching to or from
-  // 'none' cannot: per-pixel transparency is fixed when the window is created, so
-  // that one still needs a relaunch. A window born with a backdrop can still have it
-  // switched off ('none' as a material) and on again, which is what the stone needs.
-  const born = births.get(win) ?? material
-  if (born !== 'none' && material !== 'none') {
-    const want = opaque ? 'none' : material
-    const had = previous ? (opaqueTheme(previous.theme) ? 'none' : previous.window.material) : born
-    if (want !== had) win.setBackgroundMaterial(want)
-  }
-  // A hand-edited config can carry anything; a bad number here would set the window's
-  // alpha to NaN and make it vanish.
-  const inactive = Number.isFinite(inactiveOpacity) ? Math.min(1, Math.max(0.2, inactiveOpacity / 100)) : 1
-  // 'none' is already transparent per-pixel, focused or not; fading it as well would
-  // dim the text for no gain.
-  // Stone does not turn to glass when you look away: an opaque theme stays opaque.
-  const wanted = material === 'none' || opaque || win.isFocused() ? 1 : inactive
-  fadeTo(win, wanted)
-}
 
 /**
  * Ember's own windows never leave the page they were opened on.
@@ -127,11 +51,6 @@ app.on('web-contents-created', (_e, wc) => {
 })
 
 export function createWindow(config: EmberConfig): BrowserWindow {
-  // See applyGlass: a backdrop window is a real window with alpha, a 'none' window is
-  // a transparent one. Only the second can carry per-pixel transparency, and only the
-  // first can carry blur — Chromium cannot blur pixels it does not own.
-  const systemBackdrop = config.window.material !== 'none'
-
   // EMBER_PROBE_BOUNDS=WxH gives a probe a fixed, comparable window without maximising
   // over the person's screen.
   const bounds = /^(\d+)x(\d+)$/.exec(process.env['EMBER_PROBE_BOUNDS'] ?? '')
@@ -142,16 +61,15 @@ export function createWindow(config: EmberConfig): BrowserWindow {
     minHeight: 280,
     show: false,
     // 'hidden' rather than frame:false — keeps Windows 11 snap layouts, rounded
-    // corners, shadow and the system backdrop, while letting us draw our own chrome.
+    // corners and shadow, while letting us draw our own chrome.
     titleBarStyle: 'hidden',
     titleBarOverlay: false,
     // A packaged build takes its icon from the executable; a dev run would otherwise
     // show Electron's, which is not what a screenshot of the taskbar should say.
     ...(app.isPackaged ? {} : { icon: join(__dirname, '../../build/icon.png') }),
-    // Either way the window itself must be fully transparent, with the content layer
-    // applying its own tint on top.
-    backgroundColor: '#00000000',
-    ...(systemBackdrop ? { backgroundMaterial: config.window.material } : { transparent: true }),
+    // Opaque stone (Basalt), no system backdrop: the window is the theme's ground until
+    // the page paints over it, so it never flashes white or shows the desktop.
+    backgroundColor: config.theme.background,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       // Not sandboxed: the preload is an ES module and reads the home directory from
@@ -188,11 +106,6 @@ export function createWindow(config: EmberConfig): BrowserWindow {
       win.show()
     }
   })
-
-  births.set(win, config.window.material)
-  applyGlass(win, config)
-  win.on('focus', () => applyGlass(win, configs.get(win) ?? config))
-  win.on('blur', () => applyGlass(win, configs.get(win) ?? config))
 
   // Ctrl+Shift+I opens the developer tools, in releases too: when something goes wrong on
   // someone's machine, its console is the quickest way to see why.

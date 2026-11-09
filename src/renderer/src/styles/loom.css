@@ -1645,24 +1645,6 @@
   --l-r-card: 12px;
   --l-r-ctl: 8px;
 }
-body.is-light .loom,
-body.is-light .loom-modal {
-  --l-ink: color-mix(in srgb, var(--c-fg) 14%, #23211f);
-  --l-strong: color-mix(in srgb, var(--c-fg) 8%, #121110);
-  --l-line: rgba(0, 0, 0, 0.08);
-  --l-line-strong: rgba(0, 0, 0, 0.14);
-  --l-s1: color-mix(in srgb, var(--c-bg) 90%, #fff);
-  --l-s2: #fff;
-  --l-s3: #fff;
-  --l-card-2: rgba(0, 0, 0, 0.035);
-  --l-shadow-1: 0 6px 20px -14px rgba(0, 0, 0, 0.25);
-  --l-shadow-2: 0 18px 50px -24px rgba(0, 0, 0, 0.3);
-  --l-shadow-3: 0 22px 60px -20px rgba(0, 0, 0, 0.35);
-  --l-ok: #2f8f5f;
-  --l-warn: #a8740f;
-  --l-err: #c03a45;
-  --l-info: #2f6fb8;
-}
 
 .loom {
   color: var(--l-ink);
@@ -2140,41 +2122,6 @@ body.is-light .loom-modal {
 }
 
 /* On a light theme the glass is milk, and the rim is a shade, not a light. */
-body.is-light .loom-piece,
-body.is-light .loom-diagram {
-  background: rgba(255, 255, 255, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.05),
-    0 18px 48px -30px rgba(0, 0, 0, 0.3);
-}
-body.is-light .loom-piece.is-pinned {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 30px 70px -30px rgba(0, 0, 0, 0.35);
-}
-body.is-light .loom-piece-head {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
-}
-body.is-light .loom-menu,
-body.is-light .loom-pop,
-body.is-light .loom-steps,
-body.is-light .loom-sign {
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 22px 60px -24px rgba(0, 0, 0, 0.35);
-}
-body.is-light .loom-code,
-body.is-light .loom-table,
-body.is-light .loom-note,
-body.is-light .loom-out {
-  background: rgba(0, 0, 0, 0.03);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-}
 
 /* ---------------------------------------------------------------- a clean bar */
 
@@ -3158,9 +3105,6 @@ body.is-light .loom-out {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-body.is-light .loom-menu {
-  background: #ffffff !important;
-}
 
 /* ==========================================================================
    One thing in focus. The board is a row of chips and one open object.
@@ -3306,9 +3250,7 @@ body.is-light .loom-menu {
 .loom-menu.is-change .loom-menu-ask textarea {
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--l-warn, #e0b45a) 60%, transparent);
 }
-body.is-light .loom-menu-ask textarea {
-  background: rgba(0, 0, 0, 0.04);
-}
+
 .loom-menu-answer {
   display: none;
   margin-top: 8px;
@@ -3395,9 +3337,6 @@ body.is-light .loom-menu-ask textarea {
   color: var(--l-strong);
   transform: translateY(-1px);
 }
-body.is-light .loom-menu .loom-menu-grid button {
-  background: rgba(0, 0, 0, 0.035);
-}
 
 /* The film strip, quieter: it should be there when you look for it, not pull the eye. */
 .loom-rail {
@@ -3416,10 +3355,7 @@ body.is-light .loom-menu .loom-menu-grid button {
 .loom-rail:hover {
   opacity: 1;
 }
-body.is-light .loom-rail {
-  background: rgba(0, 0, 0, 0.03);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-}
+
 .loom-dot {
   width: 7px;
   height: 6px;
@@ -3524,9 +3460,6 @@ body.is-light .loom-rail {
 .loom-menu .loom-menu-grid button:hover svg {
   color: var(--l-accent);
 }
-body.is-light .loom-menu .loom-menu-grid button {
-  background: none;
-}
 
 /* ==========================================================================
    THE SYSTEM (2026-10-31, the professional pass). Last in the file: it wins.
@@ -3561,14 +3494,6 @@ body.is-light .loom-menu .loom-menu-grid button {
   --fill-1: rgba(255, 255, 255, 0.035);
   --fill-2: rgba(255, 255, 255, 0.06);
   --focus: 0 0 0 2px color-mix(in srgb, var(--c-accent) 50%, transparent);
-}
-body.is-light .loom,
-body.is-light .loom-modal,
-body.is-light .loom-rawpill {
-  --rim: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
-  --rim-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --fill-1: rgba(0, 0, 0, 0.03);
-  --fill-2: rgba(0, 0, 0, 0.055);
 }
 
 .loom {
@@ -3922,16 +3847,6 @@ body.is-light .loom-rawpill {
   font-weight: 600;
 }
 
-body.is-light .loom-ask .loom-caret {
-  background: rgba(0, 0, 0, 0.35);
-}
-body.is-light .loom-sign,
-body.is-light .loom-menu {
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.07),
-    0 18px 50px -22px rgba(0, 0, 0, 0.3);
-}
-
 /* ==========================================================================
    The notebook: your todo list and notes, in one drawer beside the canvas.
    ========================================================================== */
@@ -3985,9 +3900,7 @@ body.is-light .loom-menu {
   opacity: 1;
   pointer-events: auto;
 }
-body.is-light .loom-drawer {
-  background: #ffffff;
-}
+
 .loom-drawer-head {
   display: flex;
   align-items: center;
@@ -4294,12 +4207,7 @@ body.is-light .loom-drawer {
   border-radius: 50%;
   background: var(--l-faint);
 }
-body.is-light .loom-ask .loom-caret {
-  background: none;
-}
-body.is-light .loom-ask .loom-caret::before {
-  background: rgba(0, 0, 0, 0.35);
-}
+
 .loom-now-line {
   align-items: center;
   gap: 12px;
@@ -4788,15 +4696,6 @@ body.is-light .loom-ask .loom-caret::before {
 .loom-piece.is-sticky .loom-piece-head {
   background: color-mix(in srgb, #f2c46d 22%, transparent);
 }
-body.is-light .loom-piece.is-sticky {
-  background: #fff6d8;
-  box-shadow:
-    inset 0 0 0 1px rgba(180, 130, 20, 0.28),
-    0 14px 32px -16px rgba(80, 50, 0, 0.3);
-}
-body.is-light .loom-piece.is-sticky .loom-piece-head {
-  background: #fde9a8;
-}
 
 /* ---------------------------------------------------------------- one bar, both views */
 
@@ -4818,9 +4717,7 @@ body.is-light .loom-piece.is-sticky .loom-piece-head {
   font-size: calc(var(--l-font-size, 14px) * 0.78);
   cursor: default;
 }
-body.is-light .loom-rawpill.loom-sign {
-  background: color-mix(in srgb, var(--c-bg) 94%, #fff);
-}
+
 /* The bar's words in the canvas's text face in both views, not the terminal's mono. */
 .loom-rawpill.loom-sign,
 .loom-rawpill.loom-sign button {
@@ -4854,9 +4751,7 @@ body.is-light .loom-rawpill.loom-sign {
     0 10px 30px -12px rgba(0, 0, 0, 0.7);
   font: 600 13px/1 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 }
-body.is-light .loom-zoom {
-  background: color-mix(in srgb, var(--c-bg) 94%, #fff);
-}
+
 .loom-zoom button {
   min-width: 30px;
   height: 28px;
@@ -4990,13 +4885,6 @@ body.is-light .loom-zoom {
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 38%, transparent),
     0 18px 48px -30px rgba(0, 0, 0, 0.65);
-}
-body.is-light .loom-answers {
-  background: color-mix(in srgb, var(--c-bg) 62%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 18px 48px -30px rgba(0, 0, 0, 0.35);
 }
 
 /* ---------------------------------------------------------------- questions: the deck

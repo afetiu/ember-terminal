@@ -23,7 +23,7 @@
   /* A link-ish cyan for URLs a session printed. */
   --c-cyan: #2de2e6;
   /* What a surface sinks toward to sit below its neighbour, and what a shadow is made of.
-     Black on a dark theme; App swaps both under body.is-light. */
+     Black: the stone is dark. */
   --c-shade: #000;
   --c-shadow: #000;
   /* The veil behind a modal sheet. */
@@ -41,18 +41,6 @@
 /* A light palette (see ui/tone.ts). Surfaces darken toward a deeper paper rather than
    black, shadows are a soft tint of the ink, and the state colours become their deep
    versions: mint and amber that glow on near-black are near-invisible on white. */
-body.is-light {
-  --c-working: #0b7a5c;
-  --c-attention: #9a5f00;
-  --c-danger: #c4253f;
-  --c-cyan: #0a7684;
-  --c-shade: color-mix(in srgb, var(--c-fg) 18%, var(--c-bg));
-  --c-shadow: color-mix(in srgb, var(--c-fg) 38%, transparent);
-  --c-scrim: color-mix(in srgb, var(--c-fg) 38%, var(--c-bg));
-  --fade: 0.5;
-  /* Hairlines are slightly firmer: at 9% the edge of a pale card on a pale stage is gone. */
-  --hairline: color-mix(in srgb, var(--c-fg) 13%, transparent);
-}
 
 * {
   box-sizing: border-box;
@@ -64,7 +52,6 @@ body.is-light {
     .ember-card,
     .ember-newtab,
     .ember-sidebar-toggle,
-    .ember-voicetoggle,
     .ember-panel-btn,
     .ember-notes-row,
     .ember-notes-new,
@@ -166,13 +153,6 @@ body {
    transparent one, so the glass build draws its own corners. Maximised windows are
    square-cornered on Windows 11 — matching that is what stops a hairline of desktop
    showing at the corners of a full-screen terminal. */
-body.is-glass .ember-root {
-  border-radius: 8px;
-}
-
-body.is-glass.is-maximized .ember-root {
-  border-radius: 0;
-}
 
 /* ---------- title bar ---------- */
 
@@ -737,9 +717,6 @@ body.sidebar-mini .ember-card {
 }
 
 /* The live chip's red is a lamp on a dark strip; on paper it is the deep version. */
-body.is-light .ember-vitals-chip.is-live {
-  color: var(--c-danger);
-}
 
 .ember-wincontrols {
   display: flex;
@@ -2223,156 +2200,10 @@ body.is-zen .ember-fx {
 
 /* ---------- font picker ---------- */
 
-.ember-fontpick {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 240px;
-  padding: 5px 8px;
-  border-radius: 7px;
-  border: 1px solid color-mix(in srgb, var(--c-dim) 40%, transparent);
-  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
-  color: var(--c-fg);
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 130ms var(--ease-move);
-}
-
-.ember-fontpick:hover,
-.ember-fontpick:focus-visible {
-  border-color: var(--c-accent);
-  outline: none;
-}
-
-.ember-fontpick-value {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 /* An inherited value is a statement about another setting, not a font — so it is
    never drawn in one. */
-.ember-fontpick.is-inherited .ember-fontpick-value {
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 54% * var(--fade)), transparent);
-  font-style: italic;
-}
-
-.ember-fontpick-caret {
-  flex: none;
-  font-style: normal;
-  font-size: 11px;
-  line-height: 1;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 55% * var(--fade)), transparent);
-}
-
-.ember-fontpick-menu {
-  position: fixed;
-  z-index: 140;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: 11px;
-  border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
-  background: color-mix(in srgb, var(--c-bg) 97%, transparent);
-  box-shadow: 0 22px 60px color-mix(in srgb, var(--c-shadow) 55%, transparent);
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 110ms var(--ease-move),
-    transform 140ms var(--ease-snap);
-}
-
-.ember-fontpick-menu.is-open {
-  opacity: 1;
-  transform: none;
-}
-
-.ember-fontpick-filter {
-  flex: none;
-  padding: 9px 11px;
-  border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--c-dim) 26%, transparent);
-  background: transparent;
-  color: var(--c-fg);
-  font-family: var(--ui-font);
-  font-size: 12px;
-  outline: none;
-}
-
-.ember-fontpick-filter::placeholder {
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 66% * var(--fade)), transparent);
-}
-
-.ember-fontpick-list {
-  overflow-y: auto;
-  padding: 4px;
-}
-
-.ember-fontpick-group {
-  padding: 8px 8px 4px;
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--c-accent-ink) calc(100% - 28% * var(--fade)), transparent);
-}
-
-.ember-fontpick-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 5px 8px;
-  border-radius: 7px;
-  font-size: 13px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 14% * var(--fade)), transparent);
-  cursor: pointer;
-}
-
-.ember-fontpick-row.is-active {
-  background: color-mix(in srgb, var(--c-accent) 22%, transparent);
-  color: var(--c-fg);
-}
-
-.ember-fontpick-row.is-current {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 55%, transparent);
-}
 
 /* Not installed: the preview would be a lie, so say so rather than show it. */
-.ember-fontpick-row.is-missing {
-  opacity: 0.45;
-}
-
-.ember-fontpick-name {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.ember-fontpick-sample {
-  flex: none;
-  font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 56% * var(--fade)), transparent);
-}
-
-.ember-fontpick-note {
-  padding: 10px 9px;
-  font-size: 11.5px;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 50% * var(--fade)), transparent);
-}
-
-.ember-theme-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  /* There are enough palettes now that an unbounded grid would push every other
-     setting off the panel, so it scrolls within its own section. */
-  max-height: 232px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
 
 .ember-settings-count {
   margin-left: 7px;
@@ -2383,53 +2214,6 @@ body.is-zen .ember-fx {
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
-}
-
-.ember-theme {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 9px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  background: color-mix(in srgb, var(--c-fg) 6%, transparent);
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 22% * var(--fade)), transparent);
-  font-family: var(--ui-font);
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    background 130ms var(--ease-move),
-    border-color 130ms var(--ease-move);
-}
-
-.ember-theme:hover {
-  background: color-mix(in srgb, var(--c-fg) 12%, transparent);
-}
-
-.ember-theme.is-current {
-  border-color: var(--c-accent);
-  color: var(--c-fg);
-}
-
-.ember-theme-swatch {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: none;
-  padding: 4px 5px;
-  border-radius: 6px;
-}
-
-.ember-theme-swatch i {
-  width: 5px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.ember-theme-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------- cheatsheet ---------- */
@@ -2688,61 +2472,14 @@ body.is-zen .ember-fx {
 
 /* The two switches sit in the title bar, not over the grid: anything floating on the
    terminal lands on top of whatever the CLI is drawing. */
-.ember-voicetoggles {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-right: 6px;
-  -webkit-app-region: no-drag;
-}
-
-.ember-voicetoggles.is-hidden,
-.ember-voicetoggle.is-hidden {
-  display: none;
-}
-
-.ember-voicetoggle {
-  width: 30px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: color-mix(in srgb, var(--c-fg) calc(100% - 58% * var(--fade)), transparent);
-  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
-  font-size: 13px;
-  cursor: pointer;
-  transition:
-    background 140ms var(--ease-move),
-    color 140ms var(--ease-move);
-}
 
 /* Inline SVG is baseline-aligned by default, which put a drawn mark a couple of pixels
    below the panel button's glyph even though the buttons themselves were level.
    Blocking it takes it off the baseline so the grid centring is the only thing deciding
    where it sits. */
-.ember-voicetoggle svg {
-  display: block;
-}
-
-.ember-voicetoggle:hover {
-  background: color-mix(in srgb, var(--c-fg) 9%, transparent);
-  color: var(--c-fg);
-}
-
-.ember-voicetoggle.is-on {
-  color: var(--c-accent-ink);
-  background: color-mix(in srgb, var(--c-accent) 15%, transparent);
-}
 
 /* On means armed; live means it is hearing you or talking right now. The difference
    matters most when you are not looking at the screen, which is when this is used. */
-.ember-voicetoggle.is-live {
-  color: var(--c-working);
-  background: color-mix(in srgb, var(--c-working) 18%, transparent);
-  animation: ember-breathe 1.4s var(--ease-move) infinite;
-}
 
 /* Sliding after a column change: transforms only, and a promise to the compositor that
    is withdrawn the moment the slide lands. The sidebar rides above the stage while its
@@ -3456,16 +3193,6 @@ body.sidebar-mini .ember-place-name {
   --ui-warn: #e0b45a;
   --ui-err: #e2676f;
 }
-body.is-light {
-  --ui-ink: color-mix(in srgb, var(--c-fg) 14%, #23211f);
-  --ui-strong: color-mix(in srgb, var(--c-fg) 8%, #121110);
-  --ui-rim: rgba(0, 0, 0, 0.07);
-  --ui-hover: rgba(0, 0, 0, 0.045);
-  --ui-press: rgba(0, 0, 0, 0.07);
-  --ui-ok: #2f8f5f;
-  --ui-warn: #a8740f;
-  --ui-err: #c03a45;
-}
 
 /* One focus ring for every control in the chrome. */
 .ember-titlebar button:focus-visible,
@@ -3492,8 +3219,7 @@ body.is-light {
   height: 18px;
   filter: none;
 }
-.ember-sidebar-toggle,
-.ember-voicetoggles .ember-voicetoggle {
+.ember-sidebar-toggle {
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -3511,20 +3237,14 @@ body.is-light {
     background-color 150ms var(--ui-ease),
     color 150ms var(--ui-ease);
 }
-.ember-sidebar-toggle:hover,
-.ember-voicetoggles .ember-voicetoggle:hover {
+.ember-sidebar-toggle:hover {
   background: var(--ui-hover);
   color: var(--ui-ink);
 }
-.ember-sidebar-toggle svg,
-.ember-voicetoggles .ember-voicetoggle svg {
+.ember-sidebar-toggle svg {
   display: block;
 }
-.ember-voicetoggles {
-  display: flex;
-  align-items: center;
-  padding-right: 4px;
-}
+
 .ember-winbtn {
   color: var(--ui-faint);
   transition:
@@ -4081,8 +3801,4 @@ body.sidebar-mini .ember-places {
 /* ---------------------------------------------------------------- the daily check */
 
 /* Light themes: secondary text a step stronger — 44% ink on paper all but vanished. */
-body.is-light {
-  --ui-faint: color-mix(in srgb, var(--ui-ink) 58%, transparent);
-  --ui-dim: color-mix(in srgb, var(--ui-ink) 74%, transparent);
-}
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ember docs</title>
-<meta name="description" content="How to use Ember on Windows: install, pick an agent, sessions, the canvas, keyboard, sticky notes, notes and todos, shared knowledge between agents, settings and themes.">
+<meta name="description" content="How to use Ember on Windows: install, pick an agent, sessions, the canvas, keyboard, sticky notes, notes and todos, shared knowledge between agents, settings.">
 <meta name="theme-color" content="#16120F" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#FAF6EF" media="(prefers-color-scheme: light)">
 <link rel="canonical" href="https://ember.deepanswerlabs.com/docs">
@@ -80,7 +80,7 @@
       <li><a href="#palette">Ctrl+K and the ember command</a></li>
       <li><a href="#shortcuts">Keyboard shortcuts</a></li>
       <li><a href="#terminal">Terminal tools</a></li>
-      <li><a href="#settings">Settings and themes</a></li>
+      <li><a href="#settings">Settings</a></li>
       <li><a href="#files">Files and privacy</a></li>
       <li><a href="#troubleshooting">Troubleshooting</a></li>
     </ol>
@@ -298,16 +298,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://ember.deepan
 
 <section aria-labelledby="palette">
   <h2 id="palette">Ctrl+K and the ember command <a class="anchor" href="#palette" aria-label="Link to this section">#</a></h2>
-  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens the command line at the bottom of the window. Type to filter, <kbd>Enter</kbd> to run. It holds everything Ember can do: new session, new terminal, notes, todo, themes, settings, and the tools below.</p>
+  <p><kbd>Ctrl</kbd><kbd>K</kbd> (or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>) opens the command line at the bottom of the window. Type to filter, <kbd>Enter</kbd> to run. It holds everything Ember can do: new session, new terminal, notes, todo, settings, and the tools below.</p>
   <p>The same commands work from any shell in Ember as <code>ember</code>:</p>
 <pre><code>ember                        every command, from the running app
 ember new [dir]              new session, in a folder
 ember rename &lt;name&gt;          name the session
 ember focus &lt;n|name&gt;         switch to a session
 ember list                   the open sessions
-ember theme [name]           apply a theme
 ember settings [tab]         open Settings
-ember set &lt;path&gt; &lt;value&gt;     write one setting, e.g. ember set window.opacity 60
+ember set &lt;path&gt; &lt;value&gt;     write one setting, e.g. ember set font.size 14
 ember get &lt;path&gt;             read one setting
 ember diag                   Ember's recent log</code></pre>
   <p><code>notes</code> and <code>todo</code> are there as commands too, so scripts and agents can use your notes and your list from a plain shell.</p>
@@ -366,21 +365,21 @@ ember diag                   Ember's recent log</code></pre>
 </section>
 
 <section aria-labelledby="settings">
-  <h2 id="settings">Settings and themes <a class="anchor" href="#settings" aria-label="Link to this section">#</a></h2>
+  <h2 id="settings">Settings <a class="anchor" href="#settings" aria-label="Link to this section">#</a></h2>
   <p><kbd>Ctrl</kbd><kbd>,</kbd> opens Settings. Type to search every setting at once.</p>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Tab</th><th>What's there</th></tr></thead>
       <tbody>
-        <tr><td>Look</td><td>Themes, fonts, size, window opacity and backdrop (acrylic, mica or none), padding, effects.</td></tr>
+        <tr><td>Text</td><td>Text size and line height, scrollback, sidebar width, padding, effects.</td></tr>
         <tr><td>Motion</td><td>One speed preset for all animation, the caret, session switching, scrolling.</td></tr>
         <tr><td>Agent</td><td>Your agent CLIs, the default agent, shared knowledge, plan usage in the sidebar, the status line on Claude sessions.</td></tr>
         <tr><td>Behaviour</td><td>Shell integration and sound.</td></tr>
       </tbody>
     </table>
   </div>
-  <h3>Day and night</h3>
-  <p>The sun and moon in the title bar switch between <b>Ember Night</b> and <b>Ember Day</b>, a light theme on warm paper. Everything in Ember follows: the canvas, objects, sticky notes, the Todo and Notes pages, menus and setup. More themes are in Settings › Look and in <b>Change theme…</b> in <kbd>Ctrl</kbd><kbd>K</kbd>. Diagrams and documents the agent draws take the theme's colours.</p>
+  <h3>One look</h3>
+  <p>Ember has one look, <b>Basalt</b>: matte stone, Archivo for the interface and DM Mono for the terminal. There is no theme, colour or font to pick. Diagrams and documents the agent draws take its colours.</p>
 </section>
 
 <section aria-labelledby="files">
@@ -422,10 +421,6 @@ ember diag                   Ember's recent log</code></pre>
     <details>
       <summary>The canvas stays empty while the agent works.</summary>
       <p>Switch to the CLI view (<kbd>Ctrl</kbd><kbd>`</kbd>) to see the agent's own screen. If it is asking something there, answer it. Agents other than Claude Code and Codex show their own screen by design.</p>
-    </details>
-    <details>
-      <summary>Text looks garbled or doubled, as if another window shows through.</summary>
-      <p>That is the window behind showing through the glass. Raise Opacity in Settings › Look, or set Backdrop to acrylic or mica.</p>
     </details>
     <details>
       <summary>Ember feels slow or the laptop runs hot.</summary>

@@ -165,11 +165,16 @@ try {
   check('an unknown command fails with the help', /unknown command/.test(bad) && /exit=1/.test(bad), tail(bad, 2))
 
   // 6. `ember set` writes the config the running app watches.
-  await run(sid, 'ember set window.opacity 61')
+  await run(sid, 'ember set font.size 15')
   await sleep(900)
-  const saved = JSON.parse(readFileSync(join(EMBER_HOME, 'config.json'), 'utf8')).window.opacity
-  const live = await ev(`window.__ember.config?.() ? window.__ember.config().window.opacity : null`).catch(() => null)
-  check('`ember set` edits config.json', saved === 61, `file says ${saved}${live !== null ? `, app says ${live}` : ''}`)
+  const saved = JSON.parse(readFileSync(join(EMBER_HOME, 'config.json'), 'utf8')).font.size
+  const live = await ev(`window.__ember.config?.() ? window.__ember.config().font.size : null`).catch(() => null)
+  check('`ember set` edits config.json', saved === 15, `file says ${saved}${live !== null ? `, app says ${live}` : ''}`)
+  // The look is fixed: a theme or colour path is refused, and `ember theme` says so.
+  const fixed = await run(sid, 'ember set theme.cursor "#00ff00"; echo "exit=$LASTEXITCODE"')
+  check('`ember set theme.*` is refused: the look is fixed', /is fixed/.test(fixed) && /exit=2/.test(fixed), tail(fixed, 2))
+  const th = await run(sid, 'ember theme')
+  check('`ember theme` says the look is fixed', /one look, Basalt/.test(th), tail(th, 2))
 
   // 7. Git Bash resolves the extensionless launcher (Claude Code's shell).
   const viaBash = await run(sid, `bash -lc "ember list"`)

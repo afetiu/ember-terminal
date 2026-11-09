@@ -17,19 +17,17 @@ mkdirSync(EMBER_HOME, { recursive: true })
 const PROBE_ENV = { ...process.env, EMBER_HOME, EMBER_PROBE_INACTIVE: '1' }
 const TMP = process.env.TEMP
 
-// The user's own config, with per-run overrides, so an A/B of the window material or the
+// The user's own config, with per-run overrides, so an A/B of the
 // renderer is one flag rather than an edit to ~/.ember.
-//   node scripts/bench.mjs [--material=none|acrylic|mica] [--opacity=N] [--no-webgl]
+//   node scripts/bench.mjs [--no-webgl]
 import { homedir } from 'node:os'
 const flags = new Map(process.argv.slice(2).map((a) => { const m = /^--([^=]+)(?:=(.*))?$/.exec(a); return m ? [m[1], m[2] ?? '1'] : [a, '1'] }))
 {
   const userCfg = join(homedir(), '.ember', 'config.json')
   const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
   cfg.window ??= {}
-  if (flags.has('material')) cfg.window.material = flags.get('material')
-  if (flags.has('opacity')) cfg.window.opacity = Number(flags.get('opacity'))
   writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
-  console.log(`config: material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'}${flags.has('no-webgl') ? ' (DOM renderer)' : ''}`)
+  console.log(`config: basalt${flags.has('no-webgl') ? ' (DOM renderer)' : ''}`)
 }
 const LINES = 20000
 const emberOut = join(TMP, 'bench-ember.txt')

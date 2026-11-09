@@ -4,7 +4,7 @@
  * time from launch to a usable prompt. The spinner is scripts/spinner.ps1, which runs as
  * well in any other terminal, so the numbers are comparable.
  *
- *   node scripts/probe-cpu.mjs [--material=none|acrylic|mica] [--opacity=N] [--no-webgl] [--idle]
+ *   node scripts/probe-cpu.mjs [--no-webgl] [--idle]
  *
  * Launches its own Ember with an isolated EMBER_HOME (never the installed one's ~/.ember).
  * --idle measures a quiet prompt instead of the spinner.
@@ -24,10 +24,8 @@ mkdirSync(EMBER_HOME, { recursive: true })
   const userCfg = join(homedir(), '.ember', 'config.json')
   const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
   cfg.window ??= {}
-  if (flags.has('material')) cfg.window.material = flags.get('material')
-  if (flags.has('opacity')) cfg.window.opacity = Number(flags.get('opacity'))
   writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
-  console.log(`config: material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'}${flags.has('no-webgl') ? ' (DOM renderer)' : ''}`)
+  console.log(`config: basalt${flags.has('no-webgl') ? ' (DOM renderer)' : ''}`)
 }
 // The same spinner runs in other terminals for comparison: scripts/spinner.ps1.
 const spinner = process.env.SPINNER ?? join(new URL('.', import.meta.url).pathname.slice(1), 'spinner.ps1')

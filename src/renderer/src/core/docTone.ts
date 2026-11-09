@@ -1,7 +1,7 @@
 /**
- * The query a panel document is loaded with so it is drawn in the theme on screen: which
- * way it faces (light or dark), the paper it sits on, and the theme's accent, ink and
- * ground. Documents are rendered in main, which cannot see the theme; only this side can.
+ * The query a panel document is loaded with so it is drawn in the stone on screen: the
+ * accent, ink and ground. Documents are rendered in main, which cannot see the page's
+ * tokens; only this side can.
  */
 export function docTone(): string {
   const css = getComputedStyle(document.documentElement)
@@ -9,18 +9,13 @@ export function docTone(): string {
   const accent = hex(css.getPropertyValue('--c-accent'))
   const fg = hex(css.getPropertyValue('--c-fg'))
   const bg = hex(css.getPropertyValue('--c-bg'))
-  if (document.body.classList.contains('is-light')) {
-    q.set('tone', 'light')
-    if (bg) q.set('paper', bg)
-  }
   if (accent && fg && bg) {
     q.set('accent', accent)
     q.set('fg', fg)
     q.set('bg', bg)
   }
-  // A theme that changes material (Basalt) draws documents in its own stone and faces.
-  const family = document.body.dataset['themeFamily']
-  if (family === 'basalt') q.set('family', family)
+  // Documents are drawn in Basalt's own stone and faces.
+  q.set('family', 'basalt')
   const s = q.toString()
   return s ? `?${s}` : ''
 }

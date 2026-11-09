@@ -37,9 +37,8 @@ const STATIC_HELP = `ember <command> [args]         Ember, from the shell
   ember list                   the open tabs
   ember panel [show|hide]      the visualisation panel
   ember visualize              ask the Claude in this tab to draw what it just said
-  ember theme [name]           apply a theme
-  ember settings [tab]         open Settings (look, motion, agent, behaviour, labs)
-  ember set <path> <value>     write one setting, e.g. ember set window.opacity 60
+  ember settings [tab]         open Settings (text, motion, agent, behaviour, labs)
+  ember set <path> <value>     write one setting, e.g. ember set font.size 14
   ember get <path>             read one setting
   ember diag                   the watchdog log (~/.ember/diag.log), newest last
 
@@ -97,9 +96,13 @@ if (verb === '--help' || verb === '-h' || (verb === 'help' && !BRIDGE)) {
   process.exit(0)
 }
 
+/** The look is fixed (Basalt, Archivo, DM Mono): these settings are not the person's to change. */
+const FIXED = /^(theme|appearance)(\.|$)|^window\.(opacity|material|inactiveOpacity)$|^font\.(family|uiFamily|weight)$|^effects\.(scanlines|vignette)$/
+
 if (verb === 'set') {
   const [, path, ...rest] = words
-  if (!path || !rest.length) fail('usage: ember set <path> <value>   e.g. ember set window.opacity 60', 2)
+  if (!path || !rest.length) fail('usage: ember set <path> <value>   e.g. ember set font.size 14', 2)
+  if (FIXED.test(path)) fail(`ember: ${path} is fixed. Ember has one look, Basalt; its theme, colours and fonts do not change.`, 2)
   const cfg = readConfig()
   const value = parseValue(rest.join(' '))
   setPath(cfg, path, value)

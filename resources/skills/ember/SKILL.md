@@ -22,10 +22,10 @@ MCP server, which Ember attaches to `claude` in every tab, so you have these too
   a long listing. Each push replaces what is on the panel; push again as the work moves on.
   An html panel is a **complete document**: `<!doctype html>`, `<html>`, `<head>` with a
   `<style>`, `<body>` — never a bare `<div>…</div>` fragment and never inside a ``` fence.
-  The panel follows the user's theme, dark or light, and is transparent behind the page,
-  so never hard-code pale text on nothing: colour it with `var(--ember-ink)`,
+  The panel is Ember's dark stone (Basalt, its only look) and is transparent behind the
+  page, so never hard-code dark text on nothing: colour it with `var(--ember-ink)`,
   `--ember-strong`, `--ember-muted`, `--ember-accent`, `--ember-line` and `--ember-surface`,
-  which Ember defines and flips with the theme. A card with its own solid background is
+  which Ember defines. A card with its own solid background is
   fine; pick text that reads on that card.
   Inline all CSS and JS. A fragment still shows — Ember wraps it in a page of its own —
   but it comes out styled like a markdown panel, not like your design.
@@ -61,13 +61,12 @@ ember rename <name>          name this tab
 ember focus <n|name>         switch tab      ember list   the open tabs
 ember panel show|hide        the visualisation panel
 ember visualize              ask the Claude in this tab to draw what it just said
-ember theme <name>           apply a theme
-ember settings [tab]         open Settings (look, motion, agent, behaviour, labs)
-ember set <path> <value>     one setting, e.g. ember set window.opacity 60
+ember settings [tab]         open Settings (text, motion, agent, behaviour, labs)
+ember set <path> <value>     one setting, e.g. ember set font.size 14
 ```
 
 Short forms exist for most (`n` new, `s`/`sd` split right/down, `t` todo, `p`
-panel, `v` visualize, `th` theme, `x` close, `r` rename, `f` focus). Inside a note the
+panel, `v` visualize, `x` close, `r` rename, `f` focus). Inside a note the
 words `del [name]`, `open <name>`, `new [text]`, `list`, `back` act on the notes; on the
 todo list `add <text>`, `done <words>`, `clear done`, `back`. A command acts on
 the tab it was typed in. `ember set` and `ember get` also work outside an Ember tab
@@ -129,6 +128,5 @@ Outside an Ember shell, `notes` and `todo` are not on PATH; the files still are.
   user is working in. Nothing you need is in there.
 - Each tab's shell reports its working directory and exit codes to Ember through the
   prompt; the sidebar card shows the git branch, dirty count and any dev-server URL.
-- `Ctrl+K` is the command palette (`>` runs a command, `@` opens a project, `#` picks a
-  theme), `Ctrl+Shift+J` the panel, `Ctrl+Shift+T` a new tab,
+- `Ctrl+K` is the command palette (`>` runs a command, `@` opens a project), `Ctrl+Shift+J` the panel, `Ctrl+Shift+T` a new tab,
   `F2` renames one, `F1` the cheatsheet.

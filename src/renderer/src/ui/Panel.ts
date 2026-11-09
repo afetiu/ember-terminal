@@ -384,13 +384,8 @@ export class Panel {
       this.empty.style.display = ''
       return
     }
-    // The page is drawn in main, which cannot see the theme, so it is told which way it faces.
+    // The page is drawn in main, which cannot see the page's tokens, so it is told them.
     this.navigate(`${origin}/doc/${push.id}${docTone()}`)
-  }
-
-  /** Redraw the document for a theme that turned from light to dark, or back, under it. */
-  retone(): void {
-    if (this.current && this.current.format !== 'url') void this.showDoc(this.current)
   }
 
   private browse(url: string): void {

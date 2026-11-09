@@ -15,17 +15,10 @@ export interface ShellProfile {
 
 export interface FontConfig {
   /**
-   * The app font. One family drives the terminal grid *and* the chrome around it, so
-   * picking a font in settings re-fonts the whole window rather than just the shell.
-   * A CSS stack is allowed — the first installed family wins, as usual.
+   * The terminal font. Fixed: DM Mono (bundled), pinned by config.ts whatever the file says.
+   * The interface is drawn in Archivo. Size and line height stay the person's.
    */
   family: string
-  /**
-   * Chrome-only override. Empty (the default) means the chrome follows `family`.
-   * Exists because the terminal grid needs a monospaced font and the sidebar does
-   * not, so a proportional UI font stays available without breaking cell alignment.
-   */
-  uiFamily: string
   size: number
   weight: number
   lineHeight: number
@@ -71,13 +64,6 @@ export interface MotionConfig {
 
 export interface ThemeConfig {
   name: string
-  /**
-   * A theme that is more than a palette: it restyles the chrome's material as well as
-   * its colours. The renderer marks the body with it (`body.theme-<family>`,
-   * `data-theme-family`) and its stylesheet keys off that, so every other theme is
-   * untouched. 'basalt' is matte stone: opaque, no glass, no blur.
-   */
-  family?: 'basalt'
   background: string
   foreground: string
   cursor: string
@@ -255,17 +241,6 @@ export interface ClaudeConfig {
   statusLine: boolean
 }
 
-/** One row in the settings font picker. */
-export interface FontOption {
-  family: string
-  /**
-   * Reported by the OS. False for the suggestions Ember offers that this machine
-   * does not have — the picker dims those rather than previewing a fallback and
-   * letting it pass for the real thing.
-   */
-  installed: boolean
-}
-
 export interface ProjectEntry {
   name: string
   path: string
@@ -301,34 +276,11 @@ export interface EmberConfig {
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
+  /** Basalt, always (main/themes.ts): the terminal palette and the chrome's tokens. Not a choice. */
   theme: ThemeConfig
   cursor: CursorConfig
   motion: MotionConfig
   window: {
-    /** 0-100, matches Windows Terminal's `opacity`. Applied to the content layer. */
-    opacity: number
-    /**
-     * Windows 11 system backdrop behind the content.
-     *
-     * 'acrylic' is the blur — the only real one available to an app on Windows 11,
-     * and it is drawn only while Ember is the active window. `inactiveOpacity` is
-     * what keeps the window see-through for the rest of the time.
-     *
-     * 'none' is not "opaque": it is real per-pixel transparency, see-through focused
-     * or not, with no blur behind it at all.
-     */
-    material: 'acrylic' | 'mica' | 'tabbed' | 'none'
-    /**
-     * 0-100. Window alpha while Ember is *not* the active window, for the backdrop
-     * modes only.
-     *
-     * Windows stops drawing a system backdrop the instant a window is deactivated and
-     * fills it with a solid colour instead, so a blurred terminal would turn into a
-     * grey slab exactly when you are trying to look past it. Fading the whole window
-     * instead keeps it see-through — flat rather than frosted, but see-through. 100
-     * disables the fade and accepts the slab.
-     */
-    inactiveOpacity: number
     padding: { top: number; right: number; bottom: number; left: number }
     /** Width of the session sidebar in px. */
     sidebarWidth: number
@@ -363,12 +315,6 @@ export interface EmberConfig {
    * promise is that it runs on the CLIs you already have and asks for no keys.
    */
   labs: { enabled: boolean }
-  /**
-   * The theme the sun/moon switch goes to for each side, by name. The house pair by
-   * default; switching away from a theme remembers it as that side's choice, so someone
-   * who lives in Tokyo Night by night and One Light by day gets those back.
-   */
-  appearance: { night: string; day: string }
 }
 
 export interface AgentConfig {
@@ -578,10 +524,6 @@ export interface EmberBridge {
   onConfigChange(cb: (config: EmberConfig) => void): () => void
   /** Directories under the home folder worth opening a session in. */
   listProjects(): Promise<ProjectEntry[]>
-  /** Built-in colour schemes. */
-  listThemes(): Promise<ThemeConfig[]>
-  /** Font families installed on this machine, for the settings picker. */
-  listFonts(): Promise<FontOption[]>
   /** The shipped defaults, for the settings panel's reset button. */
   defaultConfig(): Promise<EmberConfig>
   /** Persist an edited config; the file watcher then applies it everywhere. */
@@ -779,5 +721,3 @@ export interface BrainStatus {
   agents: Array<{ agent: string; file: string; present: boolean; synced: boolean; skills: number | null }>
 }
 
-/** Themes whose surfaces are opaque material rather than glass over the desktop. */
-export const opaqueTheme = (theme: Pick<ThemeConfig, 'family'> | undefined): boolean => theme?.family === 'basalt'

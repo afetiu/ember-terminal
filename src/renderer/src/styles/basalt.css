@@ -145,12 +145,6 @@ body.theme-basalt .ember-root {
   --titlebar-h: 44px;
   background: var(--b-frame);
 }
-body.theme-basalt.is-glass .ember-root {
-  border-radius: 10px;
-}
-body.theme-basalt.is-glass.is-maximized .ember-root {
-  border-radius: 0;
-}
 
 /* Title bar: the mark — a 16px square of lava with its bottom edge in shadow — and the
    word, lowercase, heavy. */
@@ -372,7 +366,6 @@ body.theme-basalt
     .ember-newtab,
     .ember-place,
     .ember-sidebar-toggle,
-    .ember-voicetoggles .ember-voicetoggle,
     .ember-search-btn,
     .ember-settings-close,
     .ember-settings-reset,
@@ -400,7 +393,6 @@ body.theme-basalt
     .ember-newtab,
     .ember-place,
     .ember-sidebar-toggle,
-    .ember-voicetoggles .ember-voicetoggle,
     .ember-search-btn,
     .ember-settings-close,
     .ember-settings-reset,
@@ -423,7 +415,6 @@ body.theme-basalt
     .ember-newtab,
     .ember-place,
     .ember-sidebar-toggle,
-    .ember-voicetoggles .ember-voicetoggle,
     .ember-search-btn,
     .ember-settings-close,
     .ember-settings-reset,
@@ -436,7 +427,6 @@ body.theme-basalt
     .loom-qd-tab,
     .loom-jump,
     .loom-act,
-    .ember-theme,
     .loom-qd-opt,
     .loom-menu button,
     .ember-settings-tab
@@ -1275,28 +1265,6 @@ body.theme-basalt .ember-cheatsheet-panel kbd {
 }
 
 /* Theme tiles: stones you press; the one in use is set in, ringed in lava. */
-body.theme-basalt .ember-theme {
-  border: 0;
-  border-radius: 12px;
-  background: var(--b-chip);
-  box-shadow: var(--b-raise);
-  transition:
-    transform 120ms var(--b-spring),
-    box-shadow 120ms var(--b-spring),
-    background-color 120ms var(--b-spring);
-}
-body.theme-basalt .ember-theme:hover {
-  background: var(--b-chip-hi);
-  box-shadow: var(--b-raise-hover);
-}
-body.theme-basalt .ember-theme.is-current {
-  background: var(--b-chip-down);
-  box-shadow: var(--b-press), 0 0 0 2px var(--b-accent);
-}
-body.theme-basalt .ember-theme-name {
-  font: 500 12px/1.3 var(--b-ui);
-  color: var(--b-text);
-}
 
 /* Toggles: a recessed track with a stone slab that slides across; on, the track is lava. */
 body.theme-basalt .ember-toggle {
@@ -1343,7 +1311,7 @@ body.theme-basalt .ember-toggle:active::before {
    No travel: nothing translates, slides or rises; presses and arrivals are a change of
    light (shadow and opacity) only. */
 @media (prefers-reduced-motion: reduce) {
-  body.theme-basalt :is(button, .ember-card, .loom-qd-opt, .ember-theme, .ember-settings-tab):active,
+  body.theme-basalt :is(button, .ember-card, .loom-qd-opt, .ember-settings-tab):active,
   body.theme-basalt .loom-qd-opt.is-on {
     transform: none !important;
   }

@@ -12,7 +12,7 @@
  * rAF cadence follows the compositor: when the GPU cannot present, rAF is held back too,
  * so this catches jank the main thread never sees as well as jank it causes.
  *
- *   node scripts/probe-frames.mjs [--material=none|acrylic] [--opacity=N] [--no-webgl] [--rounds=N]
+ *   node scripts/probe-frames.mjs [--no-webgl] [--rounds=N]
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -30,8 +30,6 @@ mkdirSync(EMBER_HOME, { recursive: true })
 const userCfg = join(homedir(), '.ember', 'config.json')
 const cfg = existsSync(userCfg) ? JSON.parse(readFileSync(userCfg, 'utf8')) : {}
 cfg.window ??= {}
-if (args.has('material')) cfg.window.material = args.get('material')
-if (args.has('opacity')) cfg.window.opacity = Number(args.get('opacity'))
 writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify(cfg, null, 2))
 
 const electronArgs = ['.', `--remote-debugging-port=${PORT}`]
@@ -118,7 +116,7 @@ await ev(`(() => {
 })()`)
 
 const first = await waitForPrompt()
-console.log(`ember up · pane ${first.cols}x${first.rows} · material=${cfg.window.material ?? 'none'} opacity=${cfg.window.opacity ?? '?'}${args.has('no-webgl') ? ' · DOM renderer' : ''}`)
+console.log(`ember up · pane ${first.cols}x${first.rows}${args.has('no-webgl') ? ' · DOM renderer' : ''}`)
 
 const results = []
 async function measure(name, trigger, ms = 900) {

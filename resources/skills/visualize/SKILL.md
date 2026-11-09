@@ -56,10 +56,9 @@ A whole page, as raw text, every time:
 Not a fragment (`<div>…</div>` on its own), and not inside a ``` fence — the panel then
 shows the backticks. Everything inline; nothing external is fetched.
 
-The panel follows the user's theme — Night or Day — and the webview is transparent over
-it, so a colour picked for one ground vanishes on the other: pale lavender on paper is as
-empty as black on black. Colour with the variables Ember defines, which flip with the
-theme:
+The panel is Ember's dark stone (Basalt, its only look) and the webview is transparent
+over it, so a dark colour picked for paper vanishes: black on black is empty. Colour with
+the variables Ember defines:
 
 | variable | for |
 |---|---|
@@ -70,15 +69,12 @@ theme:
 | `--ember-line` | borders, rules, connectors |
 | `--ember-surface` | a faint card or row fill |
 
-`html[data-ember-tone]` is `light` or `dark` when a page has to branch (a chart's
-palette, say). A card with its own solid fill is fine — pick text that reads on that
-fill, and it will read in both themes. On a light theme Ember deepens any text that
-would not read, but a page that uses the variables never needs rescuing. Ember will wrap a fragment in a
+A card with its own solid fill is fine — pick text that reads on that fill. Ember will wrap a fragment in a
 page of its own so it still shows, but it will look like a markdown panel, not yours.
 
 ## Keep it readable
 
-Leave node colours to Ember's theme, which follows the user's, dark or light; if a diagram needs its own
+Leave node colours to Ember's palette; if a diagram needs its own
 colours (before/after, the changed nodes), set `fill` and `color` together in the same
 `style` or `classDef`, never a fill alone. Ember re-inks labels after render by the
 luminance of the shape under them, so a stray light fill still reads, but a chosen

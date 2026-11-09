@@ -13,7 +13,6 @@ import { Scroller } from '../term/Scroller'
 import { sound } from '../motion/sound'
 import { BlockTracker } from './Blocks'
 import { BlockRail } from '../ui/BlockRail'
-import { isLightBackground } from '../ui/tone'
 
 /**
  * The grid's background: the theme's own colour at zero alpha, never plain transparent.
@@ -28,18 +27,6 @@ import { isLightBackground } from '../ui/tone'
  */
 function clearGround(background: string): string {
   return /^#[0-9a-f]{6}$/i.test(background) ? `${background}00` : 'rgba(0, 0, 0, 0)'
-}
-
-/**
- * Light palettes get xterm's contrast correction; dark ones keep their exact colours.
- * Programs pick colours for a dark terminal — Claude Code's default theme writes pure
- * white and mid-greys in 24-bit — and on paper those are nothing. 7 is WCAG AAA; dim
- * text is held to half of it, so it still reads as dim.
- */
-function contrastFloor(background: string): number {
-  // 7 (WCAG AAA) on paper: xterm holds dim text to half the floor and then fades it, so
-  // 4.5 left Claude Code's dim prompt text near invisible on a light ground.
-  return isLightBackground(background) ? 7 : 1
 }
 
 let seq = 0
@@ -203,7 +190,7 @@ export class Session implements ActivitySource {
       // Our canvas layer draws the caret; xterm's own must not paint at all.
       cursorInactiveStyle: 'none',
       drawBoldTextInBrightColors: true,
-      minimumContrastRatio: contrastFloor(theme.background),
+      minimumContrastRatio: 1,
       theme: {
         background: clearGround(theme.background),
         foreground: theme.foreground,
@@ -860,7 +847,7 @@ export class Session implements ActivitySource {
     this.term.options.lineHeight = font.lineHeight
     this.term.options.letterSpacing = font.letterSpacing
     this.term.options.scrollback = config.scrollback
-    this.term.options.minimumContrastRatio = contrastFloor(theme.background)
+    this.term.options.minimumContrastRatio = 1
     this.term.options.theme = {
       background: clearGround(theme.background),
       foreground: theme.foreground,

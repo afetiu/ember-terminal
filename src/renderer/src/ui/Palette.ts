@@ -147,18 +147,14 @@ export class Palette {
       ? 'shell'
       : v.startsWith('@')
         ? 'project'
-        : v.startsWith('#')
-          ? 'theme'
-          : 'command'
+        : 'command'
     this.el.dataset['mode'] = mode
     this.input.placeholder =
       mode === 'shell'
         ? 'Run in this pane…'
         : mode === 'project'
           ? 'Open a project…'
-          : mode === 'theme'
-            ? 'Pick a theme…'
-            : 'command…   new · o · split · todo · note      > run   @ project   # theme'
+          : 'command…   new · o · split · todo · note      > run   @ project'
   }
 
   close(): void {

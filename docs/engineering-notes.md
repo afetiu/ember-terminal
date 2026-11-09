@@ -172,13 +172,14 @@ just the terminal.
 
 ## Config
 
-First launch writes `~/.ember/config.json`, seeded from the Windows Terminal setup it
-replaces: Nightfall Neon, CaskaydiaCove NF light with `calt`/`liga`, 70% acrylic.
+First launch writes `~/.ember/config.json`. The look is not in it: Ember has one, Basalt
+(opaque stone, Archivo for the interface, DM Mono for the terminal), and `config.ts`
+pins it whatever the file says — an old config's `theme`, `window.opacity`/`material`/
+`inactiveOpacity`, `font.family`/`uiFamily` and `appearance` are ignored and dropped.
 
 | Key | Effect |
 | --- | --- |
-| `font.family` | The app font — terminal grid and chrome alike. A CSS stack with fallbacks is fine |
-| `font.uiFamily` | Chrome-only override. Empty (default) means the chrome follows `font.family` |
+| `font.size`, `font.lineHeight` | The terminal's text size and spacing (the faces are fixed) |
 | `cursor.stiffness` | Caret snappiness. 200 = languid, 900 = default, 2000 = near-instant |
 | `cursor.damping` | `1.0` = no overshoot. Default `0.82` gives a slight settle |
 | `cursor.trailStiffness` | Lower = longer smear. Must stay below `stiffness` |
@@ -188,13 +189,13 @@ replaces: Nightfall Neon, CaskaydiaCove NF light with `calt`/`liga`, 70% acrylic
 | `motion.slideStiffness` | Session-switch speed. `750` default; higher is snappier |
 | `motion.slideDamping` | `1.0` default = no overshoot. Below 1 adds bounce |
 | `motion.scale` | Master multiplier on the CSS durations. `0` = instant |
-| `window.opacity` | 0-100 tint over whatever is behind the window. Above ~85 there is little glass left to see |
-| `window.material` | `acrylic` (default) is the blur. `mica` \| `tabbed` are the other Windows backdrops; `none` is flat transparency — see below |
-| `window.inactiveOpacity` | Window alpha while Ember is not the active window. `100` disables the fade — see below |
 | `window.padding` | Bottom defaults to 22px on purpose — see below |
 | `window.sidebarWidth` | Sidebar width in px |
 
-### The glass, and what it costs
+### The glass, and what it cost (history)
+
+Ember no longer has glass: since Basalt became its only look the window is opaque, with
+no system backdrop. What follows is why the glass was hard, kept so it is not re-learned.
 
 Windows only draws a mica or acrylic system backdrop for the window that is *active*.
 Click away and DWM replaces the material with a flat grey fill — `probe-glass.mjs`

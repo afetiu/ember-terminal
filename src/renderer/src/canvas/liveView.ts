@@ -185,6 +185,10 @@ export class LiveView {
     // An app's live area is never empty: one with nothing drawn in it is the app between
     // clearing it and drawing it again (Codex, when its viewport moves). Not a frame to show.
     if (r.mode === 'split' && !this.engine.drawnIn(r)) return
+    // Claude between two drawings (no prompt rule, no working line to place the top by): the
+    // engine holds the old top, but those rows may already be the transcript it just printed
+    // (Enter on /mcp, before the dialog is drawn). The last frame stays until a real one.
+    if (r.mode === 'split' && this.region && this.engine.agent === 'claude' && /^held/.test(r.why)) return
     const before = this.rows
     const was = this.region
     this.region = r

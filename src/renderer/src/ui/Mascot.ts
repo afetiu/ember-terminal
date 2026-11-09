@@ -160,17 +160,6 @@ const EYE_INK = '#2A1432'
 const ASH_INK = '#3A3236'
 const GLINT = '#FFF3E0'
 
-/**
- * Whether the badges are drawn on a light card. The sprite's own colours are a character
- * and stay put; what changes is anything picked to glow against near-black — the halo
- * behind a waiting mascot — which washes out on paper. Set by App with the theme.
- */
-let onLight = false
-
-export function setBadgeSurface(light: boolean): void {
-  onLight = light
-}
-
 /** What the mascot is being asked to portray. */
 export interface MascotMood {
   state: ActivityState
@@ -357,9 +346,7 @@ export function drawMascot(
     const gx = size * 0.5
     const gy = cell * 9 + bob
     const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, size * 0.46)
-    // On a light card the dark-theme halo is a pale smudge the sprite's orange already
-    // outshines, so it is a deeper hue at less strength there.
-    const [rgb, a] = onLight ? (urgent ? ['230, 150, 20', 0.6] : ['30, 170, 125', 0.42]) : urgent ? ['255, 199, 87', 0.85] : ['124, 231, 196', 0.62]
+    const [rgb, a] = urgent ? ['255, 199, 87', 0.85] : ['124, 231, 196', 0.62]
     glow.addColorStop(0, `rgba(${rgb}, ${a})`)
     glow.addColorStop(1, `rgba(${rgb}, 0)`)
     ctx.fillStyle = glow

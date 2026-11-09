@@ -6,8 +6,6 @@ import { CONFIG_DIR, DEFAULT_CONFIG, loadConfig, resolveHome, saveConfig, watchC
 import { join } from 'node:path'
 import { listProjects } from './projects.js'
 import { createNote, deleteNote, installNotesCli, installSkills, listNotes, readNote, readTodo, readTodoArchive, saveNote, watchNotes, writeTodo, writeTodoArchive, NOTES_DIR } from './notes.js'
-import { THEMES } from './themes.js'
-import { listFonts } from './fonts.js'
 import { gitStatus, killPort, listTasks } from './project.js'
 import { VitalsWatcher } from './vitals.js'
 import { UsageWatcher } from './usage.js'
@@ -21,17 +19,12 @@ import { renderPanelDocument } from './panelDoc.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import type { PtyHost } from './pty/PtyHost.js'
 import type {
-  EmberConfig,
   PanelPush,
   SpawnRequest,
   SpawnResult,
 } from '../shared/types.js'
 
-/**
- * @param onConfigChange runs alongside the renderer broadcast, for the parts of a
- * config that only main can apply — the window's own material and alpha.
- */
-export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig) => void): void {
+export function registerIpc(host: PtyHost): void {
   // Loom tabs: the transcript feed, media and page annotations for the canvas.
   registerCanvas({ origin: bridgeOrigin, hostDoc, markCanvasTab })
   // "Ask about this" from the canvas: one short answer, in a run of its own, so the session's
@@ -63,14 +56,11 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
 
   watchConfig((config) => {
     broadcast('ember:config:changed', config)
-    onConfigChange?.(config)
   })
   // Sweep the files the old restore feature left behind, once, on the way in.
   clearLegacyState()
 
   ipcMain.handle('ember:projects', () => listProjects())
-  ipcMain.handle('ember:themes', () => THEMES)
-  ipcMain.handle('ember:fonts', () => listFonts())
   ipcMain.handle('ember:config:defaults', () => DEFAULT_CONFIG)
   ipcMain.on('ember:config:save', (_e, next) => saveConfig(next))
   ipcMain.handle('ember:git', (_e, cwd: string) => gitStatus(cwd))

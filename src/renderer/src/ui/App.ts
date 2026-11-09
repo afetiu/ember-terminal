@@ -1,4 +1,4 @@
-import { opaqueTheme, type ClaudeStatus, type EmberConfig, type GitStatus, type ThemeConfig } from '@shared/types'
+import type { ClaudeStatus, EmberConfig, GitStatus } from '@shared/types'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
 import { Session } from '../core/Session'
@@ -9,7 +9,6 @@ import { Palette, type Command } from './Palette'
 import { helpText, matchCli, type CommandSpec } from './Commands'
 import { Search } from './Search'
 import { Settings, SETTINGS_TABS, type SettingsTab } from './Settings'
-import { FontPicker } from './FontPicker'
 import { Cheatsheet } from './Cheatsheet'
 import { Sidebar, type CardModel, type Place } from './Sidebar'
 import { Remote } from './Remote'
@@ -24,8 +23,7 @@ import { Vitals } from './Vitals'
 import { TitleBar } from './TitleBar'
 import { quality } from '../motion/quality'
 import { sound } from '../motion/sound'
-import { drawMascot, setBadgeSurface } from './Mascot'
-import { isLightBackground, legible } from './tone'
+import { drawMascot } from './Mascot'
 import { AGENTS, agentSpec, type AgentId } from '@shared/agents'
 import type { ActivityState, AttentionKind } from '../core/Activity'
 import { LoomView } from '../canvas/LoomView'
@@ -114,7 +112,6 @@ export class App {
   private parking = true
   private readonly shellHistory: string[] = []
   /** Built-in palettes, fetched once — the list is static for the life of the process. */
-  private themes: ThemeConfig[] | null = null
   private notifiedGroups = new Map<string, number>()
   /** Said once per run, not once per config reload. */
   /** cwd -> git status, refreshed on the activity tick. */
@@ -137,9 +134,7 @@ export class App {
 
     this.columnW = config.window.sidebarWidth
 
-    this.titleBar = new TitleBar(() => this.toggleSidebar(), {
-      onMode: () => void this.switchMode(),
-    })
+    this.titleBar = new TitleBar(() => this.toggleSidebar())
     this.sidebar = new Sidebar({
       onSelect: (id) => void this.activate(id),
       onClose: (id) => this.closeGroup(id),
@@ -520,38 +515,14 @@ export class App {
     s.setProperty('--c-accent', theme.cursor)
     s.setProperty('--c-dim', theme.brightBlack)
     s.setProperty('--c-sel', theme.selectionBackground)
-    // The stylesheets keep one set of rules and swap tokens under body.is-light: what
-    // surfaces sink toward, how dark a shadow is, how faint secondary text may get.
-    const light = isLightBackground(theme.background)
-    document.body.classList.toggle('is-light', light)
-    this.titleBar.setMode(light)
-    // The accent as text. Most light palettes pick an accent that is a fine caret and
-    // too pale to read as a word (Ayu Light's is 2:1), so text gets a deepened copy.
-    s.setProperty('--c-accent-ink', light ? legible(theme.cursor, theme.foreground, theme.background) : theme.cursor)
-    setBadgeSurface(light)
-    // Windows Terminal's `opacity` is a percentage over the system backdrop; the
-    // window itself is transparent, so the tint lives on the content layer.
-    // A stone theme is opaque whatever the opacity slider says: it is a material, and a
-    // see-through rock is glass again. Its stylesheet keys off the family on the body.
-    const family = theme.family ?? ''
-    for (const c of [...document.body.classList]) if (c.startsWith('theme-') && c !== `theme-${family}`) document.body.classList.remove(c)
-    if (family) document.body.classList.add(`theme-${family}`)
-    if (family) document.body.dataset['themeFamily'] = family
-    else delete document.body.dataset['themeFamily']
-    s.setProperty('--c-tint-alpha', opaqueTheme(theme) ? '1' : String(win.opacity / 100))
-    // A window with no system backdrop is transparent for real, which also means
-    // Windows stops drawing its rounded corners for us — the shell has to round
-    // itself instead. See the comment in main/window.ts for why that trade is made.
-    document.body.classList.toggle('is-glass', win.material === 'none')
-    // One font for the window: the chrome follows the terminal font unless the
-    // interface font is deliberately set to something else.
+    s.setProperty('--c-accent-ink', theme.cursor)
+    // One look: Basalt's stone, opaque. Its stylesheet keys off the class on the body.
+    document.body.classList.add('theme-basalt')
+    document.body.dataset['themeFamily'] = 'basalt'
+    s.setProperty('--c-tint-alpha', '1')
+    // DM Mono in the terminal, Archivo in the interface (both bundled, styles/fonts.css).
     s.setProperty('--term-font', font.family)
-    // The interface reads in the system text face unless one is chosen; the terminal font is for the terminal.
-    // Basalt is drawn in Archivo (bundled, styles/fonts.css) unless a face was chosen.
-    s.setProperty(
-      '--ui-font',
-      font.uiFamily || (family === 'basalt' ? "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif" : "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif"),
-    )
+    s.setProperty('--ui-font', "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif")
     // Writing surfaces (notes, the todo list) follow the terminal's size, not a fixed one.
     s.setProperty('--app-size', `${font.size}px`)
     s.setProperty('--sidebar-w', `${win.sidebarWidth}px`)
@@ -566,13 +537,10 @@ export class App {
   private wireConfigReload(): void {
     window.ember.onConfigChange((config) => {
       const fontChanged = config.font.family !== this.config.font.family
-      const wasLight = document.body.classList.contains('is-light')
       this.config = config
       sound.configure(config.sound)
       quality.setEnabled(config.effects.adaptive)
       this.applyCssVars()
-      // A panel's document is drawn for one side; crossing over redraws it for the other.
-      if (document.body.classList.contains('is-light') !== wasLight) for (const g of this.groups) g.panel?.retone()
       this.setColumn(this.columnWidth())
       this.settings.sync(config)
 
@@ -2198,34 +2166,6 @@ export class App {
     })
   }
 
-  private async loadThemes(): Promise<ThemeConfig[]> {
-    this.themes ??= await window.ember.listThemes().catch(() => [] as ThemeConfig[])
-    return this.themes
-  }
-
-  /**
-   * Night and Day: from the theme you are in to the one you keep for the other side.
-   * The theme you leave is remembered as its side's choice, so the switch always lands
-   * on your own pair — the house pair until you have picked something else.
-   */
-  private async switchMode(want?: string): Promise<string> {
-    if (want && !/^(day|light|night|dark)$/i.test(want)) throw new Error('mode takes night or day')
-    const nowLight = isLightBackground(this.config.theme.background)
-    const toLight = want ? /^(day|light)$/i.test(want) : !nowLight
-    if (toLight === nowLight) return toLight ? 'Already Day' : 'Already Night'
-    const themes = await this.loadThemes()
-    const slots = { ...this.config.appearance }
-    slots[nowLight ? 'day' : 'night'] = this.config.theme.name
-    const name = toLight ? slots.day : slots.night
-    const pick =
-      themes.find((t) => t.name === name && isLightBackground(t.background) === toLight) ??
-      themes.find((t) => t.name === (toLight ? 'Ember Day' : 'Ember Night'))
-    if (!pick) throw new Error('no theme to switch to')
-    window.ember.saveConfig({ ...this.config, theme: structuredClone(pick), appearance: slots })
-    sound.play('toggle')
-    return `${toLight ? 'Day' : 'Night'}: ${pick.name}`
-  }
-
   /**
    * Everything the app can do, as one table.
    *
@@ -2308,44 +2248,14 @@ export class App {
       },
       { id: 'sidebar', group: 'View', title: 'Toggle sidebar', hint: 'Ctrl+B', cli: 'sidebar', aliases: ['sb'], run: () => this.toggleSidebar() },
       {
-        id: 'mode',
-        group: 'View',
-        title: 'Switch between Night and Day',
-        hint: 'sun / moon in the title bar',
-        cli: 'mode [night|day]',
-        run: (a) => this.switchMode(a[0]),
-      },
-      {
-        id: 'theme-basalt',
-        group: 'View',
-        title: 'Theme: Basalt',
-        hint: 'matte stone',
-        aliases: ['basalt', 'stone'],
-        run: async () => {
-          const t = (await this.loadThemes()).find((x) => x.family === 'basalt')
-          if (!t) throw new Error('no Basalt theme')
-          window.ember.saveConfig({ ...this.config, theme: structuredClone(t) })
-          this.flashToast(t.name)
-          return `Theme: ${t.name}`
-        },
-      },
-      {
+        // One look: the theme is fixed. `ember theme` / `ember mode` say so rather than "unknown".
         id: 'theme',
         group: 'View',
-        title: 'Change theme…',
-        hint: 'Ctrl+Shift+P  #',
-        cli: 'theme [name]',
-        aliases: ['th'],
-        run: async (a) => {
-          if (!a.length) return this.palette.show('#')
-          const want = a.join(' ').toLowerCase()
-          const themes = await this.loadThemes()
-          const t = themes.find((x) => x.name.toLowerCase() === want) ?? themes.find((x) => x.name.toLowerCase().includes(want))
-          if (!t) throw new Error(`no theme called "${a.join(' ')}"; try: ${themes.map((x) => x.name).join(', ')}`)
-          window.ember.saveConfig({ ...this.config, theme: structuredClone(t) })
-          this.flashToast(t.name)
-          return `Theme: ${t.name}`
-        },
+        title: 'Theme',
+        cli: 'theme',
+        aliases: ['mode', 'th'],
+        hidden: true,
+        run: () => 'Ember has one look, Basalt; the theme and colours are fixed.',
       },
       {
         id: 'settings',
@@ -2640,32 +2550,6 @@ export class App {
         }))
     }
 
-    // '#' switches palette. There are far more themes than fit comfortably in the
-    // settings grid, so they get a typing surface of their own; picking one applies it
-    // immediately, which is the only way to judge a palette.
-    if (query.startsWith('#')) {
-      const q = query.slice(1).trim().toLowerCase()
-      const themes = await this.loadThemes()
-      const fold = (s: string): string =>
-        s
-          .normalize('NFD')
-          .replace(/\p{Diacritic}/gu, '')
-          .toLowerCase()
-      return themes
-        .filter((t) => !q || fold(t.name).includes(fold(q)))
-        .map((t) => ({
-          id: `theme-${t.name}`,
-          group: t.name === this.config.theme.name ? 'Current' : 'Theme',
-          title: t.name,
-          hint: `${t.background} · ${t.cursor}`,
-          skipFilter: true,
-          run: () => {
-            window.ember.saveConfig({ ...this.config, theme: structuredClone(t) })
-            this.flashToast(t.name)
-          },
-        }))
-    }
-
     if (query.startsWith('@')) {
       const q = query.slice(1).trim().toLowerCase()
       const projects = await window.ember.listProjects()
@@ -2781,9 +2665,6 @@ export class App {
         }
         if (this.settings.isOpen || this.cheatsheet.isOpen) {
           if (e.code === 'Escape') {
-            // An open font menu is the innermost surface, so it eats the first
-            // Escape rather than taking the whole panel down with it.
-            if (FontPicker.dismissOpen()) return
             this.settings.close()
             this.cheatsheet.close()
           }

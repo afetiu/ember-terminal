@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, watch, writeFileSync
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { EmberConfig } from '../shared/types.js'
-import { HOUSE_DAY, HOUSE_NIGHT, THEMES } from './themes.js'
+import { BASALT } from './themes.js'
 
 /**
  * EMBER_HOME redirects config and state elsewhere.
@@ -15,10 +15,12 @@ import { HOUSE_DAY, HOUSE_NIGHT, THEMES } from './themes.js'
 export const CONFIG_DIR = process.env['EMBER_HOME'] || join(homedir(), '.ember')
 export const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
+/** The terminal face: DM Mono, bundled (styles/fonts.css), with system monospace fallbacks. */
+export const TERMINAL_FONT = "'DM Mono', 'Cascadia Code', Consolas, monospace"
+
 /**
- * Defaults are deliberately ported from the user's Windows Terminal settings.json
- * (CaskaydiaCove NF light, 70% acrylic, 14/12 padding) so the first
- * launch feels like the terminal they already tuned — only the motion is new.
+ * Defaults. The look is not among them: Ember has one (Basalt, opaque stone, Archivo and
+ * DM Mono), and pin() holds it whatever a config file says.
  */
 export const DEFAULT_CONFIG: EmberConfig = {
   defaultProfile: 'pwsh',
@@ -46,19 +48,14 @@ export const DEFAULT_CONFIG: EmberConfig = {
     },
   ],
   font: {
-    family: 'CaskaydiaCove NF, Cascadia Code, Consolas, monospace',
-    // Empty on purpose: one font for the whole window unless you deliberately split
-    // the chrome off it in settings.
-    uiFamily: '',
+    family: TERMINAL_FONT,
     size: 13,
-    weight: 300,
+    weight: 400,
     lineHeight: 1.16,
     letterSpacing: 0,
     features: { calt: 1, liga: 1 },
   },
-  // The house dark theme, the one the website shows. The sun/moon switch in the title
-  // bar moves between it and its light twin.
-  theme: { ...THEMES.find((t) => t.name === HOUSE_NIGHT)! },
+  theme: { ...BASALT },
   // Cursor, motion, window and effects below are the user's own tuned values, promoted
   // from his installed config so a fresh install starts where he ended up rather
   // than at my first guesses.
@@ -83,19 +80,6 @@ export const DEFAULT_CONFIG: EmberConfig = {
     switchBlur: 0,
   },
   window: {
-    opacity: 70,
-    // Acrylic is the glass. Windows drops the backdrop for whichever window is not
-    // active, which is why this was briefly 'none' — but 'none' buys constant
-    // transparency by giving up blur entirely, and the blur is the look. So: keep
-    // acrylic, and fade the window itself while it is inactive (see inactiveOpacity)
-    // so the moment Windows swaps in its solid fill you are looking through the
-    // window rather than at it.
-    // Acrylic, by choice. It blurs whatever is behind the window live, on every frame the
-    // window changes, where mica samples the wallpaper once; measured on the fast GPU at
-    // 160Hz, acrylic still dropped frames in the heaviest motions (a 97ms palette open)
-    // and mica did not. The user weighed that and kept acrylic — the live glass is the look.
-    material: 'acrylic',
-    inactiveOpacity: 100,
     // A real bottom gutter matters more than it looks: full-screen TUIs (Claude Code,
     // vim, lazygit) draw their status line on the very last row, and with a
     // fractional cell height that row otherwise sits flush against the edge and
@@ -144,7 +128,27 @@ export const DEFAULT_CONFIG: EmberConfig = {
   updates: {
     check: true,
   },
-  appearance: { night: HOUSE_NIGHT, day: HOUSE_DAY },
+}
+
+/**
+ * The fixed look over whatever a file says: Basalt's palette, DM Mono at a weight it has,
+ * no CRT overlay. Keys older configs carried for the look (window opacity, backdrop, a
+ * second font, the day/night pair) are dropped, so they do not linger in the file.
+ */
+function pin(c: EmberConfig): EmberConfig {
+  const out = {
+    ...c,
+    theme: { ...BASALT },
+    font: { ...c.font, family: TERMINAL_FONT, weight: 400 },
+    effects: { ...c.effects, scanlines: 0, vignette: 0 },
+  } as EmberConfig & { appearance?: unknown }
+  delete out.appearance
+  const font = out.font as EmberConfig['font'] & { uiFamily?: unknown }
+  delete font.uiFamily
+  const win = { ...out.window } as EmberConfig['window'] & Record<string, unknown>
+  for (const k of ['opacity', 'material', 'inactiveOpacity']) delete win[k]
+  out.window = win
+  return out
 }
 
 /** Shallow-per-section merge: a user config may override any subset of keys. */
@@ -174,7 +178,7 @@ export function loadConfig(): EmberConfig {
       return cached
     }
     const raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'))
-    cached = merge(DEFAULT_CONFIG, raw)
+    cached = pin(merge(DEFAULT_CONFIG, raw))
     // A config written before Labs existed belongs to someone already using the
     // key-based features; switching them off under that person would be a regression.
     if (raw && typeof raw === 'object' && !('labs' in raw)) cached = { ...cached, labs: { enabled: true } }
@@ -196,7 +200,7 @@ export function loadConfig(): EmberConfig {
 export function saveConfig(next: EmberConfig): void {
   try {
     mkdirSync(CONFIG_DIR, { recursive: true })
-    cached = merge(DEFAULT_CONFIG, next)
+    cached = pin(merge(DEFAULT_CONFIG, next))
     writeFileSync(CONFIG_PATH, JSON.stringify(cached, null, 2), 'utf8')
   } catch (err) {
     console.error(`[ember] could not save config: ${(err as Error).message}`)
@@ -213,7 +217,7 @@ export function reloadConfig(): EmberConfig | null {
   try {
     if (!existsSync(CONFIG_PATH)) return null
     const raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'))
-    cached = merge(DEFAULT_CONFIG, raw)
+    cached = pin(merge(DEFAULT_CONFIG, raw))
     return cached
   } catch {
     return null

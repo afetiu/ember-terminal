@@ -294,7 +294,7 @@ export class Sidebar {
     const changed = this.activeId !== activeId
     this.activeId = activeId
     // Basalt's slab is heavy: it slides over and stops, critically damped, no overshoot.
-    this.plateY.damping = document.body.classList.contains('theme-basalt') ? 1 : 0.72
+    this.plateY.damping = 1
     if (!this.plateShown) {
       // First appearance: in place, no journey to make.
       this.plateShown = true
@@ -314,16 +314,9 @@ export class Sidebar {
     }
   }
 
-  /**
-   * Draw the plate at its current position, stretched along its direction of travel.
-   * Squash-and-stretch is what makes a moving thing read as having mass: the leading
-   * edge reaches ahead in proportion to speed and everything relaxes back on arrival.
-   */
-  private paintPlate(velocity: number): void {
-    // Stone does not stretch: under Basalt the plate is a slab that slides and sets down.
-    const stretch = document.body.classList.contains('theme-basalt') ? 0 : Math.min(0.3, Math.abs(velocity) / 2400)
-    this.plate.style.transformOrigin = velocity >= 0 ? 'top' : 'bottom'
-    this.plate.style.transform = `translate3d(0, ${this.plateY.value.toFixed(2)}px, 0) scaleY(${(1 + stretch).toFixed(3)})`
+  /** Draw the plate at its current position. Stone does not stretch: a slab that slides and sets down. */
+  private paintPlate(_velocity: number): void {
+    this.plate.style.transform = `translate3d(0, ${this.plateY.value.toFixed(2)}px, 0)`
   }
 
   /**

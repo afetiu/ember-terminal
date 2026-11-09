@@ -318,7 +318,7 @@ const SAMPLER = `(() => {
       rows.forEach((r, i) => { if (/^[❯>]/.test(r)) promptAt = i })
       const inBox = (i) => i === promptAt
       const talk = rows.filter((r, i) => !inBox(i) && words.some((w) => w && r.includes(w)))
-      E.frames.push({ t: performance.now(), n: rows.length, ok: line || foot, talk: talk.length, text: rows })
+      E.frames.push({ t: performance.now(), n: rows.length, ok: line || foot, talk: talk.length, text: rows, why: lv.region ? lv.region.why + ' ' + lv.region.top + '..' + lv.region.bottom + ' shown ' + lv.shown.from + '+' + lv.shown.rows + '/' + lv.shown.total : '' })
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
@@ -334,7 +334,7 @@ const SAMPLER = `(() => {
     })
     const hs = []
     for (const f of E.frames) if (hs[hs.length - 1] !== f.n) hs.push(f.n)
-    return { frames: E.frames.length, worst, talk, heights: hs.slice(0, 24), worstText: at >= 0 ? E.frames[at].text : null, talkText: talkAt >= 0 ? E.frames[talkAt].text : null }
+    return { frames: E.frames.length, worst, talk, heights: hs.slice(0, 24), worstText: at >= 0 ? E.frames[at].text : null, talkText: talkAt >= 0 ? E.frames[talkAt].text : null, talkWhy: talkAt >= 0 ? E.frames[talkAt].why : '' }
   }
   window.__eng = E
   return true
@@ -350,7 +350,7 @@ const sampled = async (tab, label, fn, agent = 'claude', words = []) => {
     const s = await ev(`window.__eng.stop()`)
     worst.push({ label, worst: s.worst, frames: s.frames, talk: s.talk, heights: s.heights })
     check(`${label}: every frame of the box shows the prompt or the dialog's keys (worst ${s.worst} without)`, s.worst === 0, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.heights.join('→')}`)
-    check(`${label}: no frame of the box holds conversation text`, s.talk === 0, s.talk ? `${s.talk} frames, e.g. ${JSON.stringify(s.talkText?.filter((r) => r.trim()).slice(0, 4))}` : '')
+    check(`${label}: no frame of the box holds conversation text`, s.talk === 0, s.talk ? `${s.talk} frames (${s.talkWhy}), e.g. ${JSON.stringify(s.talkText?.filter((r) => r.trim()).slice(0, 4))}` : '')
     if (s.worst && s.worstText) console.log(s.worstText.map((r, i) => `   ${String(i).padStart(2)}|${r}`).join('\n'))
   }
 }

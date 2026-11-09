@@ -1,9 +1,8 @@
-import type { BrainStatus, EmberConfig, FontOption, ThemeConfig } from '@shared/types'
-import { FontPicker } from './FontPicker'
+import type { BrainStatus, EmberConfig } from '@shared/types'
 import { AgentPicker } from './AgentPicker'
 import { PHONE_LINK } from '../phone/flag'
 
-type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | 'font' | 'preset'
+type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'preset'
 
 /**
  * The two ends of the look/speed trade, as measured rather than guessed.
@@ -13,9 +12,6 @@ type FieldKind = 'range' | 'toggle' | 'select' | 'number' | 'text' | 'color' | '
  * one thing that stops the frame loop ever stopping; the trail and the output rise are
  * cheaper but pull in the same direction. Nothing here changes what the terminal *says*,
  * only how much motion it spends saying it.
- *
- * Window opacity is deliberately absent. It measured free (66.4% against 66.9% at 20 and
- * 100), so there is no reason to make anyone give up the glass for speed they will not get.
  */
 const PRESETS: Record<'full' | 'fast', Record<string, unknown>> = {
   full: {
@@ -41,8 +37,6 @@ interface Field {
   max?: number
   step?: number
   options?: string[]
-  /** For 'font': the label shown for the empty value. Omit to require a font. */
-  inherit?: string
 }
 
 interface Section {
@@ -54,8 +48,11 @@ interface Section {
   labsOnly?: boolean
 }
 
-/** The panel's tabs, in order. Theme is part of Look; the rest are the sections below. */
-const ALL_TABS = ['Look', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
+/**
+ * The panel's tabs, in order. There is no look to pick: Ember has one (Basalt), with its own
+ * faces (Archivo, DM Mono). Text keeps the size and spacing, for eyes that need them.
+ */
+const ALL_TABS = ['Text', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
 export type SettingsTab = (typeof ALL_TABS)[number]
 /** Labs holds only the phone link, so it goes when that is switched off. */
 export const SETTINGS_TABS: readonly SettingsTab[] = PHONE_LINK ? ALL_TABS : ALL_TABS.filter((t) => t !== 'Labs')
@@ -89,15 +86,12 @@ export class Settings {
   readonly el: HTMLElement
   private readonly body: HTMLElement
   private draft: EmberConfig | null = null
-  private themes: ThemeConfig[] = []
-  private fonts: FontOption[] = []
-  private fontsReady: Promise<FontOption[]> | null = null
   private open = false
   private saveTimer: number | null = null
   /** Lower-cased filter text. Empty means show everything. */
   private query = ''
   /** The tab showing. A filter looks across all of them. */
-  private tab: SettingsTab = 'Look'
+  private tab: SettingsTab = 'Text'
   private readonly tabsEl: HTMLElement
   /** Settings › Agent's list; made on first view, and looked at again every open. */
   private agents: AgentPicker | null = null
@@ -140,42 +134,17 @@ export class Settings {
     },
     {
       title: 'Text',
-      tab: 'Look',
+      tab: 'Text',
       fields: [
-        {
-          path: 'font.family',
-          label: 'Font',
-          kind: 'font',
-          hint: 'the whole window — chrome and terminal alike',
-        },
-        {
-          path: 'font.uiFamily',
-          label: 'Interface font',
-          kind: 'font',
-          inherit: 'Same as app font',
-          hint: 'chrome only, when the terminal wants a different one',
-        },
         { path: 'font.size', label: 'Size', kind: 'range', min: 8, max: 28, step: 1 },
-        { path: 'font.weight', label: 'Weight', kind: 'range', min: 100, max: 700, step: 100 },
         { path: 'font.lineHeight', label: 'Line height', kind: 'range', min: 1, max: 2, step: 0.02 },
         { path: 'scrollback', label: 'Scrollback lines', kind: 'number', min: 500, max: 100000, step: 500 },
       ],
     },
     {
       title: 'Window',
-      tab: 'Look',
+      tab: 'Text',
       fields: [
-        { path: 'window.opacity', label: 'Opacity', kind: 'range', min: 20, max: 100, step: 1 },
-        { path: 'window.material', label: 'Backdrop', kind: 'select', options: ['acrylic', 'mica', 'tabbed', 'none'] },
-        {
-          path: 'window.inactiveOpacity',
-          label: 'Opacity when inactive',
-          kind: 'range',
-          min: 20,
-          max: 100,
-          step: 1,
-          hint: 'Windows hides the blur off-focus',
-        },
         { path: 'window.sidebarWidth', label: 'Sidebar width', kind: 'range', min: 160, max: 420, step: 4 },
         { path: 'window.padding.top', label: 'Padding top', kind: 'range', min: 0, max: 40, step: 1 },
         { path: 'window.padding.bottom', label: 'Padding bottom', kind: 'range', min: 0, max: 40, step: 1 },
@@ -185,9 +154,8 @@ export class Settings {
     },
     {
       title: 'Effects',
-      tab: 'Look',
+      tab: 'Text',
       fields: [
-        { path: 'effects.scanlines', label: 'Scanlines', kind: 'range', min: 0, max: 0.4, step: 0.01 },
         { path: 'effects.outputMotion', label: 'Output rises into place', kind: 'toggle' },
         { path: 'effects.adaptive', label: 'Shed effects when slow', kind: 'toggle' },
       ],
@@ -315,8 +283,8 @@ export class Settings {
     })
 
     // Ten sections and roughly forty controls: past the point where scanning beats
-    // scrolling. Matches on the label, the hint and the section title, so "key", "opacity"
-    // and "voice" all land somewhere useful.
+    // scrolling. Matches on the label, the hint and the section title, so "key", "size"
+    // and "sound" all land somewhere useful.
     const filter = document.createElement('input')
     filter.type = 'search'
     filter.className = 'ember-settings-filter'
@@ -377,35 +345,15 @@ export class Settings {
         this.close()
       }
     })
-
-    // Warm the font list well after launch: it costs a process on Windows, and the
-    // first thing the app owes the user is a terminal, not a settings panel.
-    window.setTimeout(() => void this.loadFonts(), 3000)
   }
 
   get isOpen(): boolean {
     return this.open
   }
 
-  /**
-   * Enumerating installed fonts shells out to the OS, so it is done once and warmed
-   * in the background — the panel must never sit waiting on a PowerShell start-up
-   * the first time it is opened. A failed attempt is retried on the next open
-   * rather than cached as "this machine has no fonts".
-   */
-  private loadFonts(): Promise<FontOption[]> {
-    this.fontsReady ??= window.ember.listFonts().catch(() => {
-      this.fontsReady = null
-      return [] as FontOption[]
-    })
-    return this.fontsReady
-  }
-
   async show(config: EmberConfig, tab?: SettingsTab): Promise<void> {
     if (tab) this.tab = tab
     this.draft = structuredClone(config)
-    if (!this.themes.length) this.themes = await window.ember.listThemes()
-    this.fonts = await this.loadFonts()
     // Look for agent CLIs again on every open: one may have been installed since.
     if (this.agents && this.tab === 'Agent') void this.agents.refresh()
     this.build()
@@ -454,14 +402,9 @@ export class Settings {
     for (const b of this.tabsEl.children) b.classList.toggle('is-current', (b as HTMLElement).dataset['tab'] === this.tab)
     this.body.scrollTop = 0
 
-    // With a few dozen palettes the grid is the one place worth searching by name, so
-    // "dracula" narrows it to Dracula the same way "theme" shows the whole set.
-    const themes = this.query || this.tab === 'Look' ? this.matchingThemes() : []
-    if (themes.length) this.body.appendChild(this.buildThemes(themes))
-
     if (!this.query && this.tab === 'Agent') this.body.appendChild(this.buildAgents())
 
-    let shown = themes.length ? 1 : 0
+    let shown = 0
     for (const section of Settings.SECTIONS) {
       if (!this.query && section.tab !== this.tab) continue
       if (section.labsOnly && !this.draft.labs?.enabled) continue
@@ -493,75 +436,6 @@ export class Settings {
     )
   }
 
-  /**
-   * The palettes that survive the current filter.
-   *
-   * An empty search shows all of them; otherwise a palette matches on its own name, and
-   * the word "theme" still brings up the whole set. Names are folded to plain ASCII first
-   * so "rose pine" finds Rosé Pine.
-   */
-  private matchingThemes(): ThemeConfig[] {
-    if (!this.query) return this.themes
-    if ('theme'.includes(this.query)) return this.themes
-    const fold = (s: string): string =>
-      s
-        .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '')
-        .toLowerCase()
-    const q = fold(this.query)
-    return this.themes.filter((t) => fold(t.name).includes(q))
-  }
-
-  private buildThemes(themes: ThemeConfig[]): HTMLElement {
-    const wrap = document.createElement('section')
-    wrap.className = 'ember-settings-section'
-    const h = document.createElement('h3')
-    h.textContent = 'Theme'
-    const count = document.createElement('span')
-    count.className = 'ember-settings-count'
-    count.textContent = String(themes.length)
-    h.appendChild(count)
-    wrap.appendChild(h)
-
-    const grid = document.createElement('div')
-    grid.className = 'ember-theme-grid'
-    for (const theme of themes) {
-      const b = document.createElement('button')
-      b.className = 'ember-theme'
-      b.classList.toggle('is-current', theme.name === this.draft?.theme.name)
-      b.title = theme.name
-
-      const swatch = document.createElement('span')
-      swatch.className = 'ember-theme-swatch'
-      swatch.style.background = theme.background
-      for (const c of [theme.cursor, theme.green, theme.yellow, theme.blue]) {
-        const dot = document.createElement('i')
-        dot.style.background = c
-        swatch.appendChild(dot)
-      }
-      const name = document.createElement('span')
-      name.className = 'ember-theme-name'
-      name.textContent = theme.name
-
-      b.append(swatch, name)
-      b.addEventListener('click', () => {
-        if (!this.draft) return
-        this.draft.theme = structuredClone(theme)
-        this.flush()
-        this.build()
-      })
-      if (b.classList.contains('is-current')) {
-        // The grid scrolls, so the palette in use has to be brought into view or a
-        // reopened panel looks like nothing is selected.
-        requestAnimationFrame(() => b.scrollIntoView({ block: 'nearest' }))
-      }
-      grid.appendChild(b)
-    }
-    wrap.appendChild(grid)
-    return wrap
-  }
-
-  /** Which CLI Ember runs on, and the promise that it needs no key. */
   private buildAgents(): HTMLElement {
     const wrap = document.createElement('section')
     wrap.className = 'ember-settings-section'
@@ -696,22 +570,6 @@ export class Settings {
       sel.addEventListener('change', () => commit(sel.value))
       return sel
     }
-
-    if (field.kind === 'font') {
-      const picker = new FontPicker({
-        fonts: this.fonts,
-        value: String(value ?? ''),
-        ...(field.inherit ? { inherit: field.inherit } : {}),
-        // Fonts are not dragged, so there is nothing to coalesce — write immediately
-        // and let the watcher re-font the app while the panel is still open.
-        onChange: (next) => {
-          commit(next)
-          this.flush()
-        },
-      })
-      return picker.el
-    }
-
 
     if (field.kind === 'preset') {
       const wrap = document.createElement('span')
