@@ -1,6 +1,7 @@
 import { escapeHtml, renderMarkdown } from './markdown'
 import { diffLines, fromPatch, tally, type DiffLine } from './diff'
 import { answerCard } from './questions'
+import { joinsTurn, type PromptKind, type TurnState } from '@shared/turnGroups'
 
 /**
  * The conversation, drawn from the transcript.
@@ -292,7 +293,7 @@ export class Feed {
   private turn: HTMLElement
   private quiet: QuietGroup | null = null
   /** The last slash command, shown as a quiet line until the agent answers it (then it is a turn). */
-  private pendingCmd: { note: HTMLElement; label: string } | null = null
+  private pendingCmd: { note: HTMLElement; label: string; uuid: string } | null = null
   private readonly tools = new Map<string, { view?: ToolView; quiet?: { group: QuietGroup; item: QuietItem }; name: string; input: Json }>()
   /** Where a piece the session pushes should land: right after the tool call that made it. */
   private readonly anchors: Array<{ name: string; el: HTMLElement; used: boolean }> = []
@@ -300,10 +301,26 @@ export class Feed {
   private sessions = 0
   /** `/clear` just ran: what it printed is not worth a line on the empty canvas. */
   private clearedOut = false
+  /** The turn on screen, for grouping follow-ups into it (shared/turnGroups.ts); null: none to join. */
+  private group: TurnState | null = null
+  /** The line being read's uuid: a prompt's handle for "Split" / "Join previous". */
+  private uuid = ''
+  /** The step the large live line names (the newest tool row), hidden while it is the one in progress. */
+  actEl: HTMLElement | null = null
 
   constructor(private readonly ctx: FeedContext) {
     this.el = el('div', 'loom-flow')
     this.turn = this.newTurn()
+    // "Split into its own turn" on a follow-up, "Join previous" on a turn's head.
+    this.el.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('.loom-regroup')
+      if (!b || !this.el.contains(b)) return
+      e.stopPropagation()
+      const line = b.closest<HTMLElement>('.loom-follow, .loom-ask')
+      if (!line) return
+      if (line.classList.contains('loom-follow')) this.split(line)
+      else this.joinPrevious(line)
+    })
   }
 
   /** What the session is doing right now, as one sentence: the last step it started. */
@@ -334,7 +351,101 @@ export class Feed {
     this.turn = t
     this.quiet = null
     this.act = ''
+    this.actEl = null
+    this.group = null
     return t
+  }
+
+  // -------------------------------------------------------------- turns and follow-ups
+
+  /** Where a prompt goes: true, a follow-up in the turn on screen; false, a new turn (made here). */
+  private placePrompt(text: string, kind: PromptKind): boolean {
+    const at = Date.parse(this.at)
+    const forced = this.uuid ? overrides()[this.uuid] : undefined
+    const g = joinsTurn(text, at, kind, this.group)
+    const join = !!this.group && (forced === 'split' ? false : forced === 'join' ? true : g.join)
+    if (join && this.group) {
+      if (Number.isFinite(at)) this.group.lastAt = at
+      if (kind === 'prompt') {
+        this.group.prompt = text
+        this.group.interrupted = false
+        this.group.questions = false
+      }
+      return true
+    }
+    this.newTurn()
+    this.group = { askAt: at, lastAt: at, prompt: text, interrupted: false, questions: false }
+    return false
+  }
+
+  /** Something happened in the turn (a reply, a step): the clock grouping reads. */
+  private touch(): void {
+    if (!this.group) return
+    const at = Date.parse(this.at)
+    if (Number.isFinite(at)) this.group.lastAt = at
+  }
+
+  /** Your words inside a turn: one small line, with a way to make it a turn of its own. */
+  private followLine(caret: string, text: string, command = false, uuid = this.uuid): HTMLElement {
+    const f = el('div', `loom-follow${command ? ' is-command' : ''}`)
+    f.innerHTML =
+      `<span class="loom-caret">${caret}</span><span class="loom-follow-text">${escapeHtml(text)}</span>` +
+      (uuid ? `<button type="button" class="loom-regroup" title="Show this as a turn of its own">Split into its own turn</button>` : '')
+    if (uuid) f.dataset['uuid'] = uuid
+    return f
+  }
+
+  /** The head of a turn: what you asked, with "Join previous". */
+  private askLine(caret: string, text: string, command = false, uuid = this.uuid): HTMLElement {
+    const ask = el('div', `loom-ask${command ? ' is-command' : ''}`)
+    ask.innerHTML =
+      `<span class="loom-caret">${caret}</span><span class="loom-ask-text">${escapeHtml(text)}</span>` +
+      (uuid ? `<button type="button" class="loom-regroup" title="Make this part of the turn before">Join previous</button>` : '')
+    if (uuid) ask.dataset['uuid'] = uuid
+    return ask
+  }
+
+  /** "Split into its own turn": the follow-up and everything after it in its turn move to a new turn. */
+  private split(line: HTMLElement): void {
+    const turn = line.parentElement
+    if (!turn) return
+    setOverride(line.dataset['uuid'], 'split')
+    const t = el('section', 'loom-turn')
+    turn.after(t)
+    const text = line.querySelector('.loom-follow-text')?.textContent ?? ''
+    const caret = line.querySelector('.loom-caret')?.textContent ?? '❯'
+    const ask = this.askLine(caret, text, line.classList.contains('is-command'), line.dataset['uuid'] ?? '')
+    line.querySelectorAll('.loom-thumbs').forEach((n) => ask.appendChild(n))
+    const moving: Element[] = []
+    for (let n: Element | null = line.nextElementSibling; n; n = n.nextElementSibling) {
+      if (!n.classList.contains('loom-activity') && !n.classList.contains('loom-board')) moving.push(n)
+    }
+    line.remove()
+    t.append(ask, ...moving)
+    if (this.turn === turn) this.turn = t
+    this.ctx.grew()
+  }
+
+  /** "Join previous": this turn becomes a follow-up of the one before it. */
+  private joinPrevious(ask: HTMLElement): void {
+    const turn = ask.parentElement
+    let prev = turn?.previousElementSibling as HTMLElement | null
+    while (prev && prev.classList.contains('loom-turn') && !prev.querySelector(':scope > .loom-ask')) prev = prev.previousElementSibling as HTMLElement | null
+    if (!turn || !prev || !prev.classList.contains('loom-turn')) return
+    setOverride(ask.dataset['uuid'], 'join')
+    const text = ask.querySelector('.loom-ask-text')?.textContent ?? ''
+    const caret = ask.querySelector('.loom-caret')?.textContent ?? '❯'
+    const f = this.followLine(caret, text, ask.classList.contains('is-command'), ask.dataset['uuid'] ?? '')
+    ask.querySelectorAll('.loom-thumbs').forEach((n) => f.appendChild(n))
+    ask.replaceWith(f)
+    const before = prev.querySelector(':scope > .loom-activity, :scope > .loom-board')
+    for (const n of Array.from(turn.children)) {
+      if (n.classList.contains('loom-activity')) continue
+      prev.insertBefore(n, before)
+    }
+    turn.remove()
+    if (this.turn === turn) this.turn = prev
+    this.ctx.grew()
   }
 
   /**
@@ -386,6 +497,7 @@ export class Feed {
       // Subagents' own steps: their summary arrives as the Task result.
       if (line['isSidechain'] === true) continue
       this.at = String(line['timestamp'] ?? '')
+      this.uuid = uuid
       try {
         if (line['type'] === 'user') this.user(line)
         else if (line['type'] === 'assistant') this.assistant(line)
@@ -495,7 +607,7 @@ export class Feed {
       const note = el('div', 'loom-note-line is-command', `<span class="loom-caret">❯</span>${escapeHtml(label)}`)
       note.dataset['cmd'] = '1'
       this.turn.appendChild(note)
-      this.pendingCmd = { note, label }
+      this.pendingCmd = { note, label, uuid: this.uuid }
       return
     }
     const stdout = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(clean)
@@ -517,8 +629,9 @@ export class Feed {
     const bashIn = /<bash-input>([\s\S]*?)<\/bash-input>/.exec(clean)
     if (bashIn) {
       this.pendingCmd = null
-      this.newTurn()
-      this.turn.appendChild(el('div', 'loom-ask is-command', `<span class="loom-caret">!</span>${escapeHtml(bashIn[1] ?? '')}`))
+      const cmdText = bashIn[1] ?? ''
+      if (this.placePrompt(cmdText, 'shell')) this.turn.appendChild(this.followLine('!', cmdText, true))
+      else this.turn.appendChild(this.askLine('!', cmdText, true))
       return
     }
     const bashOut = /<bash-stdout>([\s\S]*?)<\/bash-stdout>(?:<bash-stderr>([\s\S]*?)<\/bash-stderr>)?/.exec(clean)
@@ -539,15 +652,18 @@ export class Feed {
     }
     if (/^\[Request interrupted by user/.test(clean)) {
       this.turn.appendChild(el('div', 'loom-interrupt', 'interrupted'))
+      if (this.group) {
+        this.group.interrupted = true
+        this.touch()
+      }
       return
     }
     if (!clean && !images.length) return
     if (clean.startsWith('Caveat: The messages below')) return
 
     this.pendingCmd = null
-    this.newTurn()
-    const ask = el('div', 'loom-ask')
-    ask.innerHTML = `<span class="loom-caret">❯</span><span class="loom-ask-text">${escapeHtml(clean)}</span>`
+    const follow = this.placePrompt(clean, 'prompt')
+    const ask = follow ? this.followLine('❯', clean) : this.askLine('❯', clean)
     if (images.length) {
       const thumbs = el('div', 'loom-thumbs')
       for (const src of images) {
@@ -568,8 +684,12 @@ export class Feed {
     if (!c) return
     this.pendingCmd = null
     c.note.remove()
-    this.newTurn()
-    this.turn.appendChild(el('div', 'loom-ask is-command', `<span class="loom-caret">❯</span>${escapeHtml(c.label)}`))
+    // A command the agent answers (a skill, a custom command) is a prompt like any other.
+    const saved = this.uuid
+    this.uuid = c.uuid
+    if (this.placePrompt(c.label, 'prompt')) this.turn.appendChild(this.followLine('❯', c.label, true))
+    else this.turn.appendChild(this.askLine('❯', c.label, true))
+    this.uuid = saved
   }
 
   // -------------------------------------------------------------- assistant
@@ -579,6 +699,8 @@ export class Feed {
     const content = msg['content']
     if (!Array.isArray(content)) return
     this.promoteCommand()
+    this.touch()
+    if (this.group) this.group.interrupted = false
     for (const block of content as Json[]) {
       const type = block['type']
       if (type === 'text') this.say(String(block['text'] ?? ''))
@@ -592,8 +714,10 @@ export class Feed {
     const r = renderMarkdown(text)
     const div = el('div', 'loom-say', r.html)
     this.turn.appendChild(div)
+    this.actEl = null
     this.hydrate(div, r.diagrams, r.images)
-    answerCard(div, (line) => this.ctx.send(line, true))
+    const card = answerCard(div, (line) => this.ctx.send(line, true))
+    if (this.group) this.group.questions = !!card
   }
 
   /**
@@ -653,10 +777,13 @@ export class Feed {
       if (!this.quiet) this.quiet = new QuietGroup(this.turn)
       const item = this.quiet.add(id, name, input)
       this.act = cap(item.row.querySelector('.loom-quiet-label')?.textContent ?? name)
+      // One step folded alone says what the live line says; a group of them says more.
+      this.actEl = this.quiet.items.length === 1 ? this.quiet.el : null
       this.tools.set(id, { quiet: { group: this.quiet, item }, name, input })
       return
     }
     this.quiet = null
+    this.actEl = null
 
     if (EDITS.has(name)) return this.edit(id, name, input)
     if (SHELLS.has(name)) {
@@ -664,6 +791,7 @@ export class Feed {
       const command = String(input['command'] ?? '')
       view.setHead('$', firstLine(command, 160), String(input['description'] ?? ''))
       this.act = String(input['description'] ?? '').trim() || `$ ${firstLine(command, 120)}`
+      this.actEl = view.el
       this.tools.set(id, { view, name, input })
       return
     }
@@ -695,6 +823,7 @@ export class Feed {
     const arg = Object.values(input).find((v) => typeof v === 'string' && v.trim()) as string | undefined
     view.setHead(label, arg ? firstLine(arg, 100) : '', source)
     this.act = cap(`${label}${arg ? ` ${firstLine(arg, 80)}` : ''}`)
+    this.actEl = view.el
     this.tools.set(id, { view, name, input })
   }
 
@@ -827,6 +956,32 @@ export class Feed {
     // Hook chatter and the like: quiet, but there.
     if (/hook|statusline|^\s*$/i.test(subtype)) return
     this.turn.appendChild(el('div', 'loom-note-line', escapeHtml(firstLine(text, 300))))
+  }
+}
+
+/** The turns you split or joined by hand, by prompt uuid: kept, so a reload groups them the same. */
+const OVERRIDES = 'ember.turnOverrides'
+let overrideCache: Record<string, 'split' | 'join'> | null = null
+function overrides(): Record<string, 'split' | 'join'> {
+  if (overrideCache) return overrideCache
+  try {
+    overrideCache = JSON.parse(localStorage.getItem(OVERRIDES) ?? '{}') as Record<string, 'split' | 'join'>
+  } catch {
+    overrideCache = {}
+  }
+  return overrideCache
+}
+function setOverride(uuid: string | undefined, how: 'split' | 'join'): void {
+  if (!uuid) return
+  const all = overrides()
+  delete all[uuid]
+  all[uuid] = how
+  const keys = Object.keys(all)
+  for (const k of keys.slice(0, Math.max(0, keys.length - 500))) delete all[k]
+  try {
+    localStorage.setItem(OVERRIDES, JSON.stringify(all))
+  } catch {
+    /* kept for this run only */
   }
 }
 

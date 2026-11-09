@@ -5416,3 +5416,74 @@
 .loom-live .xterm-rows {
   background: transparent !important;
 }
+
+/* ==========================================================================
+   Follow-ups: your words inside a turn (shared/turnGroups.ts). A small line over the
+   answer it got, set apart from the part before by a hairline.
+   ========================================================================== */
+.loom-follow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: 82ch;
+  margin: 22px 0 12px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--l-line);
+  color: var(--l-dim);
+  font: 0.86em/1.5 var(--l-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.loom-follow .loom-caret {
+  color: var(--l-faint);
+}
+.loom-follow-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.loom-follow.is-command {
+  color: var(--l-faint);
+}
+/* A slash command right after your words is part of them: no hairline between. */
+.loom-follow + .loom-follow,
+.loom-follow + .loom-note-line + .loom-follow {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 6px;
+}
+/* The answer an earlier part got stays (only the newest is the large current one), also
+   while the agent works on the follow-up (its new words go to the trail meanwhile). */
+.loom-turn.is-shown > .loom-say.is-part-end,
+.loom-turn.is-shown.is-working > .loom-say.is-part-end {
+  display: block;
+  margin-bottom: 4px;
+}
+/* Split / Join previous: there when you look for it, quiet otherwise. */
+.loom-regroup {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--l-faint);
+  font: 11px/1.6 var(--l-mono);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+:is(.loom-follow, .loom-ask):hover > .loom-regroup,
+.loom-regroup:focus-visible {
+  opacity: 1;
+}
+.loom-regroup:hover {
+  color: var(--l-ink);
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.loom-turn.is-first > .loom-ask > .loom-regroup {
+  display: none;
+}
+/* The step the large live line names, while it is the one in progress: said once. */
+.loom-turn > .is-now-step {
+  display: none;
+}

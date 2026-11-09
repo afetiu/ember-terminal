@@ -1343,3 +1343,21 @@ body.theme-basalt .ember-toggle:active::before {
     animation: none;
   }
 }
+
+/* Follow-ups inside a turn: the ask's DM Mono line, a step quieter. */
+body.theme-basalt .loom-follow {
+  font: 400 12px/1.5 var(--b-mono);
+  color: var(--b-faint);
+  border-top-color: var(--b-line);
+}
+body.theme-basalt .loom-follow .loom-caret,
+body.theme-basalt .loom-regroup {
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-regroup {
+  font: 400 11px/1.6 var(--b-mono);
+}
+body.theme-basalt .loom-regroup:hover {
+  color: var(--b-text);
+  background: var(--b-chip);
+}

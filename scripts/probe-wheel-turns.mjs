@@ -30,7 +30,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 // ---- the made-up session ----
 let n = 0
 const t0 = Date.parse('2026-11-02T09:00:00Z')
-const at = () => new Date(t0 + n * 1000).toISOString()
+// Minutes apart: each prompt a request of its own (a short one sent soon after a reply is a follow-up).
+const at = () => new Date(t0 + n * 240_000).toISOString()
 const u = (content, extra = {}) => ({ type: 'user', uuid: `u${++n}`, timestamp: at(), message: { role: 'user', content }, ...extra })
 const a = (text) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(), message: { role: 'assistant', content: [{ type: 'text', text }] } })
 const long = (topic) =>
@@ -82,7 +83,7 @@ try {
       const flow = s.querySelector('.loom-flow')
       const t = [...flow.querySelectorAll(':scope > .loom-turn')].filter((x) => x.childElementCount && [...x.children].some((c) => !c.dataset.cmd))
       const sh = flow.querySelector('.loom-turn.is-shown')
-      const ask = (sh?.querySelector('.loom-ask')?.textContent || '').replace('❯', '').slice(0, 30)
+      const ask = (sh?.querySelector('.loom-ask-text, .loom-ask')?.textContent || '').replace('❯', '').slice(0, 30)
       const shown = sh ? [...sh.querySelectorAll(':scope > .loom-say')].filter((x) => getComputedStyle(x).display !== 'none').length : 0
       const notes = sh ? sh.querySelectorAll(':scope > [data-cmd]').length : 0
       return { at: t.indexOf(sh), of: t.length, top: Math.round(s.scrollTop), max: Math.round(s.scrollHeight - s.clientHeight), ask, shown, notes } })()`)

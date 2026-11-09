@@ -332,6 +332,22 @@ export class App {
       loom: (id?: string) => (this.groups.find((g) => g.id === (id ?? this.activeId))?.loom?.debug() ?? null),
       /** Transcript lines straight into a Loom tab's canvas, for probes that need turns without a model. */
       loomFeed: (id: string, lines: Array<Record<string, unknown>>) => this.groups.find((g) => g.id === id)?.loom?.feedForProbe(lines),
+      /** A Loom tab's session name, as `/rename` (a `custom-title` line) sets it; `agent`: as if that agent ran there. */
+      loomTitle: (id: string, title: string, agent?: string) => {
+        const l = this.groups.find((g) => g.id === id)?.loom
+        if (l && agent) l.host.onAgent = agent
+        if (l) l.host.title = title
+        return !!l
+      },
+      /** A Loom tab as if its agent were mid-turn (or not), for probes with no agent running. */
+      loomWorking: (id: string, on: boolean) => {
+        const l = this.groups.find((g) => g.id === id)?.loom
+        if (!l) return false
+        l.host.working = on
+        l.stage.restage()
+        l.stage.renderNow()
+        return true
+      },
       /** A Loom tab's CLI box (the live area of its real terminal), for probes sampling every frame. */
       loomLive: (id: string) => this.groups.find((g) => g.id === id)?.loom?.host.liveView ?? null,
       /** The tab's session moving to another transcript (`/clear`, `/resume`), as main reports it. */
@@ -1981,13 +1997,16 @@ export class App {
       const activity = g.aggregate(now)
       const focused = g.focused
       const cwd = focused?.cwd || focused?.initialCwd || ''
-      // A tab running an agent on its canvas is that agent in a folder ("name · folder" once
-      // the session is named), not the shell under its canvas.
+      // A tab running an agent on its canvas is that agent in a folder ("Claude Code · folder"),
+      // not the shell under its canvas. A named session is just its name; the folder then goes
+      // on the card's second line.
       const cc = !g.isSplit ? g.loom?.claudeCard : null
       const folder = cc ? folderName(cc.folder) : ''
+      const named = !!cc && !g.customTitle && !!cc.title
       return {
         id: g.id,
-        title: cc && !g.customTitle ? `${cc.title || cc.agent}${folder ? ` · ${folder}` : ''}${cc.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        title: cc && !g.customTitle ? `${cc.title || `${cc.agent}${folder ? ` · ${folder}` : ''}`}${cc.cli ? ' (CLI)' : ''}` : g.displayTitle,
+        folder: named ? folder : undefined,
         subtitle: cc ? folder : g.isSplit ? `${g.panes.length} panes` : (focused?.profile.name ?? ''),
         // A note or the todo list has no shell to take its colour from, so each takes a
         // theme colour of its own: a different kind of thing should read as one.

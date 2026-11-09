@@ -134,8 +134,24 @@ export class Stage {
     window.setTimeout(() => items.forEach((el) => el.remove()), 360)
   }
 
+  private nowStep: HTMLElement | null = null
+
+  /**
+   * The step the large live line names is not shown twice: its row in the turn is hidden
+   * while it is the step in progress, and comes back once the work moves on or ends.
+   */
+  markNowStep(): void {
+    const feed = this.v.feed
+    const step = this.v.host.working && feed.action ? feed.actEl : null
+    if (step === this.nowStep) return
+    this.nowStep?.classList.remove('is-now-step')
+    step?.classList.add('is-now-step')
+    this.nowStep = step
+  }
+
   /** One line, large: what the session is doing this moment. It replaces itself; nothing piles up. */
   renderNow(): void {
+    this.markNowStep()
     const action = this.v.host.working ? this.v.feed.action || this.spin.verb : ''
     // Always in the turn while it works, plan or no plan: the plan can be in an earlier
     // turn, minimized, removed, or holding a step the agent left "in progress" long ago,
@@ -353,14 +369,28 @@ export class Stage {
       }
     })
     const says = live.querySelectorAll<HTMLElement>(':scope > .loom-say')
+    // A turn with follow-ups is in parts (the request, then each follow-up): the last thing
+    // said in an earlier part stays, as that part's answer.
+    const partEnds = new Set<HTMLElement>()
+    let lastSay: HTMLElement | null = null
+    for (const c of Array.from(live.children) as HTMLElement[]) {
+      if (c.classList.contains('loom-follow')) {
+        if (lastSay) partEnds.add(lastSay)
+        lastSay = null
+      } else if (c.classList.contains('loom-say')) lastSay = c
+    }
     says.forEach((el, i) => {
       const last = i === says.length - 1
       el.classList.toggle('is-current', last)
+      el.classList.toggle('is-part-end', !last && partEnds.has(el))
       // Earlier messages are mostly the agent narrating its steps, and give way to the last
       // one. One that holds a result stays: a long agent often writes its findings, works on,
       // and ends with a short line that refers back to them.
       el.classList.toggle('is-kept', !last && holdsResult(el))
     })
+    // "Join previous" only where there is a turn before.
+    turns.forEach((t, i) => t.classList.toggle('is-first', i === 0))
+    this.markNowStep()
     // A new turn starts a new trail; while it works, each new sentence joins it.
     if (live !== this.trailTurn) {
       this.trailTurn = live
@@ -402,7 +432,7 @@ export class Stage {
         dot.dataset['turn'] = String(i)
         this.rail.appendChild(dot)
       }
-      const asked = (t.querySelector('.loom-ask-text, .loom-ask')?.textContent ?? '').replace(/^❯\s*/, '').trim()
+      const asked = ((t.querySelector('.loom-ask-text') ?? t.querySelector('.loom-ask'))?.textContent ?? '').replace(/^❯\s*/, '').trim()
       dot.title = `Turn ${i + 1}${asked ? ` — ${asked.slice(0, 90)}${asked.length > 90 ? '…' : ''}` : ''}`
       dot.classList.toggle('is-at', i === at)
       dot.classList.toggle('is-live', i === turns.length - 1)

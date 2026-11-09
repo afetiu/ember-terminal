@@ -120,6 +120,8 @@ export interface CardModel {
   unread: number
   /** What the Claude session in this tab last reported through its status line. */
   claude: ClaudeStatus | null
+  /** The folder of a named agent session: its title is just the name, the folder goes on the second line. */
+  folder?: string
 }
 
 export interface SidebarHandlers {
@@ -404,13 +406,14 @@ export class Sidebar {
   private renderMeta(node: CardNode, card: CardModel): void {
     const git = card.git ? `${card.git.branch}${card.git.dirty ? `*${card.git.dirty}` : ''}` : ''
     const claude = `${card.claude?.model ?? ''}|${card.claude?.contextPercent === null || !card.claude ? '' : Math.round(card.claude.contextPercent)}`
-    const signature = `${git}|${card.url ?? ''}|${card.unread > 0}|${claude}`
+    const signature = `${card.folder ?? ''}|${git}|${card.url ?? ''}|${card.unread > 0}|${claude}`
     if (signature === node.metaSignature) return
     node.metaSignature = signature
 
     node.meta.replaceChildren()
     node.root.classList.toggle('has-unread', card.unread > 0)
     const bits: string[] = []
+    if (card.folder) bits.push(card.folder)
     if (card.claude?.model) bits.push(card.claude.model)
     if (card.claude && card.claude.contextPercent !== null) bits.push(`${Math.round(card.claude.contextPercent)}%`)
     if (git) bits.push(git)

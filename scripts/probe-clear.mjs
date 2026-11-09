@@ -32,7 +32,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
 let n = 0
 const t0 = Date.parse('2026-11-03T09:00:00Z')
-const at = () => new Date(t0 + n * 1000).toISOString()
+// Minutes apart: each prompt a request of its own (a short one sent soon after a reply is a follow-up).
+const at = () => new Date(t0 + n * 240_000).toISOString()
 const u = (content, extra = {}) => ({ type: 'user', uuid: `u${++n}`, timestamp: at(), message: { role: 'user', content }, ...extra })
 const a = (text) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(), message: { role: 'assistant', content: [{ type: 'text', text }] } })
 const tool = (name, input) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(), message: { role: 'assistant', content: [{ type: 'tool_use', id: `t${n}`, name, input }] } })
@@ -193,7 +194,7 @@ try {
     if (!r.ok) throw new Error(`status refused: ${r.status}`)
   }
   const jsonl = (lines) => lines.map((l) => JSON.stringify(l)).join('\n') + '\n'
-  const dated = (lines, ms) => lines.map((l, i) => ({ ...l, uuid: `${l.uuid}-${ms}`, timestamp: new Date(ms + i * 1000).toISOString() }))
+  const dated = (lines, ms) => lines.map((l, i) => ({ ...l, uuid: `${l.uuid}-${ms}`, timestamp: new Date(ms + i * 240_000).toISOString() }))
   const hourAgo = Date.now() - 3600_000
   writeFileSync(join(DIR, 'sess-a.jsonl'), jsonl(dated(session('e2e-a', 2), hourAgo)))
   writeFileSync(join(DIR, 'sess-c.jsonl'), jsonl(dated(session('e2e-c', 2), hourAgo - 3600_000)))
