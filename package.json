@@ -1,6 +1,6 @@
 {
   "name": "ember",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "A terminal that wraps your agent CLIs in a canvas — Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot. No API keys.",
   "license": "MIT",
   "homepage": "https://ember.deepanswerlabs.com",
