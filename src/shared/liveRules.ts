@@ -79,6 +79,8 @@ function textOf(line: LineLike | undefined, cols: number, cell?: CellLike): stri
 const WORKING = /^\s*[^\w\s]\s+[A-Z][a-z]+(?:-[a-z]+)?(?:…|\.\.\.)(?:\s|$)/
 const CODEX_WORKING = /^\s*[•◦]\s+Working\b/
 const HANGING = /^\s*⎿/
+/** The same line once the turn is over ("✻ Worked for 1s · done 18:33"), for the moment before it scrolls into the transcript. */
+const WORKED = /^\s*[^\w\s]\s+[A-Z][a-z]+ed for \d/
 
 /**
  * Which of a region's rows (as text, top down) are the working line: the line itself, the `⎿`
@@ -90,7 +92,7 @@ export function workingRows(texts: string[]): Set<number> {
   const blank = (i: number) => !texts[i]?.trim()
   for (let i = 0; i < texts.length; i++) {
     const t = texts[i]
-    if (!WORKING.test(t) && !CODEX_WORKING.test(t)) continue
+    if (!WORKING.test(t) && !CODEX_WORKING.test(t) && !WORKED.test(t)) continue
     out.add(i)
     let j = i + 1
     while (j < texts.length && HANGING.test(texts[j])) out.add(j++)

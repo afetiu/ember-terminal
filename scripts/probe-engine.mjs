@@ -340,7 +340,10 @@ const SAMPLER = `(() => {
     })
     const hs = []
     for (const f of E.frames) if (hs[hs.length - 1] !== f.n) hs.push(f.n)
-    return { frames: E.frames.length, worst, talk, heights: hs.slice(0, 24), worstText: at >= 0 ? E.frames[at].text : null, talkText: talkAt >= 0 ? E.frames[talkAt].text : null, talkWhy: talkAt >= 0 ? E.frames[talkAt].why : '' }
+    // The first frame of another height than the first: what made the box grow or shrink.
+    const odd = E.frames.find((f) => E.frames.length && f.n !== E.frames[0].n)
+    const oddN = E.frames.filter((f) => E.frames.length && f.n !== E.frames[0].n).length
+    return { odd: odd ? { text: odd.text, why: odd.why, n: oddN } : null, frames: E.frames.length, worst, talk, heights: hs.slice(0, 24), worstText: at >= 0 ? E.frames[at].text : null, talkText: talkAt >= 0 ? E.frames[talkAt].text : null, talkWhy: talkAt >= 0 ? E.frames[talkAt].why : '' }
   }
   window.__eng = E
   return true
@@ -354,7 +357,7 @@ const sampled = async (tab, label, fn, agent = 'claude', words = []) => {
     return await fn()
   } finally {
     const s = await ev(`window.__eng.stop()`)
-    worst.push({ label, worst: s.worst, frames: s.frames, talk: s.talk, heights: s.heights })
+    worst.push({ label, worst: s.worst, frames: s.frames, talk: s.talk, heights: s.heights, odd: s.odd })
     check(`${label}: every frame of the box shows the prompt or the dialog's keys (worst ${s.worst} without)`, s.worst === 0, `${s.frames} frames over ${Date.now() - t0} ms, heights ${s.heights.join('→')}`)
     check(`${label}: no frame of the box holds conversation text`, s.talk === 0, s.talk ? `${s.talk} frames (${s.talkWhy}), e.g. ${JSON.stringify(s.talkText?.filter((r) => r.trim()).slice(0, 4))}` : '')
     if (s.worst && s.worstText) console.log(s.worstText.map((r, i) => `   ${String(i).padStart(2)}|${r}`).join('\n'))
@@ -416,6 +419,11 @@ if (ONLY !== 'codex') {
     check('the reply is on the canvas', !!replied)
     await steady(tab, 1200)
   }, 'claude', ['Jupiter', 'Saturn', 'one-line intro'])
+  // The working line is not in the box, so its coming and going does not resize it.
+  const turnS = worst[worst.length - 1]
+  const turnH = turnS?.heights ?? []
+  check('a whole turn: the box keeps one height (the working line never in it)', new Set(turnH).size === 1, `heights ${turnH.join('→')}`)
+  if (new Set(turnH).size > 1 && turnS?.odd) console.log(`  ---- first frame of another height (${turnS.odd.n} such frames; ${turnS.odd.why})\n${turnS.odd.text.map((r, i) => `   ${String(i).padStart(2)}|${r}`).join('\n')}`)
   await rules(tab, 'after a reply', W1)
   await shot('claude-3-replied')
   await crop('claude-3-replied')
