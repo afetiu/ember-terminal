@@ -4374,13 +4374,10 @@
   font: var(--fs-13) / 1.55 var(--l-prose);
 }
 
-/* Full screen keeps the same bar: ⋯, minimize, and × for a placed object; the expand
-   button reads "exit full screen". */
+/* Full screen keeps ⋯ and minimize; the expand button reads "exit full screen". No ×:
+   in full screen it read as "close full screen" and removed the object instead. */
 .loom-modal .loom-piece.is-full .loom-piece-acts button[data-p='more'],
 .loom-modal .loom-piece.is-full .loom-piece-acts button[data-p='fold'] {
-  display: inline-flex !important;
-}
-.loom-modal .loom-piece.is-full.is-pinned .loom-piece-acts .loom-close-btn {
   display: inline-flex !important;
 }
 .loom-menu.is-floating {

@@ -135,7 +135,9 @@ export class Pieces {
         this.settlePin(piece)
       }
       else if (what === 'close') {
-        if (v.pinned.has(piece)) this.unpin(piece)
+        // In full screen it only leaves full screen; removing is for the object in place.
+        if (this.full?.piece === piece) this.fullscreen(piece, false)
+        else if (v.pinned.has(piece)) this.unpin(piece)
         else this.dismiss(piece)
       }
       else if (what === 'fold') {
