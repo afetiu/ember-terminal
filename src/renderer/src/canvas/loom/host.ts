@@ -188,6 +188,13 @@ export class AgentHost {
     return { h, padTop, padBottom }
   }
 
+  /** How wide the real terminal's columns are drawn, in CSS px (0: not measured yet). */
+  private screenW(): number {
+    const term = this.v.session.term as unknown as { _core?: { _renderService?: { dimensions?: { css?: { canvas?: { width?: number }; cell?: { width?: number } } } } } }
+    const d = term._core?._renderService?.dimensions?.css
+    return d?.canvas?.width || (d?.cell?.width ?? 0) * this.v.session.term.cols
+  }
+
   private layoutSplit(): void {
     const v = this.v
     if (!v.panes.clientHeight) return
@@ -218,13 +225,19 @@ export class AgentHost {
     const rows = lv.shown.rows
     const most = Math.max(0, total - MIN_CANVAS - DIVIDER_H)
     const px = rows ? Math.min(most, rows * h + padTop + padBottom) : 0
+    // Exactly over the real terminal: the pane's left edge and width.
+    const pr = v.session.el.getBoundingClientRect()
     if (x) {
+      // The columns the agent draws to, centred: what the fit leaves over (the scrollbar's
+      // room, the part of a column) split evenly, so the rules end as far in from the right
+      // as they start from the left. The box draws with the real terminal's renderer and font,
+      // so its cells are exactly as wide (liveView.ts).
       const cs = getComputedStyle(x)
-      const pad = `${padTop}px ${cs.paddingRight} ${padBottom}px ${cs.paddingLeft}`
+      const screenW = this.screenW()
+      const side = screenW > 0 && screenW <= pr.width ? `${+((pr.width - screenW) / 2).toFixed(2)}px` : null
+      const pad = side ? `${padTop}px ${side} ${padBottom}px` : `${padTop}px ${cs.paddingRight} ${padBottom}px ${cs.paddingLeft}`
       if (lv.el.style.padding !== pad) lv.el.style.padding = pad
     }
-    // Exactly over the real terminal's columns: the pane's left edge and width.
-    const pr = v.session.el.getBoundingClientRect()
     const gr = v.panes.getBoundingClientRect()
     const left = `${(pr.left - gr.left).toFixed(1)}px`
     const width = `${pr.width.toFixed(1)}px`

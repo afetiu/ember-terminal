@@ -70,9 +70,25 @@ export class Session implements ActivitySource {
   private readonly fit = new FitAddon()
   private cursor: SmoothCursor | null = null
   private webgl: WebglAddon | null = null
+  /** Told when the WebGL renderer is dropped (its context lost): the terminal is on the DOM renderer from then on. */
+  private readonly gpuLost: Array<() => void> = []
   private ro: ResizeObserver | null = null
   private resizeTimer: number | null = null
   private lastSize = { cols: 0, rows: 0 }
+  /**
+   * The terminal draws with WebGL. A terminal that has to line up with this one cell for cell
+   * (the CLI box) must draw with the same renderer: WebGL floors the glyph width to whole
+   * device pixels, the DOM renderer does not, so the same font is a different cell width.
+   */
+  get gpu(): boolean {
+    return !!this.webgl
+  }
+
+  /** `fn` once the terminal leaves WebGL for the DOM renderer. */
+  onGpuLost(fn: () => void): void {
+    if (this.webgl) this.gpuLost.push(fn)
+  }
+
   /** Keep the screen still (no arrival rise, no rubber band): an agent's CLI on a split tab. */
   setStill(on: boolean): void {
     if (!this.scroller || this.scroller.still === on) return
@@ -285,6 +301,7 @@ export class Session implements ActivitySource {
       webgl.onContextLoss(() => {
         webgl.dispose()
         this.webgl = null
+        for (const f of this.gpuLost.splice(0)) f()
       })
       this.term.loadAddon(webgl)
       this.webgl = webgl

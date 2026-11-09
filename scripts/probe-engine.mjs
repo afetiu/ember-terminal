@@ -8,13 +8,16 @@
  *   - the box's rows are the live region's rows (all of them, or its bottom part at the cap),
  *     the box is exactly that tall, and its text is the real terminal's rows, row for row;
  *   - nothing is drawn over the box (elementsFromPoint over a grid, and every visible
- *     element's clipped rect), no transform / clip / mask on it;
+ *     element's clipped rect), no transform / mask on it, no clip but its own rounded inner
+ *     rect (a safety net);
+ *   - the box's columns end inside it (inside the well a theme draws in it), the same
+ *     margin left and right, and its terminal has the real terminal's columns;
  *   - none of the conversation's words are in the box.
  * Every transition is sampled each animation frame (the box's own terminal): no frame may
  * lack the prompt line or the dialog's keys, and no frame may hold conversation text.
  * Screenshots of each scenario go to the out dir.
  *
- *   npm run build; node scripts/probe-engine.mjs [--codex] [--only=claude|codex] [--verbose] [out-dir]
+ *   npm run build; node scripts/probe-engine.mjs [--codex] [--only=claude|codex] [--theme=basalt] [--verbose] [out-dir]
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -31,6 +34,7 @@ const PORT = Number(process.env.PROBE_PORT) || 9591
 const CWD = join(homedir(), 'agent-box')
 const PROBE_FILE = join(CWD, 'probe-se.txt')
 const VERBOSE = args.includes('--verbose')
+const THEME = (args.find((a) => a.startsWith('--theme=')) ?? '').slice(8)
 mkdirSync(OUT, { recursive: true })
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 let failed = 0
@@ -46,6 +50,16 @@ if (await fetch(`http://127.0.0.1:${PORT}/json/version`).then(() => true, () => 
 }
 const home = join(process.env.TEMP ?? '.', 'ember-probe-engine')
 rmSync(home, { recursive: true, force: true })
+mkdirSync(home, { recursive: true })
+if (THEME) {
+  // The palette out of the source, as probe-theme-basalt.mjs reads it.
+  let src = readFileSync(join(REPO, 'src/main/themes.ts'), 'utf8')
+  for (const [, k, v] of src.matchAll(/export const (\w+) = ('[^']+')/g)) src = src.replaceAll(`name: ${k},`, `name: ${v},`)
+  const at = src.toLowerCase().indexOf(`name: '${THEME.toLowerCase()}'`)
+  if (at < 0) throw new Error(`no ${THEME} theme in themes.ts`)
+  const theme = new Function(`return ${src.slice(src.lastIndexOf('{', at), src.indexOf('}', at) + 1)}`)()
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ theme }, null, 2))
+}
 seedHome(home)
 rmSync(PROBE_FILE, { force: true })
 const child = spawn(join(REPO, 'node_modules/electron/dist/electron.exe'), ['.', `--remote-debugging-port=${PORT}`], {
@@ -91,6 +105,17 @@ const shot = async (file) => {
   await wait(250)
   const r = await send('Page.captureScreenshot', { format: 'png' })
   const f = join(OUT, `${file}.png`)
+  writeFileSync(f, Buffer.from(r.data, 'base64'))
+  shots.push(f)
+  console.log('shot', f)
+  return f
+}
+/** The bottom-right 300×200 of the window: where the box's right edge meets its corner. */
+const crop = async (file) => {
+  await wait(250)
+  const vw = await ev('[innerWidth, innerHeight]')
+  const r = await send('Page.captureScreenshot', { format: 'png', clip: { x: vw[0] - 300, y: vw[1] - 200, width: 300, height: 200, scale: 2 } })
+  const f = join(OUT, `${file}-corner.png`)
   writeFileSync(f, Buffer.from(r.data, 'base64'))
   shots.push(f)
   console.log('shot', f)
@@ -157,7 +182,7 @@ const geometry = (tab) =>
     const cellH = l.cli.cellH
     const padTop = parseFloat(getComputedStyle(box).paddingTop) || 0
     for (let i = 0; i < cols; i++) for (let j = 0; j < rowsN; j++) {
-      const px = br.left + 6 + (br.width - 12) * i / (cols - 1)
+      const px = br.left + 10 + (br.width - 20) * i / (cols - 1)
       const py = br.top + padTop + cellH * (j + 0.5)
       const top = document.elementFromPoint(px, py)
       if (!top || !box.contains(top)) bad.push({ px: Math.round(px), py: Math.round(py), top: (top?.className || top?.tagName || '').toString().slice(0, 60) })
@@ -190,7 +215,28 @@ const geometry = (tab) =>
       }
     }
     const st = (e) => { const c = getComputedStyle(e); return [c.transform, c.clipPath, c.maskImage].join('|') }
+    // What is seen of the box: the well a theme draws inside it (its ::before), else the box.
+    const bs = getComputedStyle(box)
+    const well = getComputedStyle(box, '::before')
+    const drawn = well.content !== 'none' && well.content !== 'normal' && well.position === 'absolute'
+    const inL = br.left + (drawn ? parseFloat(well.left) || 0 : 0)
+    const inR = br.right - (drawn ? parseFloat(well.right) || 0 : 0)
+    const dterm = lv.term
+    const dcore = dterm._core
+    const cellW = dcore?._renderService?.dimensions?.css?.cell?.width ?? 0
+    const fit = {
+      boxL: br.left, boxR: br.right, inL, inR, well: drawn,
+      contentW: br.width - (parseFloat(bs.paddingLeft) || 0) - (parseFloat(bs.paddingRight) || 0),
+      screenL: sr.left, screenR: sr.right, screenW: sr.width,
+      textR: sr.left + dterm.cols * cellW, cellW,
+      cols: dterm.cols, realCols: l.cli.cols, pty: l.cli.pty?.cols,
+      left: sr.left - inL, right: inR - (sr.left + dterm.cols * cellW),
+      paneL: pr.left, paneW: pr.width, realScreenW: pane.querySelector('.xterm-screen')?.getBoundingClientRect().width,
+      realXtermW: pane.querySelector('.xterm')?.getBoundingClientRect().width, realPad: getComputedStyle(pane.querySelector('.xterm')).padding,
+      boxPad: bs.padding,
+    }
     return {
+      fit,
       l,
       region: lv.region,
       shown: lv.shown,
@@ -224,8 +270,14 @@ const rules = async (tab, where, words = []) => {
   const tall = Math.abs(g.box.h - (g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom)) < 1.5
   const same = g.text.length === g.shown.rows && g.text.every((t, i) => t.replace(/\s+$/, '') === (g.live[g.shown.from - r.top + i] ?? '').replace(/\s+$/, ''))
   check(`${where}: the box shows the live region's rows, exactly as tall, row for row`, exact && tall && same, `region=${r?.top}..${r?.bottom} (${r?.why}) shown=${g.shown.rows} from=${g.shown.from} boxH=${g.box.h.toFixed(1)} want=${(g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom).toFixed(1)}${same ? '' : ' TEXT DIFFERS'}`)
-  const clean = g.styles.every((s) => /^none\|none\|none$/.test(s))
+  // The box may clip to its own rounded inner rect (a safety net); its screen is never clipped.
+  const clean = g.styles.every((s, i) => (i === 0 ? /^none\|(?:none|inset\([^)]*\))\|none$/ : /^none\|none\|none$/).test(s))
   check(`${where}: nothing drawn over the box, nothing transformed`, g.bad.length === 0 && g.painted.length === 0 && clean, g.bad.length || g.painted.length ? JSON.stringify({ bad: g.bad.slice(0, 3), painted: g.painted.slice(0, 5) }) : '')
+  const f = g.fit
+  check(`${where}: the CLI's columns end inside the box, the same margin left and right`,
+    f.screenW <= f.contentW + 0.5 && f.textR <= f.inR + 0.5 && f.cols === f.realCols && Math.abs(f.right - f.left) <= 2,
+    `cols=${f.cols}/${f.realCols} screenW=${f.screenW.toFixed(1)} contentW=${f.contentW.toFixed(1)} margin L=${f.left.toFixed(1)} R=${f.right.toFixed(1)}${f.well ? ' (well)' : ''}`)
+  if (VERBOSE) console.log('  fit', JSON.stringify(f))
   const hits = g.text.filter((t) => words.some((w) => w && t.includes(w)))
   check(`${where}: no conversation in the box`, hits.length === 0, hits.length ? JSON.stringify(hits.slice(0, 3)) : '')
   if (VERBOSE || hits.length || !exact || !same) console.log(`  ---- box (${where})\n${g.text.map((t, i) => `  ${String(g.shown.from + i).padStart(2)}|${t}`).join('\n')}`)
@@ -320,6 +372,7 @@ if (ONLY !== 'codex') {
   check('at rest: the box is the prompt box and its status lines (≤ 7 rows)', g.shown.rows >= 3 && g.shown.rows <= 7 && /^[─━]/.test(g.text[0] ?? ''), `rows=${g.shown.rows} first=${JSON.stringify(g.text[0]?.slice(0, 20))}`)
   check('the keyboard is in the real terminal', (await lm()).cli.focusInTerm)
   await shot('claude-1-rest')
+  await crop('claude-1-rest')
   if (process.env['PROBE_REST_ONLY']) { kill(); process.exit(failed ? 1 : 0) }
 
   // ---- a reply
@@ -337,6 +390,7 @@ if (ONLY !== 'codex') {
   }, 'claude', ['Jupiter', 'Saturn', 'one-line intro'])
   await rules(tab, 'after a reply', W1)
   await shot('claude-3-replied')
+  await crop('claude-3-replied')
 
   // ---- `/`
   await focusTerm(tab)
@@ -348,6 +402,7 @@ if (ONLY !== 'codex') {
   g = await rules(tab, '`/` list open', W1)
   check('`/` list: the prompt line and the list are in the box', g.text.some((r) => /^[❯>]\s*\//.test(r)) && g.text.filter((r) => /^\s+(?:[❯>]\s*)?\/[\w:.-]+\s{2,}\S/.test(r)).length >= 3, `rows=${g.shown.rows}`)
   await shot('claude-4-slash')
+  await crop('claude-4-slash')
   await sampled(tab, '`/` closed (Backspace)', async () => {
     await key('Backspace', 'Backspace', 8)
     await steady(tab)
@@ -460,18 +515,25 @@ if (ONLY !== 'codex') {
   l = await until(async () => { const x = await lm(); return !x.raw && x.cli.canvasOn && x.cli.liveOn && x }, 5000)
   check('clicking Canvas brings the canvas and the box back', !!l, JSON.stringify(c))
 
-  // ---- the window resized: the page made smaller and back (the panes refit, the PTY with them)
-  await sampled(tab, 'the window resized (smaller, back)', async () => {
+  // ---- the window resized: the page made smaller, wider and back (the panes refit, the PTY with them)
+  await sampled(tab, 'the window resized (smaller, wider, back)', async () => {
     await send('Emulation.setDeviceMetricsOverride', { width: 1100, height: 700, deviceScaleFactor: 0, mobile: false })
     await wait(1500)
     await steady(tab)
     await rules(tab, 'resized', ['facts about the ocean', 'Jupiter'])
     await shot('claude-10-resized')
+    await crop('claude-10-resized')
+    await send('Emulation.setDeviceMetricsOverride', { width: 1460, height: 900, deviceScaleFactor: 0, mobile: false })
+    await wait(1500)
+    await steady(tab)
+    await rules(tab, 'resized wider', ['facts about the ocean', 'Jupiter'])
+    await crop('claude-10-resized-wider')
     await send('Emulation.clearDeviceMetricsOverride', {})
     await wait(1500)
     await steady(tab)
   }, 'claude', ['facts about the ocean', 'Jupiter'])
   await rules(tab, 'resized back', ['facts about the ocean', 'Jupiter'])
+  await crop('claude-10b-resized-back')
 
   // ---- the person's own `"tui": "fullscreen"` (this machine's setting) and `/tui fullscreen`.
   // The whole run above already had it: Ember's classic renderer won. `/tui fullscreen` saves

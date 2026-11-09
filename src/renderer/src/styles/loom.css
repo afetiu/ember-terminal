@@ -5481,6 +5481,11 @@ body.is-light .loom-answers {
 .loom-live.is-on {
   display: block;
 }
+/* A safety net, not the fit: the CLI's columns end inside the box with the same margin on
+   both sides (AgentHost.fit centres them). The box sits in the stage's bottom corners. */
+.loom-live {
+  clip-path: inset(0 round 0 0 var(--r-lg) var(--r-lg));
+}
 .loom-live .xterm {
   padding: 0;
 }

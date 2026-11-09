@@ -1,5 +1,6 @@
 import { Terminal, type IBufferCell, type IBufferLine } from '@xterm/xterm'
 import { Unicode11Addon } from '@xterm/addon-unicode11'
+import { WebglAddon } from '@xterm/addon-webgl'
 import { StreamEngine, type LiveRegion } from '@shared/streamEngine'
 import type { Session } from '../core/Session'
 
@@ -32,6 +33,7 @@ export class LiveView {
   private cap = 12
   private on = false
   private opened = false
+  private webgl: WebglAddon | null = null
   /** Called when the region's height changed: the tab lays itself out again. */
   onHeight: (() => void) | null = null
   /** Called once a frame is in the box's terminal (parsed, painted on the next frame): size the box now. */
@@ -94,6 +96,38 @@ export class LiveView {
     this.term.loadAddon(unicode)
     this.term.unicode.activeVersion = '11'
     this.term.open(this.el)
+    // The real terminal's renderer, so the same font makes the same cells: WebGL floors the
+    // glyph width to whole device pixels and the DOM renderer does not (7.0 px against 7.62 at
+    // 13 px), and the box's columns would run past its right edge by a column in thirteen.
+    if (this.session.gpu) {
+      try {
+        const gl = new WebglAddon()
+        const drop = () => {
+          if (this.webgl !== gl) return
+          this.webgl = null
+          gl.dispose()
+        }
+        gl.onContextLoss(drop)
+        this.term.loadAddon(gl)
+        this.webgl = gl
+        // Both on the DOM renderer from then on, so the cells still match.
+        this.session.onGpuLost(drop)
+      } catch {
+        /* the DOM renderer, as the real terminal will be once it loses its context too */
+      }
+    }
+  }
+
+  /** The real terminal's font, so the box's cells are its cells (a font change in Settings follows). */
+  private syncFont(): void {
+    const src = this.session.term.options
+    const o = this.term.options
+    if (o.fontFamily !== src.fontFamily) o.fontFamily = src.fontFamily
+    if (o.fontSize !== src.fontSize) o.fontSize = src.fontSize
+    if (o.fontWeight !== src.fontWeight) o.fontWeight = src.fontWeight
+    if (o.fontWeightBold !== src.fontWeightBold) o.fontWeightBold = src.fontWeightBold
+    if (o.lineHeight !== src.lineHeight) o.lineHeight = src.lineHeight
+    if (o.letterSpacing !== src.letterSpacing) o.letterSpacing = src.letterSpacing
   }
 
   /** An agent came (or went): read its screen afresh from where it starts drawing. */
@@ -198,6 +232,7 @@ export class LiveView {
     if (!this.on || !this.opened || !f) return
     const { out, shown, r } = f
     const { rows: n, from, cols } = shown
+    this.syncFont()
     if (this.term.cols !== cols || this.term.rows !== this.cap) this.term.resize(Math.max(2, cols), this.cap)
     // The box takes its new height when the frame is in its terminal: both are painted
     // on the same next frame, never a frame of one without the other.
@@ -234,6 +269,8 @@ export class LiveView {
     if (this.redraw) cancelAnimationFrame(this.redraw)
     for (const s of this.subs) s.dispose()
     this.engine.dispose()
+    this.webgl?.dispose()
+    this.webgl = null
     this.term.dispose()
     this.el.remove()
   }

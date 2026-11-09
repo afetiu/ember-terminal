@@ -353,6 +353,9 @@ body.theme-basalt .ember-panel {
   background: var(--b-card);
   box-shadow: var(--b-lift);
 }
+body.theme-basalt .ember-panel:not(.is-open) {
+  margin-right: 0;
+}
 body.theme-basalt .ember-empty {
   font-family: var(--b-ui);
   color: var(--b-faint);
@@ -923,6 +926,8 @@ body.theme-basalt .loom-divider.is-more .loom-divider-line {
    terminal's; the well is drawn inside it so the rows stay where the PTY put them. */
 body.theme-basalt .loom-live {
   isolation: isolate;
+  /* Nothing outside the well (a safety net: the columns are centred inside it). */
+  clip-path: inset(2px 6px 8px round 14px);
 }
 body.theme-basalt .loom-live::before {
   content: '';

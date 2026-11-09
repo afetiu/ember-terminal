@@ -2788,6 +2788,13 @@ body.is-zen .ember-fx {
 /* In flight. Out of the flow at its final size, moved by a transform, over the
    terminals: the compositor does the whole slide and nothing is laid out until it has
    landed (see Group.applyPanel). */
+/* Closed, it gives back its gutter too: the terminals reach the stage's right edge as they
+   reach its left (and as they already do while it slides away), so a full-width line in
+   them ends as far from the edge as it starts. */
+.ember-panel:not(.is-open) {
+  margin-right: 0;
+}
+
 .ember-panel.is-moving {
   position: absolute;
   top: 8px;
