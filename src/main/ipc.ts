@@ -247,6 +247,17 @@ function claudeFullscreenWhy(): string {
       /* not there, or not JSON: nothing to report */
     }
   }
+  // The person's own settings: Ember's should outrank them, but some Claude Code versions,
+  // and a restart from `/tui fullscreen`, keep theirs. Worth naming when nothing else is.
+  if (!found.length) {
+    try {
+      const f = join(app.getPath('home'), '.claude', 'settings.json')
+      const j = JSON.parse(readFileSync(f, 'utf8')) as { tui?: string }
+      if (j.tui === 'fullscreen') found.push(`your Claude settings (${f}) ask for "tui": "fullscreen" — set it to "default" (or run /tui default) and start claude again`)
+    } catch {
+      /* no settings file */
+    }
+  }
   return found.join('; ')
 }
 
