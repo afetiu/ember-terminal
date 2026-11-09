@@ -1,0 +1,1364 @@
+/* ==========================================================================
+   Basalt — matte volcanic stone.
+
+   A theme that changes the material, not only the colours (ThemeConfig.family =
+   'basalt'; App marks the body `theme-basalt`). Everything here is scoped to that class,
+   so every other theme is untouched.
+
+   The language: opaque stone, never glass. No backdrop-filter, no translucent panes, no
+   gradients as surfaces. Depth is cut, not blurred: the frame is a slab (#1d1e20), the
+   sidebar a tray pressed into it (recessed, inset shadow), the canvas a raised surface
+   (#252629) with a soft drop shadow, tables and the CLI box recessed wells, chips and
+   diagram nodes raised tiles (#2f3033) with a hairline of light on their top edge.
+   One accent — lava (#ff7a3d) — for the live or important thing only.
+
+   Type: Archivo for the interface and the answers (headlines bold and tight), DM Mono
+   for the mono bits — status lines, the question line, code, the CLI box.
+
+   Motion is physical. A button is a stone you press: hover lifts the top highlight,
+   press pushes it in (1px down, the shadow flips inside, a step darker), release
+   springs back. Menus and cards rise 6px into place; slabs slide; nothing scales or
+   bounces. Only transform, opacity and box-shadow move, on small elements.
+   ========================================================================== */
+
+body.theme-basalt {
+  /* stone */
+  --b-frame: #1d1e20;
+  --b-tray: #17181a;
+  --b-surface: #252629;
+  --b-card: #2a2b2e;
+  --b-chip: #2f3033;
+  --b-chip-hi: #36373a;
+  --b-chip-down: #232427;
+  --b-well: #1d1e20;
+  --b-deep: #141517;
+  --b-bar: #3a3b3e;
+  /* ink */
+  --b-text: #ecebe8;
+  --b-dim: #b9b8b4;
+  --b-faint: #8d8c88;
+  --b-line: #2f3033;
+  --b-edge: #5e5f62;
+  /* lava */
+  --b-accent: #ff7a3d;
+  --b-accent-down: #ec6a2f;
+  --b-on-accent: #1d1e20;
+  /* light and shadow */
+  --b-hi: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --b-hi-strong: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --b-raise: var(--b-hi), 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+  --b-raise-hover: var(--b-hi-strong), 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+  --b-lift: var(--b-hi), 0 14px 28px -18px rgba(0, 0, 0, 0.8);
+  --b-float: var(--b-hi), 0 22px 44px -18px rgba(0, 0, 0, 0.85), 0 2px 6px -2px rgba(0, 0, 0, 0.5);
+  --b-press: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  --b-recess: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  --b-well-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  --b-deep-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  --b-accent-fill: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  --b-accent-glow: 0 0 20px rgba(255, 122, 61, 0.35);
+  --b-ring: 0 0 0 2px var(--b-frame), 0 0 0 4px var(--b-accent);
+  /* motion */
+  --b-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --b-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* faces */
+  --b-ui: Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'DM Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+
+  /* The app's own tokens, in stone. */
+  --hairline: var(--b-line);
+  --c-scrim: #0b0c0d;
+  --c-shadow: #000;
+  --c-working: #ff7a3d;
+  --c-attention: #ffa45c;
+  --c-danger: #ee6a4e;
+  --c-cyan: #8dbdb8;
+  --ui-ink: var(--b-text);
+  --ui-strong: var(--b-text);
+  --ui-dim: var(--b-dim);
+  --ui-faint: var(--b-faint);
+  --ui-rim: var(--b-line);
+  --ui-hover: rgba(255, 255, 255, 0.035);
+  --ui-press: var(--b-chip-down);
+  --ui-ease: var(--b-spring);
+  --ui-ok: #a3bf8e;
+  --ui-warn: #ffa45c;
+  --ui-err: #ee6a4e;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+}
+
+/* ---------------------------------------------------------------- no glass, anywhere */
+
+body.theme-basalt *,
+body.theme-basalt *::before,
+body.theme-basalt *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+body.theme-basalt ::selection {
+  background: rgba(255, 122, 61, 0.32);
+  color: var(--b-text);
+}
+
+/* Focus: the accent, 2px, off the edge — there at once. */
+body.theme-basalt :focus-visible {
+  outline: 2px solid var(--b-accent) !important;
+  outline-offset: 2px;
+}
+body.theme-basalt :is(.xterm-helper-textarea, .ember-palette-input, .loom-qd-other, .ember-settings-filter, .ember-search-input, .loom-menu textarea, .loom-pop textarea):focus-visible,
+body.theme-basalt .xterm :focus-visible {
+  outline: 0 !important;
+}
+
+/* ---------------------------------------------------------------- scrollbars */
+
+body.theme-basalt ::-webkit-scrollbar-thumb {
+  background: transparent;
+  background-clip: padding-box;
+}
+body.theme-basalt :hover::-webkit-scrollbar-thumb {
+  background: var(--b-bar);
+  background-clip: padding-box;
+}
+body.theme-basalt ::-webkit-scrollbar-thumb:hover {
+  background: #4a4b4e;
+  background-clip: padding-box;
+}
+body.theme-basalt ::-webkit-scrollbar-thumb:active {
+  background: var(--b-accent);
+  background-clip: padding-box;
+}
+body.theme-basalt .loom-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--b-bar);
+  background-clip: padding-box;
+}
+
+/* ---------------------------------------------------------------- the frame */
+
+body.theme-basalt,
+body.theme-basalt .ember-root {
+  font-family: var(--b-ui);
+}
+body.theme-basalt .ember-root {
+  --titlebar-h: 44px;
+  background: var(--b-frame);
+}
+body.theme-basalt.is-glass .ember-root {
+  border-radius: 10px;
+}
+body.theme-basalt.is-glass.is-maximized .ember-root {
+  border-radius: 0;
+}
+
+/* Title bar: the mark — a 16px square of lava with its bottom edge in shadow — and the
+   word, lowercase, heavy. */
+body.theme-basalt .ember-titlebar {
+  background: transparent;
+}
+body.theme-basalt .ember-brand {
+  gap: 10px;
+  padding-left: 8px;
+}
+body.theme-basalt .ember-brand-mark {
+  display: none;
+}
+body.theme-basalt .ember-brand-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font: 800 14px/1 var(--b-ui);
+  letter-spacing: -0.01em;
+  text-transform: lowercase;
+  color: var(--b-text);
+}
+body.theme-basalt .ember-brand-name::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--b-accent);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+body.theme-basalt .ember-winbtn.close:hover {
+  background: #c8432a;
+}
+
+/* ---------------------------------------------------------------- sidebar: a tray */
+
+body.theme-basalt .ember-sidebar {
+  margin: 0 0 12px 12px;
+  border-radius: 16px;
+  background: var(--b-tray);
+  box-shadow: var(--b-recess);
+}
+body.theme-basalt .ember-sidebar-head {
+  padding: 10px 10px 4px 12px;
+}
+body.theme-basalt .ember-cards {
+  padding: 4px 10px 10px;
+}
+body.theme-basalt .ember-card {
+  min-height: 0;
+  margin: 0 0 6px;
+  padding: 12px 14px;
+  gap: 10px;
+  border-radius: 12px;
+  font-family: var(--b-ui);
+  transition:
+    background-color 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    opacity 160ms var(--b-out),
+    transform 120ms var(--b-spring),
+    height 190ms var(--ease-leave),
+    margin 190ms var(--ease-leave);
+}
+body.theme-basalt .ember-card:not(.is-active):hover {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+body.theme-basalt .ember-card:active {
+  transform: translateY(1px);
+  transition-duration: 60ms;
+}
+body.theme-basalt .ember-card:not(.is-active):active {
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: var(--b-press);
+}
+body.theme-basalt .ember-card.is-entering {
+  opacity: 0;
+  transform: translateY(6px);
+}
+body.theme-basalt .ember-card.is-leaving {
+  opacity: 0;
+  transform: none;
+}
+
+/* The selection is a raised card that slides along the tray (Sidebar moves it, critically
+   damped under Basalt) and sets down when it lands. */
+body.theme-basalt .ember-card-plate {
+  border-radius: 12px;
+  background: var(--b-card);
+  box-shadow: var(--b-raise);
+}
+body.theme-basalt .ember-card-plate::after {
+  display: none;
+}
+body.theme-basalt .ember-card-plate.is-landed {
+  animation: basalt-set-down 200ms var(--b-spring);
+}
+@keyframes basalt-set-down {
+  0% {
+    translate: 0 -1.5px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+body.theme-basalt .ember-card-title {
+  font: 400 14px/1.3 var(--b-ui);
+  color: var(--b-dim);
+}
+body.theme-basalt .ember-card.is-active .ember-card-title {
+  font-weight: 700;
+  color: var(--b-text);
+}
+body.theme-basalt .ember-card:hover .ember-card-title {
+  color: var(--b-text);
+}
+body.theme-basalt .ember-card .ember-card-title,
+body.theme-basalt .ember-card .ember-card-title * {
+  font-family: var(--b-ui) !important;
+}
+body.theme-basalt :is(.ember-card-status, .ember-card-metatext, .ember-card-link) {
+  font: 400 11px/1.4 var(--b-mono);
+  letter-spacing: 0;
+  color: var(--b-faint);
+}
+
+/* State dots: stone when idle, lava while working (a slow ember, no glow), a lava ring
+   when it needs you, a hollow stone ring when it has exited. */
+body.theme-basalt .ember-card-state {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  background: var(--b-edge);
+  opacity: 1;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+body.theme-basalt .ember-card[data-state='working'] .ember-card-state {
+  background: var(--b-accent);
+  animation: basalt-ember 1.6s ease-in-out infinite;
+}
+body.theme-basalt .ember-card[data-state='attention'] .ember-card-state {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--b-accent);
+}
+body.theme-basalt .ember-card[data-state='exited'] .ember-card-state {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--b-edge);
+}
+@keyframes basalt-ember {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* The foot of the tray: places and the vitals, in DM Mono. */
+body.theme-basalt .ember-places {
+  padding: 8px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+body.theme-basalt .ember-place.is-active {
+  color: var(--b-accent);
+}
+body.theme-basalt .ember-place-badge.is-hot {
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+  box-shadow: var(--b-accent-fill);
+}
+body.theme-basalt .ember-version {
+  font-family: var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-vitals {
+  padding: 8px 14px 12px;
+}
+body.theme-basalt :is(.ember-vitals-chip, .ember-vitals-cap) {
+  font: 400 11px/1.4 var(--b-mono);
+  letter-spacing: 0;
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-vitals-chip.is-low,
+body.theme-basalt .ember-vitals-chip.is-warn {
+  color: var(--b-accent);
+}
+
+/* ---------------------------------------------------------------- the canvas surface */
+
+body.theme-basalt .ember-stack {
+  margin: 0 12px 12px 12px;
+  border-radius: 20px;
+  background: var(--b-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 22px 40px -26px rgba(0, 0, 0, 0.9);
+}
+body.theme-basalt .ember-panel {
+  margin: 12px 12px 12px 0;
+  border-radius: 16px;
+  background: var(--b-card);
+  box-shadow: var(--b-lift);
+}
+body.theme-basalt .ember-empty {
+  font-family: var(--b-ui);
+  color: var(--b-faint);
+}
+
+/* ---------------------------------------------------------------- physical controls
+
+   Every small button is a stone: flush or raised at rest; hover brightens it a step and
+   strengthens the light on its top edge (no glow); press pushes it in — 1px down, the
+   shadow turns inward, a step darker; release springs back. */
+
+body.theme-basalt
+  :is(
+    .ember-newtab,
+    .ember-place,
+    .ember-sidebar-toggle,
+    .ember-voicetoggles .ember-voicetoggle,
+    .ember-search-btn,
+    .ember-settings-close,
+    .ember-settings-reset,
+    .ember-preset-btn,
+    .ember-agents-btn,
+    .loom-piece-acts button,
+    .loom-lift button,
+    .loom-copy,
+    .loom-qd-btn:not(.is-primary),
+    .loom-qd-tab,
+    .loom-jump,
+    .loom-act
+  ) {
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    background-color 120ms var(--b-spring),
+    color 120ms var(--b-spring);
+}
+body.theme-basalt
+  :is(
+    .ember-newtab,
+    .ember-place,
+    .ember-sidebar-toggle,
+    .ember-voicetoggles .ember-voicetoggle,
+    .ember-search-btn,
+    .ember-settings-close,
+    .ember-settings-reset,
+    .ember-preset-btn,
+    .ember-agents-btn,
+    .loom-piece-acts button,
+    .loom-lift button,
+    .loom-copy,
+    .loom-qd-btn:not(.is-primary),
+    .loom-qd-tab,
+    .loom-jump,
+    .loom-act
+  ):hover:not(:disabled) {
+  background-color: var(--b-chip);
+  color: var(--b-text);
+  box-shadow: var(--b-raise-hover);
+}
+body.theme-basalt
+  :is(
+    .ember-newtab,
+    .ember-place,
+    .ember-sidebar-toggle,
+    .ember-voicetoggles .ember-voicetoggle,
+    .ember-search-btn,
+    .ember-settings-close,
+    .ember-settings-reset,
+    .ember-preset-btn,
+    .ember-agents-btn,
+    .loom-piece-acts button,
+    .loom-lift button,
+    .loom-copy,
+    .loom-qd-btn:not(.is-primary),
+    .loom-qd-tab,
+    .loom-jump,
+    .loom-act,
+    .ember-theme,
+    .loom-qd-opt,
+    .loom-menu button,
+    .ember-settings-tab
+  ):active:not(:disabled) {
+  transform: translateY(1px);
+  background-color: var(--b-chip-down);
+  box-shadow: var(--b-press);
+  transition-duration: 60ms;
+}
+/* Raised at rest: the controls that are things, not icons. */
+body.theme-basalt :is(.ember-preset-btn, .ember-agents-btn, .ember-settings-reset, .loom-copy, .loom-qd-btn:not(.is-primary), .loom-act) {
+  background-color: var(--b-chip);
+  color: var(--b-text);
+  box-shadow: var(--b-raise);
+}
+body.theme-basalt :is(.ember-preset-btn, .ember-agents-btn, .ember-settings-reset, .loom-copy, .loom-qd-btn:not(.is-primary), .loom-act):hover:not(:disabled) {
+  background-color: var(--b-chip-hi);
+}
+body.theme-basalt .ember-preset-btn.is-current {
+  color: var(--b-accent);
+}
+
+/* Accent buttons: lava, their bottom edge in shadow; pressed, that shadow deepens. */
+body.theme-basalt .loom-qd-btn.is-primary,
+body.theme-basalt .ember-settings-reset.is-armed {
+  border: 0;
+  background-color: var(--b-accent);
+  color: var(--b-on-accent);
+  font-weight: 700;
+  box-shadow: var(--b-accent-fill), 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    background-color 120ms var(--b-spring);
+}
+body.theme-basalt .loom-qd-btn.is-primary:hover:not(:disabled) {
+  background-color: #ff8a52;
+  box-shadow: var(--b-accent-fill), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+}
+body.theme-basalt :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed):active:not(:disabled) {
+  transform: translateY(1px);
+  background-color: var(--b-accent-down);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  transition-duration: 60ms;
+}
+body.theme-basalt .loom-qd-btn.is-primary:disabled {
+  background-color: var(--b-chip);
+  color: var(--b-faint);
+  box-shadow: var(--b-raise);
+}
+body.theme-basalt .loom-qd-btn.is-primary.is-quiet {
+  background-color: var(--b-chip);
+  color: var(--b-text);
+  box-shadow: var(--b-raise);
+}
+
+/* ---------------------------------------------------------------- the canvas */
+
+body.theme-basalt :is(.loom, .loom-modal, .loom-rawpill) {
+  --l-ink: var(--b-text);
+  --l-strong: var(--b-text);
+  --l-dim: var(--b-dim);
+  --l-faint: var(--b-faint);
+  --l-line: var(--b-line);
+  --l-line-strong: var(--b-bar);
+  --l-s1: var(--b-card);
+  --l-s2: var(--b-card);
+  --l-s3: var(--b-card);
+  --l-card: var(--b-card);
+  --l-card-2: var(--b-chip);
+  --l-shadow-1: var(--b-raise);
+  --l-shadow-2: var(--b-lift);
+  --l-shadow-3: var(--b-float);
+  --l-accent: var(--b-accent);
+  --l-prose: var(--b-ui);
+  --l-mono: var(--b-mono);
+  --l-ok: #a3bf8e;
+  --l-warn: #ffa45c;
+  --l-err: #ee6a4e;
+  --l-info: #8ea8c3;
+  --l-r-card: 16px;
+  --l-r-ctl: 10px;
+  --rim: inset 0 0 0 1px transparent;
+  --rim-top: var(--b-hi);
+  --fill-1: var(--b-card);
+  --fill-2: var(--b-chip);
+  --focus: var(--b-ring);
+  --ease: var(--b-spring);
+}
+
+body.theme-basalt .loom-scroll {
+  padding: 30px 34px 30px;
+}
+
+/* What you asked: one quiet line of DM Mono over the answer. */
+body.theme-basalt .loom-turn.is-shown > .loom-ask,
+body.theme-basalt .loom-ask {
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 12px/1.5 var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-caret {
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-turn + .loom-turn {
+  border-top-color: var(--b-line);
+}
+
+/* The answer: Archivo; prose a step back (#b9b8b4) so the headline and the numbers lead. */
+body.theme-basalt .loom-say {
+  font-family: var(--b-ui);
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-turn.is-shown > .loom-say.is-current {
+  font: 400 15px/1.6 var(--b-ui);
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-say p {
+  max-width: 62ch;
+}
+body.theme-basalt .loom-say :is(h1, h2, h3, h4) {
+  font-family: var(--b-ui);
+  color: var(--b-text);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+body.theme-basalt .loom-say h1 {
+  font-size: 30px;
+}
+body.theme-basalt .loom-say h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+body.theme-basalt .loom-say h3 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+body.theme-basalt .loom-say h4 {
+  font: 500 11px/1.4 var(--b-mono);
+  letter-spacing: 0.04em;
+  color: var(--b-faint);
+}
+/* The lead of a reply: its first heading is the answer itself, set as a headline. */
+body.theme-basalt .loom-say > :is(h1, h2):first-child {
+  margin: 0 0 16px;
+  max-width: 600px;
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+body.theme-basalt .loom-say strong {
+  color: var(--b-text);
+  font-weight: 700;
+}
+body.theme-basalt .loom-say code {
+  font: 0.86em var(--b-mono);
+  color: var(--b-text);
+  background: var(--b-chip);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: var(--b-hi);
+}
+body.theme-basalt .loom-say a,
+body.theme-basalt .loom-link {
+  color: var(--b-accent);
+  text-decoration-color: rgba(255, 122, 61, 0.35);
+}
+body.theme-basalt .loom-say a:hover {
+  color: #ffa77d;
+}
+body.theme-basalt .loom-say blockquote {
+  border-left: 2px solid var(--b-bar);
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-say li::marker {
+  color: var(--b-edge);
+}
+
+/* Tables: a recessed well; the emphasised figure is the lava one. */
+body.theme-basalt .loom-table {
+  max-width: 560px;
+  padding: 4px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--b-well);
+  box-shadow: var(--b-well-shadow);
+  font-size: 13px;
+}
+body.theme-basalt .loom-table table {
+  border-collapse: collapse;
+  width: 100%;
+}
+body.theme-basalt .loom-table :is(th, td) {
+  padding: 9px 16px 9px 0;
+  border: 0;
+  border-top: 1px solid var(--b-line);
+  background: none;
+}
+body.theme-basalt .loom-table th {
+  border-top: 0;
+  font: 400 11px/1.4 var(--b-ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-table td {
+  color: var(--b-text);
+}
+body.theme-basalt .loom-table tbody tr:hover td {
+  background: none;
+}
+body.theme-basalt .loom-table strong {
+  color: var(--b-accent);
+  font-weight: 700;
+}
+
+/* Code: the deep well, DM Mono. */
+body.theme-basalt .loom-code {
+  border: 0;
+  border-radius: 14px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+}
+body.theme-basalt .loom-code-bar {
+  border: 0;
+  background: none;
+  font: 400 11px/1.4 var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-code :is(pre, code) {
+  font-family: var(--b-mono);
+  color: var(--b-text);
+}
+body.theme-basalt .loom-copy {
+  border-radius: 8px;
+  font: 500 11px/1 var(--b-ui);
+}
+
+/* Objects. In the flow a diagram sits straight on the stone, as the mock draws it — its
+   nodes are the raised tiles. Lifted out (pinned, placed, opened) it becomes a raised
+   tile of its own. */
+body.theme-basalt .loom-diagram {
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+body.theme-basalt .loom-piece,
+body.theme-basalt .loom-note,
+body.theme-basalt .loom-out {
+  border: 0;
+  border-radius: 16px;
+  background: var(--b-card);
+  box-shadow: var(--b-lift);
+}
+body.theme-basalt .loom-piece.is-pinned {
+  background: var(--b-card);
+  box-shadow: var(--b-lift);
+  transition:
+    box-shadow 160ms var(--b-out),
+    translate 160ms var(--b-spring);
+}
+body.theme-basalt .loom-piece.is-pinned:hover {
+  box-shadow: var(--b-hi-strong), 0 14px 28px -18px rgba(0, 0, 0, 0.8);
+}
+/* Picked up: it lifts — a bigger, softer shadow — and rides 2px high. Set down, it drops
+   those 2px back onto the stone (the translate transition). */
+body.theme-basalt .loom-piece.is-pinned.is-dragging {
+  transform: none;
+  translate: 0 -2px;
+  box-shadow: var(--b-hi-strong), 0 34px 60px -22px rgba(0, 0, 0, 0.9), 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+  transition:
+    box-shadow 120ms var(--b-out),
+    translate 120ms var(--b-out);
+}
+body.theme-basalt :is(.loom-piece, .loom-diagram).is-updated {
+  box-shadow: var(--b-lift), 0 0 0 2px var(--b-accent);
+}
+body.theme-basalt .loom-piece-head {
+  border: 0;
+  background: none;
+}
+body.theme-basalt .loom-piece.is-min > .loom-piece-head {
+  background: none;
+}
+body.theme-basalt .loom-piece-title {
+  font: 500 11px/1.4 var(--b-mono);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-piece.is-pinned::after {
+  border-color: var(--b-edge);
+}
+body.theme-basalt .loom-piece > .loom-piece-body > :is(.loom-table, .loom-code) {
+  box-shadow: none;
+}
+body.theme-basalt .loom-piece.is-sticky {
+  background: #2e2a26;
+  box-shadow: var(--b-lift);
+}
+body.theme-basalt .loom-piece.is-sticky .loom-piece-head {
+  background: none;
+}
+
+/* The drag handle on an object in the flow: a small raised chip. */
+body.theme-basalt .loom-lift,
+body.theme-basalt .loom-liftable > .loom-lift {
+  border: 0;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-lift-name {
+  color: var(--b-text);
+  box-shadow: none;
+}
+
+/* The rail of turns at the left. */
+body.theme-basalt .loom-rail.is-on {
+  background: var(--b-well);
+  box-shadow: var(--b-well-shadow);
+}
+body.theme-basalt .loom-dot {
+  background: var(--b-edge);
+  box-shadow: none;
+}
+body.theme-basalt :is(.loom-dot.is-at, .loom-dot.is-live) {
+  background: var(--b-accent);
+  box-shadow: none;
+  animation: none;
+}
+
+/* Menus, pops, the plan, the drawer: raised stone that rises into place. */
+body.theme-basalt :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip) {
+  border: 0;
+  border-radius: 14px;
+  background: var(--b-card);
+  box-shadow: var(--b-float);
+  color: var(--b-text);
+}
+body.theme-basalt :is(.loom-menu, .loom-pop, .loom-chip).is-on {
+  animation: basalt-rise 160ms ease-out both;
+}
+body.theme-basalt .loom-menu-head {
+  font: 400 11px/1.4 var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-menu button {
+  border-radius: 10px;
+  font-family: var(--b-ui);
+  color: var(--b-text);
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    background-color 120ms var(--b-spring);
+}
+body.theme-basalt .loom-menu button:hover,
+body.theme-basalt .loom-menu button:focus-visible {
+  background: var(--b-chip);
+  box-shadow: var(--b-raise-hover);
+  color: var(--b-text);
+}
+body.theme-basalt :is(.loom-menu, .loom-pop) textarea {
+  border: 0;
+  border-radius: 10px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+  color: var(--b-text);
+  font-family: var(--b-ui);
+}
+@keyframes basalt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes basalt-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Canvas | CLI: a recessed track; the chosen side is a raised stone slab, which slides
+   across when the view switches (each view has its own switch, so the one that appears
+   brings its slab over from where the other's was). */
+body.theme-basalt :is(.loom-sign, .loom-rawpill) {
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  box-shadow: none;
+  opacity: 1;
+}
+body.theme-basalt .loom-view-switch {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 64px 52px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--b-tray);
+  box-shadow: var(--b-recess);
+}
+body.theme-basalt .loom-view-switch::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: 64px;
+  border-radius: 9px;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  transition:
+    transform 180ms var(--b-spring),
+    width 180ms var(--b-spring);
+  animation: basalt-slab-to-canvas 180ms var(--b-spring);
+}
+body.theme-basalt .loom-view-switch:has(button[data-view='cli'].is-on)::before {
+  width: 52px;
+  transform: translateX(64px);
+  animation-name: basalt-slab-to-cli;
+}
+@keyframes basalt-slab-to-cli {
+  from {
+    width: 64px;
+    transform: none;
+  }
+}
+@keyframes basalt-slab-to-canvas {
+  from {
+    width: 52px;
+    transform: translateX(64px);
+  }
+}
+body.theme-basalt .loom-view-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent !important;
+  font: 500 12px/1.2 var(--b-ui);
+  color: var(--b-faint);
+  text-align: center;
+  transition: color 180ms var(--b-spring);
+}
+body.theme-basalt .loom-view-switch button:hover {
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-view-switch button.is-on {
+  color: var(--b-text);
+  font-weight: 700;
+}
+
+/* The seam over the CLI box is the well's own edge; no drawn line. */
+body.theme-basalt .loom-divider-line {
+  background: none;
+}
+body.theme-basalt .loom-divider.is-more .loom-divider-line {
+  left: 40%;
+  right: 40%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--b-accent);
+  opacity: 0.6;
+}
+
+/* The CLI box: the deep well at the foot of the canvas. The box's own size is the
+   terminal's; the well is drawn inside it so the rows stay where the PTY put them. */
+body.theme-basalt .loom-live {
+  isolation: isolate;
+}
+body.theme-basalt .loom-live::before {
+  content: '';
+  position: absolute;
+  inset: 2px 6px 8px;
+  z-index: -1;
+  border-radius: 14px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+  pointer-events: none;
+}
+
+/* The hint and the jump-to-latest chip. */
+body.theme-basalt .loom-hint {
+  font-family: var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-jump {
+  border-radius: 999px;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  color: var(--b-text);
+}
+
+/* Pictures waiting in the CLI: a raised tray of thumbnails. */
+body.theme-basalt .loom-pasted {
+  background: var(--b-card);
+  box-shadow: var(--b-lift);
+}
+
+/* ---------------------------------------------------------------- the question deck */
+
+body.theme-basalt .loom-answers {
+  max-width: 600px;
+  padding: 16px 18px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--b-card);
+  box-shadow: var(--b-lift);
+  animation: basalt-rise 160ms ease-out both;
+}
+body.theme-basalt .loom-answers:focus-within:not(.is-sent) {
+  box-shadow: var(--b-lift);
+}
+body.theme-basalt .loom-qd {
+  --qd-row: var(--b-chip);
+  --qd-rim: transparent;
+  font-family: var(--b-ui);
+}
+body.theme-basalt .loom-qd-dot {
+  background: var(--b-accent);
+  box-shadow: var(--b-accent-fill);
+  animation: basalt-ember 1.6s ease-in-out infinite;
+}
+body.theme-basalt :is(.loom-qd-title, .loom-qd-count, .loom-qd-multi, .loom-qd-hint) {
+  font: 400 11px/1.4 var(--b-mono);
+  letter-spacing: 0;
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-qd-text {
+  font: 700 17px/1.3 var(--b-ui);
+  letter-spacing: -0.02em;
+  color: var(--b-text);
+}
+body.theme-basalt .loom-qd-tabs {
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--b-tray);
+  box-shadow: var(--b-recess);
+}
+body.theme-basalt .loom-qd-tab {
+  border-radius: 7px;
+  color: var(--b-faint);
+  font: 500 11px/1 var(--b-mono);
+}
+body.theme-basalt .loom-qd-tab.is-at {
+  background-color: var(--b-chip);
+  color: var(--b-text);
+  box-shadow: var(--b-raise);
+}
+body.theme-basalt .loom-qd-tab.is-done:not(.is-at) {
+  color: var(--b-dim);
+}
+body.theme-basalt .loom-qd-page {
+  animation: basalt-rise 160ms ease-out both;
+}
+/* Options are stones: raised rows you press; the one you chose stays pressed in, with
+   its key in lava. */
+body.theme-basalt .loom-qd-opt {
+  border: 0;
+  border-radius: 12px;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    background-color 120ms var(--b-spring);
+}
+body.theme-basalt .loom-qd-opt:hover {
+  background: var(--b-chip-hi);
+  box-shadow: var(--b-raise-hover);
+}
+body.theme-basalt :is(.loom-qd-opt:focus-visible, .loom-qd-opt:focus, .loom-qd-opt.is-other:focus-within) {
+  box-shadow: var(--b-raise-hover);
+}
+body.theme-basalt .loom-qd-opt.is-on {
+  background: var(--b-chip-down);
+  box-shadow: var(--b-press);
+  transform: translateY(1px);
+}
+body.theme-basalt .loom-qd-key {
+  border-radius: 7px;
+  background: var(--b-well);
+  box-shadow: var(--b-well-shadow);
+  color: var(--b-dim);
+  font: 500 11px/1 var(--b-mono);
+}
+body.theme-basalt .loom-qd-opt.is-on .loom-qd-key {
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+  box-shadow: var(--b-accent-fill);
+}
+body.theme-basalt .loom-qd-label {
+  font-weight: 500;
+  color: var(--b-text);
+}
+body.theme-basalt :is(.loom-qd-desc, .loom-qd-tag) {
+  color: var(--b-faint);
+}
+body.theme-basalt .loom-qd-tag {
+  background: var(--b-well);
+  box-shadow: var(--b-well-shadow);
+}
+body.theme-basalt .loom-qd-check {
+  color: var(--b-accent);
+}
+body.theme-basalt .loom-qd-other {
+  color: var(--b-text);
+  font-family: var(--b-ui);
+}
+body.theme-basalt .loom-qd-btn {
+  border-radius: 10px;
+  font: 600 13px/1 var(--b-ui);
+}
+body.theme-basalt .loom-qd-sum-row {
+  border-radius: 12px;
+  background: var(--b-well);
+  box-shadow: var(--b-well-shadow);
+}
+body.theme-basalt .loom-qd-sum-a {
+  color: var(--b-text);
+}
+
+/* ---------------------------------------------------------------- toast, search, palette */
+
+body.theme-basalt .ember-toast {
+  padding: 10px 18px;
+  border-radius: 14px;
+  background: var(--b-card);
+  color: var(--b-text);
+  font: 500 13px/1.3 var(--b-ui);
+  box-shadow: var(--b-float);
+  transform: translate(-50%, 6px);
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+body.theme-basalt .ember-toast.is-in {
+  transform: translate(-50%, 0);
+}
+
+body.theme-basalt .ember-search {
+  border: 0;
+  border-radius: 12px;
+  background: var(--b-card);
+  box-shadow: var(--b-float);
+}
+body.theme-basalt .ember-search-input {
+  font-family: var(--b-mono);
+  color: var(--b-text);
+}
+
+body.theme-basalt .ember-palette {
+  background: color-mix(in srgb, var(--c-scrim) 55%, transparent);
+}
+body.theme-basalt .ember-palette-panel {
+  width: min(600px, 84vw);
+  border: 0;
+  border-radius: 18px;
+  background: var(--b-card);
+  box-shadow: var(--b-float);
+  animation: basalt-rise 160ms ease-out both;
+}
+body.theme-basalt .ember-palette-input {
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+  color: var(--b-text);
+  font: 400 15px/1.3 var(--b-ui);
+}
+body.theme-basalt .ember-palette-input::placeholder {
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-palette-list {
+  padding: 6px 8px 2px;
+}
+body.theme-basalt .ember-palette-row {
+  padding: 9px 12px;
+  border-radius: 10px;
+  font: 400 13px/1.3 var(--b-ui);
+  color: var(--b-dim);
+}
+body.theme-basalt .ember-palette-row.is-cursor {
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  color: var(--b-text);
+}
+body.theme-basalt .ember-palette-row.is-cursor .ember-palette-title {
+  font-weight: 700;
+}
+body.theme-basalt :is(.ember-palette-group, .ember-palette-hint, .ember-palette-empty) {
+  font: 400 11px/1.3 var(--b-mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-palette-cli {
+  font-family: var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-palette-cli b {
+  color: var(--b-accent);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- settings, cheatsheet */
+
+body.theme-basalt :is(.ember-settings, .ember-cheatsheet) {
+  background: color-mix(in srgb, var(--c-scrim) 60%, transparent);
+}
+body.theme-basalt :is(.ember-settings-panel, .ember-cheatsheet-panel) {
+  border: 0;
+  border-radius: 20px;
+  background: var(--b-card);
+  box-shadow: var(--b-float);
+  transform: translateY(6px);
+  transition:
+    transform 160ms ease-out,
+    opacity 160ms ease-out;
+}
+body.theme-basalt :is(.ember-settings.is-open .ember-settings-panel, .ember-cheatsheet.is-open .ember-cheatsheet-panel) {
+  transform: none;
+}
+body.theme-basalt .ember-settings-head h2,
+body.theme-basalt .ember-cheatsheet-panel h2 {
+  font: 800 18px/1.1 var(--b-ui);
+  letter-spacing: -0.03em;
+  color: var(--b-text);
+}
+body.theme-basalt .ember-settings-path {
+  font-family: var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt :is(.ember-settings-filter, .ember-input, .ember-select) {
+  border: 0;
+  border-radius: 10px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+  color: var(--b-text);
+  font-family: var(--b-ui);
+}
+body.theme-basalt :is(.ember-input, .ember-select):focus {
+  box-shadow: var(--b-deep-shadow), 0 0 0 2px var(--b-accent);
+}
+/* Tabs: a recessed track; the current tab is the raised stone. */
+body.theme-basalt .ember-settings-tabs {
+  width: max-content;
+  margin: 4px 18px 0;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 12px;
+  background: var(--b-tray);
+  box-shadow: var(--b-recess);
+}
+body.theme-basalt .ember-settings-tab {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 9px;
+  font: 500 12px/1.2 var(--b-ui);
+  color: var(--b-faint);
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 180ms var(--b-spring),
+    background-color 180ms var(--b-spring),
+    color 180ms var(--b-spring);
+}
+body.theme-basalt .ember-settings-tab:hover {
+  color: var(--b-dim);
+}
+body.theme-basalt .ember-settings-tab.is-current {
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  color: var(--b-text);
+  font-weight: 700;
+}
+body.theme-basalt :is(.ember-settings-section h3, .ember-cheatsheet-panel h3) {
+  font: 500 11px/1.4 var(--b-mono);
+  letter-spacing: 0.04em;
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-settings-label {
+  font: 400 13px/1.35 var(--b-ui);
+  color: var(--b-text);
+}
+body.theme-basalt .ember-settings-label em {
+  font-size: 11px;
+  color: var(--b-faint);
+}
+body.theme-basalt :is(.ember-settings-count, .ember-range output) {
+  font-family: var(--b-mono);
+  color: var(--b-faint);
+}
+body.theme-basalt .ember-range input {
+  accent-color: var(--b-accent);
+}
+body.theme-basalt .ember-cheatsheet-panel kbd {
+  border: 0;
+  border-radius: 6px;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  font: 500 11px/1 var(--b-mono);
+  color: var(--b-text);
+}
+
+/* Theme tiles: stones you press; the one in use is set in, ringed in lava. */
+body.theme-basalt .ember-theme {
+  border: 0;
+  border-radius: 12px;
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  transition:
+    transform 120ms var(--b-spring),
+    box-shadow 120ms var(--b-spring),
+    background-color 120ms var(--b-spring);
+}
+body.theme-basalt .ember-theme:hover {
+  background: var(--b-chip-hi);
+  box-shadow: var(--b-raise-hover);
+}
+body.theme-basalt .ember-theme.is-current {
+  background: var(--b-chip-down);
+  box-shadow: var(--b-press), 0 0 0 2px var(--b-accent);
+}
+body.theme-basalt .ember-theme-name {
+  font: 500 12px/1.3 var(--b-ui);
+  color: var(--b-text);
+}
+
+/* Toggles: a recessed track with a stone slab that slides across; on, the track is lava. */
+body.theme-basalt .ember-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--b-deep);
+  box-shadow: var(--b-deep-shadow);
+  transition: background-color 180ms var(--b-spring);
+}
+body.theme-basalt .ember-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: #4a4b4e;
+  box-shadow: var(--b-hi-strong), 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition:
+    transform 180ms var(--b-spring),
+    background-color 180ms var(--b-spring);
+}
+body.theme-basalt .ember-toggle:checked {
+  background: var(--b-accent);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+body.theme-basalt .ember-toggle:checked::before {
+  transform: translateX(16px);
+  background: var(--b-text);
+}
+body.theme-basalt .ember-toggle:active::before {
+  box-shadow: var(--b-press);
+}
+
+/* ---------------------------------------------------------------- reduced motion
+
+   No travel: nothing translates, slides or rises; presses and arrivals are a change of
+   light (shadow and opacity) only. */
+@media (prefers-reduced-motion: reduce) {
+  body.theme-basalt :is(button, .ember-card, .loom-qd-opt, .ember-theme, .ember-settings-tab):active,
+  body.theme-basalt .loom-qd-opt.is-on {
+    transform: none !important;
+  }
+  body.theme-basalt :is(.loom-menu, .loom-pop, .loom-chip).is-on,
+  body.theme-basalt :is(.loom-answers, .loom-qd-page, .ember-palette-panel) {
+    animation: basalt-fade 120ms ease-out both;
+  }
+  body.theme-basalt :is(.ember-settings-panel, .ember-cheatsheet-panel),
+  body.theme-basalt .ember-card.is-entering {
+    transform: none;
+  }
+  body.theme-basalt .ember-toast,
+  body.theme-basalt .ember-toast.is-in {
+    transform: translate(-50%, 0);
+  }
+  body.theme-basalt .ember-card-plate.is-landed,
+  body.theme-basalt .loom-view-switch::before {
+    animation: none;
+  }
+  body.theme-basalt .loom-view-switch::before,
+  body.theme-basalt .ember-toggle::before {
+    transition: none;
+  }
+  body.theme-basalt .loom-piece.is-pinned.is-dragging {
+    translate: none;
+  }
+  body.theme-basalt .ember-card[data-state='working'] .ember-card-state,
+  body.theme-basalt .loom-qd-dot {
+    animation: none;
+  }
+}

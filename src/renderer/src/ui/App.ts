@@ -1,4 +1,4 @@
-import type { ClaudeStatus, EmberConfig, GitStatus, ThemeConfig } from '@shared/types'
+import { opaqueTheme, type ClaudeStatus, type EmberConfig, type GitStatus, type ThemeConfig } from '@shared/types'
 import { Group } from '../core/Group'
 import { loadFont } from '../core/fonts'
 import { Session } from '../core/Session'
@@ -531,7 +531,14 @@ export class App {
     setBadgeSurface(light)
     // Windows Terminal's `opacity` is a percentage over the system backdrop; the
     // window itself is transparent, so the tint lives on the content layer.
-    s.setProperty('--c-tint-alpha', String(win.opacity / 100))
+    // A stone theme is opaque whatever the opacity slider says: it is a material, and a
+    // see-through rock is glass again. Its stylesheet keys off the family on the body.
+    const family = theme.family ?? ''
+    for (const c of [...document.body.classList]) if (c.startsWith('theme-') && c !== `theme-${family}`) document.body.classList.remove(c)
+    if (family) document.body.classList.add(`theme-${family}`)
+    if (family) document.body.dataset['themeFamily'] = family
+    else delete document.body.dataset['themeFamily']
+    s.setProperty('--c-tint-alpha', opaqueTheme(theme) ? '1' : String(win.opacity / 100))
     // A window with no system backdrop is transparent for real, which also means
     // Windows stops drawing its rounded corners for us — the shell has to round
     // itself instead. See the comment in main/window.ts for why that trade is made.
@@ -540,7 +547,11 @@ export class App {
     // interface font is deliberately set to something else.
     s.setProperty('--term-font', font.family)
     // The interface reads in the system text face unless one is chosen; the terminal font is for the terminal.
-    s.setProperty('--ui-font', font.uiFamily || "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif")
+    // Basalt is drawn in Archivo (bundled, styles/fonts.css) unless a face was chosen.
+    s.setProperty(
+      '--ui-font',
+      font.uiFamily || (family === 'basalt' ? "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif" : "'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif"),
+    )
     // Writing surfaces (notes, the todo list) follow the terminal's size, not a fixed one.
     s.setProperty('--app-size', `${font.size}px`)
     s.setProperty('--sidebar-w', `${win.sidebarWidth}px`)
@@ -2303,6 +2314,20 @@ export class App {
         hint: 'sun / moon in the title bar',
         cli: 'mode [night|day]',
         run: (a) => this.switchMode(a[0]),
+      },
+      {
+        id: 'theme-basalt',
+        group: 'View',
+        title: 'Theme: Basalt',
+        hint: 'matte stone',
+        aliases: ['basalt', 'stone'],
+        run: async () => {
+          const t = (await this.loadThemes()).find((x) => x.family === 'basalt')
+          if (!t) throw new Error('no Basalt theme')
+          window.ember.saveConfig({ ...this.config, theme: structuredClone(t) })
+          this.flashToast(t.name)
+          return `Theme: ${t.name}`
+        },
       },
       {
         id: 'theme',

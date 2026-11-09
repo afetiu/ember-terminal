@@ -71,6 +71,13 @@ export interface MotionConfig {
 
 export interface ThemeConfig {
   name: string
+  /**
+   * A theme that is more than a palette: it restyles the chrome's material as well as
+   * its colours. The renderer marks the body with it (`body.theme-<family>`,
+   * `data-theme-family`) and its stylesheet keys off that, so every other theme is
+   * untouched. 'basalt' is matte stone: opaque, no glass, no blur.
+   */
+  family?: 'basalt'
   background: string
   foreground: string
   cursor: string
@@ -771,3 +778,6 @@ export interface BrainStatus {
   syncedAt: string | null
   agents: Array<{ agent: string; file: string; present: boolean; synced: boolean; skills: number | null }>
 }
+
+/** Themes whose surfaces are opaque material rather than glass over the desktop. */
+export const opaqueTheme = (theme: Pick<ThemeConfig, 'family'> | undefined): boolean => theme?.family === 'basalt'

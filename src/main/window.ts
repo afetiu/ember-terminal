@@ -1,12 +1,14 @@
 import { app, BrowserWindow, shell, type WebContents } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { EmberConfig } from '../shared/types.js'
+import { opaqueTheme, type EmberConfig } from '../shared/types.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const fades = new WeakMap<BrowserWindow, NodeJS.Timeout>()
 const configs = new WeakMap<BrowserWindow, EmberConfig>()
+/** The system backdrop each window was created with; only these can change it live. */
+const births = new WeakMap<BrowserWindow, EmberConfig['window']['material']>()
 
 /**
  * Ease the window's own alpha, in main, over ~200ms.
@@ -55,18 +57,27 @@ export function applyGlass(win: BrowserWindow, config: EmberConfig): void {
   const previous = configs.get(win)
   configs.set(win, config)
   const { material, inactiveOpacity } = config.window
+  // A stone theme (Basalt) is opaque: its content layer paints every pixel, so a system
+  // backdrop under it would only cost DWM a blur nobody sees — and turn into a grey slab
+  // on blur. The backdrop is switched off while it is on and back on when it is left.
+  const opaque = opaqueTheme(config.theme)
   // Material can be re-set live between the backdrop modes. Switching to or from
   // 'none' cannot: per-pixel transparency is fixed when the window is created, so
-  // that one still needs a relaunch.
-  if (previous && previous.window.material !== material && material !== 'none' && previous.window.material !== 'none') {
-    win.setBackgroundMaterial(material)
+  // that one still needs a relaunch. A window born with a backdrop can still have it
+  // switched off ('none' as a material) and on again, which is what the stone needs.
+  const born = births.get(win) ?? material
+  if (born !== 'none' && material !== 'none') {
+    const want = opaque ? 'none' : material
+    const had = previous ? (opaqueTheme(previous.theme) ? 'none' : previous.window.material) : born
+    if (want !== had) win.setBackgroundMaterial(want)
   }
   // A hand-edited config can carry anything; a bad number here would set the window's
   // alpha to NaN and make it vanish.
   const inactive = Number.isFinite(inactiveOpacity) ? Math.min(1, Math.max(0.2, inactiveOpacity / 100)) : 1
   // 'none' is already transparent per-pixel, focused or not; fading it as well would
   // dim the text for no gain.
-  const wanted = material === 'none' || win.isFocused() ? 1 : inactive
+  // Stone does not turn to glass when you look away: an opaque theme stays opaque.
+  const wanted = material === 'none' || opaque || win.isFocused() ? 1 : inactive
   fadeTo(win, wanted)
 }
 
@@ -178,6 +189,7 @@ export function createWindow(config: EmberConfig): BrowserWindow {
     }
   })
 
+  births.set(win, config.window.material)
   applyGlass(win, config)
   win.on('focus', () => applyGlass(win, configs.get(win) ?? config))
   win.on('blur', () => applyGlass(win, configs.get(win) ?? config))

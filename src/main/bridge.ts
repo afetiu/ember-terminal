@@ -4,7 +4,7 @@ import { dirname, extname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
 import { app, BrowserWindow, webContents, type WebContents } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
-import { renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
+import { BASALT_FONTS, renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
 import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, boundSession, rebindFromStatus, unbindSession } from './transcript.js'
@@ -831,7 +831,8 @@ function route(req: IncomingMessage, res: ServerResponse): void {
       const accent = hex('accent')
       const fg = hex('fg')
       const bg = hex('bg')
-      const palette = accent && fg && bg ? { accent, fg, bg } : undefined
+      const family = url.searchParams.get('family') === 'basalt' ? ('basalt' as const) : undefined
+      const palette = accent && fg && bg ? { accent, fg, bg, ...(family ? { family } : {}) } : undefined
       // ?target=phone: the phone's version (answers by postMessage, not a POST to this bridge).
       const target = url.searchParams.get('target') === 'phone' ? 'phone' : 'bridge'
       // The runtime (and its one-time address) only goes into a document something is
@@ -860,11 +861,13 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 
   // Mermaid, served to the document rather than bundled into it. One 3MB file that
   // Chromium then caches, instead of 3MB inlined into every diagram we push.
-  const VENDOR = ['mermaid.min.js', 'pdf.min.mjs', 'pdf.worker.min.mjs']
+  // The Basalt faces as well, for documents drawn in that theme (see BASALT_FONTS).
+  const VENDOR = ['mermaid.min.js', 'pdf.min.mjs', 'pdf.worker.min.mjs', ...BASALT_FONTS]
   if (req.method === 'GET' && url.pathname.startsWith('/vendor/') && VENDOR.includes(url.pathname.slice(8))) {
     const file = resourcePath('vendor', url.pathname.slice(8))
-    if (!existsSync(file)) return send(res, 404, '// not shipped with this build', 'text/javascript')
-    res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' })
+    const font = file.endsWith('.woff2')
+    if (!existsSync(file)) return send(res, 404, '// not shipped with this build', font ? 'font/woff2' : 'text/javascript')
+    res.writeHead(200, { 'content-type': font ? 'font/woff2' : 'text/javascript; charset=utf-8', 'cache-control': 'max-age=86400' })
     createReadStream(file).pipe(res)
     return
   }

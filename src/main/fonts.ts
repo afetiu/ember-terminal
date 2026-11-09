@@ -16,6 +16,9 @@ import type { FontOption } from '../shared/types.js'
  * reports so the picker is never empty, and so the currently configured font always
  * has a row even on a fresh machine.
  */
+/** Families the renderer carries itself as @font-face; installed on every machine. */
+const BUNDLED = ['DM Mono', 'Archivo']
+
 const BUILT_IN = [
   'CaskaydiaCove NF',
   'Cascadia Code',
@@ -34,6 +37,9 @@ const BUILT_IN = [
   'Inter',
   'Arial',
   'monospace',
+  // Shipped with the app (src/renderer/src/assets/fonts), so always there: the faces the
+  // Basalt theme is drawn in. DM Mono is a terminal font as well.
+  ...BUNDLED,
 ]
 
 const WIN_SCRIPT = [
@@ -103,7 +109,7 @@ export async function listFonts(): Promise<FontOption[]> {
       const blind = real.size === 0
       cache = normalise([...found, ...BUILT_IN]).map((family) => ({
         family,
-        installed: blind || real.has(family.toLowerCase()) || GENERIC.has(family.toLowerCase()),
+        installed: blind || real.has(family.toLowerCase()) || GENERIC.has(family.toLowerCase()) || BUNDLED.includes(family),
       }))
       inflight = null
       return cache

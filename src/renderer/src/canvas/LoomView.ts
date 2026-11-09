@@ -661,8 +661,10 @@ export class LoomView {
     const n = this.pinned.size
     this.stage.renderRail()
     void n
-    this.sign.innerHTML = viewSwitch(false)
-    this.rawPill.innerHTML = viewSwitch(true)
+    // The same switch every time: drawn once, so its parts are not replaced under a
+    // transition (Basalt slides a slab inside it) on every repaint of the rail.
+    if (!this.sign.firstChild) this.sign.innerHTML = viewSwitch(false)
+    if (!this.rawPill.firstChild) this.rawPill.innerHTML = viewSwitch(true)
   }
 
   /** Claude Code is in this tab (split or full CLI): Ctrl+V with a picture is its Alt+V. */

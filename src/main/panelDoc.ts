@@ -642,6 +642,126 @@ export interface DocPalette {
   accent: string
   fg: string
   bg: string
+  /** A theme that restyles material as well as colour (ThemeConfig.family). */
+  family?: 'basalt'
+}
+
+/**
+ * Basalt, inside a document: matte stone nodes (#2f3033) with stone-grey edges, Archivo
+ * for the words, the lava accent kept for the one node a diagram marks `hot`. The faces
+ * come from the bridge's /vendor (prepare-resources copies them out of the renderer's
+ * assets), since a document is its own page and cannot see the app's @font-face.
+ */
+export const BASALT_DOC = {
+  node: '#2F3033',
+  raised: '#3A3B3E',
+  text: '#ECEBE8',
+  dim: '#B9B8B4',
+  faint: '#8D8C88',
+  edge: '#5E5F62',
+  well: '#1D1E20',
+  line: '#2F3033',
+  bar: '#3A3B3E',
+  accent: '#FF7A3D',
+}
+export const BASALT_FONTS = ['archivo-latin-400-normal.woff2', 'archivo-latin-500-normal.woff2', 'archivo-latin-700-normal.woff2', 'archivo-latin-800-normal.woff2', 'dm-mono-latin-400-normal.woff2']
+const BASALT_UI = "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
+const BASALT_MONO = "'DM Mono', 'Cascadia Code', Consolas, ui-monospace, monospace"
+const basaltFaces = (): string =>
+  [400, 500, 700, 800].map((w) => `@font-face { font-family: 'Archivo'; font-weight: ${w}; font-display: block; src: url('/vendor/archivo-latin-${w}-normal.woff2') format('woff2'); }`).join('\n') +
+  `\n@font-face { font-family: 'DM Mono'; font-weight: 400; font-display: block; src: url('/vendor/dm-mono-latin-400-normal.woff2') format('woff2'); }`
+
+function basaltMermaid(): Record<string, unknown> {
+  const b = BASALT_DOC
+  const vars: Record<string, unknown> = {
+    background: 'transparent',
+    primaryColor: b.node,
+    primaryTextColor: b.text,
+    primaryBorderColor: b.node,
+    secondaryColor: b.raised,
+    tertiaryColor: b.well,
+    lineColor: b.edge,
+    textColor: b.text,
+    mainBkg: b.node,
+    nodeBorder: b.node,
+    clusterBkg: b.well,
+    clusterBorder: b.line,
+    fontFamily: BASALT_UI,
+    fontSize: '13px',
+    edgeLabelBackground: b.well,
+    actorBkg: b.node,
+    actorBorder: b.node,
+    actorTextColor: b.text,
+    signalColor: b.edge,
+    signalTextColor: b.dim,
+    noteBkgColor: b.raised,
+    noteTextColor: b.text,
+    noteBorderColor: b.raised,
+    titleColor: b.text,
+    pieTitleTextColor: b.text,
+    pieSectionTextColor: b.well,
+    pieStrokeColor: b.well,
+    pieOuterStrokeColor: b.line,
+  }
+  // The first series is the one that matters, in lava; the rest are stone (#3a3b3e first).
+  vars['xyChart'] = {
+    backgroundColor: 'transparent',
+    titleColor: b.text,
+    xAxisLabelColor: b.faint,
+    xAxisTitleColor: b.faint,
+    xAxisTickColor: b.line,
+    xAxisLineColor: b.line,
+    yAxisLabelColor: b.faint,
+    yAxisTitleColor: b.faint,
+    yAxisTickColor: b.line,
+    yAxisLineColor: b.line,
+    plotColorPalette: [b.accent, b.bar, '#6E6F72', '#9A9995'].join(', '),
+  }
+  const cats = [b.accent, '#6E6F72', '#8D8C88', '#4A4B4E', '#B9B8B4', '#5E5F62', '#A3BF8E', '#8EA8C3']
+  cats.forEach((c, i) => {
+    vars[`pie${i + 1}`] = c
+    vars[`cScale${i}`] = i === 0 ? b.accent : b.node
+    vars[`cScaleLabel${i}`] = i === 0 ? b.well : b.text
+  })
+  return vars
+}
+
+/** Raised stone nodes, a `hot` node in lava with its one glow, labels in Archivo. */
+const BASALT_MERMAID_CSS = [
+  '.node rect, .node polygon, .node circle, .node ellipse, .node path { stroke: none !important; filter: drop-shadow(0 6px 7px rgba(0,0,0,0.45)); }',
+  '.node rect { rx: 10px; ry: 10px; }',
+  `.nodeLabel, .label, .edgeLabel { font-family: Archivo, 'Segoe UI', sans-serif; font-weight: 500; }`,
+  `.flowchart-link, .edgePath .path { stroke: ${BASALT_DOC.edge} !important; stroke-width: 1.5px; }`,
+  `marker path, .marker { fill: ${BASALT_DOC.edge} !important; stroke: ${BASALT_DOC.edge} !important; }`,
+  `.node.hot rect, .node.hot polygon, .node.hot circle, .node.hot path, .node.accent rect { fill: ${BASALT_DOC.accent} !important; filter: drop-shadow(0 0 10px rgba(255,122,61,0.35)); }`,
+  `.node.hot .nodeLabel, .node.accent .nodeLabel { color: ${BASALT_DOC.well} !important; font-weight: 700; }`,
+  '.cluster rect { stroke: none !important; }',
+].join(' ')
+
+/** The document body in stone: Archivo prose, DM Mono code, tables and code as recessed wells. */
+function basaltStyle(): string {
+  const b = BASALT_DOC
+  return `
+${basaltFaces()}
+body { color: ${b.dim}; font-family: ${BASALT_UI}; }
+h1, h2, h3, strong { color: ${b.text}; }
+h1, h2 { font-weight: 800; letter-spacing: -0.03em; }
+h3 { font-weight: 700; letter-spacing: -0.02em; }
+h4, h5, h6, th, blockquote { color: ${b.faint}; }
+a { color: ${b.accent}; text-decoration-color: rgba(255,122,61,0.35); }
+code { background: ${b.node}; color: ${b.text}; font-family: ${BASALT_MONO}; }
+pre.code { background: #141517; box-shadow: inset 0 2px 5px rgba(0,0,0,0.55); border-radius: 14px; }
+pre.code code, .ember-raw { color: ${b.text}; font-family: ${BASALT_MONO}; }
+table { background: ${b.well}; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); border-radius: 14px; }
+th, td { border-bottom-color: ${b.line}; }
+hr { border-top-color: ${b.line}; }
+.ember-act, .ember-ask-opt { background: ${b.node}; color: ${b.text}; border-color: transparent; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px -6px rgba(0,0,0,0.7); transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms, background-color 120ms; }
+.ember-act:hover, .ember-ask-opt:hover { background: ${b.raised}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 4px 10px -6px rgba(0,0,0,0.7); }
+.ember-act:active, .ember-ask-opt:active { transform: translateY(1px); background: #28292c; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+.ember-ask { background: ${b.well}; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); }
+::-webkit-scrollbar-thumb { background: #3a3b3e; background-clip: padding-box; }
+@media (prefers-reduced-motion: reduce) { .ember-act, .ember-ask-opt { transition: opacity 120ms; } .ember-act:active, .ember-ask-opt:active { transform: none; } }
+`
 }
 
 function hexRgb(h: string): [number, number, number] {
@@ -814,9 +934,9 @@ const mermaidBoot = (light: boolean, palette?: DocPalette) => `
       startOnLoad: false,
       theme: 'base',
       securityLevel: 'strict',
-      fontFamily: ${JSON.stringify(PROSE_FONT)},
-      themeVariables: ${JSON.stringify({ ...(palette ? mermaidPalette(palette, light) : light ? MERMAID_LIGHT : MERMAID_DARK), fontFamily: PROSE_FONT, fontSize: '13px' })},
-      themeCSS: ${JSON.stringify(MERMAID_CSS)},
+      fontFamily: ${JSON.stringify(palette?.family === 'basalt' && !light ? BASALT_UI : PROSE_FONT)},
+      themeVariables: ${JSON.stringify(palette?.family === 'basalt' && !light ? basaltMermaid() : { ...(palette ? mermaidPalette(palette, light) : light ? MERMAID_LIGHT : MERMAID_DARK), fontFamily: PROSE_FONT, fontSize: '13px' })},
+      themeCSS: ${JSON.stringify(palette?.family === 'basalt' && !light ? `${MERMAID_CSS} ${BASALT_MERMAID_CSS}` : MERMAID_CSS)},
       flowchart: { curve: 'basis', padding: 14, nodeSpacing: 44, rankSpacing: 52, htmlLabels: true },
       sequence: { actorFontFamily: PROSE_FONT_JS, messageFontFamily: PROSE_FONT_JS, noteFontFamily: PROSE_FONT_JS },
       xyChart: { titleFontSize: 14, xAxis: { labelFontSize: 12, titleFontSize: 12 }, yAxis: { labelFontSize: 12, titleFontSize: 12 } },
@@ -885,6 +1005,10 @@ const mermaidBoot = (light: boolean, palette?: DocPalette) => `
       if (started || !window.innerWidth) return
       started = true
       removeEventListener('resize', start)
+      // A theme's own face has to be loaded before mermaid measures labels with it, or
+      // every box is sized for the fallback.
+      var faces = ${JSON.stringify(palette?.family === 'basalt' && !light ? ['500 13px Archivo', '700 13px Archivo'] : [])}
+      if (faces.length && document.fonts) { try { await Promise.all(faces.map(function (f) { return document.fonts.load(f) })) } catch (e) {} }
       var results = []
       for (var i = 0; i < blocks.length; i++) results.push(await check(blocks[i]))
       var good = Array.prototype.filter.call(document.querySelectorAll('pre.mermaid'), function (b) { return b.isConnected })
@@ -943,7 +1067,7 @@ function shell(body: string, light = false, palette?: DocPalette): string {
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}</style>
+<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}${palette?.family === 'basalt' && !light ? basaltStyle() : ''}</style>
 </head><body${light ? ' class="light"' : ''}>${body}${head}</body></html>`
 }
 

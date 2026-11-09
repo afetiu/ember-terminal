@@ -2,6 +2,8 @@ import '@xterm/xterm/css/xterm.css'
 import './styles/app.css'
 import './styles/onboarding.css'
 import './styles/loom.css'
+import './styles/fonts.css'
+import './styles/basalt.css'
 import { App } from './ui/App'
 import { loadFont } from './core/fonts'
 

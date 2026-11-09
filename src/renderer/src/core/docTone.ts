@@ -18,6 +18,9 @@ export function docTone(): string {
     q.set('fg', fg)
     q.set('bg', bg)
   }
+  // A theme that changes material (Basalt) draws documents in its own stone and faces.
+  const family = document.body.dataset['themeFamily']
+  if (family === 'basalt') q.set('family', family)
   const s = q.toString()
   return s ? `?${s}` : ''
 }

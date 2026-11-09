@@ -22,6 +22,8 @@ import type { ThemeConfig } from '../shared/types.js'
  */
 export const HOUSE_NIGHT = 'Ember Night'
 export const HOUSE_DAY = 'Ember Day'
+/** Matte stone: a theme that changes the material, not only the colours. */
+export const BASALT = 'Basalt'
 
 export const THEMES: ThemeConfig[] = [
   // ---------- the house pair ----------
@@ -74,6 +76,37 @@ export const THEMES: ThemeConfig[] = [
     brightMagenta: '#A85592',
     brightCyan: '#278F86',
     brightWhite: '#4A4037',
+  },
+
+  // ---------- Basalt: matte volcanic stone ----------
+  // Not only a palette: `family: 'basalt'` swaps the chrome's frosted glass for opaque
+  // stone (see styles/basalt.css) and keeps the window off the acrylic backdrop. Greys
+  // are stone, one accent is lava; the ANSI warm slots lean toward the lava so a
+  // warning reads as part of the same rock.
+  {
+    name: BASALT,
+    family: 'basalt',
+    background: '#1D1E20',
+    foreground: '#ECEBE8',
+    cursor: '#FF7A3D',
+    cursorAccent: '#1D1E20',
+    selectionBackground: '#4D3426',
+    black: '#2F3033',
+    red: '#EE6A4E',
+    green: '#A3BF8E',
+    yellow: '#FFA45C',
+    blue: '#8EA8C3',
+    magenta: '#C49AB2',
+    cyan: '#8DBDB8',
+    white: '#B9B8B4',
+    brightBlack: '#8D8C88',
+    brightRed: '#FF8A6C',
+    brightGreen: '#BDD4AA',
+    brightYellow: '#FFBE86',
+    brightBlue: '#AEC3D8',
+    brightMagenta: '#D9B6CA',
+    brightCyan: '#AED4D0',
+    brightWhite: '#F7F6F3',
   },
 
   // ---------- Ember originals ----------

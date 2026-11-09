@@ -1,0 +1,318 @@
+/**
+ * Basalt, looked at. A dev Ember (own EMBER_HOME, Basalt forced in its config) opens a
+ * canvas tab and is fed the reply the design mock shows — "why is checkout slow since
+ * tuesday?", a headline answer, the latency table, the Client → Orders API → Payments ·
+ * lock → Postgres flow and a p95 chart pinned beside it — through window.__ember.loomFeed
+ * (no model). Then screenshots of the parts the theme restyles: the whole window, the
+ * sidebar, a button held down mid-press (CDP mouse down, no up), a menu, the question
+ * deck, Ctrl+K and Settings. Checks the material too: opaque window, no backdrop-filter
+ * anywhere, the faces resolved.
+ *
+ *   npm run build; node scripts/probe-theme-basalt.mjs [out-dir]
+ *
+ * Nothing is typed into any terminal: sends are recorded (window.__ember.recordSends()).
+ */
+import { spawn } from 'node:child_process'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { seedHome } from './probelib.mjs'
+
+const REPO = new URL('..', import.meta.url).pathname.slice(1).replace(/\/$/, '')
+const OUT = process.argv[2] ?? join(process.env.TEMP ?? '.', 'ember-basalt-shots')
+const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-basalt${process.env.PROBE_TAG ?? ''}`)
+const PORT = Number(process.env.PROBE_PORT) || 9611
+rmSync(EMBER_HOME, { recursive: true, force: true })
+mkdirSync(EMBER_HOME, { recursive: true })
+mkdirSync(OUT, { recursive: true })
+
+// The palette out of the source, so the probe follows edits (the shot-themes way).
+let src = readFileSync(join(REPO, 'src/main/themes.ts'), 'utf8')
+for (const [, k, v] of src.matchAll(/export const (\w+) = ('[^']+')/g)) src = src.replaceAll(`name: ${k},`, `name: ${v},`)
+const at = src.indexOf(`name: 'Basalt'`)
+if (at < 0) throw new Error('no Basalt theme in themes.ts')
+const theme = new Function(`return ${src.slice(src.lastIndexOf('{', at), src.indexOf('}', at) + 1)}`)()
+writeFileSync(join(EMBER_HOME, 'config.json'), JSON.stringify({ theme, labs: { enabled: true }, font: { family: 'DM Mono', size: 13, weight: 400 } }, null, 2))
+seedHome(EMBER_HOME)
+
+if (await fetch(`http://127.0.0.1:${PORT}/json/version`).then(() => true, () => false)) {
+  console.error(`port ${PORT} is taken; close what holds it first`)
+  process.exit(1)
+}
+const child = spawn(join(REPO, 'node_modules/electron/dist/electron.exe'), ['.', `--remote-debugging-port=${PORT}`], {
+  cwd: REPO,
+  stdio: 'ignore',
+  env: { ...process.env, EMBER_HOME, EMBER_PROBE_BOUNDS: '1440x900', EMBER_PROBE_INACTIVE: '1' },
+})
+const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+
+let n = 0
+const user = (text) => ({ type: 'user', uuid: `u${++n}`, timestamp: '2026-11-09T09:00:00Z', message: { role: 'user', content: text } })
+const said = (text) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: '2026-11-09T09:00:01Z', message: { role: 'assistant', content: [{ type: 'text', text }] } })
+
+const REPLY = [
+  '# Payments run inside the order lock.',
+  '',
+  'Every checkout waits for the card network while holding the row, so the queue behind it grows.',
+  '',
+  '| Endpoint | Before | Now |',
+  '|---|---|---|',
+  '| POST /checkout | 310 ms | **1.9 s** |',
+  '| GET /cart | 80 ms | 84 ms |',
+  '',
+  '```mermaid',
+  'flowchart LR',
+  '  C[Client] --> O[Orders API] --> P[Payments · lock] --> D[Postgres]',
+  '  class P hot',
+  '```',
+  '',
+  '```mermaid',
+  'xychart-beta',
+  '  title "p95 checkout (s)"',
+  '  x-axis [Sat, Sun, Mon, Tue]',
+  '  y-axis 0 --> 2',
+  '  bar [0, 0, 1.7, 1.9]',
+  '  bar [0.31, 0.34, 0, 0]',
+  '```',
+  '',
+  'Move the payment call after the commit. Want me to make that change?',
+].join('\n')
+
+let failed = 0
+const check = (name, ok, detail = '') => {
+  if (!ok) failed++
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`)
+}
+
+try {
+  let target
+  for (let i = 0; i < 60 && !target; i++) {
+    await wait(500)
+    try {
+      target = (await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()).find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))
+    } catch {}
+  }
+  if (!target) throw new Error('no Ember renderer')
+  const ws = new WebSocket(target.webSocketDebuggerUrl)
+  await new Promise((r) => ws.addEventListener('open', r, { once: true }))
+  let id = 0
+  const pending = new Map()
+  ws.addEventListener('message', (e) => {
+    const m = JSON.parse(e.data)
+    pending.get(m.id)?.(m.result ?? m.error)
+    pending.delete(m.id)
+  })
+  const send = (method, params = {}) =>
+    new Promise((r) => {
+      pending.set(++id, r)
+      ws.send(JSON.stringify({ id, method, params }))
+    })
+  const ev = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }))?.result?.value
+  const shot = async (name, clip) => {
+    const r = await send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip: { ...clip, scale: 1 } } : {}) })
+    writeFileSync(join(OUT, `${name}.png`), Buffer.from(r.data, 'base64'))
+    console.log(`shot ${join(OUT, `${name}.png`)}`)
+  }
+  const rect = (sel) => ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height } })()`)
+  const pad = (r, p = 12) => r && { x: Math.max(0, r.x - p), y: Math.max(0, r.y - p), width: r.width + 2 * p, height: r.height + 2 * p }
+
+  await wait(5000)
+  await send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await ev('window.__ember.recordSends()')
+
+  // ---- the material
+  check('body is marked Basalt', await ev(`document.body.classList.contains('theme-basalt') && document.body.dataset.themeFamily === 'basalt'`))
+  check('content layer opaque', (await ev(`getComputedStyle(document.documentElement).getPropertyValue('--c-tint-alpha').trim()`)) === '1')
+
+  // ---- the canvas tab with the mock's reply
+  const first = await ev('window.__ember.activeTab()')
+  const tab = await ev('window.__ember.newLoom()')
+  await ev(`window.__ember.activate(${JSON.stringify(tab)})`)
+  await ev(`window.__ember.closeTab(${JSON.stringify(first)})`)
+  // Two plain terminals under it, so the tray has cards for the slab to travel between.
+  const others = [await ev('window.__ember.newTab()'), await ev('window.__ember.newTab()')]
+  await ev(`window.__ember.activate(${JSON.stringify(tab)})`)
+  await wait(2500)
+  // The canvas is the Claude tab's: announce Claude the way Ember's shim does and draw a
+  // Claude Code screen at its prompt (the shape scripts/fixtures/streams/claude-idle-typing
+  // records) into the tab's xterm. Display only, through xterm's parser — nothing reaches
+  // the shell behind it.
+  const pane = (await ev('window.__ember.groups()')).find((g) => g.id === tab).panes[0]
+  const cols = await ev(`window.__ember.term(${JSON.stringify(pane)}).cols`)
+  const rule = `\x1b[38;2;136;136;136m${'─'.repeat(cols)}\x1b[39m\r\n`
+  const out =
+    '\x1b]133;E;ember-agent=claude\x07\x1b]0;✳ Claude Code\x07\x1b[2J\x1b[H' +
+    '\x1b[38;2;215;119;87m ▐▛███▛█\x1b[39m   \x1b[1mClaude Code\x1b[22m \x1b[38;2;153;153;153mv2.1.318\x1b[39m\r\n' +
+    '\x1b[38;2;215;119;87m▝▜██████▀\x1b[39m  \x1b[38;2;153;153;153mOpus 5.5 · Claude Max\x1b[39m\r\n' +
+    '\x1b[38;2;215;119;87m ▝▝   ▝▝\x1b[39m   \x1b[38;2;153;153;153m~\\checkout\x1b[39m\r\n\r\n\r\n' +
+    rule +
+    '❯ move the payments call after the commit\r\n' +
+    rule +
+    '  \x1b[38;2;153;153;153mOpus 5.5 · ctx 12% · $0.42 · auto mode on\x1b[39m\r\n' +
+    '\x1b[7;43H'
+  await ev(`new Promise((r) => window.__ember.term(${JSON.stringify(pane)}).write(${JSON.stringify(out)}, r))`)
+  await wait(1500)
+  await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify([user('Why is checkout slow since Tuesday?'), said(REPLY)])})`)
+  await wait(3500)
+  const mouse = (type, x, y, button = 'left', extra = {}) => send('Input.dispatchMouseEvent', { type, x, y, button, clickCount: type === 'mouseMoved' ? 0 : 1, ...extra })
+  const centre = async (sel) => {
+    const r = await rect(sel)
+    return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+  }
+
+  // ---- the chart, placed beside the answer as the mock pins it: dragged out by its handle
+  await ev(`document.querySelectorAll('.loom-say.is-current .loom-liftable')[2]?.scrollIntoView({ block: 'center' })`)
+  await wait(300)
+  const lifts = await ev(`[...document.querySelectorAll('.loom-say.is-current .loom-liftable')].map((d) => { const r = d.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height } })`)
+  check('table, diagram and chart are objects on the canvas', lifts?.length === 3, JSON.stringify(lifts))
+  if (lifts?.length === 3) {
+    const c = lifts[2]
+    await mouse('mouseMoved', c.x + c.w / 2, c.y + c.h / 2)
+    await wait(300)
+    const grip = await ev(`(() => { const l = document.querySelectorAll('.loom-say.is-current .loom-liftable')[2].querySelector('.loom-lift'); if (!l) return null; const r = l.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    if (grip) {
+      await mouse('mousePressed', grip.x, grip.y)
+      for (let k = 1; k <= 12; k++) {
+        await mouse('mouseMoved', grip.x + (1250 - grip.x) * (k / 12), grip.y + (120 - grip.y) * (k / 12), 'left', { buttons: 1 })
+        await wait(16)
+      }
+      await shot('2-chart-lifted')
+      await mouse('mouseReleased', 1250, 120)
+      await wait(900)
+    }
+  }
+  const pinned = await ev(`document.querySelectorAll('.loom-piece.is-pinned').length`)
+  check('chart pinned beside the answer', pinned === 1, String(pinned))
+  // Sized like the mock's card: its left edge pulled in to about 290 wide.
+  const edge = await ev(`(() => { const h = document.querySelector('.loom-piece.is-pinned .loom-rz[data-rz="w"]'); const p = document.querySelector('.loom-piece.is-pinned'); if (!h || !p) return null; const r = h.getBoundingClientRect(); const q = p.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: q.width } })()`)
+  if (edge) {
+    const to = edge.x + Math.max(0, edge.w - 290)
+    await mouse('mousePressed', edge.x, edge.y)
+    for (let k = 1; k <= 10; k++) {
+      await mouse('mouseMoved', edge.x + (to - edge.x) * (k / 10), edge.y, 'left', { buttons: 1 })
+      await wait(16)
+    }
+    await mouse('mouseReleased', to, edge.y)
+    await wait(900)
+  }
+  await ev(`document.querySelector('.loom-scroll').scrollTop = 0`)
+  await mouse('mouseMoved', 700, 300)
+  await wait(600)
+  await shot('1-window')
+
+  // ---- the material, measured
+  const blur = await ev(`[...document.querySelectorAll('*')].filter((e) => { const s = getComputedStyle(e); return (s.backdropFilter && s.backdropFilter !== 'none') || (s.webkitBackdropFilter && s.webkitBackdropFilter !== 'none') }).map((e) => e.className && String(e.className).slice(0, 60)).slice(0, 12)`)
+  check('no backdrop-filter anywhere', blur.length === 0, JSON.stringify(blur))
+  check('Archivo and DM Mono resolved', await ev(`document.fonts.check('700 16px Archivo') && document.fonts.check('400 13px "DM Mono"')`))
+  const look = await ev(`(() => {
+    const cs = (sel) => { const e = document.querySelector(sel); return e ? getComputedStyle(e) : null }
+    return {
+      root: cs('.ember-root')?.backgroundColor,
+      tray: cs('.ember-sidebar')?.backgroundColor,
+      trayShadow: cs('.ember-sidebar')?.boxShadow,
+      card: cs('.ember-card-plate')?.backgroundColor,
+      surface: cs('.ember-stack')?.backgroundColor,
+      surfaceRadius: cs('.ember-stack')?.borderRadius,
+      table: cs('.loom-table')?.backgroundColor,
+      headline: cs('.loom-say.is-current > h1') && [cs('.loom-say.is-current > h1').fontFamily, cs('.loom-say.is-current > h1').fontWeight, cs('.loom-say.is-current > h1').letterSpacing],
+      prose: cs('.loom-say.is-current > p')?.color,
+      ask: cs('.loom-ask')?.fontFamily,
+      well: getComputedStyle(document.querySelector('.loom-live'), '::before').backgroundColor,
+    }
+  })()`)
+  console.log('look', JSON.stringify(look))
+  check('frame #1d1e20, tray #17181a, card #2a2b2e, surface #252629', look.root === 'rgb(29, 30, 32)' && look.tray === 'rgb(23, 24, 26)' && look.card === 'rgb(42, 43, 46)' && look.surface === 'rgb(37, 38, 41)', JSON.stringify(look))
+  check('tray is recessed', /inset/.test(look.trayShadow ?? ''))
+  check('canvas radius 20', look.surfaceRadius === '20px')
+  check('table well #1d1e20, CLI well #141517', look.table === 'rgb(29, 30, 32)' && look.well === 'rgb(20, 21, 23)')
+  check('headline Archivo 800 tight', /Archivo/.test(look.headline?.[0] ?? '') && look.headline?.[1] === '800')
+  check('prose #b9b8b4', look.prose === 'rgb(185, 184, 180)', look.prose)
+
+  // ---- the tray: switch tabs, the slab slides (caught mid-way), then back
+  const box = await rect('.ember-sidebar')
+  await shot('3-sidebar', pad(box, 0))
+  await ev(`window.__ember.activate(${JSON.stringify(others[1])})`)
+  await wait(70)
+  await shot('3b-sidebar-slab-moving', pad(box, 0))
+  await wait(400)
+  await shot('3c-sidebar-other-tab', pad(box, 0))
+  await ev(`window.__ember.activate(${JSON.stringify(tab)})`)
+  await wait(500)
+
+  // ---- a button mid-press: the question deck's Yes, held down (no release yet)
+  await ev(`document.querySelector('.loom-answers:not(.is-stale)')?.scrollIntoView({ block: 'center' })`)
+  await wait(400)
+  const deck = await rect('.loom-answers:not(.is-stale)')
+  check('the reply ends in a question deck', !!deck)
+  if (deck) {
+    await shot('4-question-deck', pad(deck, 24))
+    const yes = await centre('.loom-answers:not(.is-stale) .loom-qd-opt[data-o="0"]')
+    const no = await centre('.loom-answers:not(.is-stale) .loom-qd-opt[data-o="1"]')
+    await mouse('mouseMoved', no.x, no.y)
+    await wait(200)
+    await mouse('mouseMoved', yes.x, yes.y)
+    await mouse('mousePressed', yes.x, yes.y)
+    await wait(140)
+    const pressed = await ev(`(() => { const o = document.querySelector('.loom-answers:not(.is-stale) .loom-qd-opt[data-o="0"]'); const s = getComputedStyle(o); return { t: s.transform, sh: s.boxShadow } })()`)
+    check('pressed: pushed 1px in, shadow inside', /matrix\(1, 0, 0, 1, 0, 1\)/.test(pressed.t) && /inset/.test(pressed.sh), JSON.stringify(pressed))
+    await shot('5-button-pressed', pad(deck, 24))
+    // Released away from it: nothing is chosen, it springs back.
+    await mouse('mouseMoved', deck.x + deck.width + 60, deck.y - 30)
+    await mouse('mouseReleased', deck.x + deck.width + 60, deck.y - 30)
+    await wait(300)
+    await mouse('mouseMoved', no.x, no.y)
+    await wait(250)
+    await shot('5b-button-hover', pad(deck, 24))
+  }
+
+  // ---- a menu: right-click on the answer
+  const say = await rect('.loom-say.is-current > p')
+  if (say) {
+    // A right-click, as the page receives it (CDP's right button does not raise contextmenu here).
+    await ev(`document.elementFromPoint(${say.x + 80}, ${say.y + 8}).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: ${say.x + 80}, clientY: ${say.y + 8}, button: 2 }))`)
+    await wait(450)
+    const menu = await rect('.loom-menu.is-on')
+    check('context menu open', !!menu)
+    if (menu) await shot('6-menu', pad(menu, 30))
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+    await wait(300)
+  }
+
+  // ---- Ctrl+K, with the Basalt command in it
+  await ev(`window.__ember.openPalette('basalt')`)
+  await wait(500)
+  const rows = await ev(`[...document.querySelectorAll('.ember-palette-row')].map((r) => r.textContent)`)
+  check('Ctrl+K offers "Theme: Basalt"', rows.some((r) => /Theme: Basalt/.test(r)), JSON.stringify(rows))
+  await shot('7-palette')
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await wait(300)
+
+  // ---- Settings, on the themes
+  await ev(`window.__ember.openSettings()`)
+  await wait(700)
+  await shot('8-settings')
+  // Picking another theme applies at once and takes the stone away; Basalt brings it back.
+  const pick = async (name) => {
+    const at = await ev(`(() => { const b = [...document.querySelectorAll('.ember-theme')].find((t) => t.title === ${JSON.stringify(name)}); if (!b) return null; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    if (!at) return false
+    await mouse('mousePressed', at.x, at.y)
+    await mouse('mouseReleased', at.x, at.y)
+    await wait(1200)
+    return true
+  }
+  if (await pick('Ember Night')) {
+    check('another theme: stone gone live', !(await ev(`document.body.classList.contains('theme-basalt')`)) && (await ev(`getComputedStyle(document.querySelector('.ember-stack')).borderRadius`)) !== '20px')
+    await pick('Basalt')
+    check('Basalt again: applied live, no restart', await ev(`document.body.classList.contains('theme-basalt') && getComputedStyle(document.querySelector('.ember-stack')).backgroundColor === 'rgb(37, 38, 41)'`))
+    await shot('8b-settings-basalt-picked')
+  } else check('theme tiles in Settings', false)
+  await ev(`window.__ember.openSettings()`)
+  await wait(300)
+
+  console.log(failed ? `${failed} FAILED` : 'all ok')
+  ws.close()
+} finally {
+  spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+  spawn('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "Name='electron.exe'" | Where-Object { $_.CommandLine -like '*remote-debugging-port=${PORT}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { stdio: 'ignore' })
+}
