@@ -4,8 +4,10 @@ import './styles/onboarding.css'
 import './styles/loom.css'
 import './styles/fonts.css'
 import './styles/basalt.css'
+import './styles/looks.css'
 import { App } from './ui/App'
 import { loadFont } from './core/fonts'
+import { LOOK_INFO } from '@shared/looks'
 
 async function boot(): Promise<void> {
   const config = await window.ember.getConfig()
@@ -13,7 +15,7 @@ async function boot(): Promise<void> {
   // Wait for the terminal font before the first fit: measuring cell width against a
   // fallback font produces a wrong cols/rows that only corrects on the next resize.
   await loadFont(config.font.family, config.font.weight, config.font.size)
-  await loadFont("Archivo", 400, 13)
+  await loadFont(LOOK_INFO[config.look].ui, 400, 13)
 
   const app = new App(config)
   await app.boot()

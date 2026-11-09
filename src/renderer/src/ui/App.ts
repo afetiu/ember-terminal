@@ -25,6 +25,7 @@ import { quality } from '../motion/quality'
 import { sound } from '../motion/sound'
 import { drawMascot } from './Mascot'
 import { AGENTS, agentSpec, type AgentId } from '@shared/agents'
+import { LOOKS, LOOK_INFO, findLook, type Look } from '@shared/looks'
 import type { ActivityState, AttentionKind } from '../core/Activity'
 import { LoomView } from '../canvas/LoomView'
 
@@ -131,6 +132,7 @@ export class App {
   constructor(private config: EmberConfig) {
     this.root = document.createElement('div')
     this.root.className = 'ember-root'
+    this.root.appendChild(App.ground())
 
     this.columnW = config.window.sidebarWidth
 
@@ -518,6 +520,91 @@ export class App {
     }
   }
 
+  /**
+   * What the window stands on, behind every surface: nothing in Basalt (the stone is the
+   * ground), soft colour under Smoke's glass, blooms and grain under Patina: painted once
+   * and never animated, so they cost a texture and no frames. Hearth and Lamp put something
+   * alive in it (groundLive), a handful of layers the compositor moves on its own.
+   */
+  private static ground(): HTMLElement {
+    const el = document.createElement('div')
+    el.className = 'ember-ground'
+    el.setAttribute('aria-hidden', 'true')
+    el.innerHTML =
+      '<i class="ember-ground-a"></i><i class="ember-ground-b"></i><i class="ember-ground-c"></i>' +
+      '<svg class="ember-ground-grain" width="100%" height="100%" preserveAspectRatio="none">' +
+      '<filter id="ember-grain" x="0" y="0" width="100%" height="100%">' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.014 0.022" numOctaves="4" seed="7"/>' +
+      '<feColorMatrix type="saturate" values="0"/></filter>' +
+      '<rect width="100%" height="100%" filter="url(#ember-grain)"/></svg>' +
+      '<div class="ember-ground-live"></div>' +
+      '<i class="ember-ground-tint"></i>'
+    return el
+  }
+
+  /**
+   * The moving part of a living ground, as markup: Hearth's fire glow and rising embers,
+   * Lamp's wax and the pool it rises from. Only transform and opacity ever animate, each
+   * piece is a layer of its own, and every other look gets nothing at all.
+   */
+  /** Put a look on, from the palette or `ember theme <name>`. */
+  private setLook(look: Look): string {
+    if (this.config.look !== look) window.ember.saveConfig({ ...this.config, look })
+    return `Theme: ${LOOK_INFO[look].name}`
+  }
+
+  private static groundLive(look: Look): string {
+    if (look === 'hearth') {
+      // left %, rise (a short, b mid, c high), rise seconds, delay, sway seconds, size px
+      const embers: [number, string, number, number, number, number][] = [
+        [4.5, 'b', 21, -6, 6, 3],
+        [15.3, 'c', 27, -15, 7, 2],
+        [24.8, 'a', 18, -5, 5, 3],
+        [44.2, 'c', 31, -8, 8, 4],
+        [54.2, 'a', 15, -11, 6, 2],
+        [73, 'c', 29, -21, 7, 3],
+        [81.7, 'a', 17, -7, 5, 4],
+        [96.6, 'c', 26, -12, 8, 2],
+      ]
+      return (
+        '<i class="eg-bed"></i><i class="eg-glow is-a"></i><i class="eg-glow is-b"></i><i class="eg-glow is-c"></i>' +
+        embers
+          .map(
+            ([x, rise, t, d, sway, px]) =>
+              `<i class="eg-ember is-${rise}" style="left:${x}%;animation-duration:${t}s;animation-delay:${d}s">` +
+              `<b class="is-${px}" style="animation-duration:${sway}s;animation-delay:${d / 3}s"></b></i>`,
+          )
+          .join('')
+      )
+    }
+    if (look === 'lamp') {
+      // left %, size px, bottom px, wax, rise, rise seconds, delay, wobble seconds, delay, shape
+      const blobs: [number, number, number, string, string, number, number, number, number, string][] = [
+        [2.3, 200, -70, 'orange', 'a', 54, -14, 38, -9, '62% 38% 47% 53% / 44% 58% 42% 56%'],
+        [20.5, 130, -40, 'pink', 'c', 46, -31, 31, -20, '40% 60% 55% 45% / 57% 41% 59% 43%'],
+        [36.6, 240, -90, 'amber', 'a', 68, -46, 50, -12, '58% 42% 38% 62% / 46% 60% 40% 54%'],
+        [56.6, 160, -50, 'pink', 'b', 50, -22, 34, -5, '44% 56% 61% 39% / 60% 44% 56% 40%'],
+        [73.1, 210, -80, 'orange', 'a', 60, -8, 44, -27, '63% 37% 52% 48% / 41% 55% 45% 59%'],
+        [88.1, 140, -40, 'amber', 'c', 52, -37, 29, -15, '39% 61% 46% 54% / 55% 39% 61% 45%'],
+      ]
+      return (
+        blobs
+          .map(
+            ([x, px, bottom, wax, rise, t, d, wt, wd, shape]) =>
+              `<i class="eg-wax is-${rise}" style="left:${x}%;bottom:${bottom}px;width:${px}px;height:${px}px;` +
+              `animation-duration:${t}s;animation-delay:${d}s">` +
+              `<b class="is-${wax}" style="border-radius:${shape};animation-duration:${wt}s;animation-delay:${wd}s"></b></i>`,
+          )
+          .join('') +
+        '<svg class="eg-pool" viewBox="0 0 1280 80" preserveAspectRatio="none"><defs>' +
+        '<linearGradient id="ember-pool" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff7a3d"/>' +
+        '<stop offset="0.5" stop-color="#ff4f8b"/><stop offset="1" stop-color="#ffad3d"/></linearGradient></defs>' +
+        '<path d="M0 46 C120 10 220 60 360 42 S600 8 760 40 S1010 66 1130 30 S1240 28 1280 44 L1280 80 L0 80 Z" fill="url(#ember-pool)"/></svg>'
+      )
+    }
+    return ''
+  }
+
   private applyCssVars(): void {
     document.body.classList.toggle('labs-off', !this.config.labs?.enabled)
     const s = document.documentElement.style
@@ -532,13 +619,23 @@ export class App {
     s.setProperty('--c-dim', theme.brightBlack)
     s.setProperty('--c-sel', theme.selectionBackground)
     s.setProperty('--c-accent-ink', theme.cursor)
-    // One look: Basalt's stone, opaque. Its stylesheet keys off the class on the body.
+    // The structure every look shares (styles/basalt.css) keys off theme-basalt; the look
+    // on top of it (styles/looks.css) keys off look-<name>. Basalt is the structure bare.
+    const look = this.config.look
     document.body.classList.add('theme-basalt')
-    document.body.dataset['themeFamily'] = 'basalt'
+    for (const l of LOOKS) document.body.classList.toggle(`look-${l}`, l === look)
+    document.body.dataset['themeFamily'] = look
+    document.body.classList.toggle('ground-still', this.config.effects.groundMotion === false)
+    const live = this.root.querySelector<HTMLElement>('.ember-ground-live')
+    if (live && live.dataset['look'] !== look) {
+      live.dataset['look'] = look
+      live.innerHTML = App.groundLive(look)
+    }
     s.setProperty('--c-tint-alpha', '1')
-    // DM Mono in the terminal, Archivo in the interface (both bundled, styles/fonts.css).
+    // Each look brings its own two faces, bundled (styles/fonts.css): one for the terminal,
+    // one for the interface.
     s.setProperty('--term-font', font.family)
-    s.setProperty('--ui-font', "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif")
+    s.setProperty('--ui-font', LOOK_INFO[look].ui)
     // Writing surfaces (notes, the todo list) follow the terminal's size, not a fixed one.
     s.setProperty('--app-size', `${font.size}px`)
     s.setProperty('--sidebar-w', `${win.sidebarWidth}px`)
@@ -552,7 +649,7 @@ export class App {
 
   private wireConfigReload(): void {
     window.ember.onConfigChange((config) => {
-      const fontChanged = config.font.family !== this.config.font.family
+      const fontChanged = config.font.family !== this.config.font.family || config.look !== this.config.look
       this.config = config
       sound.configure(config.sound)
       quality.setEnabled(config.effects.adaptive)
@@ -570,8 +667,12 @@ export class App {
       // A font picked in settings is very likely one nothing has drawn yet, and
       // xterm sizes its grid from the cell it measures — so let the face resolve
       // before the panes refit, or the first fit lands on the fallback's metrics.
-      if (fontChanged) void loadFont(config.font.family, config.font.weight, config.font.size).then(apply)
-      else apply()
+      if (fontChanged) {
+        void Promise.all([
+          loadFont(config.font.family, config.font.weight, config.font.size),
+          loadFont(LOOK_INFO[config.look].ui, 400, 13),
+        ]).then(apply)
+      } else apply()
     })
   }
 
@@ -2267,15 +2368,28 @@ export class App {
       },
       { id: 'sidebar', group: 'View', title: 'Toggle sidebar', hint: 'Ctrl+B', cli: 'sidebar', aliases: ['sb'], run: () => this.toggleSidebar() },
       {
-        // One look: the theme is fixed. `ember theme` / `ember mode` say so rather than "unknown".
+        // `ember theme` names the looks; `ember theme smoke` puts one on.
         id: 'theme',
         group: 'View',
         title: 'Theme',
-        cli: 'theme',
-        aliases: ['mode', 'th'],
-        hidden: true,
-        run: () => 'Ember has one look, Basalt; the theme and colours are fixed.',
+        hint: 'pick a look',
+        cli: 'theme [name]',
+        aliases: ['mode', 'th', 'look'],
+        run: (a) => {
+          if (!a.length) return void this.settings.show(this.config, 'Theme')
+          const look = findLook(a.join(' '))
+          if (!look) throw new Error(`no theme "${a.join(' ')}"; one of ${LOOKS.join(', ')}`)
+          return this.setLook(look)
+        },
       },
+      ...LOOKS.map((look) => ({
+        id: `theme-${look}`,
+        group: 'View',
+        title: `Theme: ${LOOK_INFO[look].name}`,
+        cli: `theme ${look}`,
+        hint: LOOK_INFO[look].about,
+        run: () => this.setLook(look),
+      })),
       {
         id: 'settings',
         group: 'View',

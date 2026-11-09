@@ -1,4 +1,5 @@
 import type { BrainStatus, EmberConfig } from '@shared/types'
+import { LOOKS, LOOK_INFO } from '@shared/looks'
 import { AgentPicker } from './AgentPicker'
 import { PHONE_LINK } from '../phone/flag'
 
@@ -19,12 +20,14 @@ const PRESETS: Record<'full' | 'fast', Record<string, unknown>> = {
     'cursor.trailOpacity': 1,
     'cursor.glow': 40,
     'effects.outputMotion': true,
+    'effects.groundMotion': true,
   },
   fast: {
     'cursor.pulsePeriod': 0,
     'cursor.trailOpacity': 0,
     'cursor.glow': 0,
     'effects.outputMotion': false,
+    'effects.groundMotion': false,
   },
 }
 
@@ -49,10 +52,11 @@ interface Section {
 }
 
 /**
- * The panel's tabs, in order. There is no look to pick: Ember has one (Basalt), with its own
- * faces (Archivo, DM Mono). Text keeps the size and spacing, for eyes that need them.
+ * The panel's tabs, in order. Theme picks the look, whole: its colours, its faces and what
+ * moves behind the window come together. Text keeps the size and spacing, for eyes that
+ * need them.
  */
-const ALL_TABS = ['Text', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
+const ALL_TABS = ['Theme', 'Text', 'Motion', 'Agent', 'Behaviour', 'Labs'] as const
 export type SettingsTab = (typeof ALL_TABS)[number]
 /** Labs holds only the phone link, so it goes when that is switched off. */
 export const SETTINGS_TABS: readonly SettingsTab[] = PHONE_LINK ? ALL_TABS : ALL_TABS.filter((t) => t !== 'Labs')
@@ -91,7 +95,7 @@ export class Settings {
   /** Lower-cased filter text. Empty means show everything. */
   private query = ''
   /** The tab showing. A filter looks across all of them. */
-  private tab: SettingsTab = 'Text'
+  private tab: SettingsTab = 'Theme'
   private readonly tabsEl: HTMLElement
   /** Settings › Agent's list; made on first view, and looked at again every open. */
   private agents: AgentPicker | null = null
@@ -157,6 +161,7 @@ export class Settings {
       tab: 'Text',
       fields: [
         { path: 'effects.outputMotion', label: 'Output rises into place', kind: 'toggle' },
+        { path: 'effects.groundMotion', label: 'Background moves', kind: 'toggle', hint: 'the slow drift behind the window' },
         { path: 'effects.adaptive', label: 'Shed effects when slow', kind: 'toggle' },
       ],
     },
@@ -403,8 +408,11 @@ export class Settings {
     this.body.scrollTop = 0
 
     if (!this.query && this.tab === 'Agent') this.body.appendChild(this.buildAgents())
+    if (this.query ? 'theme look'.includes(this.query) || LOOKS.some((l) => l.includes(this.query)) : this.tab === 'Theme') {
+      this.body.appendChild(this.buildLooks())
+    }
 
-    let shown = 0
+    let shown = this.body.childElementCount
     for (const section of Settings.SECTIONS) {
       if (!this.query && section.tab !== this.tab) continue
       if (section.labsOnly && !this.draft.labs?.enabled) continue
@@ -434,6 +442,49 @@ export class Settings {
     return section.fields.filter((f) =>
       `${f.label} ${f.hint ?? ''} ${f.path}`.toLowerCase().includes(this.query),
     )
+  }
+
+  /** The looks, as tiles: a small picture of each in its own colours. Picking one applies it at once. */
+  private buildLooks(): HTMLElement {
+    const wrap = document.createElement('section')
+    wrap.className = 'ember-settings-section'
+    const h = document.createElement('h3')
+    h.textContent = 'Theme'
+    const grid = document.createElement('div')
+    grid.className = 'ember-looks'
+    for (const id of LOOKS) {
+      const info = LOOK_INFO[id]
+      const tile = document.createElement('button')
+      tile.type = 'button'
+      tile.className = 'ember-look'
+      tile.dataset['look'] = id
+      const current = this.draft!.look === id
+      tile.classList.toggle('is-current', current)
+      tile.setAttribute('aria-pressed', String(current))
+      for (const [k, v] of Object.entries(info.swatch)) tile.style.setProperty(`--s-${k}`, v)
+      const swatch = document.createElement('span')
+      swatch.className = 'ember-look-swatch'
+      const name = document.createElement('span')
+      name.className = 'ember-look-name'
+      name.textContent = info.name
+      const about = document.createElement('span')
+      about.className = 'ember-look-about'
+      about.textContent = info.about
+      tile.append(swatch, name, about)
+      tile.addEventListener('click', () => {
+        if (!this.draft || this.draft.look === id) return
+        this.draft.look = id
+        for (const t of grid.children) {
+          const on = (t as HTMLElement).dataset['look'] === id
+          t.classList.toggle('is-current', on)
+          t.setAttribute('aria-pressed', String(on))
+        }
+        this.flush()
+      })
+      grid.appendChild(tile)
+    }
+    wrap.append(h, grid)
+    return wrap
   }
 
   private buildAgents(): HTMLElement {

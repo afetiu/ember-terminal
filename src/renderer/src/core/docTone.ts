@@ -1,7 +1,7 @@
 /**
- * The query a panel document is loaded with so it is drawn in the stone on screen: the
- * accent, ink and ground. Documents are rendered in main, which cannot see the page's
- * tokens; only this side can.
+ * The query a panel document is loaded with so it is drawn in the look on screen: the
+ * accent, ink and ground, and which look it is. Documents are rendered in main, which
+ * cannot see the page's tokens; only this side can.
  */
 export function docTone(): string {
   const css = getComputedStyle(document.documentElement)
@@ -14,8 +14,8 @@ export function docTone(): string {
     q.set('fg', fg)
     q.set('bg', bg)
   }
-  // Documents are drawn in Basalt's own stone and faces.
-  q.set('family', 'basalt')
+  // Documents are drawn in the look's own surfaces and faces.
+  q.set('family', document.body.dataset['themeFamily'] || 'basalt')
   const s = q.toString()
   return s ? `?${s}` : ''
 }

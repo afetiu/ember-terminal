@@ -250,6 +250,15 @@ export class Sidebar {
     this.plate.addEventListener('animationend', () => this.plate.classList.remove('is-landed'))
     this.list.appendChild(this.plate)
 
+    // The same "new tab" as the + in the head, as a row under the last session. Looks that
+    // have no + up there (Smoke, Lacquer, Patina) show this one; Basalt hides it.
+    const row = document.createElement('button')
+    row.className = 'ember-newrow'
+    row.title = add.title
+    row.innerHTML = '<span>New tab</span><kbd>Ctrl Shift T</kbd>'
+    row.addEventListener('click', () => this.handlers.onNew())
+    this.list.appendChild(row)
+
     this.el.append(head, this.list, nav)
   }
 

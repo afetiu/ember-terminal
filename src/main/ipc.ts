@@ -56,6 +56,10 @@ export function registerIpc(host: PtyHost): void {
 
   watchConfig((config) => {
     broadcast('ember:config:changed', config)
+    // The window's own colour follows the look, so a resize never flashes the old one.
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.setBackgroundColor(config.theme.background)
+    }
   })
   // Sweep the files the old restore feature left behind, once, on the way in.
   clearLegacyState()

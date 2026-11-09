@@ -135,7 +135,7 @@ Windows Terminal does, so your profile, modules, oh-my-posh and PSReadLine work 
   any shell as `ember`: `ember new`, `ember split right`, `ember set font.size 14`…
 - Under every session is a real PowerShell, with command blocks, splits
   (`Alt+Shift+` `+` / `−`), find in scrollback and a task runner.
-- One look: Basalt, matte stone, in Archivo and DM Mono. There is no theme to pick.
+- Six looks to pick from: Basalt, Smoke, Lacquer, Patina, Hearth and Lamp. Each has its own colours and faces, and a background that moves slowly. Settings › Theme, or `ember theme <name>`.
 - `Ctrl+,` opens Settings: text size and spacing, motion, agents, sound.
 - Notes, todos and settings are plain files in your user folder. Your work goes where your
   agent CLI already sends it; Ember adds no account and no telemetry.

@@ -22,7 +22,7 @@ MCP server, which Ember attaches to `claude` in every tab, so you have these too
   a long listing. Each push replaces what is on the panel; push again as the work moves on.
   An html panel is a **complete document**: `<!doctype html>`, `<html>`, `<head>` with a
   `<style>`, `<body>` — never a bare `<div>…</div>` fragment and never inside a ``` fence.
-  The panel is Ember's dark stone (Basalt, its only look) and is transparent behind the
+  The panel is Ember's dark surface (every look is dark) and is transparent behind the
   page, so never hard-code dark text on nothing: colour it with `var(--ember-ink)`,
   `--ember-strong`, `--ember-muted`, `--ember-accent`, `--ember-line` and `--ember-surface`,
   which Ember defines. A card with its own solid background is

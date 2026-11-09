@@ -22,6 +22,9 @@ const REPO = new URL('..', import.meta.url).pathname.slice(1).replace(/\/$/, '')
 const OUT = process.argv[2] ?? join(process.env.TEMP ?? '.', 'ember-basalt-shots')
 const EMBER_HOME = join(process.env.TEMP ?? '.', `ember-probe-basalt${process.env.PROBE_TAG ?? ''}`)
 const PORT = Number(process.env.PROBE_PORT) || 9611
+// Which look to stand in: PROBE_LOOK=smoke, and so on. Basalt when not said.
+const LOOK = process.env.PROBE_LOOK ?? 'basalt'
+const BASALT = LOOK === 'basalt'
 rmSync(EMBER_HOME, { recursive: true, force: true })
 mkdirSync(EMBER_HOME, { recursive: true })
 mkdirSync(OUT, { recursive: true })
@@ -30,7 +33,7 @@ mkdirSync(OUT, { recursive: true })
 // holds whatever the file says, so none of it may show.
 writeFileSync(
   join(EMBER_HOME, 'config.json'),
-  JSON.stringify({ theme: { name: 'Ember Day', background: '#FAF6EF', foreground: '#2A231D', cursor: '#B86E0B' }, window: { opacity: 40, material: 'acrylic' }, font: { family: 'Consolas', uiFamily: 'Georgia', size: 13 }, appearance: { night: 'Ember Night', day: 'Ember Day' }, labs: { enabled: true } }, null, 2)
+  JSON.stringify({ theme: { name: 'Ember Day', background: '#FAF6EF', foreground: '#2A231D', cursor: '#B86E0B' }, window: { opacity: 40, material: 'acrylic' }, font: { family: 'Consolas', uiFamily: 'Georgia', size: 13 }, appearance: { night: 'Ember Night', day: 'Ember Day' }, labs: { enabled: true }, ...(BASALT ? {} : { look: LOOK }) }, null, 2)
 )
 seedHome(EMBER_HOME)
 
@@ -120,7 +123,7 @@ try {
   await ev('window.__ember.recordSends()')
 
   // ---- the material
-  check('body is marked Basalt', await ev(`document.body.classList.contains('theme-basalt') && document.body.dataset.themeFamily === 'basalt'`))
+  check(`body is marked ${LOOK}`, await ev(`document.body.classList.contains('theme-basalt') && document.body.classList.contains('look-${LOOK}') && document.body.dataset.themeFamily === '${LOOK}'`))
   check('content layer opaque', (await ev(`getComputedStyle(document.documentElement).getPropertyValue('--c-tint-alpha').trim()`)) === '1')
 
   // ---- the canvas tab with the mock's reply
@@ -195,14 +198,15 @@ try {
     await wait(900)
   }
   await ev(`document.querySelector('.loom-scroll').scrollTop = 0`)
-  await mouse('mouseMoved', 700, 300)
+  // Parked on the title bar, so nothing in the shot is hovered.
+  await mouse('mouseMoved', 720, 8)
   await wait(600)
   await shot('1-window')
 
   // ---- the material, measured
   const blur = await ev(`[...document.querySelectorAll('*')].filter((e) => { const s = getComputedStyle(e); return (s.backdropFilter && s.backdropFilter !== 'none') || (s.webkitBackdropFilter && s.webkitBackdropFilter !== 'none') }).map((e) => e.className && String(e.className).slice(0, 60)).slice(0, 12)`)
   check('no backdrop-filter anywhere', blur.length === 0, JSON.stringify(blur))
-  check('Archivo and DM Mono resolved', await ev(`document.fonts.check('700 16px Archivo') && document.fonts.check('400 13px "DM Mono"')`))
+  if (BASALT) check('Archivo and DM Mono resolved', await ev(`document.fonts.check('700 16px Archivo') && document.fonts.check('400 13px "DM Mono"')`))
   const look = await ev(`(() => {
     const cs = (sel) => { const e = document.querySelector(sel); return e ? getComputedStyle(e) : null }
     return {
@@ -220,12 +224,12 @@ try {
     }
   })()`)
   console.log('look', JSON.stringify(look))
-  check('frame #1d1e20, tray #17181a, card #2a2b2e, surface #252629', look.root === 'rgb(29, 30, 32)' && look.tray === 'rgb(23, 24, 26)' && look.card === 'rgb(42, 43, 46)' && look.surface === 'rgb(37, 38, 41)', JSON.stringify(look))
-  check('tray is recessed', /inset/.test(look.trayShadow ?? ''))
-  check('canvas radius 20', look.surfaceRadius === '20px')
-  check('table well #1d1e20, CLI well #141517', look.table === 'rgb(29, 30, 32)' && look.well === 'rgb(20, 21, 23)')
-  check('headline Archivo 800 tight', /Archivo/.test(look.headline?.[0] ?? '') && look.headline?.[1] === '800')
-  check('prose #b9b8b4', look.prose === 'rgb(185, 184, 180)', look.prose)
+  if (BASALT) check('frame #1d1e20, tray #17181a, card #2a2b2e, surface #252629', look.root === 'rgb(29, 30, 32)' && look.tray === 'rgb(23, 24, 26)' && look.card === 'rgb(42, 43, 46)' && look.surface === 'rgb(37, 38, 41)', JSON.stringify(look))
+  if (BASALT) check('tray is recessed', /inset/.test(look.trayShadow ?? ''))
+  if (BASALT) check('canvas radius 20', look.surfaceRadius === '20px')
+  if (BASALT) check('table well #1d1e20, CLI well #141517', look.table === 'rgb(29, 30, 32)' && look.well === 'rgb(20, 21, 23)')
+  if (BASALT) check('headline Archivo 800 tight', /Archivo/.test(look.headline?.[0] ?? '') && look.headline?.[1] === '800')
+  if (BASALT) check('prose #b9b8b4', look.prose === 'rgb(185, 184, 180)', look.prose)
 
   // ---- the tray: switch tabs, the slab slides (caught mid-way), then back
   const box = await rect('.ember-sidebar')
@@ -278,31 +282,53 @@ try {
     await wait(300)
   }
 
-  // ---- Ctrl+K: no theme to pick, not by name, not by '#'
+  // ---- Ctrl+K: every look by name
   await ev(`window.__ember.openPalette('theme')`)
   await wait(500)
   const rows = await ev(`[...document.querySelectorAll('.ember-palette-row')].map((r) => r.textContent)`)
-  check('Ctrl+K offers no theme commands', !rows.some((r) => /theme|Night and Day|Basalt/i.test(r)), JSON.stringify(rows))
+  const NAMES = ['Basalt', 'Smoke', 'Lacquer', 'Patina', 'Hearth', 'Lamp']
+  check('Ctrl+K offers every look', NAMES.every((n) => rows.some((r) => r.includes('Theme: ' + n))), JSON.stringify(rows))
   await shot('7-palette')
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await wait(300)
 
-  // ---- Settings: nothing to change the look with
+  // ---- Settings: the looks as tiles, this one marked; nothing else changes the look
   await ev(`window.__ember.openSettings()`)
   await wait(700)
   await shot('8-settings')
-  const fixedLook = await ev(`({
+  const picker = await ev(`({
     tabs: [...document.querySelectorAll('.ember-settings-tab')].map((b) => b.textContent),
-    tiles: document.querySelectorAll('.ember-theme, .ember-fontpick').length,
+    tiles: [...document.querySelectorAll('.ember-look')].map((b) => b.dataset.look),
+    current: [...document.querySelectorAll('.ember-look.is-current')].map((b) => b.dataset.look),
     labels: [...document.querySelectorAll('.ember-settings-label')].map((e) => e.textContent),
   })`)
-  check('Settings has no theme, font, opacity or backdrop', fixedLook.tiles === 0 && !fixedLook.tabs.includes('Look') && !fixedLook.labels.some((l) => /theme|^font$|interface font|opacity|backdrop|scanlines|weight/i.test(l)), JSON.stringify(fixedLook))
+  check('Settings opens on Theme with six tiles, this look marked', picker.tabs[0] === 'Theme' && picker.tiles.length === 6 && picker.current.join() === LOOK, JSON.stringify(picker))
+  check('no font, opacity or backdrop to set', !picker.labels.some((l) => /^font$|interface font|opacity|backdrop|scanlines|weight/i.test(l)), JSON.stringify(picker.labels))
   check('no day/night switch in the title bar', !(await ev(`!!document.querySelector('.ember-voicetoggle, .is-mode')`)))
-  // The old config's look did not take: Basalt's palette and faces, an opaque window.
+  // The old config's theme, glass and fonts did not take: the look's own palette and face.
   const cfg = await ev(`(() => { const c = window.__ember.config(); return { theme: c.theme.name, font: c.font.family, opacity: c.window.opacity, material: c.window.material, appearance: c.appearance } })()`)
-  check("an old config's theme, glass and fonts are ignored", cfg.theme === 'Basalt' && /DM Mono/.test(cfg.font) && cfg.opacity === undefined && cfg.material === undefined && cfg.appearance === undefined, JSON.stringify(cfg))
-  check('interface in Archivo', /Archivo/.test(await ev(`getComputedStyle(document.documentElement).getPropertyValue('--ui-font')`)))
+  check("an old config's theme, glass and fonts are ignored", cfg.theme.toLowerCase() === LOOK && !/Consolas/.test(cfg.font.split(',')[0]) && cfg.opacity === undefined && cfg.material === undefined && cfg.appearance === undefined, JSON.stringify(cfg))
+  if (BASALT) check('interface in Archivo', /Archivo/.test(await ev(`getComputedStyle(document.documentElement).getPropertyValue('--ui-font')`)))
+
+  // ---- the ground moves, on the compositor only
+  const moving = await ev(`(() => {
+    const anims = document.querySelector('.ember-ground').getAnimations({ subtree: true }).filter((a) => a.playState === 'running')
+    const props = new Set()
+    for (const a of anims) for (const k of a.effect.getKeyframes()) for (const p of Object.keys(k)) if (!['offset', 'easing', 'composite', 'computedOffset'].includes(p)) props.add(p)
+    return { n: anims.length, props: [...props] }
+  })()`)
+  check('the ground moves', moving.n > 0, JSON.stringify(moving))
+  check('only transform and opacity animate', moving.props.every((p) => p === 'transform' || p === 'opacity'), JSON.stringify(moving.props))
+
+  // ---- picking a tile puts the look on at once; and back
+  const OTHER = LOOK === 'lamp' ? 'hearth' : 'lamp'
+  await ev(`document.querySelector('.ember-look[data-look="${OTHER}"]').click()`)
+  await wait(900)
+  check('a tile changes the look live', await ev(`document.body.classList.contains('look-${OTHER}') && window.__ember.config().look === '${OTHER}'`))
+  await ev(`document.querySelector('.ember-look[data-look="${LOOK}"]').click()`)
+  await wait(900)
+  check('and back', await ev(`document.body.classList.contains('look-${LOOK}')`))
   await ev(`window.__ember.openSettings()`)
   await wait(300)
 

@@ -1,4 +1,5 @@
 import type { AgentId, AgentStatus } from './agents'
+import type { Look } from './looks'
 /** Contract shared by main, preload and renderer. Keep it serialisable. */
 
 export interface ShellProfile {
@@ -96,6 +97,8 @@ export interface EffectsConfig {
   vignette: number
   /** Tint the backdrop in response to how much output is flowing. */
   ambient: boolean
+  /** The ground behind the window moves, slowly (styles/looks.css). */
+  groundMotion: boolean
   /** New output rises into place. Auto-suppressed above `outputMotionMaxRate`. */
   outputMotion: boolean
   /** Chars/sec above which output motion is skipped, so a firehose stays instant. */
@@ -276,7 +279,9 @@ export interface EmberConfig {
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
-  /** Basalt, always (main/themes.ts): the terminal palette and the chrome's tokens. Not a choice. */
+  /** The look (shared/looks.ts): Basalt, Smoke, Lacquer, Patina, Hearth or Lamp. The one appearance choice. */
+  look: Look
+  /** The chosen look's terminal palette (main/themes.ts). Derived from `look`, never set by hand. */
   theme: ThemeConfig
   cursor: CursorConfig
   motion: MotionConfig

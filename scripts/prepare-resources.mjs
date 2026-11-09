@@ -20,8 +20,25 @@ const files = [
   // PDFs on the canvas are drawn with pdf.js: no plugin, which a sandboxed frame would not load.
   ['node_modules/pdfjs-dist/build/pdf.min.mjs', 'pdf.min.mjs'],
   ['node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'pdf.worker.min.mjs'],
-  // Basalt's faces, for documents and diagrams drawn in that theme (served by the bridge).
-  ...['archivo-latin-400', 'archivo-latin-500', 'archivo-latin-700', 'archivo-latin-800', 'dm-mono-latin-400'].map((f) => [
+  // Each look's faces, for documents and diagrams drawn in it (served by the bridge;
+  // the list is DOC_FONTS in src/main/panelDoc.ts).
+  ...[
+    'archivo-latin-400',
+    'archivo-latin-500',
+    'archivo-latin-700',
+    'archivo-latin-800',
+    'dm-mono-latin-400',
+    'dm-mono-latin-500',
+    'geist-latin-wght',
+    'geist-mono-latin-wght',
+    'outfit-latin-wght',
+    'red-hat-mono-latin-wght',
+    'bricolage-grotesque-latin-wght',
+    'martian-mono-latin-wght',
+    'hanken-grotesk-latin-wght',
+    'jetbrains-mono-latin-wght',
+    'fredoka-latin-wght',
+  ].map((f) => [
     `src/renderer/src/assets/fonts/${f}-normal.woff2`,
     `${f}-normal.woff2`,
   ]),

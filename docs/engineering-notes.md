@@ -172,10 +172,14 @@ just the terminal.
 
 ## Config
 
-First launch writes `~/.ember/config.json`. The look is not in it: Ember has one, Basalt
-(opaque stone, Archivo for the interface, DM Mono for the terminal), and `config.ts`
-pins it whatever the file says — an old config's `theme`, `window.opacity`/`material`/
-`inactiveOpacity`, `font.family`/`uiFamily` and `appearance` are ignored and dropped.
+First launch writes `~/.ember/config.json`. Its `look` is one of `shared/looks.ts`
+(basalt, smoke, lacquer, patina, hearth, lamp) and is the one appearance choice:
+`config.ts` derives the palette and the faces from it whatever else the file says — an
+old config's `theme`, `window.opacity`/`material`/`inactiveOpacity`, `font.family`/
+`uiFamily` and `appearance` are ignored and dropped. A look is `styles/looks.css` over
+the structural `basalt.css`, a terminal palette in `main/themes.ts`, and a document
+palette in `main/panelDoc.ts`. Every look has a ground that moves (transform and opacity
+only; `effects.groundMotion` and reduced motion stop it).
 
 | Key | Effect |
 | --- | --- |
@@ -194,7 +198,7 @@ pins it whatever the file says — an old config's `theme`, `window.opacity`/`ma
 
 ### The glass, and what it cost (history)
 
-Ember no longer has glass: since Basalt became its only look the window is opaque, with
+Ember no longer has glass: the window is opaque in every look, with
 no system backdrop. What follows is why the glass was hard, kept so it is not re-learned.
 
 Windows only draws a mica or acrylic system backdrop for the window that is *active*.

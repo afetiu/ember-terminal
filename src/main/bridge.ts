@@ -4,7 +4,7 @@ import { dirname, extname, isAbsolute, join } from 'node:path'
 import { createHash, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto'
 import { app, BrowserWindow, webContents, type WebContents } from 'electron'
 import type { ClaudeStatus, PanelAct, PanelOption, PanelPush } from '../shared/types.js'
-import { BASALT_FONTS, renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
+import { DOC_FONTS, renderPanelDocument, setViewLoader, takeRuntime } from './panelDoc.js'
 import { BUILTIN_VIEWS } from './panelView.js'
 import { resourcePath } from './resources.js'
 import { bindSession, boundSession, rebindFromStatus, unbindSession } from './transcript.js'
@@ -12,6 +12,7 @@ import { forget, recall, remember, skills } from './brain.js'
 import { registerMedia, requestAnnotate, screenOf, serveMedia } from './canvas.js'
 import { createNote, deleteNote, listNotes, NOTES_DIR, readNote, readTodo, saveNote, TODO_FILE, writeTodo } from './notes.js'
 import { CONFIG_DIR, loadConfig } from './config.js'
+import { findLook } from '../shared/looks.js'
 import { homedir } from 'node:os'
 import { imagesFromHook } from './imageHook.js'
 
@@ -831,7 +832,7 @@ function route(req: IncomingMessage, res: ServerResponse): void {
       const accent = hex('accent')
       const fg = hex('fg')
       const bg = hex('bg')
-      const family = url.searchParams.get('family') === 'basalt' ? ('basalt' as const) : undefined
+      const family = findLook(url.searchParams.get('family') ?? '') ?? undefined
       const palette = accent && fg && bg ? { accent, fg, bg, ...(family ? { family } : {}) } : undefined
       // ?target=phone: the phone's version (answers by postMessage, not a POST to this bridge).
       const target = url.searchParams.get('target') === 'phone' ? 'phone' : 'bridge'
@@ -861,8 +862,8 @@ function route(req: IncomingMessage, res: ServerResponse): void {
 
   // Mermaid, served to the document rather than bundled into it. One 3MB file that
   // Chromium then caches, instead of 3MB inlined into every diagram we push.
-  // The Basalt faces as well, for documents drawn in that theme (see BASALT_FONTS).
-  const VENDOR = ['mermaid.min.js', 'pdf.min.mjs', 'pdf.worker.min.mjs', ...BASALT_FONTS]
+  // Each look's faces as well, for documents drawn in it (see DOC_FONTS).
+  const VENDOR = ['mermaid.min.js', 'pdf.min.mjs', 'pdf.worker.min.mjs', ...DOC_FONTS]
   if (req.method === 'GET' && url.pathname.startsWith('/vendor/') && VENDOR.includes(url.pathname.slice(8))) {
     const file = resourcePath('vendor', url.pathname.slice(8))
     const font = file.endsWith('.woff2')

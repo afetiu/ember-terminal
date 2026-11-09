@@ -1,0 +1,2816 @@
+/* ==========================================================================
+   Looks — Smoke, Lacquer, Patina, Hearth, Lamp.
+
+   Basalt (styles/basalt.css) is the structure every look stands on: where things sit,
+   how they move, which surface is a well and which is a raised tile. A look is that
+   structure in another material. App marks the body `theme-basalt look-<name>`; each
+   block here re-cuts Basalt's tokens for its material and then says only what tokens
+   cannot: its two faces, its radii, its hairlines, the one or two things it does its own
+   way (Smoke's ground of soft colour, Lacquer's red tray and gold rules, Patina's copper
+   plates and rivets, Hearth's coals, Lamp's wax).
+
+   Two things exist only for these looks and stay hidden in Basalt: the "New tab" row
+   under the sessions (.ember-newrow) and the meter in each vital (.ember-vitals-bar).
+   The ground behind the window (.ember-ground) is in every look, Basalt too; what moves
+   in it is at the end of this file.
+
+   Same rule as Basalt: no backdrop-filter. Smoke reads as glass because its surfaces are
+   thin washes of white over a ground that is painted once; nothing is blurred live.
+   ========================================================================== */
+
+.ember-ground,
+.ember-newrow,
+.ember-vitals-bar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- the ground, every look */
+
+body.theme-basalt {
+  .ember-root {
+    isolation: isolate;
+  }
+
+  /* Under every surface, over the root's own colour. Its own layer, so it is drawn once
+     and then only composited. */
+  .ember-ground {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    contain: strict;
+    background: var(--b-frame);
+  }
+  .ember-ground > * {
+    display: none;
+    position: absolute;
+  }
+  .ember-ground-live > * {
+    position: absolute;
+  }
+}
+
+/* ---------------------------------------------------------------- shared by the five */
+
+body.theme-basalt:not(.look-basalt) {
+  .ember-root {
+    --titlebar-h: 40px;
+  }
+
+  /* Title bar: each look draws its own mark before the word. */
+  .ember-brand-name {
+    gap: 10px;
+    text-transform: lowercase;
+  }
+  .ember-brand-name::before {
+    box-shadow: none;
+  }
+  :is(.ember-winbtn, .ember-sidebar-toggle) {
+    color: var(--b-dim);
+  }
+
+  /* The sidebar is not a tray here: the sessions sit straight on the ground. */
+  .ember-sidebar {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ember-sidebar::after {
+    display: none;
+  }
+  .ember-cards {
+    padding: 0 0 8px;
+  }
+  .ember-card-state {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    box-shadow: none;
+  }
+
+  /* The meters. Each reading is its own line: key, track, number. */
+  .ember-vitals-bar {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--k-track);
+  }
+  .ember-vitals-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--k-fill);
+    transform: scaleX(var(--v, 0));
+    transform-origin: 0 50%;
+    transition: transform 500ms var(--b-out);
+  }
+  .ember-vitals-chip:is(.is-low, .is-warn) .ember-vitals-bar::after {
+    background: var(--b-accent);
+  }
+  .ember-version {
+    font-family: var(--b-mono);
+    color: var(--b-faint);
+  }
+
+  /* The rail: points on a thread, not a strip. */
+  .loom-rail.is-on {
+    gap: 14px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .loom-rail::before {
+    display: block;
+    top: 16px;
+    bottom: 18px;
+    background: var(--k-thread);
+  }
+  .loom-rail::after {
+    display: none;
+  }
+  .loom-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--k-point);
+  }
+  .loom-dot:hover {
+    background: var(--b-text);
+  }
+  .loom-dot.is-live:not(.is-at) {
+    background: var(--b-accent);
+  }
+
+  /* What you asked is a prompt line, so it opens with the prompt's own mark. */
+  .loom-ask .loom-caret::before {
+    content: '❯';
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    font: 400 12.5px/1 var(--b-mono);
+    color: var(--k-caret, var(--b-accent));
+  }
+
+  /* Tables run the width of the column; the first column is the key, in mono. A table of
+     a few columns is set out evenly, the key a little wider; a wide one sizes itself. */
+  .loom-table {
+    width: 100%;
+    max-width: 640px;
+  }
+  .loom-table table:not(:has(th:nth-child(5))) {
+    table-layout: fixed;
+  }
+  .loom-table table:not(:has(th:nth-child(5))) th:first-child:not(:only-child) {
+    width: 43%;
+  }
+  .loom-table td:first-child {
+    font-family: var(--b-mono);
+  }
+  .loom-code-bar {
+    border-bottom: 1px solid var(--b-line);
+  }
+  .loom-follow {
+    border-top-style: dashed;
+  }
+  .loom-piece.is-sticky {
+    background: var(--b-card);
+  }
+  .ember-toggle::before {
+    background: var(--b-edge);
+  }
+}
+
+/* Wide sidebar only: the word "Sessions" over the list, the + folded into a row under
+   it, and the vitals as a small panel of meters above the version line. The narrow
+   sidebar keeps Basalt's arrangement. */
+body.theme-basalt:not(.look-basalt):not(.sidebar-mini) {
+  .ember-sidebar-head .ember-sidebar-title {
+    display: block;
+    color: var(--b-faint);
+  }
+  .ember-sidebar-head {
+    justify-content: flex-start;
+  }
+  .ember-newtab {
+    display: none;
+  }
+  .ember-newrow {
+    order: 999;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: auto;
+    border: 0;
+    background: none;
+    color: var(--b-dim);
+    font-family: var(--b-ui);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 140ms var(--b-spring),
+      border-color 140ms var(--b-spring),
+      background-color 140ms var(--b-spring);
+  }
+  .ember-newrow:hover {
+    color: var(--b-text);
+  }
+  .ember-newrow:active {
+    transform: translateY(1px);
+  }
+  .ember-newrow kbd {
+    font-family: var(--b-mono);
+    font-weight: 400;
+    color: var(--b-faint);
+    white-space: nowrap;
+  }
+
+  .ember-vitals {
+    order: 1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 9px;
+  }
+  .ember-places {
+    order: 2;
+    box-shadow: none;
+  }
+  .ember-vitals-row:not(.is-empty) {
+    display: contents;
+  }
+  .ember-vitals-cap {
+    display: none;
+  }
+  .ember-vitals-row .ember-vitals-chip:not(.is-hidden) {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: center;
+    width: auto;
+    text-align: left;
+  }
+  .ember-vitals-v {
+    min-width: 28px;
+    text-align: right;
+  }
+}
+
+/* ==========================================================================
+   Smoke — dark glass over soft colour.
+   ========================================================================== */
+
+body.theme-basalt.look-smoke {
+  --b-frame: #0a0b0e;
+  --b-tray: rgba(255, 255, 255, 0.06);
+  --b-surface: rgba(8, 9, 11, 0.5);
+  --b-card: #1a1b20;
+  --b-chip: rgba(255, 255, 255, 0.07);
+  --b-chip-hi: rgba(255, 255, 255, 0.12);
+  --b-chip-down: rgba(255, 255, 255, 0.04);
+  --b-well: rgba(255, 255, 255, 0.045);
+  --b-deep: rgba(0, 0, 0, 0.36);
+  --b-bar: rgba(255, 255, 255, 0.2);
+  --b-text: #f4f4f5;
+  --b-dim: rgba(255, 255, 255, 0.78);
+  --b-faint: rgba(255, 255, 255, 0.6);
+  --b-line: rgba(255, 255, 255, 0.08);
+  --b-edge: rgba(255, 255, 255, 0.4);
+  --b-accent: #ff8a4c;
+  --b-accent-down: #f07a3c;
+  --b-on-accent: #1a0f08;
+  --b-hi: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --b-hi-strong: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --b-raise: inset 0 0 0 1px rgba(255, 255, 255, 0.09), var(--b-hi);
+  --b-raise-hover: inset 0 0 0 1px rgba(255, 255, 255, 0.14), var(--b-hi-strong);
+  --b-lift: inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+  --b-float: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 28px 60px -20px rgba(0, 0, 0, 0.9), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --b-press: inset 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  --b-recess: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --b-well-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --b-deep-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --b-accent-fill: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --b-accent-glow: 0 0 18px rgba(255, 138, 76, 0.35);
+  --b-ui: Geist, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'Geist Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #050608;
+  --c-working: #ff8a4c;
+  --c-attention: #ffb088;
+  --c-danger: #ff7a6b;
+  --c-cyan: #6fd3de;
+  --ui-hover: rgba(255, 255, 255, 0.05);
+  --ui-ok: #7fd9a8;
+  --ui-warn: #ffc56b;
+  --ui-err: #ff7a6b;
+  --k-track: rgba(255, 255, 255, 0.12);
+  --k-fill: rgba(255, 255, 255, 0.8);
+  --k-thread: rgba(255, 255, 255, 0.14);
+  --k-point: rgba(255, 255, 255, 0.4);
+  --k-caret: rgba(255, 255, 255, 0.55);
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #7fd9a8;
+    --l-warn: #ffc56b;
+    --l-err: #ff7a6b;
+    --l-info: #7fb2ff;
+    --l-r-card: 16px;
+    --l-r-ctl: 9px;
+  }
+
+  ::selection {
+    background: rgba(255, 138, 76, 0.34);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.32);
+    background-clip: padding-box;
+  }
+
+  /* The ground: three pools of colour, far out of focus, under a dark wash. */
+  .ember-ground > :is(.ember-ground-a, .ember-ground-b, .ember-ground-c, .ember-ground-tint) {
+    display: block;
+  }
+  .ember-ground-a {
+    left: -14%;
+    top: -27.5%;
+    width: 59.4%;
+    height: 77.5%;
+    border-radius: 50%;
+    background: #1d6373;
+    filter: blur(8.6vw);
+  }
+  .ember-ground-b {
+    right: -15.6%;
+    bottom: -32.5%;
+    width: 64%;
+    height: 80%;
+    border-radius: 50%;
+    background: #5a2b5e;
+    filter: blur(9.4vw);
+  }
+  .ember-ground-c {
+    right: 12.5%;
+    top: -25%;
+    width: 32.8%;
+    height: 45%;
+    border-radius: 50%;
+    background: #a8562a;
+    opacity: 0.7;
+    filter: blur(9.4vw);
+  }
+  .ember-ground-tint {
+    inset: 0;
+    background: rgba(12, 13, 16, 0.6);
+  }
+
+  .ember-brand-name {
+    font: 600 13px/1 var(--b-ui);
+    letter-spacing: -0.01em;
+  }
+  .ember-brand-name::before {
+    width: 11px;
+    height: 11px;
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(255, 138, 76, 0.7);
+  }
+
+  .ember-sidebar {
+    margin: 0 0 10px 10px;
+  }
+  .ember-stack {
+    margin: 0 10px 10px 10px;
+    border-radius: 16px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 24px 60px -30px rgba(0, 0, 0, 0.85);
+  }
+  .ember-panel {
+    margin: 0 10px 10px 0;
+    border-radius: 16px;
+    background: var(--b-surface);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 24px 60px -30px rgba(0, 0, 0, 0.85);
+  }
+
+  .ember-card {
+    margin: 0 0 4px;
+    padding: 11px 12px;
+    border-radius: 12px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  }
+  .ember-card-title {
+    font: 500 13.5px/1.3 var(--b-ui);
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  :is(.ember-card-status, .ember-card-metatext, .ember-card-link) {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext, .ember-card-link) {
+    color: rgba(255, 255, 255, 0.66);
+  }
+  .ember-card-state {
+    background: rgba(255, 255, 255, 0.4);
+  }
+  .ember-card-state[data-state='working'] {
+    background: var(--b-accent);
+    box-shadow: 0 0 8px rgba(255, 138, 76, 0.9);
+    animation-duration: 2.4s;
+  }
+
+  .loom-view-switch {
+    border-radius: 10px;
+  }
+  .loom-view-switch::before {
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .loom-view-switch button {
+    border-radius: 7px;
+    font: 500 12.5px/1.2 var(--b-ui);
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .loom-dot.is-at {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--b-accent);
+    background: #0b0c0f;
+    box-shadow: 0 0 10px rgba(255, 138, 76, 0.6);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-caret {
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: rgba(255, 255, 255, 0.76);
+    border-top-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 600;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(28px, 2.5vw, 38px);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 580px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(255, 138, 76, 0.4);
+  }
+  .loom-say a:hover {
+    color: #ffb088;
+  }
+
+  .loom-table {
+    padding: 2px 16px;
+    border-radius: 12px;
+  }
+  .loom-table th {
+    font: 400 11px/1.4 var(--b-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .loom-table td:first-child {
+    font-size: 12.5px;
+  }
+  .loom-table strong {
+    color: #ff9a63;
+    font-weight: 600;
+  }
+
+  .loom-code {
+    border-radius: 12px;
+  }
+  .loom-code-bar {
+    color: rgba(255, 255, 255, 0.64);
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 120, 100, 0.11);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ffc2b8;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(110, 230, 170, 0.1);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #b9f3d6;
+  }
+
+  /* Pieces are glass: a wash of white, a hairline, a soft drop. */
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.075);
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #1e2025;
+  }
+  .loom-piece-title {
+    font: 400 11px/1.4 var(--b-ui);
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.64);
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 12px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 16px;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 12px);
+  }
+  .loom-live::after {
+    border-radius: 12px;
+  }
+  .loom-live::before {
+    border-radius: 12px;
+    background: rgba(3, 3, 5, 0.62);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.11),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .loom-qd-btn.is-primary:hover:not(:disabled) {
+    background-color: #ff9a63;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 12px 6px;
+    }
+    .ember-sidebar-title {
+      font: 500 11px/1.4 var(--b-ui);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .ember-newrow {
+      margin-top: 6px;
+      padding: 9px 12px;
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .ember-newrow:hover {
+      border-color: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      margin: 8px 0 0;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+    }
+    .ember-vitals-chip {
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .ember-places {
+      padding: 8px 4px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Lacquer — deep red gloss, gold lines.
+   ========================================================================== */
+
+body.theme-basalt.look-lacquer {
+  --b-frame: #0e0809;
+  --b-tray: #0c0607;
+  --b-surface: #170d0f;
+  --b-card: #201215;
+  --b-chip: #281619;
+  --b-chip-hi: #321d20;
+  --b-chip-down: #180d0f;
+  --b-well: #120a0b;
+  --b-deep: #0a0506;
+  --b-bar: #3d282b;
+  --b-text: #f5ebde;
+  --b-dim: #cdbcae;
+  --b-faint: #a08c80;
+  --b-line: #2d1c1f;
+  --b-edge: #6b5850;
+  --b-accent: #dcb76c;
+  --b-accent-down: #c99c4c;
+  --b-on-accent: #1a0f08;
+  --b-hi: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --b-hi-strong: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --b-raise: inset 0 0 0 1px rgba(220, 183, 108, 0.4);
+  --b-raise-hover: inset 0 0 0 1px rgba(220, 183, 108, 0.7);
+  --b-lift: inset 0 0 0 1px #2d1c1f, inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 16px 32px -18px #000;
+  --b-float: inset 0 0 0 1px rgba(220, 183, 108, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 30px 60px -22px #000, 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+  --b-press: inset 0 0 0 1px rgba(220, 183, 108, 0.5), inset 0 2px 5px rgba(0, 0, 0, 0.6);
+  --b-recess: inset 0 0 0 1px #2d1c1f;
+  --b-well-shadow: inset 0 0 0 1px #2d1c1f;
+  --b-deep-shadow: inset 0 0 0 1px #2d1c1f, inset 0 2px 8px rgba(0, 0, 0, 0.7);
+  --b-accent-fill: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --b-accent-glow: 0 0 18px rgba(220, 183, 108, 0.35);
+  --b-ui: Outfit, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'Red Hat Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #060304;
+  --c-working: #f0563c;
+  --c-attention: #f4d58f;
+  --c-danger: #ff7a61;
+  --c-cyan: #8cbdb2;
+  --ui-hover: rgba(220, 183, 108, 0.06);
+  --ui-ok: #a9c08a;
+  --ui-warn: #f4d58f;
+  --ui-err: #ff7a61;
+  --k-track: #2d1c1f;
+  --k-fill: #dcb76c;
+  --k-thread: rgba(220, 183, 108, 0.38);
+  --k-point: #9a8152;
+  --k-red: linear-gradient(170deg, #c22c1f, #8a1a13);
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #a9c08a;
+    --l-warn: #f4d58f;
+    --l-err: #ff7a61;
+    --l-info: #8fa6c9;
+    --l-r-card: 20px;
+    --l-r-ctl: 999px;
+  }
+
+  ::selection {
+    background: rgba(220, 183, 108, 0.3);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #553a3d;
+    background-clip: padding-box;
+  }
+
+  .ember-brand-name {
+    font: 600 14px/1 var(--b-ui);
+    letter-spacing: 0.01em;
+  }
+  .ember-brand-name::before {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #d8392a, #8a1a13);
+    box-shadow:
+      0 0 0 1px #dcb76c,
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  /* The pane: black-red lacquer, with the light of a window lying across its top. */
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 22px;
+    background:
+      linear-gradient(176deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(255, 255, 255, 0) 52%) top / 100% 240px no-repeat,
+      #170d0f;
+    box-shadow:
+      inset 0 0 0 1px #2d1c1f,
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 30px 60px -30px #000;
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 22px;
+    background: #170d0f;
+    box-shadow:
+      inset 0 0 0 1px #2d1c1f,
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 30px 60px -30px #000;
+  }
+
+  .ember-card {
+    margin: 0 0 4px;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(220, 183, 108, 0.05);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 14px;
+    background:
+      linear-gradient(172deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0) 50%),
+      #201215;
+    box-shadow:
+      inset 0 0 0 1px rgba(220, 183, 108, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 12px 26px -14px rgba(0, 0, 0, 0.9);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    color: #e4d7ca;
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext) {
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-link {
+    color: var(--b-accent);
+  }
+  .ember-card-state {
+    background: #6b5850;
+  }
+  .ember-card-state[data-state='working'] {
+    background: #f0563c;
+    box-shadow: 0 0 8px rgba(240, 86, 60, 0.9);
+    animation-duration: 2.2s;
+  }
+  .ember-card-state[data-state='attention'] {
+    box-shadow: inset 0 0 0 2px #f0563c;
+  }
+
+  /* Buttons are outlined pills; the one that matters is red lacquer. */
+  :is(.ember-preset-btn, .ember-agents-btn, .ember-settings-reset, .loom-copy, .loom-qd-btn, .loom-act, .loom-jump) {
+    border-radius: 999px;
+  }
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    background-image: var(--k-red);
+    color: var(--b-text);
+    font-weight: 500;
+  }
+  .loom-qd-btn.is-primary:hover:not(:disabled) {
+    background-color: #c22c1f;
+    background-image: linear-gradient(170deg, #d23526, #981f16);
+  }
+  .loom-qd-btn.is-primary:is(:disabled, .is-quiet) {
+    background-image: none;
+  }
+
+  .loom-view-switch {
+    border-radius: 999px;
+  }
+  .loom-view-switch::before {
+    border-radius: 999px;
+    background: #241518;
+    box-shadow:
+      inset 0 0 0 1px #dcb76c,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .loom-view-switch button {
+    border-radius: 999px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 500;
+    color: var(--b-text);
+  }
+
+  .loom-dot {
+    width: 5px;
+    height: 5px;
+  }
+  .loom-dot.is-at {
+    width: 9px;
+    height: 9px;
+    background: var(--b-accent);
+    box-shadow: 0 0 10px rgba(220, 183, 108, 0.7);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-caret {
+    color: var(--b-accent);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-dim);
+    border-top-color: rgba(220, 183, 108, 0.36);
+  }
+  .loom-turn + .loom-turn {
+    border-top-color: rgba(220, 183, 108, 0.24);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(29px, 2.66vw, 40px);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(220, 183, 108, 0.4);
+  }
+  .loom-say a:hover {
+    color: #f0d69a;
+  }
+  .loom-say code {
+    box-shadow: none;
+  }
+
+  /* The table is bare rows under one gold rule. */
+  .loom-table {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 14px;
+  }
+  .loom-table th {
+    padding: 0 16px 8px 0;
+    font: 400 12px/1.4 var(--b-ui);
+    letter-spacing: 0.04em;
+  }
+  .loom-table td {
+    padding: 10px 16px 10px 0;
+  }
+  .loom-table tbody tr:first-child td {
+    border-top-color: rgba(220, 183, 108, 0.5);
+  }
+  .loom-table td:first-child {
+    font-size: 12.5px;
+  }
+  .loom-table strong {
+    color: #ff7a61;
+    font-weight: 600;
+  }
+
+  .loom-code-bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: #bba99c;
+  }
+  .loom-diff-row.is-del {
+    background: rgba(229, 72, 47, 0.16);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ffb7a8;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(220, 183, 108, 0.11);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #f2dba4;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers) {
+    border-radius: 20px;
+  }
+  .loom-piece-title {
+    font: 400 12px/1.4 var(--b-ui);
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+  /* What you pin is set on a red lacquer tray, a band of light across it. */
+  .loom-piece.is-pinned {
+    border-radius: 20px;
+    background:
+      linear-gradient(118deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.13) 40%, rgba(255, 255, 255, 0) 54%),
+      linear-gradient(170deg, #b3261b 0%, #8a1a13 55%, #6c120d 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+      0 24px 44px -22px rgba(150, 24, 16, 0.75);
+  }
+  .loom-piece.is-pinned:hover {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.42),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+      0 24px 44px -22px rgba(150, 24, 16, 0.75);
+  }
+  .loom-piece.is-pinned :is(.loom-piece-title, .loom-piece-acts button) {
+    color: #f6d3c5;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 14px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 22px;
+  }
+  :is(.loom-qd-tabs, .ember-settings-tabs) {
+    border-radius: 999px;
+  }
+  :is(.loom-qd-tab, .ember-settings-tab) {
+    border-radius: 999px;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: #241518;
+    box-shadow:
+      inset 0 0 0 1px #dcb76c,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    font-weight: 500;
+  }
+  .loom-qd-opt {
+    border-radius: 14px;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+  .loom-qd-dot {
+    background: #f0563c;
+  }
+
+  .loom-live::before {
+    background: #090506;
+    box-shadow:
+      inset 0 0 0 1px rgba(220, 183, 108, 0.34),
+      inset 0 2px 10px rgba(0, 0, 0, 0.8);
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 6px;
+    }
+    .ember-sidebar-title {
+      font: 500 12px/1.4 var(--b-ui);
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+    .ember-newrow {
+      margin: 8px 14px 0;
+      padding: 12px 0 0;
+      border-top: 1px solid rgba(220, 183, 108, 0.28);
+      font-size: 13px;
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 2px;
+      border-radius: 1px;
+    }
+    .ember-vitals-chip {
+      color: var(--b-dim);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Patina — aged green metal, copper plates.
+   ========================================================================== */
+
+body.theme-basalt.look-patina {
+  --b-frame: #0c1614;
+  --b-tray: #0a1311;
+  --b-surface: rgba(19, 33, 30, 0.86);
+  --b-card: #1a2c28;
+  --b-chip: #21372f;
+  --b-chip-hi: #294339;
+  --b-chip-down: #142320;
+  --b-well: #1a2c28;
+  --b-deep: #0a1311;
+  --b-bar: #3c6257;
+  --b-text: #e7efe9;
+  --b-dim: #b3c5bc;
+  --b-faint: #86a096;
+  --b-line: #264039;
+  --b-edge: #4d7d70;
+  --b-accent: #e8915c;
+  --b-accent-down: #cf7846;
+  --b-on-accent: #24120a;
+  --b-hi: inset 0 1px 0 rgba(160, 220, 200, 0.07);
+  --b-hi-strong: inset 0 1px 0 rgba(160, 220, 200, 0.16);
+  --b-raise: inset 0 0 0 1px #33544b, var(--b-hi);
+  --b-raise-hover: inset 0 0 0 1px #3f685c, var(--b-hi-strong);
+  --b-lift: inset 0 0 0 1px #33544b, inset 0 1px 0 rgba(160, 220, 200, 0.09), 0 16px 30px -20px rgba(0, 0, 0, 0.9);
+  --b-float: inset 0 0 0 1px #3c6257, inset 0 1px 0 rgba(160, 220, 200, 0.1), 0 26px 50px -20px rgba(0, 0, 0, 0.95), 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+  --b-press: inset 0 0 0 1px #264039, inset 0 2px 5px rgba(0, 0, 0, 0.55);
+  --b-recess: inset 0 0 0 1px #264039;
+  --b-well-shadow: inset 0 0 0 1px #2b473f;
+  --b-deep-shadow: inset 0 0 0 1px #264039, inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  --b-accent-fill: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --b-accent-glow: 0 0 18px rgba(232, 145, 92, 0.4);
+  --b-ui: 'Bricolage Grotesque', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'Martian Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #050b0a;
+  --c-working: #e8915c;
+  --c-attention: #f3a877;
+  --c-danger: #e8785c;
+  --c-cyan: #7fcfd0;
+  --ui-hover: rgba(160, 220, 200, 0.05);
+  --ui-ok: #86d6bf;
+  --ui-warn: #f3a877;
+  --ui-err: #e8785c;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --k-track: #0a1311;
+  --k-fill: #86d6bf;
+  --k-thread: #264039;
+  --k-point: #3c6257;
+  --k-copper: linear-gradient(160deg, #f3a877, #cf7846);
+  --k-rivet: radial-gradient(circle at 50% 38%, #4d7d70 0, #3c6257 46%, #1b302b 72%, transparent 76%);
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #86d6bf;
+    --l-warn: #f3a877;
+    --l-err: #e8785c;
+    --l-info: #8db4d6;
+    --l-r-card: 8px;
+    --l-r-ctl: 5px;
+  }
+
+  ::selection {
+    background: rgba(232, 145, 92, 0.32);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4d7d70;
+    background-clip: padding-box;
+  }
+
+  /* The ground: two blooms of verdigris and a coarse grain over the whole plate. */
+  .ember-ground > :is(.ember-ground-a, .ember-ground-b, .ember-ground-grain) {
+    display: block;
+  }
+  .ember-ground-a {
+    left: -10.9%;
+    top: 47.5%;
+    width: 40.6%;
+    height: 65%;
+    border-radius: 50%;
+    background: #1d4a41;
+    opacity: 0.55;
+    filter: blur(8.6vw);
+  }
+  .ember-ground-b {
+    right: -9.4%;
+    top: -25%;
+    width: 43.75%;
+    height: 57.5%;
+    border-radius: 50%;
+    background: #1b453d;
+    opacity: 0.5;
+    filter: blur(9.4vw);
+  }
+  /* Drawn at half size and scaled up: the grain is soft enough not to show it, and a
+     resize redraws a quarter of the pixels. */
+  .ember-ground-grain {
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 50%;
+    transform: scale(2);
+    transform-origin: 0 0;
+    opacity: 0.4;
+    mix-blend-mode: soft-light;
+  }
+
+  .ember-brand-name {
+    font: 700 14.5px/1 var(--b-ui);
+    letter-spacing: -0.02em;
+  }
+  .ember-brand-name::before {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #f6b58a 0%, #d77f4b 50%, #a85a31 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  /* The pane: a riveted plate. */
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 8px;
+    background:
+      var(--k-rivet) 7px 7px / 5px 5px no-repeat,
+      var(--k-rivet) calc(100% - 7px) 7px / 5px 5px no-repeat,
+      var(--k-rivet) 7px calc(100% - 7px) / 5px 5px no-repeat,
+      var(--k-rivet) calc(100% - 7px) calc(100% - 7px) / 5px 5px no-repeat,
+      rgba(19, 33, 30, 0.86);
+    box-shadow:
+      inset 0 0 0 1px #2b473f,
+      inset 0 1px 0 rgba(160, 220, 200, 0.07),
+      0 26px 50px -30px rgba(0, 0, 0, 0.9);
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 8px;
+    background: rgba(19, 33, 30, 0.86);
+    box-shadow:
+      inset 0 0 0 1px #2b473f,
+      inset 0 1px 0 rgba(160, 220, 200, 0.07),
+      0 26px 50px -30px rgba(0, 0, 0, 0.9);
+  }
+
+  /* Sessions are small plates; the one in use is copper. */
+  .ember-cards {
+    padding: 0 0 8px;
+  }
+  .ember-card {
+    z-index: 1;
+    margin: 0 0 6px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: rgba(19, 33, 30, 0.8);
+    box-shadow: inset 0 0 0 1px #264039;
+    transition:
+      background-color 160ms var(--b-spring),
+      box-shadow 160ms var(--b-spring);
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(26, 44, 40, 0.9);
+    box-shadow: inset 0 0 0 1px #33544b;
+  }
+  .ember-card.is-active {
+    background: transparent;
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 6px;
+    background: linear-gradient(160deg, #f3a877 0%, #dc854f 45%, #bd6a3d 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 10px 22px -12px rgba(232, 145, 92, 0.6);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    letter-spacing: -0.01em;
+    color: var(--b-text);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 700;
+    color: #24120a;
+  }
+  :is(.ember-card-status, .ember-card-metatext, .ember-card-link) {
+    font-size: 10px;
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext, .ember-card-link, .ember-card-close) {
+    color: #3a1d0f;
+  }
+  .ember-card-state {
+    background: #4d7d70;
+  }
+  .ember-card.is-active .ember-card-state {
+    background: #24120a;
+  }
+  .ember-card-state[data-state='working'] {
+    background: var(--b-accent);
+    animation-duration: 2s;
+  }
+  .ember-card.is-active .ember-card-state[data-state='working'] {
+    background: #24120a;
+  }
+  .ember-card.is-active .ember-card-state[data-state='attention'] {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px #24120a;
+  }
+
+  /* Everything is cut square-ish: 6px plates, 4px controls. */
+  :is(
+    .ember-preset-btn,
+    .ember-agents-btn,
+    .ember-settings-reset,
+    .ember-settings-close,
+    .ember-search-btn,
+    .ember-newtab,
+    .ember-place,
+    .ember-sidebar-toggle,
+    .loom-copy,
+    .loom-qd-btn,
+    .loom-act,
+    .loom-jump,
+    .loom-menu button,
+    .loom-qd-tab,
+    .loom-qd-key,
+    .ember-settings-tab,
+    .ember-palette-row,
+    .loom-piece-acts button,
+    .loom-lift
+  ) {
+    border-radius: 4px;
+  }
+  :is(
+    .loom-table,
+    .loom-code,
+    .loom-menu,
+    .loom-pop,
+    .loom-steps,
+    .loom-drawer,
+    .loom-chip,
+    .ember-toast,
+    .ember-search,
+    .loom-qd-tabs,
+    .loom-qd-opt,
+    .loom-qd-sum-row,
+    .ember-settings-tabs,
+    .ember-settings-filter,
+    .ember-input,
+    .ember-select,
+    .ember-palette-input
+  ) {
+    border-radius: 6px;
+  }
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers, .loom-diagram, .ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 8px;
+  }
+  .loom-say code {
+    border-radius: 3px;
+  }
+
+  /* The thing that matters is copper, with dark ink on it. */
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    background-image: var(--k-copper);
+  }
+  .loom-qd-btn.is-primary:hover:not(:disabled) {
+    background-color: #f3a877;
+    background-image: linear-gradient(160deg, #f8b98e, #d88352);
+  }
+  .loom-qd-btn.is-primary:is(:disabled, .is-quiet) {
+    background-image: none;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: var(--k-copper);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    color: #24120a;
+  }
+
+  .loom-view-switch {
+    border-radius: 6px;
+  }
+  .loom-view-switch::before {
+    border-radius: 4px;
+    background: var(--k-copper);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .loom-view-switch button {
+    border-radius: 4px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 700;
+    color: #24120a;
+  }
+
+  /* The rail's points are diamonds. */
+  .loom-dot {
+    border-radius: 0;
+    rotate: 45deg;
+  }
+  .loom-dot.is-at {
+    width: 9px;
+    height: 9px;
+    background: var(--k-copper);
+    box-shadow: 0 0 10px rgba(232, 145, 92, 0.6);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 11.5px/1.6 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-caret {
+    color: var(--b-accent);
+  }
+  .loom-follow {
+    font: 400 11.5px/1.6 var(--b-mono);
+    color: var(--b-dim);
+    border-top-color: #33544b;
+  }
+
+  .loom-say :is(h1, h2, h3) {
+    font-weight: 700;
+  }
+  .loom-say h4 {
+    font-size: 10px;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(29px, 2.66vw, 40px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(232, 145, 92, 0.4);
+  }
+  .loom-say a:hover {
+    color: #f3a877;
+  }
+
+  .loom-table {
+    padding: 0 16px;
+    font-size: 14px;
+  }
+  .loom-table :is(th, td) {
+    border-top-color: #2b473f;
+  }
+  .loom-table th {
+    font: 600 12px/1.4 var(--b-ui);
+  }
+  .loom-table tbody tr:first-child td {
+    border-top-color: rgba(232, 145, 92, 0.55);
+  }
+  .loom-table td:first-child {
+    font-size: 11.5px;
+  }
+  .loom-table strong {
+    color: #f3a877;
+    font-weight: 700;
+  }
+
+  .loom-code :is(pre, code),
+  .loom-diff {
+    font-size: 11.5px;
+  }
+  .loom-code-bar {
+    font-size: 10.5px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: #a3b8ae;
+  }
+  .loom-diff-row.is-del {
+    background: rgba(232, 145, 92, 0.14);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #f6bc9f;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(134, 214, 191, 0.1);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #aee8d6;
+  }
+
+  .loom-piece-title {
+    font: 600 12.5px/1.4 var(--b-ui);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  /* What you pin is a plate of its own, riveted at the corners. */
+  .loom-piece.is-pinned {
+    border-radius: 8px;
+    background:
+      var(--k-rivet) 6px 6px / 5px 5px no-repeat,
+      var(--k-rivet) calc(100% - 6px) 6px / 5px 5px no-repeat,
+      var(--k-rivet) 6px calc(100% - 6px) / 5px 5px no-repeat,
+      var(--k-rivet) calc(100% - 6px) calc(100% - 6px) / 5px 5px no-repeat,
+      #1a2c28;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 6px);
+  }
+  .loom-live::after {
+    border-radius: 6px;
+  }
+  .loom-live::before {
+    border-radius: 6px;
+    background: #0a1311;
+    box-shadow:
+      inset 0 0 0 1px #2b473f,
+      inset 0 2px 8px rgba(0, 0, 0, 0.6);
+  }
+
+  .ember-toggle {
+    border-radius: 4px;
+  }
+  .ember-toggle::before {
+    border-radius: 2px;
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 4px 6px;
+    }
+    .ember-sidebar-title {
+      font: 600 12.5px/1.4 var(--b-ui);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .ember-newrow {
+      margin-top: 4px;
+      padding: 9px 12px;
+      border: 1px dashed #33544b;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .ember-newrow:hover {
+      border-color: #4d7d70;
+    }
+    .ember-newrow kbd {
+      font-size: 10px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      margin: 8px 0 0;
+      padding: 12px;
+      border-radius: 6px;
+      background: rgba(19, 33, 30, 0.8);
+      box-shadow: inset 0 0 0 1px #264039;
+    }
+    .ember-vitals-bar {
+      height: 5px;
+      border-radius: 1px;
+    }
+    .ember-vitals-chip {
+      font-size: 10px;
+      color: var(--b-dim);
+    }
+    .ember-version {
+      font-size: 10px;
+    }
+    .ember-places {
+      padding: 8px 0 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Hearth — a room lit by a low fire.
+   ========================================================================== */
+
+body.theme-basalt.look-hearth {
+  --b-frame: #110d0b;
+  --b-tray: #0d0a08;
+  --b-surface: rgba(27, 21, 18, 0.72);
+  --b-card: #1f1814;
+  --b-chip: #2a201a;
+  --b-chip-hi: #35281f;
+  --b-chip-down: #18120f;
+  --b-well: rgba(8, 6, 5, 0.5);
+  --b-deep: rgba(8, 6, 5, 0.62);
+  --b-bar: #3b2f28;
+  --b-text: #f4e9dd;
+  --b-dim: #d8cabd;
+  --b-faint: #a89788;
+  --b-line: rgba(255, 220, 190, 0.1);
+  --b-edge: #6b584b;
+  --b-accent: #ff9a52;
+  --b-accent-down: #f08238;
+  --b-on-accent: #1f0f06;
+  --b-hi: inset 0 1px 0 rgba(255, 220, 190, 0.06);
+  --b-hi-strong: inset 0 1px 0 rgba(255, 220, 190, 0.12);
+  --b-raise: inset 0 0 0 1px rgba(255, 220, 190, 0.2);
+  --b-raise-hover: inset 0 0 0 1px rgba(255, 190, 140, 0.42);
+  --b-lift: inset 0 0 0 1px rgba(255, 220, 190, 0.1), 0 16px 32px -18px #000;
+  --b-float: inset 0 0 0 1px rgba(255, 190, 140, 0.24), 0 30px 60px -22px #000, 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+  --b-press: inset 0 0 0 1px rgba(255, 190, 140, 0.3), inset 0 2px 5px rgba(0, 0, 0, 0.6);
+  --b-recess: inset 0 0 0 1px rgba(255, 220, 190, 0.08);
+  --b-well-shadow: inset 0 0 0 1px rgba(255, 220, 190, 0.08);
+  --b-deep-shadow: inset 0 0 0 1px rgba(255, 220, 190, 0.08);
+  --b-accent-fill: inset 0 -1px 0 #ffb27a;
+  --b-accent-glow: 0 0 18px rgba(255, 130, 50, 0.4);
+  --b-ui: 'Hanken Grotesk', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'JetBrains Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #070504;
+  --c-working: #ff9a52;
+  --c-attention: #ffc08e;
+  --c-danger: #ff7a5a;
+  --c-cyan: #93c4b8;
+  --ui-hover: rgba(255, 170, 110, 0.06);
+  --ui-ok: #b5ce94;
+  --ui-warn: #ffb27a;
+  --ui-err: #ff7a5a;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --k-track: rgba(255, 220, 190, 0.16);
+  --k-fill: #ffb27a;
+  --k-thread: rgba(255, 170, 110, 0.22);
+  --k-point: #6b584b;
+  --k-coal: linear-gradient(0deg, rgba(255, 112, 40, 0.42), rgba(255, 112, 40, 0.06) 70%), #2a201a;
+  --k-fire: linear-gradient(0deg, #c9501a, #7a2a10);
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #b5ce94;
+    --l-warn: #ffb27a;
+    --l-err: #ff7a5a;
+    --l-info: #9db4cc;
+    --l-r-card: 12px;
+    --l-r-ctl: 8px;
+  }
+
+  ::selection {
+    background: rgba(255, 130, 50, 0.34);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6b584b;
+    background-clip: padding-box;
+  }
+
+  /* The ground: the fire is below the window. Its light lies along the bottom edge and
+     breathes; a few embers lift off it and drift up. */
+  .ember-ground > .ember-ground-live {
+    display: block;
+    inset: 0;
+  }
+  .eg-bed {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 420px;
+    background: linear-gradient(0deg, rgba(120, 44, 14, 0.5), rgba(120, 44, 14, 0.12) 55%, rgba(120, 44, 14, 0));
+  }
+  .eg-glow {
+    will-change: opacity;
+    animation: eg-glow 9s ease-in-out infinite;
+  }
+  .eg-glow.is-a {
+    left: -12.5%;
+    width: 125%;
+    bottom: -300px;
+    height: 500px;
+    background: radial-gradient(closest-side, rgba(255, 122, 40, 0.62), rgba(255, 92, 30, 0.2) 58%, rgba(255, 92, 30, 0));
+  }
+  .eg-glow.is-b {
+    left: 50%;
+    width: 48%;
+    bottom: -210px;
+    height: 340px;
+    background: radial-gradient(closest-side, rgba(255, 170, 80, 0.5), rgba(255, 120, 40, 0.14) 60%, rgba(255, 120, 40, 0));
+    animation-duration: 13s;
+    animation-delay: -4s;
+  }
+  .eg-glow.is-c {
+    left: 1.5%;
+    width: 36%;
+    bottom: -190px;
+    height: 300px;
+    background: radial-gradient(closest-side, rgba(255, 150, 60, 0.46), rgba(255, 110, 40, 0.12) 60%, rgba(255, 110, 40, 0));
+    animation-duration: 11s;
+    animation-delay: -7s;
+  }
+  .eg-ember {
+    bottom: -6px;
+    will-change: transform, opacity;
+    animation: eg-rise-a 16s linear infinite;
+  }
+  .eg-ember.is-b {
+    animation-name: eg-rise-b;
+  }
+  .eg-ember.is-c {
+    animation-name: eg-rise-c;
+  }
+  .eg-ember b {
+    display: block;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #ffc98a;
+    box-shadow: 0 0 7px 1px rgba(255, 130, 50, 0.95);
+    animation: eg-sway 6s ease-in-out infinite alternate;
+  }
+  .eg-ember b.is-2 {
+    width: 2px;
+    height: 2px;
+    box-shadow: 0 0 6px 1px rgba(255, 130, 50, 0.95);
+  }
+  .eg-ember b.is-4 {
+    width: 4px;
+    height: 4px;
+    background: #ffd9a6;
+    box-shadow: 0 0 9px 2px rgba(255, 130, 50, 0.95);
+  }
+
+  .ember-brand-name {
+    gap: 9px;
+    font: 600 14px/1 var(--b-ui);
+    letter-spacing: 0.01em;
+  }
+  .ember-brand-name::before {
+    width: 12px;
+    height: 14px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 14'%3E%3Cpath d='M6.4 0c.5 2.6 4.6 4.3 4.6 8.4A5 5 0 0 1 1 8.4c0-1.900 1-3 2-4 .2 1.200.8 1.900 1.600 2.200C4.400 4.300 5.200 1.800 6.400 0z' fill='%23ff8a3d'/%3E%3Cpath d='M6 13.300a2.400 2.400 0 0 0 2.400-2.400c0-1.400-1.300-2.100-1.900-3.400-1.100.9-2.900 1.800-2.900 3.400A2.400 2.400 0 0 0 6 13.300z' fill='%23ffd08a'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 14px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 220, 190, 0.09),
+      0 30px 60px -30px #000;
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 14px;
+    background: var(--b-surface);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 220, 190, 0.09),
+      0 30px 60px -30px #000;
+  }
+
+  /* The session in use is a coal: lit from below. */
+  .ember-card {
+    margin: 0 0 4px;
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(255, 170, 110, 0.05);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 10px;
+    background:
+      linear-gradient(0deg, rgba(255, 112, 40, 0.3), rgba(255, 112, 40, 0.04) 64%),
+      #1f1814;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 160, 100, 0.3),
+      inset 0 -1px 0 rgba(255, 180, 110, 0.75),
+      0 14px 26px -14px rgba(255, 100, 30, 0.7);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    color: #e4d7ca;
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext) {
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-link {
+    color: #ffb27a;
+  }
+  .ember-card-state {
+    background: #5c4c41;
+  }
+  .ember-card-state[data-state='working'] {
+    background: var(--b-accent);
+    box-shadow: 0 0 9px rgba(255, 130, 50, 0.95);
+    animation-duration: 2.4s;
+  }
+
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    background-image: var(--k-fire);
+    color: #fff6ec;
+    font-weight: 500;
+  }
+  .loom-qd-btn.is-primary:hover:not(:disabled) {
+    background-color: #c9501a;
+    background-image: linear-gradient(0deg, #dc5c22, #8a3214);
+  }
+  .loom-qd-btn.is-primary:is(:disabled, .is-quiet) {
+    background-image: none;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: var(--k-coal);
+    box-shadow: inset 0 -1px 0 rgba(255, 180, 110, 0.8);
+  }
+
+  .loom-view-switch {
+    border-radius: 9px;
+    background: rgba(0, 0, 0, 0.38);
+    box-shadow: inset 0 0 0 1px rgba(255, 220, 190, 0.08);
+  }
+  .loom-view-switch::before {
+    border-radius: 6px;
+    background: var(--k-coal);
+    box-shadow: inset 0 -1px 0 rgba(255, 180, 110, 0.8);
+  }
+  .loom-view-switch button {
+    border-radius: 6px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: #cdbfb2;
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 500;
+    color: #fff3e6;
+  }
+
+  .loom-dot {
+    width: 5px;
+    height: 5px;
+  }
+  .loom-dot.is-at {
+    width: 9px;
+    height: 9px;
+    background: var(--b-accent);
+    box-shadow: 0 0 12px rgba(255, 130, 50, 0.9);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: #cdbfb2;
+    border-top-color: rgba(255, 220, 190, 0.2);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(27px, 2.58vw, 38px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(255, 154, 82, 0.4);
+  }
+  .loom-say a:hover {
+    color: #ffc08e;
+  }
+  .loom-say code {
+    box-shadow: none;
+  }
+
+  /* The table is bare rows. */
+  .loom-table {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 14px;
+  }
+  .loom-table th {
+    padding: 0 16px 8px 0;
+    font: 400 12px/1.4 var(--b-ui);
+    letter-spacing: 0.04em;
+  }
+  .loom-table td {
+    padding: 10px 16px 10px 0;
+  }
+  .loom-table tbody tr:first-child td {
+    border-top-color: rgba(255, 220, 190, 0.2);
+  }
+  .loom-table td:first-child {
+    font-size: 12.5px;
+  }
+  .loom-table strong {
+    color: var(--b-accent);
+    font-weight: 600;
+  }
+
+  .loom-code {
+    border-radius: 10px;
+  }
+  .loom-code-bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: #bfb0a3;
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 90, 50, 0.15);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ffb9a0;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(160, 200, 120, 0.11);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #cfe3b4;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 12px;
+    background: rgba(8, 6, 5, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(255, 220, 190, 0.1);
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #1b1512;
+  }
+  .loom-piece-title {
+    font: 400 12px/1.4 var(--b-ui);
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 10px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 14px;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 10px);
+  }
+  .loom-live::after {
+    border-radius: 10px;
+  }
+  .loom-live::before {
+    border-radius: 10px;
+    background: rgba(8, 6, 5, 0.78);
+    box-shadow: inset 0 0 0 1px rgba(255, 170, 110, 0.3);
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 6px;
+    }
+    .ember-sidebar-title {
+      font: 500 12px/1.4 var(--b-ui);
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+    .ember-newrow {
+      margin: 8px 14px 0;
+      padding: 12px 0 0;
+      border-top: 1px solid rgba(255, 220, 190, 0.1);
+      font-size: 13px;
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 2px;
+      border-radius: 1px;
+    }
+    .ember-vitals-chip {
+      color: #e4d7ca;
+    }
+    .ember-version {
+      color: var(--b-dim);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Lamp — a lava lamp in a plum room. Everything is round.
+   ========================================================================== */
+
+body.theme-basalt.look-lamp {
+  --b-frame: #170b20;
+  --b-tray: #12081a;
+  --b-surface: rgba(27, 13, 36, 0.64);
+  --b-card: #2a1634;
+  --b-chip: rgba(255, 235, 245, 0.1);
+  --b-chip-hi: rgba(255, 235, 245, 0.17);
+  --b-chip-down: rgba(255, 235, 245, 0.06);
+  --b-well: rgba(15, 6, 20, 0.5);
+  --b-deep: rgba(15, 6, 20, 0.6);
+  --b-bar: rgba(255, 235, 245, 0.22);
+  --b-text: #fff5ec;
+  --b-dim: #e6d3e2;
+  --b-faint: #cdb9cf;
+  --b-line: rgba(255, 225, 240, 0.1);
+  --b-edge: rgba(255, 225, 240, 0.4);
+  --b-accent: #ff9a4d;
+  --b-accent-down: #ff8a55;
+  --b-on-accent: #2a0f1e;
+  --b-hi: 0 0 0 0 transparent;
+  --b-hi-strong: 0 0 0 0 transparent;
+  --b-raise: 0 0 0 0 transparent;
+  --b-raise-hover: inset 0 0 0 1.5px rgba(255, 225, 240, 0.22);
+  --b-lift: 0 16px 32px -18px rgba(8, 2, 12, 0.9);
+  --b-float: inset 0 0 0 1.5px rgba(255, 225, 240, 0.12), 0 30px 60px -22px rgba(8, 2, 12, 0.95), 0 2px 8px -2px rgba(8, 2, 12, 0.6);
+  --b-press: inset 0 2px 5px rgba(8, 2, 12, 0.5);
+  --b-recess: 0 0 0 0 transparent;
+  --b-well-shadow: 0 0 0 0 transparent;
+  --b-deep-shadow: 0 0 0 0 transparent;
+  --b-accent-fill: 0 0 0 0 transparent;
+  --b-accent-glow: 0 8px 20px -8px rgba(255, 95, 147, 0.8);
+  --b-ui: Fredoka, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'DM Mono', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #0b0410;
+  --c-working: #ff9a4d;
+  --c-attention: #ffa585;
+  --c-danger: #ff6f8f;
+  --c-cyan: #84dce0;
+  --ui-hover: rgba(255, 235, 245, 0.06);
+  --ui-ok: #8ee8c2;
+  --ui-warn: #ffad3d;
+  --ui-err: #ff6f8f;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --k-track: rgba(255, 235, 245, 0.14);
+  --k-fill: linear-gradient(90deg, #ff9a4d, #ff5f93);
+  --k-thread: rgba(255, 235, 245, 0.14);
+  --k-point: rgba(255, 235, 245, 0.32);
+  --k-wax: linear-gradient(100deg, #ff9a4d, #ff5f93);
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #8ee8c2;
+    --l-warn: #ffad3d;
+    --l-err: #ff6f8f;
+    --l-info: #9db6ff;
+    --l-r-card: 24px;
+    --l-r-ctl: 999px;
+  }
+
+  .ember-root {
+    --titlebar-h: 44px;
+  }
+
+  ::selection {
+    background: rgba(255, 95, 147, 0.36);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 235, 245, 0.34);
+    background-clip: padding-box;
+  }
+
+  /* The ground: six pieces of wax rise from a pool, turn over slowly and sink again. */
+  .ember-ground {
+    background: linear-gradient(180deg, #170b20 0%, #2a1232 100%);
+  }
+  .ember-ground > :is(.ember-ground-live, .ember-ground-tint) {
+    display: block;
+    inset: 0;
+  }
+  .ember-ground-tint {
+    background: linear-gradient(180deg, rgba(23, 11, 32, 0.72) 0%, rgba(30, 14, 38, 0.3) 16%, rgba(30, 14, 38, 0.3) 100%);
+  }
+  .eg-wax {
+    will-change: transform;
+    animation: eg-wax-a 54s ease-in-out infinite alternate;
+  }
+  .eg-wax.is-b {
+    animation-name: eg-wax-b;
+  }
+  .eg-wax.is-c {
+    animation-name: eg-wax-c;
+  }
+  .eg-wax b {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: blur(4px);
+    will-change: transform;
+    animation: eg-wobble 38s linear infinite;
+  }
+  .eg-wax b.is-orange {
+    background: radial-gradient(circle at 36% 30%, #ffb26b, #ff7a3d 55%, #f0552e);
+  }
+  .eg-wax b.is-pink {
+    background: radial-gradient(circle at 36% 30%, #ff9ac0, #ff4f8b 55%, #e23a7a);
+  }
+  .eg-wax b.is-amber {
+    background: radial-gradient(circle at 36% 30%, #ffd98a, #ffad3d 55%, #f58a2a);
+  }
+  .eg-pool {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+    transform-origin: 50% 100%;
+    will-change: transform;
+    animation: eg-pool 17s ease-in-out -6s infinite alternate;
+  }
+
+  .ember-brand-name {
+    gap: 10px;
+    font: 600 15px/1 var(--b-ui);
+    letter-spacing: 0.02em;
+  }
+  .ember-brand-name::before {
+    width: 16px;
+    height: 16px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6' cy='10' r='5.500' fill='%23ff7a3d'/%3E%3Ccircle cx='11.500' cy='4.500' r='3.500' fill='%23ff4f8b'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  :is(.ember-winbtn, .ember-sidebar-toggle) {
+    color: var(--b-text);
+  }
+
+  /* The sidebar is a panel of its own here, as round as the pane. */
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+    padding: 8px 10px 12px;
+    border-radius: 28px;
+    background: rgba(27, 13, 36, 0.62);
+  }
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 28px;
+    box-shadow: none;
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 28px;
+    background: var(--b-surface);
+    box-shadow: none;
+  }
+
+  /* Sessions are pills; the one in use is filled with wax, dark ink on it. */
+  .ember-card {
+    z-index: 1;
+    margin: 0 0 6px;
+    padding: 11px 16px 12px;
+    border-radius: 22px;
+    background: rgba(255, 235, 245, 0.07);
+    box-shadow: none;
+    transition: background-color 160ms var(--b-spring);
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(255, 235, 245, 0.12);
+    box-shadow: none;
+  }
+  .ember-card.is-active {
+    background: transparent;
+  }
+  .ember-card-plate {
+    border-radius: 22px;
+    background: var(--k-wax);
+    box-shadow: 0 8px 22px -8px rgba(255, 95, 147, 0.7);
+  }
+  .ember-card-title {
+    font: 500 15px/1.3 var(--b-ui);
+    color: var(--b-text);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: #2a0f1e;
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext, .ember-card-link, .ember-card-close) {
+    font-weight: 500;
+    color: #3a1226;
+  }
+  .ember-card-state {
+    background: rgba(255, 235, 245, 0.4);
+  }
+  .ember-card.is-active .ember-card-state,
+  .ember-card.is-active .ember-card-state[data-state='working'] {
+    background: #2a0f1e;
+    box-shadow: none;
+  }
+  .ember-card-state[data-state='working'] {
+    background: var(--b-accent);
+    animation-duration: 2.6s;
+  }
+  .ember-card.is-active .ember-card-state[data-state='attention'] {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px #2a0f1e;
+  }
+
+  /* Every control is a pill; the one that matters is wax. */
+  :is(
+    .ember-preset-btn,
+    .ember-agents-btn,
+    .ember-settings-reset,
+    .ember-settings-close,
+    .ember-search-btn,
+    .ember-newtab,
+    .ember-place,
+    .ember-sidebar-toggle,
+    .loom-copy,
+    .loom-qd-btn,
+    .loom-act,
+    .loom-jump,
+    .loom-qd-tab,
+    .loom-qd-tabs,
+    .ember-settings-tab,
+    .ember-settings-tabs,
+    .ember-settings-filter,
+    .ember-input,
+    .ember-select,
+    .ember-palette-input,
+    .loom-piece-acts button,
+    .loom-lift
+  ) {
+    border-radius: 999px;
+  }
+  :is(.loom-menu button, .ember-palette-row, .loom-qd-key) {
+    border-radius: 14px;
+  }
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    background-image: var(--k-wax);
+    color: #2a0f1e;
+    font-weight: 600;
+  }
+  .loom-qd-btn.is-primary:hover:not(:disabled) {
+    background-color: #ffa866;
+    background-image: linear-gradient(100deg, #ffac6a, #ff78a6);
+  }
+  .loom-qd-btn.is-primary:is(:disabled, .is-quiet) {
+    background-image: none;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: var(--k-wax);
+    box-shadow: none;
+    color: #2a0f1e;
+    font-weight: 600;
+  }
+
+  /* The switch: a chunky track, and a thumb the shape of a drop of wax. */
+  .loom-view-switch {
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(15, 6, 20, 0.55);
+    box-shadow: none;
+  }
+  .loom-view-switch::before {
+    border-radius: 48% 52% 55% 45% / 60% 54% 46% 40%;
+    background: var(--k-wax);
+    box-shadow: none;
+  }
+  .loom-view-switch button {
+    border-radius: 999px;
+    font: 500 14px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 600;
+    color: #2a0f1e;
+  }
+
+  .loom-dot {
+    width: 8px;
+    height: 8px;
+  }
+  .loom-dot.is-at {
+    width: 13px;
+    height: 14px;
+    border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+    background: linear-gradient(140deg, #ffad3d, #ff5f93);
+    box-shadow: 0 0 12px rgba(255, 122, 61, 0.7);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-dim);
+    border-top-width: 1.5px;
+    border-top-color: rgba(255, 225, 240, 0.22);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(26px, 2.42vw, 36px);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: #f3e4ec;
+  }
+  .loom-say p {
+    max-width: 590px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .loom-say a,
+  .loom-link {
+    color: #ffb07a;
+    text-decoration-color: rgba(255, 176, 122, 0.4);
+  }
+  .loom-say a:hover {
+    color: #ffd2b0;
+  }
+  .loom-say code {
+    border-radius: 8px;
+  }
+
+  /* Bare rows under soft rules; the number that matters sits in a pill of wax. */
+  .loom-table {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 15px;
+  }
+  .loom-table :is(th, td) {
+    border-top-width: 1.5px;
+  }
+  .loom-table th {
+    padding: 0 16px 7px 0;
+    font: 500 12px/1.4 var(--b-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .loom-table td {
+    padding: 9px 16px 9px 0;
+  }
+  .loom-table tbody tr:first-child td {
+    border-top-color: rgba(255, 225, 240, 0.2);
+  }
+  .loom-table td:first-child {
+    font-size: 12.5px;
+  }
+  .loom-table strong {
+    display: inline-block;
+    padding: 1px 12px;
+    border-radius: 999px;
+    background: var(--k-wax);
+    color: #2a0f1e;
+    font-weight: 600;
+  }
+
+  .loom-code {
+    border-radius: 20px;
+  }
+  .loom-code-bar {
+    padding-left: 20px;
+    padding-right: 20px;
+    border-bottom: 0;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: #d9c6d9;
+  }
+  .loom-diff-row:is(.is-add, .is-del) {
+    margin: 0 8px;
+    border-radius: 12px;
+  }
+  .loom-diff-row:is(.is-add, .is-del) .no {
+    margin-left: -8px;
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 79, 139, 0.2);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ffbfd3;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(110, 230, 180, 0.14);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #b6f5d8;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 26px;
+    background: rgba(15, 6, 20, 0.5);
+    box-shadow: none;
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #241230;
+  }
+  .loom-diagram {
+    border-radius: 22px;
+  }
+  .loom-piece-title {
+    font: 500 12px/1.4 var(--b-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 20px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 28px;
+  }
+  .loom-qd-opt {
+    border-radius: 18px;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 24px);
+  }
+  .loom-live::after {
+    border-radius: 24px;
+  }
+  .loom-live::before {
+    border-radius: 24px;
+    background: rgba(15, 6, 20, 0.74);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 154, 77, 0.5);
+  }
+
+  .ember-toggle {
+    border-radius: 999px;
+  }
+  .ember-toggle::before {
+    border-radius: 50%;
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 6px;
+    }
+    .ember-sidebar-title {
+      font: 500 12px/1.4 var(--b-ui);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .ember-newrow {
+      padding: 10px 16px;
+      border: 1.5px dashed rgba(255, 225, 240, 0.28);
+      border-radius: 22px;
+      font-size: 14px;
+    }
+    .ember-newrow:hover {
+      border-color: rgba(255, 225, 240, 0.5);
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 6px;
+      border-radius: 6px;
+    }
+    .ember-vitals-v {
+      color: var(--b-text);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Movement. Every look has a little: slow enough to sit beside work, never a loop you
+   can catch repeating. Only transform and opacity move, each on a layer of its own, so
+   the compositor carries it and nothing is repainted.
+   ========================================================================== */
+
+/* Basalt: the stone is warm from underneath. A faint glow crosses under the title bar. */
+body.theme-basalt.look-basalt .ember-ground > .ember-ground-a {
+  display: block;
+  left: -10%;
+  top: -150px;
+  width: 60%;
+  height: 300px;
+  background: radial-gradient(closest-side, rgba(255, 122, 61, 0.2), rgba(255, 122, 61, 0));
+  will-change: transform, opacity;
+  animation: eg-warm 46s ease-in-out infinite alternate;
+}
+
+/* Smoke: the pools of colour under the glass drift, each at its own pace. */
+body.theme-basalt.look-smoke .ember-ground-a {
+  will-change: transform;
+  animation: eg-drift-a 52s ease-in-out -12s infinite alternate;
+}
+body.theme-basalt.look-smoke .ember-ground-b {
+  will-change: transform;
+  animation: eg-drift-b 67s ease-in-out -30s infinite alternate;
+}
+body.theme-basalt.look-smoke .ember-ground-c {
+  will-change: transform;
+  animation: eg-drift-c 41s ease-in-out -7s infinite alternate;
+}
+
+/* Lacquer: light moves over the gloss. A red glow turns slowly behind the sessions and a
+   band of gold light crosses the window now and then. */
+body.theme-basalt.look-lacquer .ember-ground > :is(.ember-ground-a, .ember-ground-b, .ember-ground-c) {
+  display: block;
+}
+body.theme-basalt.look-lacquer .ember-ground-a {
+  left: -20%;
+  bottom: -30%;
+  width: 62%;
+  height: 80%;
+  background: radial-gradient(closest-side, rgba(194, 44, 31, 0.42), rgba(194, 44, 31, 0));
+  will-change: transform, opacity;
+  animation: eg-drift-c 38s ease-in-out -9s infinite alternate, eg-breathe 15s ease-in-out infinite;
+}
+body.theme-basalt.look-lacquer .ember-ground-b {
+  right: -12%;
+  top: -34%;
+  width: 50%;
+  height: 70%;
+  background: radial-gradient(closest-side, rgba(220, 183, 108, 0.16), rgba(220, 183, 108, 0));
+  will-change: transform;
+  animation: eg-drift-b 57s ease-in-out -20s infinite alternate;
+}
+body.theme-basalt.look-lacquer .ember-ground-c {
+  left: 0;
+  top: -20%;
+  width: 26%;
+  height: 140%;
+  background: linear-gradient(90deg, rgba(255, 236, 200, 0), rgba(255, 236, 200, 0.07) 50%, rgba(255, 236, 200, 0));
+  will-change: transform;
+  animation: eg-sheen 34s ease-in-out -4s infinite;
+}
+
+/* Patina: the verdigris blooms spread and draw back, as slowly as it grows. */
+body.theme-basalt.look-patina .ember-ground-a {
+  will-change: transform, opacity;
+  animation: eg-bloom-a 44s ease-in-out -10s infinite alternate;
+}
+body.theme-basalt.look-patina .ember-ground-b {
+  will-change: transform, opacity;
+  animation: eg-bloom-b 59s ease-in-out -25s infinite alternate;
+}
+body.theme-basalt.look-patina .ember-ground > .ember-ground-c {
+  display: block;
+  left: 30%;
+  bottom: -28%;
+  width: 36%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(232, 145, 92, 0.2), rgba(232, 145, 92, 0));
+  will-change: transform, opacity;
+  animation: eg-warm 37s ease-in-out -15s infinite alternate;
+}
+
+@keyframes eg-warm {
+  0% {
+    opacity: 0.35;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+    transform: translate3d(55%, 0, 0);
+  }
+}
+@keyframes eg-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes eg-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(9vw, 7vh, 0) scale(1.12);
+  }
+}
+@keyframes eg-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-10vw, -6vh, 0) scale(0.94);
+  }
+}
+@keyframes eg-drift-c {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  100% {
+    transform: translate3d(-7vw, 9vh, 0) scale(1.14);
+  }
+}
+@keyframes eg-sheen {
+  0%,
+  35% {
+    transform: translate3d(-140%, 0, 0) skewX(-18deg);
+  }
+  85%,
+  100% {
+    transform: translate3d(520%, 0, 0) skewX(-18deg);
+  }
+}
+@keyframes eg-bloom-a {
+  0% {
+    opacity: 0.4;
+    transform: translate3d(0, 0, 0) scale(0.92);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translate3d(5vw, -6vh, 0) scale(1.16);
+  }
+}
+@keyframes eg-bloom-b {
+  0% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  100% {
+    opacity: 0.36;
+    transform: translate3d(-6vw, 5vh, 0) scale(0.9);
+  }
+}
+@keyframes eg-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes eg-rise-a {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  65% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(0, -41vh, 0);
+    opacity: 0;
+  }
+}
+@keyframes eg-rise-b {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  65% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(0, -67vh, 0);
+    opacity: 0;
+  }
+}
+@keyframes eg-rise-c {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  65% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(0, -96vh, 0);
+    opacity: 0;
+  }
+}
+@keyframes eg-sway {
+  0% {
+    transform: translateX(-9px);
+  }
+  100% {
+    transform: translateX(11px);
+  }
+}
+@keyframes eg-wax-a {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(26px, -51vh, 0);
+  }
+}
+@keyframes eg-wax-b {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-22px, -66vh, 0);
+  }
+}
+@keyframes eg-wax-c {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(14px, -77vh, 0);
+  }
+}
+@keyframes eg-wobble {
+  0% {
+    transform: rotate(0deg) scale(1, 1.16);
+  }
+  25% {
+    transform: rotate(90deg) scale(1.12, 0.9);
+  }
+  50% {
+    transform: rotate(180deg) scale(0.92, 1.14);
+  }
+  75% {
+    transform: rotate(270deg) scale(1.15, 0.9);
+  }
+  100% {
+    transform: rotate(360deg) scale(1, 1.16);
+  }
+}
+@keyframes eg-pool {
+  0% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(1.35);
+  }
+}
+
+/* Movement off: in the system's own setting, or in Settings > Motion. Everything stays
+   where it was drawn. */
+@media (prefers-reduced-motion: reduce) {
+  body.theme-basalt .ember-ground * {
+    animation: none !important;
+  }
+  body.theme-basalt:not(.look-basalt) .ember-vitals-bar::after {
+    transition: none;
+  }
+}
+body.theme-basalt.ground-still .ember-ground * {
+  animation: none !important;
+}
+
+/* ==========================================================================
+   The picker (Settings > Theme): one tile a look, painted in that look's own colours.
+   ========================================================================== */
+
+.ember-looks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ember-look {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 10px;
+  border: 0;
+  border-radius: var(--r-md, 12px);
+  background: var(--b-chip);
+  box-shadow: var(--b-raise);
+  color: var(--b-text);
+  font-family: var(--b-ui);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--b-spring),
+    box-shadow 140ms var(--b-spring);
+}
+.ember-look:hover {
+  background: var(--b-chip-hi);
+  box-shadow: var(--b-raise-hover);
+}
+.ember-look.is-current {
+  box-shadow: inset 0 0 0 2px var(--b-accent);
+}
+.ember-look-swatch {
+  position: relative;
+  display: block;
+  height: 64px;
+  overflow: hidden;
+  border-radius: calc(var(--r-md, 12px) - 4px);
+  background: var(--s-ground);
+}
+.ember-look-swatch::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  width: 26%;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--s-accent);
+  box-shadow: 0 18px 0 -3px color-mix(in srgb, var(--s-ink) 22%, transparent), 0 32px 0 -3px color-mix(in srgb, var(--s-ink) 22%, transparent);
+}
+.ember-look-swatch::after {
+  content: '';
+  position: absolute;
+  left: 38%;
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  border-radius: 6px;
+  background:
+    linear-gradient(var(--s-ink), var(--s-ink)) 10px 10px / 46% 5px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--s-ink) 45%, transparent), color-mix(in srgb, var(--s-ink) 45%, transparent)) 10px 22px / 68% 3px no-repeat,
+    linear-gradient(var(--s-accent), var(--s-accent)) 10px 34px / 30% 3px no-repeat,
+    var(--s-surface);
+}
+.ember-look-name {
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ember-look-about {
+  padding: 0 4px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--b-faint);
+}

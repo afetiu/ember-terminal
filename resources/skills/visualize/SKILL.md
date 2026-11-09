@@ -56,7 +56,7 @@ A whole page, as raw text, every time:
 Not a fragment (`<div>…</div>` on its own), and not inside a ``` fence — the panel then
 shows the backticks. Everything inline; nothing external is fetched.
 
-The panel is Ember's dark stone (Basalt, its only look) and the webview is transparent
+The panel is Ember's dark surface (every look is dark) and the webview is transparent
 over it, so a dark colour picked for paper vanishes: black on black is empty. Colour with
 the variables Ember defines:
 

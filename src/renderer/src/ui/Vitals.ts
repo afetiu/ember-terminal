@@ -79,7 +79,8 @@ export class Vitals {
       cells.push(el)
     } else if (this.showPlan) {
       for (const l of u.limits.slice(0, 3)) {
-        const el = this.chip('is-plan', `${Vitals.tag(l)} ${l.percent}%`, Vitals.describe(l, u))
+        const el = this.chip('is-plan', '', Vitals.describe(l, u))
+        Vitals.fill(el, Vitals.tag(l), l.percent)
         el.classList.toggle('is-warn', l.percent >= 75 && l.percent < 90)
         el.classList.toggle('is-low', l.percent >= 90)
         el.classList.toggle('is-stale', !u.ok)
@@ -138,10 +139,28 @@ export class Vitals {
   }
 
   private renderVitals(s: VitalsState): void {
-    const cpu = `CPU ${s.cpu}%`
-    const mem = `MEM ${s.mem}%`
-    if (this.cpu.textContent !== cpu) this.cpu.textContent = cpu
-    if (this.mem.textContent !== mem) this.mem.textContent = mem
+    Vitals.fill(this.cpu, 'CPU', s.cpu)
+    Vitals.fill(this.mem, 'MEM', s.mem)
+  }
+
+  /**
+   * A reading as `KEY 40%`: the key, a meter and the number. The text reads the same as
+   * it always did; the meter is hidden where a look has no use for one (Basalt) and drawn
+   * as a thin track where it does.
+   */
+  private static fill(el: HTMLElement, key: string, percent: number): void {
+    const text = `${key} ${percent}%`
+    if (el.textContent === text) return
+    const k = document.createElement('span')
+    k.className = 'ember-vitals-k'
+    k.textContent = key
+    const bar = document.createElement('span')
+    bar.className = 'ember-vitals-bar'
+    bar.style.setProperty('--v', String(Math.max(0, Math.min(100, percent)) / 100))
+    const v = document.createElement('span')
+    v.className = 'ember-vitals-v'
+    v.textContent = `${percent}%`
+    el.replaceChildren(k, ' ', bar, v)
   }
 
   private wireBattery(): void {
@@ -173,8 +192,7 @@ export class Vitals {
     this.bat.classList.toggle('is-hidden', !show)
     if (!b || !show) return
     const pct = Math.round(b.level * 100)
-    const text = `${b.charging ? 'CHG' : 'BAT'} ${pct}%`
-    if (this.bat.textContent !== text) this.bat.textContent = text
+    Vitals.fill(this.bat, b.charging ? 'CHG' : 'BAT', pct)
     this.bat.classList.toggle('is-low', !b.charging && pct <= 20)
   }
 

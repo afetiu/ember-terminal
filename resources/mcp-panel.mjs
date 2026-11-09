@@ -43,7 +43,7 @@ const INTERACTIVE = [
 /**
  * What an html panel has to be, said once and pasted wherever html is mentioned.
  *
- * The panel is a transparent webview over Ember's dark stone surface (Basalt, its only look). A fragment — a bare `<div>`
+ * The panel is a transparent webview over Ember's dark surface (every look is dark). A fragment — a bare `<div>`
  * with no document, no colours — is wrapped by Ember and styled like a markdown panel,
  * so it is never blank any more; but a model that knows the shape sends the shape, and
  * a real page with its own colours is what the format is for. The most frequent way the

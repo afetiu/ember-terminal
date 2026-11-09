@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import type { PanelOption, PanelPush } from '../shared/types.js'
+import type { Look } from '../shared/looks.js'
 import { customViewDocument, viewDocument, type ViewTheme } from './panelView.js'
 
 /**
@@ -643,16 +644,66 @@ export interface DocPalette {
   fg: string
   bg: string
   /** A theme that restyles material as well as colour (ThemeConfig.family). */
-  family?: 'basalt'
+  family?: Look
 }
 
 /**
- * Basalt, inside a document: matte stone nodes (#2f3033) with stone-grey edges, Archivo
- * for the words, the lava accent kept for the one node a diagram marks `hot`. The faces
- * come from the bridge's /vendor (prepare-resources copies them out of the renderer's
- * assets), since a document is its own page and cannot see the app's @font-face.
+ * A look, inside a document: the same material the window is in. Basalt is matte stone
+ * nodes with stone-grey edges and the lava accent kept for the one node a diagram marks
+ * `hot`; the others follow their own boards (Smoke's glass, Lacquer's gold-ringed pills,
+ * Patina's plates, Hearth's outlines and one coal, Lamp's wax). The faces come from the
+ * bridge's /vendor (prepare-resources copies them out of the renderer's assets), since a
+ * document is its own page and cannot see the app's @font-face.
+ *
+ * Colours here are hex: mermaid computes shades from its theme variables and cannot read
+ * rgba(). The declarations (`nodeCss`, `hotCss`, ...) go into stylesheets and may be
+ * anything.
  */
-export const BASALT_DOC = {
+interface LookDoc {
+  node: string
+  raised: string
+  text: string
+  dim: string
+  faint: string
+  edge: string
+  well: string
+  line: string
+  bar: string
+  accent: string
+  ui: string
+  mono: string
+  /** family, file under /vendor, font-weight, format */
+  faces: [string, string, string, string][]
+  /** What mermaid measures labels with, loaded before it draws. */
+  preload: string[]
+  /** Every node's shape; its corner radius; its label's weight. */
+  nodeCss: string
+  rx: number
+  labelWeight: number
+  /** The one node that matters. */
+  hotCss: string
+  hotLabel: string
+  hotWeight: number
+  /** Chart series, the one that matters first; then the categorical set. */
+  series: string[]
+  cats: string[]
+  headCss: string
+  subheadCss: string
+  codeCss: string
+  tableCss: string
+  actCss: string
+  actHoverCss: string
+  actActiveCss: string
+  askCss: string
+  thumb: string
+}
+
+const UI_TAIL = "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
+const MONO_TAIL = "'Cascadia Code', Consolas, ui-monospace, monospace"
+const vf = (family: string, file: string, weight: string): [string, string, string, string] => [family, `${file}-latin-wght-normal.woff2`, weight, 'woff2-variations']
+const FLAT_ACT = { actActiveCss: 'transform: translateY(1px);' }
+
+export const BASALT_DOC: LookDoc = {
   node: '#2F3033',
   raised: '#3A3B3E',
   text: '#ECEBE8',
@@ -663,16 +714,223 @@ export const BASALT_DOC = {
   line: '#2F3033',
   bar: '#3A3B3E',
   accent: '#FF7A3D',
+  ui: `Archivo, ${UI_TAIL}`,
+  mono: `'DM Mono', ${MONO_TAIL}`,
+  faces: [
+    ...[400, 500, 700, 800].map((w): [string, string, string, string] => ['Archivo', `archivo-latin-${w}-normal.woff2`, String(w), 'woff2']),
+    ['DM Mono', 'dm-mono-latin-400-normal.woff2', '400', 'woff2'],
+  ],
+  preload: ['500 13px Archivo', '700 13px Archivo'],
+  nodeCss: 'stroke: none !important; filter: drop-shadow(0 6px 7px rgba(0,0,0,0.45));',
+  rx: 10,
+  labelWeight: 500,
+  hotCss: 'fill: #FF7A3D !important; filter: drop-shadow(0 0 10px rgba(255,122,61,0.35));',
+  hotLabel: '#1D1E20',
+  hotWeight: 700,
+  series: ['#FF7A3D', '#3A3B3E', '#6E6F72', '#9A9995'],
+  cats: ['#FF7A3D', '#6E6F72', '#8D8C88', '#4A4B4E', '#B9B8B4', '#5E5F62', '#A3BF8E', '#8EA8C3'],
+  headCss: 'font-weight: 800; letter-spacing: -0.03em;',
+  subheadCss: 'font-weight: 700; letter-spacing: -0.02em;',
+  codeCss: 'background: #141517; box-shadow: inset 0 2px 5px rgba(0,0,0,0.55); border-radius: 14px;',
+  tableCss: 'background: #1D1E20; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); border-radius: 14px;',
+  actCss: 'background: #2F3033; color: #ECEBE8; border-color: transparent; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px -6px rgba(0,0,0,0.7);',
+  actHoverCss: 'background: #3A3B3E; box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 4px 10px -6px rgba(0,0,0,0.7);',
+  actActiveCss: 'transform: translateY(1px); background: #28292c; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);',
+  askCss: 'background: #1D1E20; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45);',
+  thumb: '#3a3b3e',
 }
-export const BASALT_FONTS = ['archivo-latin-400-normal.woff2', 'archivo-latin-500-normal.woff2', 'archivo-latin-700-normal.woff2', 'archivo-latin-800-normal.woff2', 'dm-mono-latin-400-normal.woff2']
-const BASALT_UI = "Archivo, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
-const BASALT_MONO = "'DM Mono', 'Cascadia Code', Consolas, ui-monospace, monospace"
-const basaltFaces = (): string =>
-  [400, 500, 700, 800].map((w) => `@font-face { font-family: 'Archivo'; font-weight: ${w}; font-display: block; src: url('/vendor/archivo-latin-${w}-normal.woff2') format('woff2'); }`).join('\n') +
-  `\n@font-face { font-family: 'DM Mono'; font-weight: 400; font-display: block; src: url('/vendor/dm-mono-latin-400-normal.woff2') format('woff2'); }`
 
-function basaltMermaid(): Record<string, unknown> {
-  const b = BASALT_DOC
+const SMOKE_DOC: LookDoc = {
+  node: '#1E2026',
+  raised: '#2A2C33',
+  text: '#F4F4F5',
+  dim: '#C8C9CE',
+  faint: '#9A9CA3',
+  edge: '#5A5C62',
+  well: '#0C0D10',
+  line: '#26282D',
+  bar: '#3A3C42',
+  accent: '#FF8A4C',
+  ui: `Geist, ${UI_TAIL}`,
+  mono: `'Geist Mono', ${MONO_TAIL}`,
+  faces: [vf('Geist', 'geist', '100 900'), vf('Geist Mono', 'geist-mono', '100 900')],
+  preload: ['500 13px Geist', '600 13px Geist'],
+  nodeCss: 'fill: rgba(255,255,255,0.07) !important; stroke: rgba(255,255,255,0.14) !important; stroke-width: 1px;',
+  rx: 9,
+  labelWeight: 500,
+  hotCss: 'fill: rgba(255,138,76,0.18) !important; stroke: rgba(255,138,76,0.55) !important;',
+  hotLabel: '#FFB088',
+  hotWeight: 600,
+  series: ['#FF8A4C', '#4A4C53', '#6C6E75', '#9A9CA3'],
+  cats: ['#FF8A4C', '#6C6E75', '#9A9CA3', '#4A4C53', '#C8C9CE', '#5A5C62', '#7FD9A8', '#7FB2FF'],
+  headCss: 'font-weight: 600; letter-spacing: -0.03em;',
+  subheadCss: 'font-weight: 600; letter-spacing: -0.02em;',
+  codeCss: 'background: rgba(0,0,0,0.36); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07); border-radius: 12px;',
+  tableCss: 'background: rgba(255,255,255,0.045); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); border-radius: 12px;',
+  actCss: 'background: rgba(255,255,255,0.07); color: #F4F4F5; border-color: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09);',
+  actHoverCss: 'background: rgba(255,255,255,0.12);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(255,255,255,0.045); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);',
+  thumb: 'rgba(255,255,255,0.2)',
+}
+
+const LACQUER_DOC: LookDoc = {
+  node: '#201215',
+  raised: '#321D20',
+  text: '#F5EBDE',
+  dim: '#CDBCAE',
+  faint: '#A08C80',
+  edge: '#8A7448',
+  well: '#120A0B',
+  line: '#2D1C1F',
+  bar: '#3D282B',
+  accent: '#DCB76C',
+  ui: `Outfit, ${UI_TAIL}`,
+  mono: `'Red Hat Mono', ${MONO_TAIL}`,
+  faces: [vf('Outfit', 'outfit', '100 900'), vf('Red Hat Mono', 'red-hat-mono', '300 700')],
+  preload: ['500 13px Outfit', '600 13px Outfit'],
+  nodeCss: 'fill: rgba(32,18,21,0.6) !important; stroke: rgba(220,183,108,0.5) !important; stroke-width: 1px;',
+  rx: 999,
+  labelWeight: 500,
+  hotCss: 'fill: #A9241A !important; stroke: rgba(255,255,255,0.22) !important; filter: drop-shadow(0 8px 12px rgba(150,24,16,0.6));',
+  hotLabel: '#F5EBDE',
+  hotWeight: 600,
+  series: ['#E5482F', '#4A3033', '#DCB76C', '#A08C80'],
+  cats: ['#E5482F', '#DCB76C', '#A08C80', '#4A3033', '#CDBCAE', '#6B5850', '#A9C08A', '#8FA6C9'],
+  headCss: 'font-weight: 600; letter-spacing: -0.02em;',
+  subheadCss: 'font-weight: 600; letter-spacing: -0.02em;',
+  codeCss: 'background: #0A0506; box-shadow: inset 0 0 0 1px #2D1C1F; border-radius: 14px;',
+  tableCss: 'background: none;',
+  actCss: 'background: transparent; color: #F5EBDE; border-color: transparent; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(220,183,108,0.4);',
+  actHoverCss: 'box-shadow: inset 0 0 0 1px rgba(220,183,108,0.7);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: #120A0B; box-shadow: inset 0 0 0 1px #2D1C1F;',
+  thumb: '#3d282b',
+}
+
+const PATINA_DOC: LookDoc = {
+  node: '#21372F',
+  raised: '#294339',
+  text: '#E7EFE9',
+  dim: '#B3C5BC',
+  faint: '#86A096',
+  edge: '#4D7D70',
+  well: '#0A1311',
+  line: '#264039',
+  bar: '#3C6257',
+  accent: '#E8915C',
+  ui: `'Bricolage Grotesque', ${UI_TAIL}`,
+  mono: `'Martian Mono', ${MONO_TAIL}`,
+  faces: [vf('Bricolage Grotesque', 'bricolage-grotesque', '200 800'), vf('Martian Mono', 'martian-mono', '100 800')],
+  preload: ["500 13px 'Bricolage Grotesque'", "700 13px 'Bricolage Grotesque'"],
+  nodeCss: 'stroke: #33544B !important; stroke-width: 1px;',
+  rx: 5,
+  labelWeight: 500,
+  hotCss: 'fill: #E8915C !important; stroke: #F6B58A !important; filter: drop-shadow(0 8px 10px rgba(232,145,92,0.35));',
+  hotLabel: '#24120A',
+  hotWeight: 700,
+  series: ['#E8915C', '#3C6257', '#86D6BF', '#86A096'],
+  cats: ['#E8915C', '#3C6257', '#86D6BF', '#4D7D70', '#B3C5BC', '#264039', '#F3A877', '#8DB4D6'],
+  headCss: 'font-weight: 700; letter-spacing: -0.03em;',
+  subheadCss: 'font-weight: 700; letter-spacing: -0.02em;',
+  codeCss: 'background: #0A1311; box-shadow: inset 0 0 0 1px #264039; border-radius: 6px;',
+  tableCss: 'background: #1A2C28; box-shadow: inset 0 0 0 1px #2B473F; border-radius: 6px;',
+  actCss: 'background: #21372F; color: #E7EFE9; border-color: transparent; border-radius: 4px; box-shadow: inset 0 0 0 1px #33544B;',
+  actHoverCss: 'background: #294339; box-shadow: inset 0 0 0 1px #3F685C;',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: #1A2C28; box-shadow: inset 0 0 0 1px #2B473F; border-radius: 6px;',
+  thumb: '#3c6257',
+}
+
+const HEARTH_DOC: LookDoc = {
+  node: '#1F1814',
+  raised: '#2A201A',
+  text: '#F4E9DD',
+  dim: '#D8CABD',
+  faint: '#A89788',
+  edge: '#6B584B',
+  well: '#0D0A08',
+  line: '#2E241E',
+  bar: '#3B2F28',
+  accent: '#FF9A52',
+  ui: `'Hanken Grotesk', ${UI_TAIL}`,
+  mono: `'JetBrains Mono', ${MONO_TAIL}`,
+  faces: [vf('Hanken Grotesk', 'hanken-grotesk', '100 900'), vf('JetBrains Mono', 'jetbrains-mono', '100 800')],
+  preload: ["500 13px 'Hanken Grotesk'", "600 13px 'Hanken Grotesk'"],
+  nodeCss: 'fill: rgba(8,6,5,0.3) !important; stroke: rgba(255,220,190,0.22) !important; stroke-width: 1px;',
+  rx: 8,
+  labelWeight: 500,
+  hotCss: 'fill: #B8481A !important; stroke: #FFB27A !important; filter: drop-shadow(0 8px 12px rgba(255,100,30,0.55));',
+  hotLabel: '#FFF6EC',
+  hotWeight: 600,
+  series: ['#FF8431', '#3B2F28', '#FFD08A', '#A89788'],
+  cats: ['#FF8431', '#6B584B', '#FFD08A', '#3B2F28', '#D8CABD', '#C2410F', '#B5CE94', '#9DB4CC'],
+  headCss: 'font-weight: 600; letter-spacing: -0.02em;',
+  subheadCss: 'font-weight: 600; letter-spacing: -0.02em;',
+  codeCss: 'background: rgba(8,6,5,0.62); box-shadow: inset 0 0 0 1px rgba(255,220,190,0.08); border-radius: 10px;',
+  tableCss: 'background: none;',
+  actCss: 'background: transparent; color: #F4E9DD; border-color: transparent; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(255,220,190,0.2);',
+  actHoverCss: 'background: rgba(255,170,110,0.06); box-shadow: inset 0 0 0 1px rgba(255,190,140,0.42);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(8,6,5,0.5); box-shadow: inset 0 0 0 1px rgba(255,220,190,0.08);',
+  thumb: '#3b2f28',
+}
+
+const LAMP_DOC: LookDoc = {
+  node: '#2F1B38',
+  raised: '#3C2546',
+  text: '#FFF5EC',
+  dim: '#F3E4EC',
+  faint: '#CDB9CF',
+  edge: '#8A7092',
+  well: '#150A1C',
+  line: '#3A2444',
+  bar: '#4E3558',
+  accent: '#FF9A4D',
+  ui: `Fredoka, ${UI_TAIL}`,
+  mono: `'DM Mono', ${MONO_TAIL}`,
+  faces: [vf('Fredoka', 'fredoka', '300 700'), ['DM Mono', 'dm-mono-latin-400-normal.woff2', '400', 'woff2'], ['DM Mono', 'dm-mono-latin-500-normal.woff2', '500', 'woff2']],
+  preload: ['500 13px Fredoka', '600 13px Fredoka'],
+  nodeCss: 'fill: rgba(255,235,245,0.1) !important; stroke: none !important;',
+  rx: 999,
+  labelWeight: 500,
+  hotCss: 'fill: #FF7D70 !important; filter: drop-shadow(0 8px 12px rgba(255,95,147,0.55));',
+  hotLabel: '#2A0F1E',
+  hotWeight: 600,
+  series: ['#FF7A3D', '#5A4064', '#FF4F8B', '#FFAD3D'],
+  cats: ['#FF7A3D', '#FF4F8B', '#FFAD3D', '#5A4064', '#E6D3E2', '#8A7092', '#8EE8C2', '#9DB6FF'],
+  headCss: 'font-weight: 500; letter-spacing: -0.005em;',
+  subheadCss: 'font-weight: 500;',
+  codeCss: 'background: rgba(15,6,20,0.6); border-radius: 20px;',
+  tableCss: 'background: none;',
+  actCss: 'background: rgba(255,235,245,0.1); color: #FFF5EC; border-color: transparent; border-radius: 999px;',
+  actHoverCss: 'background: rgba(255,235,245,0.17);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(15,6,20,0.5); border-radius: 20px;',
+  thumb: 'rgba(255,235,245,0.22)',
+}
+
+const LOOK_DOCS: Record<Look, LookDoc> = {
+  basalt: BASALT_DOC,
+  smoke: SMOKE_DOC,
+  lacquer: LACQUER_DOC,
+  patina: PATINA_DOC,
+  hearth: HEARTH_DOC,
+  lamp: LAMP_DOC,
+}
+
+/** Every face a document may ask the bridge for. */
+export const DOC_FONTS = [...new Set(Object.values(LOOK_DOCS).flatMap((d) => d.faces.map((f) => f[1])))]
+
+/** The look a document is drawn in; none for a light page or a plain palette. */
+function lookDoc(palette: DocPalette | undefined, light: boolean): LookDoc | null {
+  return palette?.family && !light ? (LOOK_DOCS[palette.family] ?? null) : null
+}
+
+const lookFaces = (b: LookDoc): string =>
+  b.faces.map(([family, file, weight, format]) => `@font-face { font-family: '${family}'; font-weight: ${weight}; font-display: block; src: url('/vendor/${file}') format('${format}'); }`).join('\n')
+
+function lookMermaid(b: LookDoc): Record<string, unknown> {
   const vars: Record<string, unknown> = {
     background: 'transparent',
     primaryColor: b.node,
@@ -686,7 +944,7 @@ function basaltMermaid(): Record<string, unknown> {
     nodeBorder: b.node,
     clusterBkg: b.well,
     clusterBorder: b.line,
-    fontFamily: BASALT_UI,
+    fontFamily: b.ui,
     fontSize: '13px',
     edgeLabelBackground: b.well,
     actorBkg: b.node,
@@ -703,7 +961,7 @@ function basaltMermaid(): Record<string, unknown> {
     pieStrokeColor: b.well,
     pieOuterStrokeColor: b.line,
   }
-  // The first series is the one that matters, in lava; the rest are stone (#3a3b3e first).
+  // The first series is the one that matters, in the look's hot colour; the rest recede.
   vars['xyChart'] = {
     backgroundColor: 'transparent',
     titleColor: b.text,
@@ -715,51 +973,50 @@ function basaltMermaid(): Record<string, unknown> {
     yAxisTitleColor: b.faint,
     yAxisTickColor: b.line,
     yAxisLineColor: b.line,
-    plotColorPalette: [b.accent, b.bar, '#6E6F72', '#9A9995'].join(', '),
+    plotColorPalette: b.series.join(', '),
   }
-  const cats = [b.accent, '#6E6F72', '#8D8C88', '#4A4B4E', '#B9B8B4', '#5E5F62', '#A3BF8E', '#8EA8C3']
-  cats.forEach((c, i) => {
+  b.cats.forEach((c, i) => {
     vars[`pie${i + 1}`] = c
-    vars[`cScale${i}`] = i === 0 ? b.accent : b.node
+    vars[`cScale${i}`] = i === 0 ? b.series[0] : b.node
     vars[`cScaleLabel${i}`] = i === 0 ? b.well : b.text
   })
   return vars
 }
 
-/** Raised stone nodes, a `hot` node in lava with its one glow, labels in Archivo. */
-const BASALT_MERMAID_CSS = [
-  '.node rect, .node polygon, .node circle, .node ellipse, .node path { stroke: none !important; filter: drop-shadow(0 6px 7px rgba(0,0,0,0.45)); }',
-  '.node rect { rx: 10px; ry: 10px; }',
-  `.nodeLabel, .label, .edgeLabel { font-family: Archivo, 'Segoe UI', sans-serif; font-weight: 500; }`,
-  `.flowchart-link, .edgePath .path { stroke: ${BASALT_DOC.edge} !important; stroke-width: 1.5px; }`,
-  `marker path, .marker { fill: ${BASALT_DOC.edge} !important; stroke: ${BASALT_DOC.edge} !important; }`,
-  `.node.hot rect, .node.hot polygon, .node.hot circle, .node.hot path, .node.accent rect { fill: ${BASALT_DOC.accent} !important; filter: drop-shadow(0 0 10px rgba(255,122,61,0.35)); }`,
-  `.node.hot .nodeLabel, .node.accent .nodeLabel { color: ${BASALT_DOC.well} !important; font-weight: 700; }`,
-  '.cluster rect { stroke: none !important; }',
-].join(' ')
+/** The look's nodes, its one `hot` node, labels in its own face. */
+const lookMermaidCss = (b: LookDoc): string =>
+  [
+    `.node rect, .node polygon, .node circle, .node ellipse, .node path { ${b.nodeCss} }`,
+    `.node rect { rx: ${b.rx}px; ry: ${b.rx}px; }`,
+    `.nodeLabel, .label, .edgeLabel { font-family: ${b.ui.split(',')[0]}, 'Segoe UI', sans-serif; font-weight: ${b.labelWeight}; }`,
+    `.flowchart-link, .edgePath .path { stroke: ${b.edge} !important; stroke-width: 1.5px; }`,
+    `marker path, .marker { fill: ${b.edge} !important; stroke: ${b.edge} !important; }`,
+    `.node.hot rect, .node.hot polygon, .node.hot circle, .node.hot path, .node.accent rect { ${b.hotCss} }`,
+    `.node.hot .nodeLabel, .node.accent .nodeLabel { color: ${b.hotLabel} !important; font-weight: ${b.hotWeight}; }`,
+    '.cluster rect { stroke: none !important; }',
+  ].join(' ')
 
-/** The document body in stone: Archivo prose, DM Mono code, tables and code as recessed wells. */
-function basaltStyle(): string {
-  const b = BASALT_DOC
+/** The document body in the look: its prose and code faces, its tables, code and buttons. */
+function lookStyle(b: LookDoc): string {
   return `
-${basaltFaces()}
-body { color: ${b.dim}; font-family: ${BASALT_UI}; }
+${lookFaces(b)}
+body { color: ${b.dim}; font-family: ${b.ui}; }
 h1, h2, h3, strong { color: ${b.text}; }
-h1, h2 { font-weight: 800; letter-spacing: -0.03em; }
-h3 { font-weight: 700; letter-spacing: -0.02em; }
+h1, h2 { ${b.headCss} }
+h3 { ${b.subheadCss} }
 h4, h5, h6, th, blockquote { color: ${b.faint}; }
-a { color: ${b.accent}; text-decoration-color: rgba(255,122,61,0.35); }
-code { background: ${b.node}; color: ${b.text}; font-family: ${BASALT_MONO}; }
-pre.code { background: #141517; box-shadow: inset 0 2px 5px rgba(0,0,0,0.55); border-radius: 14px; }
-pre.code code, .ember-raw { color: ${b.text}; font-family: ${BASALT_MONO}; }
-table { background: ${b.well}; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); border-radius: 14px; }
+a { color: ${b.accent}; text-decoration-color: ${rgba(b.accent, 0.35)}; }
+code { background: ${b.node}; color: ${b.text}; font-family: ${b.mono}; }
+pre.code { ${b.codeCss} }
+pre.code code, .ember-raw { color: ${b.text}; font-family: ${b.mono}; }
+table { ${b.tableCss} }
 th, td { border-bottom-color: ${b.line}; }
 hr { border-top-color: ${b.line}; }
-.ember-act, .ember-ask-opt { background: ${b.node}; color: ${b.text}; border-color: transparent; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px -6px rgba(0,0,0,0.7); transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms, background-color 120ms; }
-.ember-act:hover, .ember-ask-opt:hover { background: ${b.raised}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 4px 10px -6px rgba(0,0,0,0.7); }
-.ember-act:active, .ember-ask-opt:active { transform: translateY(1px); background: #28292c; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
-.ember-ask { background: ${b.well}; box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); }
-::-webkit-scrollbar-thumb { background: #3a3b3e; background-clip: padding-box; }
+.ember-act, .ember-ask-opt { ${b.actCss} transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms, background-color 120ms; }
+.ember-act:hover, .ember-ask-opt:hover { ${b.actHoverCss} }
+.ember-act:active, .ember-ask-opt:active { ${b.actActiveCss} }
+.ember-ask { ${b.askCss} }
+::-webkit-scrollbar-thumb { background: ${b.thumb}; background-clip: padding-box; }
 @media (prefers-reduced-motion: reduce) { .ember-act, .ember-ask-opt { transition: opacity 120ms; } .ember-act:active, .ember-ask-opt:active { transform: none; } }
 `
 }
@@ -934,9 +1191,9 @@ const mermaidBoot = (light: boolean, palette?: DocPalette) => `
       startOnLoad: false,
       theme: 'base',
       securityLevel: 'strict',
-      fontFamily: ${JSON.stringify(palette?.family === 'basalt' && !light ? BASALT_UI : PROSE_FONT)},
-      themeVariables: ${JSON.stringify(palette?.family === 'basalt' && !light ? basaltMermaid() : { ...(palette ? mermaidPalette(palette, light) : light ? MERMAID_LIGHT : MERMAID_DARK), fontFamily: PROSE_FONT, fontSize: '13px' })},
-      themeCSS: ${JSON.stringify(palette?.family === 'basalt' && !light ? `${MERMAID_CSS} ${BASALT_MERMAID_CSS}` : MERMAID_CSS)},
+      fontFamily: ${JSON.stringify(lookDoc(palette, light)?.ui ?? PROSE_FONT)},
+      themeVariables: ${JSON.stringify(lookDoc(palette, light) ? lookMermaid(lookDoc(palette, light)!) : { ...(palette ? mermaidPalette(palette, light) : light ? MERMAID_LIGHT : MERMAID_DARK), fontFamily: PROSE_FONT, fontSize: '13px' })},
+      themeCSS: ${JSON.stringify(lookDoc(palette, light) ? `${MERMAID_CSS} ${lookMermaidCss(lookDoc(palette, light)!)}` : MERMAID_CSS)},
       flowchart: { curve: 'basis', padding: 14, nodeSpacing: 44, rankSpacing: 52, htmlLabels: true },
       sequence: { actorFontFamily: PROSE_FONT_JS, messageFontFamily: PROSE_FONT_JS, noteFontFamily: PROSE_FONT_JS },
       xyChart: { titleFontSize: 14, xAxis: { labelFontSize: 12, titleFontSize: 12 }, yAxis: { labelFontSize: 12, titleFontSize: 12 } },
@@ -1007,7 +1264,7 @@ const mermaidBoot = (light: boolean, palette?: DocPalette) => `
       removeEventListener('resize', start)
       // A theme's own face has to be loaded before mermaid measures labels with it, or
       // every box is sized for the fallback.
-      var faces = ${JSON.stringify(palette?.family === 'basalt' && !light ? ['500 13px Archivo', '700 13px Archivo'] : [])}
+      var faces = ${JSON.stringify(lookDoc(palette, light)?.preload ?? [])}
       if (faces.length && document.fonts) { try { await Promise.all(faces.map(function (f) { return document.fonts.load(f) })) } catch (e) {} }
       var results = []
       for (var i = 0; i < blocks.length; i++) results.push(await check(blocks[i]))
@@ -1067,7 +1324,7 @@ function shell(body: string, light = false, palette?: DocPalette): string {
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}${palette?.family === 'basalt' && !light ? basaltStyle() : ''}</style>
+<style>${STYLE}${SCROLLBARS}${INTERACT_STYLE}${light ? LIGHT_STYLE + LIGHT_INTERACT : ''}${palette ? paletteStyle(palette, light) : ''}${lookDoc(palette, light) ? lookStyle(lookDoc(palette, light)!) : ''}</style>
 </head><body${light ? ' class="light"' : ''}>${body}${head}</body></html>`
 }
 

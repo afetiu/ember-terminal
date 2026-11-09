@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, watch, writeFileSync
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { EmberConfig } from '../shared/types.js'
-import { BASALT } from './themes.js'
+import { LOOK_INFO, isLook } from '../shared/looks.js'
+import { BASALT, THEMES } from './themes.js'
 
 /**
  * EMBER_HOME redirects config and state elsewhere.
@@ -15,12 +16,13 @@ import { BASALT } from './themes.js'
 export const CONFIG_DIR = process.env['EMBER_HOME'] || join(homedir(), '.ember')
 export const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
-/** The terminal face: DM Mono, bundled (styles/fonts.css), with system monospace fallbacks. */
-export const TERMINAL_FONT = "'DM Mono', 'Cascadia Code', Consolas, monospace"
+/** Basalt's terminal face: DM Mono, bundled (styles/fonts.css), with system monospace fallbacks. */
+export const TERMINAL_FONT = LOOK_INFO.basalt.mono
 
 /**
- * Defaults. The look is not among them: Ember has one (Basalt, opaque stone, Archivo and
- * DM Mono), and pin() holds it whatever a config file says.
+ * Defaults. A new install starts in Basalt (opaque stone, Archivo and DM Mono); the look
+ * is the one thing about the appearance a person picks, and pin() derives the palette
+ * and the terminal face from it.
  */
 export const DEFAULT_CONFIG: EmberConfig = {
   defaultProfile: 'pwsh',
@@ -55,6 +57,7 @@ export const DEFAULT_CONFIG: EmberConfig = {
     letterSpacing: 0,
     features: { calt: 1, liga: 1 },
   },
+  look: 'basalt',
   theme: { ...BASALT },
   // Cursor, motion, window and effects below are the user's own tuned values, promoted
   // from his installed config so a fresh install starts where he ended up rather
@@ -93,6 +96,7 @@ export const DEFAULT_CONFIG: EmberConfig = {
     scanlines: 0,
     vignette: 0,
     ambient: false,
+    groundMotion: true,
     outputMotion: true,
     // Above this, animating arrivals costs more than it adds — a build log should
     // stay instant. Roughly a screenful per second.
@@ -131,15 +135,18 @@ export const DEFAULT_CONFIG: EmberConfig = {
 }
 
 /**
- * The fixed look over whatever a file says: Basalt's palette, DM Mono at a weight it has,
- * no CRT overlay. Keys older configs carried for the look (window opacity, backdrop, a
- * second font, the day/night pair) are dropped, so they do not linger in the file.
+ * The chosen look over whatever else a file says: its palette, its terminal face at a
+ * weight it has, no CRT overlay. A look is picked whole; its colours and faces are not
+ * settings. Keys older configs carried (window opacity, backdrop, a second font, the
+ * day/night pair) are dropped, so they do not linger in the file.
  */
 function pin(c: EmberConfig): EmberConfig {
+  const look = isLook(c.look) ? c.look : 'basalt'
   const out = {
     ...c,
-    theme: { ...BASALT },
-    font: { ...c.font, family: TERMINAL_FONT, weight: 400 },
+    look,
+    theme: { ...THEMES[look] },
+    font: { ...c.font, family: LOOK_INFO[look].mono, weight: 400 },
     effects: { ...c.effects, scanlines: 0, vignette: 0 },
   } as EmberConfig & { appearance?: unknown }
   delete out.appearance
