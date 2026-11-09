@@ -5489,6 +5489,24 @@ body.is-light .loom-answers {
 .loom-live .xterm {
   padding: 0;
 }
+/* The agent's mode, from the colour of the rules the box leaves out (liveView.ts): Claude's
+   `!` shell mode, a dialog's kind. A thin ring with a firmer top edge; gone when plain. */
+.loom-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  box-shadow:
+    inset 0 2px 0 var(--live-mode-color, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--live-mode-color, transparent) 55%, transparent);
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+  pointer-events: none;
+}
+.loom-live.has-mode::after {
+  opacity: 1;
+}
 .loom-live .xterm-viewport {
   overflow: hidden !important;
 }

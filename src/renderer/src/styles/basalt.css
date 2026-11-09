@@ -929,6 +929,14 @@ body.theme-basalt .loom-live {
   /* Nothing outside the well (a safety net: the columns are centred inside it). */
   clip-path: inset(2px 6px 8px round 14px);
 }
+/* The mode ring sits on the well's lip, not the box's edge. */
+body.theme-basalt .loom-live::after {
+  inset: 2px 6px 8px;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--live-mode-color, transparent) 70%, transparent),
+    inset 0 2px 0 var(--live-mode-color, transparent);
+}
 body.theme-basalt .loom-live::before {
   content: '';
   position: absolute;

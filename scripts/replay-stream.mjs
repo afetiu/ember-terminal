@@ -8,6 +8,7 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { StreamEngine } from '../src/shared/streamEngine.ts'
+import { keptRows } from '../src/shared/liveRules.ts'
 
 const require = createRequire(import.meta.url)
 const { Terminal } = require('@xterm/xterm')
@@ -26,6 +27,18 @@ export async function replay(file, opts = {}) {
     for (let y = 0; y < term.rows; y++) out.push(b.getLine(b.baseY + y)?.translateToString(true) ?? '')
     return out
   }
+  // What the CLI box shows of a split region (liveView.ts): its rows without the agent's own
+  // rules, and the row the caret is on there (-1: on none).
+  const display = (r) => {
+    if (!r || r.mode !== 'split') return { shown: [], caretRow: -1, accent: null }
+    const b = term.buffer.active
+    const k = keptRows((y) => b.getLine(b.baseY + y), r.top, r.bottom, term.cols, Infinity)
+    return {
+      shown: k.ys.map((y) => b.getLine(b.baseY + y)?.translateToString(true) ?? ''),
+      caretRow: r.cursor.visible ? k.ys.indexOf(r.cursor.y) : -1,
+      accent: k.accent,
+    }
+  }
   const frames = []
   let exitAt = Infinity
   const marks = []
@@ -39,7 +52,7 @@ export async function replay(file, opts = {}) {
     if (l.o !== undefined) {
       await write(l.o)
       const r = engine.frame()
-      if (r) frames.push({ i, t: l.t, ...r, screen: opts.screens ? rows() : undefined, text: r.mode === 'split' ? rows().slice(r.top, r.bottom + 1) : [] })
+      if (r) frames.push({ i, t: l.t, ...r, screen: opts.screens ? rows() : undefined, text: r.mode === 'split' ? rows().slice(r.top, r.bottom + 1) : [], ...display(r) })
       continue
     }
     if (l.i !== undefined) {
@@ -52,7 +65,7 @@ export async function replay(file, opts = {}) {
       // A timer's look at a still screen (the live view re-reads when an animation lapses).
       const r = engine.frame() ?? engine.region
       const screen = rows()
-      marks.push({ i, t: l.t, mark: l.mark, region: r, screen, live: r && r.mode === 'split' ? screen.slice(r.top, r.bottom + 1) : r?.mode === 'full' ? screen : [] })
+      marks.push({ i, t: l.t, mark: l.mark, region: r, screen, live: r && r.mode === 'split' ? screen.slice(r.top, r.bottom + 1) : r?.mode === 'full' ? screen : [], ...display(r) })
     }
   }
   engine.dispose()

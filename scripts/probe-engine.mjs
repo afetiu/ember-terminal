@@ -143,6 +143,11 @@ const typeText = async (text) => {
   typed = { at: Date.now(), len: text.length }
   return r
 }
+/** A plain horizontal rule row (what the box leaves out: shared/liveRules.ts), cols from the row itself. */
+const PURE_RULE = (l) => {
+  const t = l.replace(/ /g, '')
+  return t.length >= 20 && t.length >= Math.ceil(l.length * 0.6) && /^[─━═╌╍┄┅┈┉╴╶╸╺\-—–]+$/.test(t)
+}
 const until = async (fn, ms, every = 200) => {
   const end = Date.now() + ms
   while (Date.now() < end) {
@@ -242,6 +247,8 @@ const geometry = (tab) =>
       shown: lv.shown,
       text: lv.text(),
       live: lv.liveRows(),
+      accent: lv.accent,
+      ring: (() => { const a = getComputedStyle(box, '::after'); return { opacity: a.opacity, shadow: a.boxShadow } })(),
       box: { top: br.top - gr.top, bottom: br.bottom - gr.top, h: br.height, padTop, padBottom: parseFloat(getComputedStyle(box).paddingBottom) || 0, screenH: sr.height },
       pane: { top: pr.top - gr.top, h: pr.height, opacity: getComputedStyle(pane).opacity },
       panesH: gr.height,
@@ -257,7 +264,7 @@ const rules = async (tab, where, words = []) => {
   await wait(300)
   let g = await geometry(tab)
   // Read mid-frame (the real terminal one write ahead of the box): once more, a beat later.
-  if (g.text.join('|') !== g.live.slice(g.shown.from - (g.region?.top ?? 0), g.shown.from - (g.region?.top ?? 0) + g.shown.rows).join('|')) {
+  if (g.text.join('|') !== g.live.filter((t) => !PURE_RULE(t)).slice(-g.shown.rows || g.live.length).join('|')) {
     await wait(600)
     g = await geometry(tab)
   }
@@ -265,11 +272,15 @@ const rules = async (tab, where, words = []) => {
   const r = g.region
   const fullTab = g.pane.top === 0 && Math.abs(g.pane.h - g.panesH) < 1 && c.pty.rows === c.rows && c.pty.cols === c.cols && c.rows * c.cellH <= c.paneH
   check(`${where}: the real terminal is the whole tab and its PTY is its size`, fullTab, `rows=${c.rows} pty=${c.pty.rows}x${c.pty.cols} paneTop=${g.pane.top} paneH=${g.pane.h} opacity=${g.pane.opacity}`)
-  const rows = r && r.mode === 'split' ? r.bottom - r.top + 1 : 0
-  const exact = rows > 0 && (g.shown.rows === rows || (g.shown.rows < rows && g.shown.rows === g.shown.total - (g.shown.from - r.top) && g.shown.from + g.shown.rows - 1 === r.bottom))
+  // The region's rows without the agent's own rules (liveView.ts): the bottom ones if capped.
+  const kept = r && r.mode === 'split' ? g.live.filter((t) => !PURE_RULE(t)) : []
+  const want = kept.slice(kept.length - g.shown.rows)
+  const exact = kept.length > 0 && g.shown.total === kept.length && g.shown.rows > 0 && g.shown.rows <= kept.length
   const tall = Math.abs(g.box.h - (g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom)) < 1.5
-  const same = g.text.length === g.shown.rows && g.text.every((t, i) => t.replace(/\s+$/, '') === (g.live[g.shown.from - r.top + i] ?? '').replace(/\s+$/, ''))
-  check(`${where}: the box shows the live region's rows, exactly as tall, row for row`, exact && tall && same, `region=${r?.top}..${r?.bottom} (${r?.why}) shown=${g.shown.rows} from=${g.shown.from} boxH=${g.box.h.toFixed(1)} want=${(g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom).toFixed(1)}${same ? '' : ' TEXT DIFFERS'}`)
+  const same = g.text.length === g.shown.rows && g.text.every((t, i) => t.replace(/\s+$/, '') === (want[i] ?? '').replace(/\s+$/, ''))
+  check(`${where}: the box shows the live region's rows without its rules, exactly as tall, row for row`, exact && tall && same, `region=${r?.top}..${r?.bottom} (${r?.why}) kept=${kept.length} shown=${g.shown.rows}/${g.shown.total} boxH=${g.box.h.toFixed(1)} want=${(g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom).toFixed(1)}${same ? '' : ' TEXT DIFFERS'}`)
+  const ruled = g.text.filter((t) => PURE_RULE(t))
+  check(`${where}: no shown row is a plain rule`, ruled.length === 0, ruled.length ? JSON.stringify(ruled[0].slice(0, 30)) : '')
   // The box may clip to its own rounded inner rect (a safety net); its screen is never clipped.
   const clean = g.styles.every((s, i) => (i === 0 ? /^none\|(?:none|inset\([^)]*\))\|none$/ : /^none\|none\|none$/).test(s))
   check(`${where}: nothing drawn over the box, nothing transformed`, g.bad.length === 0 && g.painted.length === 0 && clean, g.bad.length || g.painted.length ? JSON.stringify({ bad: g.bad.slice(0, 3), painted: g.painted.slice(0, 5) }) : '')
@@ -302,8 +313,10 @@ const SAMPLER = `(() => {
       const rows = lv.text()
       const line = agent === 'codex' ? rows.some((r) => /^›(?:\\s|$)/.test(r)) : rows.some((r) => /^[❯>]/.test(r))
       const foot = rows.some((r) => FOOT.test(r))
-      // Words still in the prompt box (between its borders, just sent) are the input's, not the conversation's.
-      const inBox = (i) => /^[❯>]/.test(rows[i]) && i > 0 && /^[─━]{20,}/.test(rows[i - 1])
+      // Words still on the prompt line (the lowest ❯ row; queued messages are above it) are the input's.
+      let promptAt = -1
+      rows.forEach((r, i) => { if (/^[❯>]/.test(r)) promptAt = i })
+      const inBox = (i) => i === promptAt
       const talk = rows.filter((r, i) => !inBox(i) && words.some((w) => w && r.includes(w)))
       E.frames.push({ t: performance.now(), n: rows.length, ok: line || foot, talk: talk.length, text: rows })
       requestAnimationFrame(tick)
@@ -369,7 +382,10 @@ if (ONLY !== 'codex') {
   check('`claude` splits the tab: canvas above, the live area below', !!up && up.cli.canvasOn && up.cli.liveOn && up.cli.under)
   await steady(tab, 1200)
   let g = await rules(tab, 'at rest', ['Claude Code v', 'agent-box>'])
-  check('at rest: the box is the prompt box and its status lines (≤ 7 rows)', g.shown.rows >= 3 && g.shown.rows <= 7 && /^[─━]/.test(g.text[0] ?? ''), `rows=${g.shown.rows} first=${JSON.stringify(g.text[0]?.slice(0, 20))}`)
+  check('at rest: the box is the prompt line and its status lines, no rules (≤ 5 rows)', g.shown.rows >= 2 && g.shown.rows <= 5 && /^[❯>]/.test(g.text[0] ?? ''), `rows=${g.shown.rows} first=${JSON.stringify(g.text[0]?.slice(0, 20))}`)
+  const caret = await ev(`(() => { const lv = window.__ember.loomLive(${JSON.stringify(tab)}); const b = lv.term.buffer.active; return { y: b.cursorY, row: lv.text()[b.cursorY] } })()`)
+  check('at rest: the caret is on the prompt row', /^[❯>]/.test(caret?.row ?? ''), JSON.stringify(caret))
+  check('at rest: no mode colour on the box (plain grey rules)', !g.accent && g.ring.opacity === '0', `accent=${g.accent} ring=${JSON.stringify(g.ring)}`)
   check('the keyboard is in the real terminal', (await lm()).cli.focusInTerm)
   await shot('claude-1-rest')
   await crop('claude-1-rest')
@@ -448,6 +464,21 @@ if (ONLY !== 'codex') {
     await steady(tab)
   }, 'claude', W1)
   await rules(tab, 'cleared', W1)
+
+  // ---- `!` shell mode: Claude colours its prompt rules; the box's edge takes the colour
+  await focusTerm(tab)
+  await key('!', 'Digit1', 49, 8, '!')
+  const lit = await until(async () => { const x = await geometry(tab); return x.accent && x.ring.opacity === '1' && x }, 5000, 100)
+  g = await rules(tab, '`!` shell mode', W1)
+  check('`!` shell mode: the box edge takes the mode colour', !!lit && !!g.accent && g.ring.shadow.includes(g.accent), `accent=${g.accent} ring=${JSON.stringify(g.ring)}`)
+  const caret2 = await ev(`(() => { const lv = window.__ember.loomLive(${JSON.stringify(tab)}); const b = lv.term.buffer.active; return { y: b.cursorY, row: lv.text()[b.cursorY] } })()`)
+  check('`!` shell mode: the caret is on the prompt row', /^[!❯>]/.test(caret2?.row ?? ''), JSON.stringify(caret2))
+  await shot('claude-6b-shell-mode')
+  await crop('claude-6b-shell-mode')
+  await key('Backspace', 'Backspace', 8)
+  const plain = await until(async () => { const x = await geometry(tab); return !x.accent && x.ring.opacity === '0' && x }, 5000, 100)
+  check('out of shell mode: the mode colour goes', !!plain)
+  await rules(tab, 'out of shell mode', W1)
 
   // ---- permission prompt
   const ASK2 = 'Use your Bash or PowerShell tool to run exactly this command and nothing else: New-Item probe-se.txt'

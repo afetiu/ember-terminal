@@ -19,6 +19,11 @@ import { replay } from './replay-stream.mjs'
 
 const DIR = join(new URL('.', import.meta.url).pathname.slice(1), 'fixtures', 'streams')
 const BORDER = /^ ?([─━╌-])\1{20,}/
+/** A plain rule row, as the box would see it: line characters only, across most of the width. */
+const PURE_RULE = (l, cols) => {
+  const t = l.replace(/ /g, '')
+  return t.length >= Math.ceil(cols * 0.6) && /^[─━═╌╍┄┅┈┉╴╶╸╺\-—–]+$/.test(t)
+}
 const CLAUDE_IDLE = { first: BORDER, has: [/^❯/], not: [/Claude Code v\d/, /~\\agent-box/] }
 
 /** recording → mark → { first?, has?, not?, mode? } */
@@ -120,11 +125,24 @@ for (const [name, marks] of Object.entries(TRUTH)) {
         if (want.first) assert.match(live[0] ?? '', want.first, `first row (${reg.why}):${show}`)
         for (const re of want.has ?? []) assert.ok(live.some((l) => re.test(l)), `has ${re} (${reg.why}):${show}`)
         for (const re of want.not ?? []) assert.ok(!live.some((l) => re.test(l)), `not ${re} (${reg.why}):${show}`)
+        // What the box shows: the same rows without the agent's rules; the prompt still there.
+        const shown = `\n${m.shown.map((l, i) => `${String(i).padStart(2)}|${l}`).join('\n')}`
+        assert.ok(!m.shown.some((l) => PURE_RULE(l, r.meta.cols)), `a rule row is shown:${shown}`)
+        assert.equal(m.shown.length, live.filter((l) => !PURE_RULE(l, r.meta.cols)).length, `rows shown:${shown}`)
+        for (const re of want.has ?? []) assert.ok(m.shown.some((l) => re.test(l)), `shown has ${re}:${shown}`)
+        // The caret on the row it is on in the terminal: the prompt line, typing, a dialog.
+        if (reg.cursor.visible) {
+          const at = live[reg.cursor.y - reg.top]
+          assert.equal(m.shown[m.caretRow], at, `caret row (${reg.cursor.y}):${shown}`)
+          if (r.meta.agent === 'claude' && /^❯/.test(at ?? '')) assert.match(m.shown[m.caretRow], /^❯/, 'caret on the prompt row')
+        }
       })
     }
     // Every frame: the bottom is the last drawn row; the caret is inside; no bounces.
     let caretOut = 0
     let bottomOff = 0
+    let rulesShown = 0
+    let caretLost = 0
     let bounces = 0
     let changes = 0
     const tops = []
@@ -133,6 +151,8 @@ for (const [name, marks] of Object.entries(TRUTH)) {
       // log-update leaves the cursor at the start of the line under its frame (Ink hides its own).
       const resting = f.model === 'log-update' && f.cursor.x === 0 && f.cursor.y > f.bottom
       if (f.cursor.visible && !resting && (f.cursor.y < f.top || f.cursor.y > f.bottom)) caretOut++
+      if (f.shown.some((l) => PURE_RULE(l, r.meta.cols))) rulesShown++
+      if (f.cursor.visible && !resting && f.caretRow < 0) caretLost++
       tops.push({ t: f.t, top: f.top, h: f.bottom - f.top + 1 })
     }
     for (let i = 1; i < tops.length; i++) {
@@ -141,6 +161,8 @@ for (const [name, marks] of Object.entries(TRUTH)) {
     }
     stats.push({ name, frames: r.frames.length, heightChanges: changes, bounces, caretOut, bottomOff })
     assert.equal(caretOut, 0, 'frames with the visible caret outside the region')
+    assert.equal(rulesShown, 0, 'frames whose shown rows include a rule')
+    assert.equal(caretLost, 0, 'frames whose visible caret is on no shown row')
     assert.ok(bounces <= 2, `height bounced back within 300 ms ${bounces} times`)
   })
 }

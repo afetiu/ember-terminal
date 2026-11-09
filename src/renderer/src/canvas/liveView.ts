@@ -2,6 +2,7 @@ import { Terminal, type IBufferCell, type IBufferLine } from '@xterm/xterm'
 import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { StreamEngine, type LiveRegion } from '@shared/streamEngine'
+import { keptRows, type RuleColor } from '@shared/liveRules'
 import type { Session } from '../core/Session'
 
 /**
@@ -20,14 +21,19 @@ export class LiveView {
   readonly engine: StreamEngine
   /** The region the box shows now (the engine's last complete frame). */
   region: LiveRegion | null = null
-  /** Rows shown, and the first of them in the real terminal's screen. */
+  /**
+   * Rows shown (the agent's own horizontal rules left out: shared/liveRules.ts), the first of
+   * them in the real terminal's screen, and how many the whole region would show.
+   */
   shown = { rows: 0, from: 0, cols: 0, total: 0 }
+  /** The colour of the coloured rules the box left out (Claude's mode), as CSS; '' when plain. */
+  accent = ''
   /** Every frame drawn, for probes: when, the region, the rows shown. */
   readonly log: Array<{ t: number; top: number; bottom: number; rows: number; from: number; why: string }> = []
   private readonly subs: Array<{ dispose(): void }> = []
   private redraw = 0
   private settle = 0
-  private frameOut: { out: string; shown: LiveView['shown']; r: LiveRegion } | null = null
+  private frameOut: { out: string; shown: LiveView['shown']; r: LiveRegion; accent: string } | null = null
   private pendingSince = 0
   private lapse = 0
   private cap = 12
@@ -136,6 +142,7 @@ export class LiveView {
     this.region = null
     this.frameOut = null
     this.shown = { rows: 0, from: 0, cols: 0, total: 0 }
+    this.setAccent('')
     this.read()
   }
 
@@ -158,11 +165,18 @@ export class LiveView {
     this.draw()
   }
 
-  /** Rows the box needs now: the live area, at most the cap. */
+  /** Rows the box needs now: the live area without its rules, at most the cap. */
   get rows(): number {
     const r = this.region
     if (!r || r.mode !== 'split') return 0
-    return Math.min(this.cap, r.bottom - r.top + 1)
+    return this.kept(r).ys.length
+  }
+
+  /** The region's rows the box shows (screen rows of the real terminal), rules left out. */
+  private kept(r: LiveRegion): ReturnType<typeof keptRows> {
+    const src = this.session.term
+    const buf = src.buffer.active
+    return keptRows((y) => buf.getLine(buf.baseY + y), r.top, r.bottom, src.cols, this.cap, buf.getNullCell())
   }
 
   private read(): void {
@@ -205,23 +219,53 @@ export class LiveView {
     if (!r || r.mode !== 'split' || this.engine.inSync) return
     const src = this.session.term
     const buf = src.buffer.active
-    const n = this.rows
     // Taller than the box may be: its bottom part (the input line, a dialog's choices and
-    // footer are at the bottom).
-    const from = r.bottom - n + 1
+    // footer are at the bottom). The agent's own rules are left out: the box frames it.
+    const { ys, total, accent } = this.kept(r)
+    const n = ys.length
+    const from = ys[0] ?? r.bottom
     const cols = src.cols
     // One synchronized frame: xterm paints it whole or not at all.
-    let out = '\x1b[?2026h\x1b[0m\x1b[H\x1b[2J'
+    let out = '[?2026h[0m[H[2J'
     const cell = buf.getNullCell()
     for (let i = 0; i < n; i++) {
-      const line = buf.getLine(buf.baseY + from + i)
-      out += `\x1b[${i + 1};1H${line ? rowSgr(line, cols, cell) : ''}\x1b[0m`
+      const line = buf.getLine(buf.baseY + ys[i])
+      out += `[${i + 1};1H${line ? rowSgr(line, cols, cell) : ''}[0m`
     }
+    // The caret on its own row, wherever the rules above it went.
     const c = r.cursor
-    const cy = c.y - from
-    out += c.visible && cy >= 0 && cy < n ? `\x1b[${cy + 1};${c.x + 1}H\x1b[?25h` : '\x1b[?25l'
-    out += '\x1b[?2026l'
-    this.frameOut = { out, shown: { rows: n, from, cols, total: r.bottom - r.top + 1 }, r }
+    const cy = ys.indexOf(c.y)
+    out += c.visible && cy >= 0 ? `[${cy + 1};${c.x + 1}H[?25h` : '[?25l'
+    out += '[?2026l'
+    this.frameOut = { out, shown: { rows: n, from, cols, total }, r, accent: this.css(accent) }
+  }
+
+  /** A rule's colour as CSS, from the real terminal's palette. */
+  private css(c: RuleColor): string {
+    if (!c) return ''
+    if ('rgb' in c) return `rgb(${(c.rgb >> 16) & 255}, ${(c.rgb >> 8) & 255}, ${c.rgb & 255})`
+    const p = c.palette
+    if (p < 16) {
+      const t = this.session.term.options.theme ?? {}
+      const names = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'] as const
+      const name = p < 8 ? names[p] : `bright${names[p - 8][0].toUpperCase()}${names[p - 8].slice(1)}`
+      return (t as Record<string, string | undefined>)[name] ?? ''
+    }
+    if (p < 232) {
+      const v = [0, 95, 135, 175, 215, 255]
+      const i = p - 16
+      return `rgb(${v[Math.floor(i / 36)]}, ${v[Math.floor(i / 6) % 6]}, ${v[i % 6]})`
+    }
+    return ''
+  }
+
+  /** The box's edge in the colour of the agent's mode (its coloured rules), or plain. */
+  private setAccent(css: string): void {
+    if (css === this.accent) return
+    this.accent = css
+    if (css) this.el.style.setProperty('--live-mode-color', css)
+    else this.el.style.removeProperty('--live-mode-color')
+    this.el.classList.toggle('has-mode', !!css)
   }
 
   /** Copy the last complete frame into the box, in one write. */
@@ -230,7 +274,7 @@ export class LiveView {
     this.redraw = 0
     const f = this.frameOut
     if (!this.on || !this.opened || !f) return
-    const { out, shown, r } = f
+    const { out, shown, r, accent } = f
     const { rows: n, from, cols } = shown
     this.syncFont()
     if (this.term.cols !== cols || this.term.rows !== this.cap) this.term.resize(Math.max(2, cols), this.cap)
@@ -238,7 +282,8 @@ export class LiveView {
     // on the same next frame, never a frame of one without the other.
     this.term.write(out, () => {
       this.shown = shown
-      this.el.classList.toggle('is-clipped', from > r.top)
+      this.setAccent(accent)
+      this.el.classList.toggle('is-clipped', shown.total > n)
       this.log.push({ t: performance.now(), top: r.top, bottom: r.bottom, rows: n, from, why: r.why })
       if (this.log.length > 600) this.log.splice(0, this.log.length - 600)
       this.onDrawn?.()
