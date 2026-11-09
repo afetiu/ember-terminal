@@ -335,7 +335,12 @@ export class LoomView {
         // rather than a button that does nothing.
         if (!this.raw) {
           const why = host.noCanvasWhy()
-          if (why) this.hooks.toast(why)
+          if (!why) return
+          // And what on this machine asked for the full-screen renderer, if Ember can see it.
+          void window.ember.claude.fullscreenWhy().then(
+            (cause) => this.hooks.toast(cause && this.session.announcedAgent === 'claude' ? `${why} Found: ${cause}.` : why),
+            () => this.hooks.toast(why),
+          )
           return
         }
         this.setRaw(false)

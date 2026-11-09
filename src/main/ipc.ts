@@ -96,6 +96,7 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   const updater = new Updater((s) => broadcast('ember:update:state', s))
   app.on('before-quit', () => updater.dispose())
   ipcMain.handle('ember:update:state', () => updater.state)
+  ipcMain.handle('ember:claude:fullscreen-why', () => claudeFullscreenWhy())
   ipcMain.handle('ember:update:check', () => updater.check())
   ipcMain.on('ember:update:install', () => void updater.install())
 
@@ -226,3 +227,26 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
   })
   ipcMain.on('ember:win:close', (e) => windowOf(e)?.close())
 }
+
+/**
+ * What on this machine asks Claude Code for its full-screen renderer, which leaves no live
+ * area for the canvas's box. Ember passes `tui: "default"` and clears CLAUDE_CODE_NO_FLICKER,
+ * but a managed setting or an older Claude Code can still win; this says which, plainly.
+ */
+function claudeFullscreenWhy(): string {
+  const found: string[] = []
+  if (process.env['CLAUDE_CODE_NO_FLICKER']) found.push(`CLAUDE_CODE_NO_FLICKER=${process.env['CLAUDE_CODE_NO_FLICKER']} is set in Windows (Ember clears it in its tabs)`)
+  // Ember's own settings outrank the person's settings files; a managed one outranks Ember's.
+  const files = ['C:/ProgramData/ClaudeCode/managed-settings.json', 'C:/Program Files/ClaudeCode/managed-settings.json']
+  for (const f of files) {
+    try {
+      const j = JSON.parse(readFileSync(f, 'utf8')) as { tui?: string; env?: Record<string, string> }
+      if (j.tui === 'fullscreen') found.push(`${f} has "tui": "fullscreen"`)
+      if (j.env?.['CLAUDE_CODE_NO_FLICKER']) found.push(`${f} sets CLAUDE_CODE_NO_FLICKER in its env`)
+    } catch {
+      /* not there, or not JSON: nothing to report */
+    }
+  }
+  return found.join('; ')
+}
+

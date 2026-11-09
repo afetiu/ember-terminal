@@ -128,6 +128,7 @@ const bridge: EmberBridge = {
   },
   claude: {
     onStatus: (cb) => on<ClaudeStatus>('ember:claude:status', cb),
+    fullscreenWhy: () => ipcRenderer.invoke('ember:claude:fullscreen-why') as Promise<string>,
   },
   hooks: {
     onEvent: (cb) => on<HookEvent>('ember:hook:event', cb),

@@ -711,6 +711,8 @@ export interface EmberBridge {
   /** What the Claude session in a tab reports through its status line. */
   claude: {
     onStatus(cb: (s: ClaudeStatus) => void): () => void
+    /** What on this machine asks Claude Code for its full-screen renderer, in words; '' if nothing found. */
+    fullscreenWhy(): Promise<string>
   }
   /** Claude Code's hooks in a tab (SessionStart, Stop): the session's name, for its card. */
   hooks: {

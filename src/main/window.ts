@@ -182,6 +182,15 @@ export function createWindow(config: EmberConfig): BrowserWindow {
   win.on('focus', () => applyGlass(win, configs.get(win) ?? config))
   win.on('blur', () => applyGlass(win, configs.get(win) ?? config))
 
+  // Ctrl+Shift+I opens the developer tools, in releases too: when something goes wrong on
+  // someone's machine, its console is the quickest way to see why.
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && input.control && input.shift && !input.alt && input.key.toLowerCase() === 'i') {
+      e.preventDefault()
+      win.webContents.toggleDevTools()
+    }
+  })
+
   const emitMaximized = () => win.webContents.send('ember:win:maximized', win.isMaximized())
   win.on('maximize', emitMaximized)
   win.on('unmaximize', emitMaximized)
