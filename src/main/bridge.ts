@@ -123,7 +123,12 @@ function writeSettings(): string {
   // Passed only inside Ember, so other terminals keep the person's own setting.
   // CLAUDE_CODE_NO_FLICKER=1 (from the environment, or a settings file's `env`) forces the
   // full-screen renderer ahead of this setting, so it is switched off here too.
-  const tui = { tui: 'default', env: { CLAUDE_CODE_NO_FLICKER: '0' } }
+  // CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 is the strongest of the three: Claude Code checks
+  // it before NO_FLICKER and before any settings file's `tui`, managed ones included. The
+  // shim sets it in the environment as well (ConPtyHost), but `/tui` restarts Claude Code
+  // without those two variables and with the same `--settings`: here it comes back with the
+  // restart. docs/specs/stream-engine.md, "The person's own tui: fullscreen".
+  const tui = { tui: 'default', env: { CLAUDE_CODE_NO_FLICKER: '0', CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN: '1' } }
   baseSettingsFile = join(dir, 'ember-settings-base.json')
   writeFileSync(baseSettingsFile, JSON.stringify({ ...tui, hooks: { ...emberHooks, Stop: [{ hooks: [said] }] } }, null, 2), 'utf8')
   const file = join(dir, 'ember-settings.json')

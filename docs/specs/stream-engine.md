@@ -176,3 +176,83 @@ Kept passing: `smoke.mjs`, `probe-clear.mjs`, `probe-answer-card.mjs`, `probe-se
 Not done: other agents' committed lines on the canvas (the engine hands them over,
 `takeCommitted()`, nothing renders them yet; those agents keep the Canvas | CLI switch over
 their whole screen).
+
+## The person's own `"tui": "fullscreen"` (2026-11-09, Claude Code 2.1.317–2.1.319)
+
+People who like Claude Code's full-screen renderer keep `"tui": "fullscreen"` in
+`~/.claude/settings.json` (this machine has it). In full screen there is no live area to read
+(below), so Ember wants the classic renderer in its tabs without touching that setting.
+
+**How Claude Code picks** (read from the 2.1.319 binary, `Kd()`; 2.1.317/318 the same):
+screen-reader mode → classic; **`CLAUDE_CODE_NO_FLICKER` false or
+`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` set → classic**; `CLAUDE_CODE_NO_FLICKER` true → full
+screen; crash/tmux -CC/Windows-over-SSH auto-offs → classic; then the merged settings' `tui`
+(user < project < local < `--settings` < managed); only with no `tui` anywhere the fresh-install
+upsell, `tengu_amber_creek` and `tengu_pewter_brook` gates (the GrowthBook rollout). A
+settings file's `env` lands in the process environment before this runs.
+
+**Measured** (node-pty, OpenConsole, user `tui: fullscreen`, `?1049h` seen or not):
+
+| launch | 2.1.319 | 2.1.317 |
+| --- | --- | --- |
+| no flags | full screen | full screen |
+| `--settings {"tui":"default"}` | classic | classic |
+| same, plus `.claude/settings.local.json` `{"tui":"fullscreen","env":{"CLAUDE_CODE_NO_FLICKER":"1"}}` | **full screen** | — |
+| Ember's settings (`tui` + `env` NO_FLICKER=0) with that local file | classic | — |
+| env `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1` only | classic | classic |
+| env `CLAUDE_CODE_NO_FLICKER=0` only | classic | — |
+| `--settings {"env":{"CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN":"1"}}` with the local file | classic | — |
+
+**`/tui fullscreen`** saves `tui` to the *user* settings and restarts Claude Code ("restarts
+and resumes your session"). The restart carries the launch argv (`--settings`,
+`--mcp-config` survive — verified live: the status line and hooks come back) but **drops
+`CLAUDE_CODE_NO_FLICKER` and `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` from the environment**
+(`dropEnv` in the relaunch). With the variable alone (no `--settings`) the restart came up full
+screen; with Ember's `--settings` it stays classic. `/tui default` would rewrite the person's
+own setting, so it is not run against this machine's settings.
+
+So a `tui` in some settings file never beats Ember's `--settings` on these versions; what could,
+before this change, is a settings `env` with NO_FLICKER=1 Ember's `env` does not override (managed),
+a managed `tui`, a Claude Code version that reads `tui` before `--settings` is loaded (the
+other PC's report; its version unknown, not reproducible with 2.1.317–319), or `claude` run
+past Ember's shim (a Git Bash or cmd tab, `claude.exe` typed): then there is no announcement and
+no canvas either way.
+
+**What Ember does now:** the PowerShell `claude` shim sets
+`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1` for the call (restored after), and Ember's
+`--settings` carries it in `env` too, next to `tui: "default"` and NO_FLICKER=0. The variable is
+the first thing Claude Code checks, ahead of every `tui` and NO_FLICKER=1 from any settings
+file (managed included); the settings copy brings it back after a `/tui` restart. Nothing in the
+person's settings changes, and other terminals keep their full screen. If Claude still comes
+up full screen in an Ember tab, the tab shows it whole (the Canvas | CLI switch), and asking for
+the canvas says why, naming a managed setting that turns the variable off, or the person's own
+`tui: fullscreen` with "this Claude Code did not take the override: update it, or /tui default".
+`probe-engine.mjs` runs with this machine's real `tui: fullscreen` and checks `/tui fullscreen`
+restarts into the classic renderer with the canvas and box.
+
+## Claude's full-screen renderer: can the box show only its bottom pane? No, not exactly
+
+Recorded 2.1.319 with `tui: fullscreen` (`claude-fullscreen-menus`, `claude-fullscreen-turns`:
+idle, typing, a reply long enough to scroll, `/`, `/mcp`, `/model`, six-line paste, resize,
+Esc Esc, permission prompt, three queued). What the stream holds:
+
+- **No structure.** 0 `DECSTBM` with margins (3 bare resets), 0 `SU`/`SD`, 0 `?2026` frames, 0
+  erase-downs. Every frame is `?25l`, `CUP 1;1` (home), relative `CUD`/`CUF`/`CHA` to the changed
+  cells, `?25h`: a cell diff of the whole alternate screen.
+- **The transcript and the bottom pane change in the same frames.** Streaming the reply: one
+  frame rewrote rows 0–37, 39 and 44 together (the transcript scrolled by rewriting, not by a
+  scroll region). `/mcp`, `/model`, Esc Esc (rewind) and their closing: all 45 rows in one frame.
+  No frame boundary, no first-changed row, no floor separates the two.
+- **The bottom pane is not one thing.** The prompt box sits at the bottom with the transcript
+  above it; the `/` list is drawn *over* the transcript's last rows (rows 35–40, the
+  transcript did not move); `/mcp`, `/model` and rewind take the screen from a `▔▔▔` rule with
+  the transcript's tail left above; the **permission prompt is drawn in the transcript's flow**
+  (rows 11–23 under the last message, the prompt box gone, 21 blank rows below it); the
+  **working line and queued messages are in the transcript area** above the prompt box.
+- A width change back to 120×45 drew nothing at all (the screen stayed as xterm reflowed it).
+
+Finding the pane would mean reading glyphs (`───`, `▔▔▔`, `❯`) and guessing which overlay is
+which — the heuristic this design replaced — and the permission prompt, the working line and
+the queue would still not be "the bottom pane". So the engine keeps saying `full` on the
+alternate screen (replay tests over both recordings, every mark `full`), Claude stays in the
+classic renderer in Ember, and the whole-screen fallback with its message stays.

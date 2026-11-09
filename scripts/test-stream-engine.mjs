@@ -70,6 +70,12 @@ const TRUTH = {
     replied: { mode: 'full' },
     slash: { mode: 'full' },
   },
+  // Claude's full-screen renderer over a scrolling transcript: no exact boundary between the
+  // transcript and its bottom pane in the stream (docs/specs/stream-engine.md), so whole.
+  'claude-fullscreen-menus': Object.fromEntries(
+    ['idle', 'typing', 'cleared', 'streaming', 'replied', 'slash', 'esc', 'mcp', 'mcp-closed', 'model', 'model-closed', 'multiline', 'resized', 'resized-back', 'esc-esc'].map((m) => [m, { mode: 'full' }])
+  ),
+  'claude-fullscreen-turns': Object.fromEntries(['idle', 'permission', 'permission-denied', 'queued', 'queue-done'].map((m) => [m, { mode: 'full' }])),
   // Ink log-update (Gemini CLI): its trust dialog, no turns.
   'gemini-short': {
     idle: { has: [/Do you trust the files/, /Don't trust/], not: [/Tips for getting started/, /Gemini CLI v\d/] },

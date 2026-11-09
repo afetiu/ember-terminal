@@ -17,7 +17,7 @@
  *   npm run build; node scripts/probe-engine.mjs [--codex] [--only=claude|codex] [--verbose] [out-dir]
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { seedHome } from './probelib.mjs'
@@ -100,14 +100,24 @@ const key = (k, code, vk, modifiers = 0, text) =>
   send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, modifiers, ...(text ? { text, unmodifiedText: text } : {}) }).then(() =>
     send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk, modifiers })
   )
+// Text arrives in the PTY as one chunk, which Claude Code reads as a paste; an Enter that
+// follows too closely is taken as part of it (a newline in the prompt, nothing sent). So an
+// Enter waits until the text has been in for a while, longer for a long text: on a busy
+// machine (another Electron, a build) 350 ms was not always enough.
+let typed = { at: 0, len: 0 }
 const enter = async () => {
-  await wait(350)
+  const left = typed.at + 450 + Math.min(600, typed.len * 4) - Date.now()
+  await wait(Math.max(150, left))
   return key('Enter', 'Enter', 13, 0, '\r')
 }
 const esc = () => key('Escape', 'Escape', 27)
 const tabKey = () => key('Tab', 'Tab', 9, 0, '\t')
 const switchKey = () => key('`', 'Backquote', 192, 2)
-const typeText = (text) => send('Input.insertText', { text })
+const typeText = async (text) => {
+  const r = await send('Input.insertText', { text })
+  typed = { at: Date.now(), len: text.length }
+  return r
+}
 const until = async (fn, ms, every = 200) => {
   const end = Date.now() + ms
   while (Date.now() < end) {
@@ -462,6 +472,29 @@ if (ONLY !== 'codex') {
     await steady(tab)
   }, 'claude', ['facts about the ocean', 'Jupiter'])
   await rules(tab, 'resized back', ['facts about the ocean', 'Jupiter'])
+
+  // ---- the person's own `"tui": "fullscreen"` (this machine's setting) and `/tui fullscreen`.
+  // The whole run above already had it: Ember's classic renderer won. `/tui fullscreen` saves
+  // the setting and restarts Claude Code, dropping CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN from
+  // the environment; Ember's `--settings` (and the variable in its `env`) come back with the
+  // restart. Run only where the setting already says fullscreen, so it changes nothing.
+  let userTui
+  try {
+    userTui = JSON.parse(readFileSync(join(homedir(), '.claude', 'settings.json'), 'utf8')).tui
+  } catch {}
+  console.log(`  (this machine's own Claude setting: tui ${userTui ?? 'unset'})`)
+  if (userTui === 'fullscreen') {
+    await focusTerm(tab)
+    await typeText('/tui fullscreen')
+    await enter()
+    // The restart: the screen goes and comes back with the session resumed.
+    await until(async () => (await lm()).rows.some((r) => /Claude Code v\d/.test(r)), 30_000, 200)
+    l = await until(async () => { const x = await lm(); return x.mode === 'claude' && x.cli.liveOn && x.cli.promptSeen && x }, 40_000)
+    check('/tui fullscreen in Ember: Claude Code restarts and stays classic (canvas and box)', !!l, l ? '' : `mode=${(await lm()).mode}`)
+    await steady(tab, 1500)
+    await shot('claude-11-after-tui-fullscreen')
+    await rules(tab, 'after /tui fullscreen', ['facts about the ocean', 'Jupiter', 'Claude Code v'])
+  }
 
   // Exit: the tab is a shell again.
   await focusTerm(tab)

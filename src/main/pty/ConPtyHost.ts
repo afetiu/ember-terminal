@@ -232,8 +232,17 @@ function withPanelShim(exePath: string, args: string[]): string[] {
     // canvas comes up over Claude Code's screen while it runs, and goes with the next prompt.
     // Not for a one-shot `claude -p`, which prints and exits like any command.
     "  if (-not ($args -contains '-p' -or $args -contains '--print')) { [Console]::Write(\"$([char]27)]133;E;ember-agent=claude$([char]7)\") }",
-    '  if ($env:EMBER_SETTINGS) { & $real.Source --mcp-config $env:EMBER_MCP_CONFIG --settings $env:EMBER_SETTINGS @args; return }',
-    '  & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args',
+    // The classic renderer, whatever the person's own settings say (`"tui": "fullscreen"` in
+    // any settings file, NO_FLICKER in a settings `env`): Claude Code reads this variable
+    // before any of them. Only for this call; the settings file carries it across a `/tui`
+    // restart, which drops it from the environment (bridge.ts writeSettings).
+    '  $alt = $env:CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN',
+    "  $env:CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN = '1'",
+    '  try {',
+    '    if ($env:EMBER_SETTINGS) { & $real.Source --mcp-config $env:EMBER_MCP_CONFIG --settings $env:EMBER_SETTINGS @args } else { & $real.Source --mcp-config $env:EMBER_MCP_CONFIG @args }',
+    '  } finally {',
+    '    if ($null -eq $alt) { Remove-Item env:CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN -ErrorAction SilentlyContinue } else { $env:CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN = $alt }',
+    '  }',
     '}',
     ...otherAgentShims(),
   ].join('\n')

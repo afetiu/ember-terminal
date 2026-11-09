@@ -230,34 +230,34 @@ export function registerIpc(host: PtyHost, onConfigChange?: (config: EmberConfig
 
 /**
  * What on this machine asks Claude Code for its full-screen renderer, which leaves no live
- * area for the canvas's box. Ember passes `tui: "default"` and clears CLAUDE_CODE_NO_FLICKER,
- * but a managed setting or an older Claude Code can still win; this says which, plainly.
+ * area for the canvas's box. Ember's shim and settings set CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1,
+ * which Claude Code (2.1.317-2.1.319 read) checks before NO_FLICKER and before any settings
+ * file's `tui`, managed ones included, and which a `/tui` restart keeps (it comes back with
+ * `--settings`). What can still win is named here, plainly.
  */
 function claudeFullscreenWhy(): string {
   const found: string[] = []
-  if (process.env['CLAUDE_CODE_NO_FLICKER']) found.push(`CLAUDE_CODE_NO_FLICKER=${process.env['CLAUDE_CODE_NO_FLICKER']} is set in Windows (Ember clears it in its tabs)`)
-  // Ember's own settings outrank the person's settings files; a managed one outranks Ember's.
+  const off = (v: string | undefined) => v !== undefined && /^(0|false|no|off)$/i.test(v.trim())
   const files = ['C:/ProgramData/ClaudeCode/managed-settings.json', 'C:/Program Files/ClaudeCode/managed-settings.json']
   for (const f of files) {
     try {
-      const j = JSON.parse(readFileSync(f, 'utf8')) as { tui?: string; env?: Record<string, string> }
-      if (j.tui === 'fullscreen') found.push(`${f} has "tui": "fullscreen"`)
-      if (j.env?.['CLAUDE_CODE_NO_FLICKER']) found.push(`${f} sets CLAUDE_CODE_NO_FLICKER in its env`)
+      const j = JSON.parse(readFileSync(f, 'utf8')) as { env?: Record<string, string> }
+      if (off(j.env?.['CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN'])) found.push(`${f} sets CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=${j.env?.['CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN']}, which outranks Ember's`)
     } catch {
       /* not there, or not JSON: nothing to report */
     }
   }
-  // The person's own settings: Ember's should outrank them, but some Claude Code versions,
-  // and a restart from `/tui fullscreen`, keep theirs. Worth naming when nothing else is.
+  // The person's own settings: Ember outranks them in its tabs, so if Claude is full screen
+  // anyway, this Claude Code did not take the override. Worth naming when nothing else is.
   if (!found.length) {
     try {
       const f = join(app.getPath('home'), '.claude', 'settings.json')
       const j = JSON.parse(readFileSync(f, 'utf8')) as { tui?: string }
-      if (j.tui === 'fullscreen') found.push(`your Claude settings (${f}) ask for "tui": "fullscreen" — set it to "default" (or run /tui default) and start claude again`)
+      if (j.tui === 'fullscreen')
+        found.push(`your Claude settings (${f}) ask for "tui": "fullscreen". Ember overrides that in its tabs, but this Claude Code did not take the override: update it (claude update), or run /tui default`)
     } catch {
       /* no settings file */
     }
   }
   return found.join('; ')
 }
-
