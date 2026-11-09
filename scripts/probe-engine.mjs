@@ -24,6 +24,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { seedHome } from './probelib.mjs'
+import { workingRows } from '../src/shared/liveRules.ts'
 
 const REPO = new URL('..', import.meta.url).pathname.slice(1).replace(/\/$/, '')
 const args = process.argv.slice(2)
@@ -148,6 +149,11 @@ const PURE_RULE = (l) => {
   const t = l.replace(/ /g, '')
   return t.length >= 20 && t.length >= Math.ceil(l.length * 0.6) && /^[─━═╌╍┄┅┈┉╴╶╸╺\-—–]+$/.test(t)
 }
+/** The live rows the box keeps (shared/liveRules.ts keptRows): no plain rules, no working line. */
+const KEPT = (live) => {
+  const w = workingRows(live)
+  return live.filter((t, i) => !PURE_RULE(t) && !w.has(i))
+}
 const until = async (fn, ms, every = 200) => {
   const end = Date.now() + ms
   while (Date.now() < end) {
@@ -264,7 +270,7 @@ const rules = async (tab, where, words = []) => {
   await wait(300)
   let g = await geometry(tab)
   // Read mid-frame (the real terminal one write ahead of the box): once more, a beat later.
-  if (g.text.join('|') !== g.live.filter((t) => !PURE_RULE(t)).slice(-g.shown.rows || g.live.length).join('|')) {
+  if (g.text.join('|') !== KEPT(g.live).slice(-g.shown.rows || g.live.length).join('|')) {
     await wait(600)
     g = await geometry(tab)
   }
@@ -272,8 +278,8 @@ const rules = async (tab, where, words = []) => {
   const r = g.region
   const fullTab = g.pane.top === 0 && Math.abs(g.pane.h - g.panesH) < 1 && c.pty.rows === c.rows && c.pty.cols === c.cols && c.rows * c.cellH <= c.paneH
   check(`${where}: the real terminal is the whole tab and its PTY is its size`, fullTab, `rows=${c.rows} pty=${c.pty.rows}x${c.pty.cols} paneTop=${g.pane.top} paneH=${g.pane.h} opacity=${g.pane.opacity}`)
-  // The region's rows without the agent's own rules (liveView.ts): the bottom ones if capped.
-  const kept = r && r.mode === 'split' ? g.live.filter((t) => !PURE_RULE(t)) : []
+  // The region's rows without the agent's own rules and its working line (liveView.ts): the bottom ones if capped.
+  const kept = r && r.mode === 'split' ? KEPT(g.live) : []
   const want = kept.slice(kept.length - g.shown.rows)
   const exact = kept.length > 0 && g.shown.total === kept.length && g.shown.rows > 0 && g.shown.rows <= kept.length
   const tall = Math.abs(g.box.h - (g.shown.rows * g.cellH + g.box.padTop + g.box.padBottom)) < 1.5
@@ -398,7 +404,13 @@ if (ONLY !== 'codex') {
   await sampled(tab, 'a turn (working line, reply)', async () => {
     await typeText(ASK1)
     await enter()
-    check('mid-turn: the working line is in the box', !!(await until(() => boxHas(tab, /…/), 20_000, 100)))
+    // The working line is said once, at the top of the canvas: the box leaves it out.
+    const mid = await until(async () => {
+      const x = await ev(`(() => { const lv = window.__ember.loomLive(${JSON.stringify(tab)}); const v = document.querySelector('.loom.is-on .loom-now.is-on .loom-now-line'); return { live: lv.liveRows(), box: lv.text(), now: v ? v.innerText : '' } })()`)
+      return x.live.some((t) => /^\s*\S\s+[A-Z][a-z]+…/.test(t)) && x.now && x
+    }, 20_000, 100)
+    check('mid-turn: the working line is NOT in the box', !!mid && !mid.box.some((t) => /^\s*\S\s+[A-Z][a-z]+…|⎿\s+Tip:/.test(t)), JSON.stringify(mid?.box?.slice(0, 4)))
+    check('mid-turn: the working line IS on the canvas top line', !!mid?.now, JSON.stringify(mid?.now))
     await shot('claude-2-working')
     const replied = await until(async () => { const x = await lm(); return /moons/i.test(x.text) && /Jupiter|Mars|Saturn|Earth/.test(x.text) && !x.working && x }, 90_000)
     check('the reply is on the canvas', !!replied)

@@ -16,6 +16,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { replay } from './replay-stream.mjs'
+import { workingRows } from '../src/shared/liveRules.ts'
 
 const DIR = join(new URL('.', import.meta.url).pathname.slice(1), 'fixtures', 'streams')
 const BORDER = /^ ?([─━╌-])\1{20,}/
@@ -35,7 +36,8 @@ const TRUTH = {
   },
   'claude-reply': {
     idle: CLAUDE_IDLE,
-    working: { has: [/…/, /esc to interrupt/, /^❯/], not: [/Write four short paragraphs/] },
+    // The working line is in the live area, but the box leaves it out (the canvas shows it at the top).
+    working: { has: [/…/, /esc to interrupt/, /^❯/], not: [/Write four short paragraphs/], shownNot: [/Actualizing…/], shownFirst: /^❯/ },
     replied: { first: BORDER, has: [/^❯/], not: [/river/i, /for \d+s · done/] },
   },
   'claude-menus': {
@@ -58,7 +60,7 @@ const TRUTH = {
     idle: CLAUDE_IDLE,
     permission: { first: BORDER, has: [/Do you want to proceed/, /1\. Yes/, /Esc to cancel/], not: [/Run this exact/] },
     'permission-denied': { ...CLAUDE_IDLE, not: [/Interrupted/, /New-Item/] },
-    queued: { has: [/second queued/, /third queued/, /esc to interrupt/, /^❯/], not: [/^ {2}\d+$/, /first queued/, /done/] },
+    queued: { has: [/second queued/, /third queued/, /esc to interrupt/, /^❯/], not: [/^ {2}\d+$/, /first queued/, /done/], shownNot: [/Blanching…/, /⎿ +Tip:/] },
     'queue-done': { ...CLAUDE_IDLE, not: [/queued/, /probe-se/] },
   },
   'claude-ask': {
@@ -98,7 +100,7 @@ const TRUTH = {
     slash: { has: [/\/model/, /^› \/$/], not: [/Tip:/] },
     model: { has: [/Select Model/, /esc back/], not: [/Tip:/] },
     mcp: { has: [/^› /], not: [/Tip:/] },
-    working: { has: [/Working/, /^› /], not: [/MCP Tools/, /Write three short/] },
+    working: { has: [/Working/, /^› /], not: [/MCP Tools/, /Write three short/], shownNot: [/Working \(/], shownFirst: /^› / },
     queued: { has: [/first queued/, /third queued/, /^› /], not: [/MCP Tools/] },
     replied: { has: [/^› /], not: [/Received/] },
     permission: { has: [/Would you like to run/, /Yes, proceed/, /esc to cancel/], not: [/Run the PowerShell command:/] },
@@ -125,11 +127,17 @@ for (const [name, marks] of Object.entries(TRUTH)) {
         if (want.first) assert.match(live[0] ?? '', want.first, `first row (${reg.why}):${show}`)
         for (const re of want.has ?? []) assert.ok(live.some((l) => re.test(l)), `has ${re} (${reg.why}):${show}`)
         for (const re of want.not ?? []) assert.ok(!live.some((l) => re.test(l)), `not ${re} (${reg.why}):${show}`)
-        // What the box shows: the same rows without the agent's rules; the prompt still there.
+        // What the box shows: the same rows without the agent's rules and its working line (the
+        // canvas shows that at the top); the prompt still there.
         const shown = `\n${m.shown.map((l, i) => `${String(i).padStart(2)}|${l}`).join('\n')}`
         assert.ok(!m.shown.some((l) => PURE_RULE(l, r.meta.cols)), `a rule row is shown:${shown}`)
-        assert.equal(m.shown.length, live.filter((l) => !PURE_RULE(l, r.meta.cols)).length, `rows shown:${shown}`)
-        for (const re of want.has ?? []) assert.ok(m.shown.some((l) => re.test(l)), `shown has ${re}:${shown}`)
+        const working = workingRows(live)
+        const expect = live.filter((l, i) => !PURE_RULE(l, r.meta.cols) && !working.has(i))
+        assert.equal(m.shown.length, expect.length, `rows shown:${shown}`)
+        for (const re of want.has ?? []) if (expect.some((l) => re.test(l))) assert.ok(m.shown.some((l) => re.test(l)), `shown has ${re}:${shown}`)
+        for (const re of want.shownNot ?? []) assert.ok(!m.shown.some((l) => re.test(l)), `shown not ${re}:${shown}`)
+        if (want.shownNot) assert.ok(working.size > 0, 'the working line was found')
+        if (want.shownFirst) assert.match(m.shown[0] ?? '', want.shownFirst, `shown first row:${shown}`)
         // The caret on the row it is on in the terminal: the prompt line, typing, a dialog.
         if (reg.cursor.visible) {
           const at = live[reg.cursor.y - reg.top]
