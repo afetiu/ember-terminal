@@ -5521,3 +5521,9 @@
 .loom-turn .is-now-step {
   display: none;
 }
+
+/* The CLI's own commands (/rename, /model) and what they print are its business, not the
+   conversation's: off the canvas. One the agent answers becomes a request and shows. */
+.loom-turn > [data-cmd] {
+  display: none;
+}

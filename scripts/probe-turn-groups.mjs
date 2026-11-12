@@ -148,6 +148,8 @@ try {
   check('"Join previous": two turns again, "yes do it" back inside turn 1', s?.dots === 2 && s?.turns[0]?.follows.includes('yes do it') && s?.turns[0]?.says.length === 2, JSON.stringify(s?.turns))
   check('the first turn offers no "Join previous"', await ev(`(() => { const b = ${VIS}.querySelector('.loom-turn.is-first > .loom-ask .loom-regroup'); return !b || getComputedStyle(b).display === 'none' })()`))
 
+  check('/model and what it printed are not on the canvas', await ev(`[...${VIS}.querySelectorAll('.loom-flow [data-cmd]')].every((x) => x.getClientRects().length === 0)`))
+
   // The step the large live line names is not shown twice while it is the one in progress.
   const tool = { type: 'assistant', uuid: `a${++n}`, timestamp: at(5), message: { role: 'assistant', content: [{ type: 'tool_use', id: 'ts1', name: 'ToolSearch', input: { query: 'select:Read' } }] } }
   await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify([tool])})`)
