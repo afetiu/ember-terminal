@@ -37,7 +37,8 @@ const STATIC_HELP = `ember <command> [args]         Ember, from the shell
   ember list                   the open tabs
   ember panel [show|hide]      the visualisation panel
   ember visualize              ask the Claude in this tab to draw what it just said
-  ember theme [name]           put a look on: basalt, smoke, lacquer, patina, hearth, lamp
+  ember theme [name]           put a look on: basalt, smoke, lacquer, patina, hearth, lamp,
+                               snowfall, tide, terrarium
   ember settings [tab]         open Settings (theme, text, motion, agent, behaviour, labs)
   ember set <path> <value>     write one setting, e.g. ember set font.size 14
   ember get <path>             read one setting
@@ -103,7 +104,7 @@ const FIXED = /^(theme|appearance)(\.|$)|^window\.(opacity|material|inactiveOpac
 if (verb === 'set') {
   const [, path, ...rest] = words
   if (!path || !rest.length) fail('usage: ember set <path> <value>   e.g. ember set font.size 14', 2)
-  if (FIXED.test(path)) fail(`ember: ${path} comes with the look. Pick a look instead: ember theme basalt|smoke|lacquer|patina|hearth|lamp`, 2)
+  if (FIXED.test(path)) fail(`ember: ${path} comes with the look. Pick a look instead: ember theme basalt|smoke|lacquer|patina|hearth|lamp|snowfall|tide|terrarium`, 2)
   const cfg = readConfig()
   const value = parseValue(rest.join(' '))
   setPath(cfg, path, value)

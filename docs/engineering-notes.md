@@ -173,7 +173,7 @@ just the terminal.
 ## Config
 
 First launch writes `~/.ember/config.json`. Its `look` is one of `shared/looks.ts`
-(basalt, smoke, lacquer, patina, hearth, lamp) and is the one appearance choice:
+(basalt, smoke, lacquer, patina, hearth, lamp, snowfall, tide, terrarium) and is the one appearance choice:
 `config.ts` derives the palette and the faces from it whatever else the file says — an
 old config's `theme`, `window.opacity`/`material`/`inactiveOpacity`, `font.family`/
 `uiFamily` and `appearance` are ignored and dropped. A look is `styles/looks.css` over

@@ -279,7 +279,7 @@ export interface EmberConfig {
   defaultProfile: string
   profiles: ShellProfile[]
   font: FontConfig
-  /** The look (shared/looks.ts): Basalt, Smoke, Lacquer, Patina, Hearth or Lamp. The one appearance choice. */
+  /** The look (shared/looks.ts): Basalt, Smoke, Lacquer and the rest. The one appearance choice. */
   look: Look
   /** The chosen look's terminal palette (main/themes.ts). Derived from `look`, never set by hand. */
   theme: ThemeConfig

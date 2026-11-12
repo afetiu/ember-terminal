@@ -286,7 +286,7 @@ try {
   await ev(`window.__ember.openPalette('theme')`)
   await wait(500)
   const rows = await ev(`[...document.querySelectorAll('.ember-palette-row')].map((r) => r.textContent)`)
-  const NAMES = ['Basalt', 'Smoke', 'Lacquer', 'Patina', 'Hearth', 'Lamp']
+  const NAMES = ['Basalt', 'Smoke', 'Lacquer', 'Patina', 'Hearth', 'Lamp', 'Snowfall', 'Tide', 'Terrarium']
   check('Ctrl+K offers every look', NAMES.every((n) => rows.some((r) => r.includes('Theme: ' + n))), JSON.stringify(rows))
   await shot('7-palette')
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
@@ -303,7 +303,7 @@ try {
     current: [...document.querySelectorAll('.ember-look.is-current')].map((b) => b.dataset.look),
     labels: [...document.querySelectorAll('.ember-settings-label')].map((e) => e.textContent),
   })`)
-  check('Settings opens on Theme with six tiles, this look marked', picker.tabs[0] === 'Theme' && picker.tiles.length === 6 && picker.current.join() === LOOK, JSON.stringify(picker))
+  check('Settings opens on Theme with nine tiles, this look marked', picker.tabs[0] === 'Theme' && picker.tiles.length === 9 && picker.current.join() === LOOK, JSON.stringify(picker))
   check('no font, opacity or backdrop to set', !picker.labels.some((l) => /^font$|interface font|opacity|backdrop|scanlines|weight/i.test(l)), JSON.stringify(picker.labels))
   check('no day/night switch in the title bar', !(await ev(`!!document.querySelector('.ember-voicetoggle, .is-mode')`)))
   // The old config's theme, glass and fonts did not take: the look's own palette and face.

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Looks — Smoke, Lacquer, Patina, Hearth, Lamp.
+   Looks — Smoke, Lacquer, Patina, Hearth, Lamp, Snowfall, Tide, Terrarium.
 
    Basalt (styles/basalt.css) is the structure every look stands on: where things sit,
    how they move, which surface is a well and which is a raised tile. A look is that
@@ -2443,6 +2443,1480 @@ body.theme-basalt.look-lamp {
     .ember-places {
       padding: 10px 6px 0;
     }
+  }
+}
+
+/* ==========================================================================
+   Snowfall — a cabin in the pines, snow coming down. Snow lies on what is in use.
+   ========================================================================== */
+
+body.theme-basalt.look-snowfall {
+  --b-frame: #171428;
+  --b-tray: #120e20;
+  --b-surface: rgba(22, 18, 38, 0.76);
+  --b-card: #241d3a;
+  --b-chip: rgba(225, 212, 255, 0.09);
+  --b-chip-hi: rgba(225, 212, 255, 0.16);
+  --b-chip-down: rgba(225, 212, 255, 0.05);
+  --b-well: rgba(15, 12, 28, 0.6);
+  --b-deep: rgba(15, 12, 28, 0.78);
+  --b-bar: rgba(225, 212, 255, 0.22);
+  --b-text: #f7f2ec;
+  --b-dim: #d5ccde;
+  --b-faint: #a79cb6;
+  --b-line: rgba(225, 212, 255, 0.11);
+  --b-edge: #6a5f86;
+  --b-accent: #ffb868;
+  --b-accent-down: #f0a050;
+  --b-on-accent: #3a2208;
+  --b-hi: 0 0 0 0 transparent;
+  --b-hi-strong: inset 0 1px 0 rgba(225, 212, 255, 0.1);
+  --b-raise: inset 0 0 0 1px rgba(225, 212, 255, 0.12);
+  --b-raise-hover: inset 0 0 0 1px rgba(225, 212, 255, 0.26);
+  --b-lift: inset 0 0 0 1px rgba(225, 212, 255, 0.1), 0 16px 32px -18px rgba(8, 5, 20, 0.9);
+  --b-float: inset 0 0 0 1px rgba(225, 212, 255, 0.14), 0 30px 60px -22px rgba(8, 5, 20, 0.9), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --b-press: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+  --b-recess: inset 0 0 0 1px rgba(225, 212, 255, 0.08);
+  --b-well-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.08);
+  --b-deep-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.1);
+  --b-accent-fill: 0 0 0 0 transparent;
+  --b-accent-glow: 0 8px 22px -8px rgba(255, 170, 90, 0.7);
+  --b-ui: Nunito, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'Source Code Pro', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #0b0816;
+  --c-working: #ffb868;
+  --c-attention: #ff8f6b;
+  --c-danger: #ff9e9e;
+  --c-cyan: #9fd6e8;
+  --ui-hover: rgba(225, 212, 255, 0.06);
+  --ui-ok: #a6e0b8;
+  --ui-warn: #ffb868;
+  --ui-err: #ff9e9e;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --k-track: rgba(225, 212, 255, 0.13);
+  --k-fill: #f4f0fa;
+  --k-thread: rgba(225, 212, 255, 0.16);
+  --k-point: #4a4066;
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #a6e0b8;
+    --l-warn: #ffb868;
+    --l-err: #ff9e9e;
+    --l-info: #a9b8ff;
+    --l-r-card: 14px;
+    --l-r-ctl: 10px;
+  }
+
+  ::selection {
+    background: rgba(255, 170, 90, 0.34);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(225, 212, 255, 0.32);
+    background-clip: padding-box;
+  }
+
+  /* The ground: a plum night. A cabin with a lit window sits in the pines along the bottom,
+     its smoke goes up, and snow comes down past everything. */
+  .ember-ground {
+    background: linear-gradient(180deg, #171428 0%, #1f1933 46%, #2a2140 100%);
+  }
+  .ember-ground > .ember-ground-live {
+    display: block;
+    inset: 0;
+  }
+  .eg-moon {
+    right: -170px;
+    top: -150px;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(214, 200, 255, 0.16) 0, rgba(214, 200, 255, 0) 66%);
+    will-change: opacity;
+    animation: eg-sf-soft 19s ease-in-out infinite alternate;
+  }
+  .eg-scene {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    aspect-ratio: 1280 / 300;
+  }
+  .eg-scene > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .eg-scene > i {
+    position: absolute;
+  }
+  .eg-window {
+    left: 4.06%;
+    top: 27.3%;
+    width: 11.72%;
+    height: 43.3%;
+    background: radial-gradient(circle, rgba(255, 184, 104, 0.3) 0, rgba(255, 184, 104, 0) 68%);
+    will-change: opacity;
+    animation: eg-sf-soft 6s ease-in-out infinite alternate;
+  }
+  .eg-smoke {
+    left: 11.02%;
+    top: 32%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(226, 218, 244, 0.5);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: eg-sf-smoke 9s ease-out infinite;
+  }
+  .eg-smoke.is-b {
+    animation-delay: -4.5s;
+  }
+  .eg-flake {
+    top: -14px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0, rgba(255, 255, 255, 0.75) 45%, rgba(255, 255, 255, 0) 72%);
+    will-change: transform;
+    animation: eg-sf-fall-a 30s linear infinite;
+  }
+  .eg-flake.is-b {
+    animation-name: eg-sf-fall-b;
+  }
+
+  .ember-brand-name {
+    gap: 9px;
+    font: 800 14.5px/1 var(--b-ui);
+    letter-spacing: 0.01em;
+  }
+  .ember-brand-name::before {
+    width: 14px;
+    height: 14px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Crect x='3.5' y='7.500' width='7' height='5.500' rx='1' fill='%233D335A'/%3E%3Crect x='5.800' y='9' width='2.600' height='2.800' fill='%23FFB868'/%3E%3Cpath d='M1.500 8L7 2.500 12.500 8' fill='none' stroke='%23F4F0FA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 20px;
+    box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 20px 60px rgba(8, 5, 20, 0.5);
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 20px;
+    background: var(--b-surface);
+    box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 20px 60px rgba(8, 5, 20, 0.5);
+  }
+
+  .ember-card {
+    margin: 0 0 5px;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(225, 212, 255, 0.06);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255, 184, 104, 0.24), rgba(255, 184, 104, 0.1));
+    box-shadow: inset 0 0 0 1px rgba(255, 200, 140, 0.22), 0 10px 28px -10px rgba(255, 160, 80, 0.45);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 700;
+    color: var(--b-text);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext) {
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-link {
+    color: var(--b-accent);
+  }
+  .ember-card-state {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: #3a3152;
+  }
+  :is(.ember-card.is-active, .ember-card[data-state='working']) .ember-card-state {
+    background: var(--b-accent);
+    box-shadow: 0 0 10px 2px rgba(255, 184, 104, 0.75);
+  }
+
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    font-weight: 800;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: rgba(255, 170, 90, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 170, 90, 0.2);
+  }
+
+  .loom-view-switch {
+    border-radius: 11px;
+    background: rgba(225, 212, 255, 0.09);
+    box-shadow: none;
+  }
+  .loom-view-switch::before {
+    border-radius: 8px;
+    background: var(--b-accent);
+    box-shadow: 0 6px 16px -6px rgba(255, 170, 90, 0.7);
+  }
+  .loom-view-switch button {
+    border-radius: 8px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 800;
+    color: var(--b-on-accent);
+  }
+
+  .loom-dot.is-at {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    background: var(--b-accent);
+    box-shadow: 0 0 12px 2px rgba(255, 184, 104, 0.7);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-dim);
+    border-top-color: rgba(225, 212, 255, 0.2);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: #fff;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(26px, 2.58vw, 38px);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say strong {
+    font-weight: 700;
+    color: var(--b-text);
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(255, 170, 90, 0.45);
+  }
+  .loom-say a:hover {
+    color: var(--b-accent);
+  }
+  .loom-say code {
+    box-shadow: none;
+  }
+
+  /* The table is a card. */
+  .loom-table {
+    overflow: hidden;
+    padding: 0;
+    border-radius: 14px;
+    background: rgba(225, 212, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.1);
+    font-size: 14px;
+  }
+  .loom-table th {
+    padding: 9px 14px;
+    font: 700 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--b-faint);
+  }
+  .loom-table td {
+    padding: 9px 14px;
+  }
+  .loom-table td:first-child {
+    font-size: 13px;
+  }
+  .loom-table strong {
+    color: #ff8f6b;
+    font-weight: 700;
+  }
+
+  .loom-code {
+    border-radius: 14px;
+  }
+  .loom-code-bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: var(--b-faint);
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 143, 107, 0.1);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ff9e9e;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(166, 224, 184, 0.09);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #a6e0b8;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(225, 212, 255, 0.09), rgba(225, 212, 255, 0.04));
+    box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.12);
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #241d3a;
+  }
+  .loom-piece-title {
+    font: 700 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 12px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 18px;
+  }
+  .loom-qd-text {
+    font-weight: 700;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 14px);
+  }
+  .loom-live::after {
+    border-radius: 14px;
+  }
+  .loom-live::before {
+    border-radius: 14px;
+    background: rgba(15, 12, 28, 0.78);
+    box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.11);
+  }
+
+  /* Snow lies on the session in use and on what is pinned. */
+  .ember-card-plate::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: -5px;
+    height: 11px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M2 6a5 5 0 0 1 5-5h86a5 5 0 0 1 5 5c0 2.500-2 4-5 4-3 0-4 2-8 2s-5-2-9-2H40c-4 0-5 2-9 2s-5-2-9-2H7c-3 0-5-1.500-5-4z' fill='%23F4F0FA'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  }
+  .loom-piece.is-pinned {
+    overflow: visible;
+  }
+  .loom-piece.is-pinned::before {
+    content: '';
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    top: -5px;
+    height: 11px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M2 6a5 5 0 0 1 5-5h86a5 5 0 0 1 5 5c0 2.500-2 4-5 4-3 0-4 2-8 2s-5-2-9-2H40c-4 0-5 2-9 2s-5-2-9-2H7c-3 0-5-1.500-5-4z' fill='%23F4F0FA'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+    pointer-events: none;
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 8px;
+    }
+    .ember-sidebar-title {
+      font: 700 11px/1.4 var(--b-ui);
+      letter-spacing: 0.08em;
+    }
+    .ember-newrow {
+      margin: 6px 0 0;
+      padding: 11px 14px;
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(225, 212, 255, 0.12);
+      font-size: 13px;
+    }
+    .ember-newrow:hover {
+      background: rgba(225, 212, 255, 0.05);
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 6px;
+      border-radius: 3px;
+    }
+    .ember-vitals-chip {
+      color: var(--b-dim);
+    }
+    .ember-version {
+      color: var(--b-faint);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Tide — a beach at night from above. The water comes in and goes out.
+   ========================================================================== */
+
+body.theme-basalt.look-tide {
+  --b-frame: #1b1611;
+  --b-tray: #15110d;
+  --b-surface: rgba(27, 22, 17, 0.72);
+  --b-card: #2a2119;
+  --b-chip: rgba(240, 225, 200, 0.09);
+  --b-chip-hi: rgba(240, 225, 200, 0.16);
+  --b-chip-down: rgba(240, 225, 200, 0.05);
+  --b-well: rgba(16, 13, 10, 0.6);
+  --b-deep: rgba(16, 13, 10, 0.74);
+  --b-bar: rgba(240, 225, 200, 0.22);
+  --b-text: #f6efe4;
+  --b-dim: #d8cebe;
+  --b-faint: #aea595;
+  --b-line: rgba(240, 225, 200, 0.11);
+  --b-edge: #6e6455;
+  --b-accent: #8fe6d4;
+  --b-accent-down: #6fd0bc;
+  --b-on-accent: #06302c;
+  --b-hi: 0 0 0 0 transparent;
+  --b-hi-strong: inset 0 1px 0 rgba(240, 225, 200, 0.1);
+  --b-raise: inset 0 0 0 1px rgba(240, 225, 200, 0.12);
+  --b-raise-hover: inset 0 0 0 1px rgba(240, 225, 200, 0.26);
+  --b-lift: inset 0 0 0 1px rgba(240, 225, 200, 0.1), 0 16px 32px -18px rgba(6, 4, 2, 0.9);
+  --b-float: inset 0 0 0 1px rgba(240, 225, 200, 0.14), 0 30px 60px -22px rgba(6, 4, 2, 0.9), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --b-press: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+  --b-recess: inset 0 0 0 1px rgba(240, 225, 200, 0.08);
+  --b-well-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.08);
+  --b-deep-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.1);
+  --b-accent-fill: 0 0 0 0 transparent;
+  --b-accent-glow: 0 8px 22px -8px rgba(90, 210, 190, 0.7);
+  --b-ui: Onest, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: 'M PLUS 1 Code', var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #0c0a07;
+  --c-working: #8fe6d4;
+  --c-attention: #ff9478;
+  --c-danger: #ff9d8e;
+  --c-cyan: #8fe6d4;
+  --ui-hover: rgba(240, 225, 200, 0.06);
+  --ui-ok: #9be2b4;
+  --ui-warn: #f2c98a;
+  --ui-err: #ff9d8e;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --k-track: rgba(240, 225, 200, 0.13);
+  --k-fill: linear-gradient(90deg, #3fb3a6, #8fe6d4);
+  --k-thread: transparent;
+  --k-point: #5a4e40;
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #9be2b4;
+    --l-warn: #f2c98a;
+    --l-err: #ff9d8e;
+    --l-info: #8fbfe6;
+    --l-r-card: 16px;
+    --l-r-ctl: 999px;
+  }
+
+  ::selection {
+    background: rgba(90, 210, 190, 0.34);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(240, 225, 200, 0.32);
+    background-clip: padding-box;
+  }
+
+  /* The ground: dark sand, a few things the sea left on it, and three sheets of water that
+     come up the beach and draw back, each at its own pace. Moonlight drifts over the dry sand. */
+  .ember-ground {
+    background: linear-gradient(180deg, #1b1611 0%, #241c15 40%, #2a2119 100%);
+  }
+  .ember-ground > .ember-ground-live {
+    display: block;
+    inset: 0;
+  }
+  .eg-sand {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .eg-moonlight {
+    left: 14%;
+    top: 2%;
+    width: 52%;
+    height: 46%;
+    background: radial-gradient(closest-side, rgba(240, 225, 200, 0.075), rgba(240, 225, 200, 0));
+    will-change: transform, opacity;
+    animation: eg-td-moon 47s ease-in-out infinite alternate;
+  }
+  .eg-shore {
+    left: 0;
+    top: 37.5%;
+    width: 260px;
+    height: 190px;
+  }
+  .eg-pebble {
+    right: 27px;
+    top: 52%;
+    width: 10px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4a3f33;
+  }
+  .eg-tide {
+    left: -16.4%;
+    width: 133%;
+    height: 65vh;
+    will-change: transform;
+  }
+  .eg-tide.is-a {
+    top: 73vh;
+    animation: eg-td-a 13s ease-in-out infinite alternate;
+  }
+  .eg-tide.is-b {
+    top: 81vh;
+    animation: eg-td-b 17s ease-in-out -5s infinite alternate;
+  }
+  .eg-tide.is-c {
+    top: 89.5vh;
+    animation: eg-td-c 21s ease-in-out -9s infinite alternate;
+  }
+  .eg-glint {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #c8fff2;
+    box-shadow: 0 0 8px 2px rgba(143, 230, 212, 0.7);
+    opacity: 0.15;
+    will-change: opacity;
+    animation: eg-td-glint 6s ease-in-out infinite alternate;
+  }
+  .eg-glint.is-sand {
+    width: 2px;
+    height: 2px;
+    background: #fff1d6;
+    box-shadow: 0 0 6px 1px rgba(240, 225, 200, 0.5);
+    animation-name: eg-td-grain;
+  }
+
+  .ember-brand-name {
+    gap: 9px;
+    font: 600 14.5px/1 var(--b-ui);
+    letter-spacing: 0.01em;
+  }
+  .ember-brand-name::before {
+    width: 16px;
+    height: 14px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14'%3E%3Cg fill='none' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1 5c2.300-3 4.700-3 7 0s4.700 3 7 0' stroke='%238FE6D4'/%3E%3Cpath d='M1 10.500c2.300-3 4.700-3 7 0s4.700 3 7 0' stroke='%23FF9478'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 26px 22px 24px 22px;
+    box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.09), inset 0 1px 0 rgba(255, 245, 225, 0.07), 0 20px 60px rgba(6, 4, 2, 0.5);
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 26px 22px 24px 22px;
+    background: var(--b-surface);
+    box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.09), inset 0 1px 0 rgba(255, 245, 225, 0.07), 0 20px 60px rgba(6, 4, 2, 0.5);
+  }
+
+  .ember-card {
+    margin: 0 0 5px;
+    padding: 12px 14px;
+    border-radius: 22px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(240, 225, 200, 0.06);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 24px 18px 22px 16px / 20px 24px 18px 22px;
+    background: linear-gradient(160deg, rgba(143, 230, 212, 0.24), rgba(143, 230, 212, 0.08));
+    box-shadow: inset 0 1px 0 rgba(226, 250, 244, 0.3), inset 0 0 0 1px rgba(143, 230, 212, 0.16), 0 10px 26px -10px rgba(60, 190, 170, 0.45);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext) {
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-link {
+    color: var(--b-accent);
+  }
+  .ember-card-state {
+    width: 8px;
+    height: 6px;
+    background: #4a3f33;
+  }
+  :is(.ember-card.is-active, .ember-card[data-state='working']) .ember-card-state {
+    width: 8px;
+    height: 8px;
+    background: #dffff7;
+    box-shadow: 0 0 10px 2px rgba(143, 230, 212, 0.75);
+  }
+
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    font-weight: 700;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: rgba(90, 210, 190, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(90, 210, 190, 0.2);
+  }
+
+  .loom-view-switch {
+    border-radius: 999px;
+    background: rgba(240, 225, 200, 0.09);
+    box-shadow: none;
+  }
+  .loom-view-switch::before {
+    border-radius: 999px;
+    background: var(--b-accent);
+    box-shadow: 0 6px 16px -6px rgba(90, 210, 190, 0.7);
+  }
+  .loom-view-switch button {
+    border-radius: 999px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 700;
+    color: var(--b-on-accent);
+  }
+
+  /* The thread is a line the water left; the points are pebbles. */
+  .loom-rail::before {
+    width: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 30'%3E%3Cpath d='M4 0c3 4 3 6 0 10s-3 6 0 10 3 6 0 10' fill='none' stroke='rgb(240,225,200)' stroke-opacity='0.2' stroke-width='1.300'/%3E%3C/svg%3E") top center / 8px 30px repeat-y;
+  }
+  .loom-dot {
+    width: 7px;
+    height: 5px;
+  }
+  .loom-dot.is-at {
+    width: 11px;
+    height: 11px;
+    background: var(--b-accent);
+    box-shadow: 0 0 12px 2px rgba(143, 230, 212, 0.7);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-dim);
+    border-top-color: rgba(240, 225, 200, 0.2);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #fffaf0;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(26px, 2.58vw, 38px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(90, 210, 190, 0.45);
+  }
+  .loom-say a:hover {
+    color: var(--b-accent);
+  }
+  .loom-say code {
+    box-shadow: none;
+  }
+
+  /* The table is a card. */
+  .loom-table {
+    overflow: hidden;
+    padding: 0;
+    border-radius: 16px;
+    background: rgba(240, 225, 200, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.09);
+    font-size: 14px;
+  }
+  .loom-table th {
+    padding: 9px 14px;
+    font: 600 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--b-faint);
+  }
+  .loom-table td {
+    padding: 9px 14px;
+  }
+  .loom-table td:first-child {
+    font-size: 13px;
+  }
+  .loom-table strong {
+    color: #ff9478;
+    font-weight: 600;
+  }
+
+  .loom-code {
+    border-radius: 16px;
+  }
+  .loom-code-bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: var(--b-faint);
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 148, 120, 0.1);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ff9d8e;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(155, 226, 180, 0.09);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #9be2b4;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 26px 20px 24px 20px;
+    background: linear-gradient(180deg, rgba(240, 225, 200, 0.07), rgba(22, 104, 108, 0.26));
+    box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.1);
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #2a2119;
+  }
+  .loom-piece-title {
+    font: 600 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 16px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 24px;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 18px);
+  }
+  .loom-live::after {
+    border-radius: 18px;
+  }
+  .loom-live::before {
+    border-radius: 18px;
+    background: rgba(16, 13, 10, 0.74);
+    box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.11);
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 8px;
+    }
+    .ember-sidebar-title {
+      font: 600 11px/1.4 var(--b-ui);
+      letter-spacing: 0.08em;
+    }
+    .ember-newrow {
+      margin: 6px 0 0;
+      padding: 11px 14px;
+      border-radius: 20px;
+      box-shadow: inset 0 0 0 1px rgba(240, 225, 200, 0.12);
+      font-size: 13px;
+    }
+    .ember-newrow:hover {
+      background: rgba(240, 225, 200, 0.05);
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 6px;
+      border-radius: 3px;
+    }
+    .ember-vitals-chip {
+      color: var(--b-dim);
+    }
+    .ember-version {
+      color: var(--b-faint);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Terrarium — ferns under glass. Things are leaf-shaped; the mushrooms glow.
+   ========================================================================== */
+
+body.theme-basalt.look-terrarium {
+  --b-frame: #0b1712;
+  --b-tray: #08110d;
+  --b-surface: rgba(11, 24, 18, 0.74);
+  --b-card: #14291d;
+  --b-chip: rgba(200, 240, 205, 0.09);
+  --b-chip-hi: rgba(200, 240, 205, 0.16);
+  --b-chip-down: rgba(200, 240, 205, 0.05);
+  --b-well: rgba(7, 16, 12, 0.6);
+  --b-deep: rgba(7, 16, 12, 0.78);
+  --b-bar: rgba(200, 240, 205, 0.22);
+  --b-text: #f0f6ea;
+  --b-dim: #cfe0cb;
+  --b-faint: #a3b5a2;
+  --b-line: rgba(200, 240, 205, 0.11);
+  --b-edge: #5c7a62;
+  --b-accent: #9be38a;
+  --b-accent-down: #7fcc70;
+  --b-on-accent: #10300f;
+  --b-hi: 0 0 0 0 transparent;
+  --b-hi-strong: inset 0 1px 0 rgba(200, 240, 205, 0.1);
+  --b-raise: inset 0 0 0 1px rgba(200, 240, 205, 0.12);
+  --b-raise-hover: inset 0 0 0 1px rgba(200, 240, 205, 0.26);
+  --b-lift: inset 0 0 0 1px rgba(200, 240, 205, 0.1), 0 16px 32px -18px rgba(2, 8, 4, 0.9);
+  --b-float: inset 0 0 0 1px rgba(200, 240, 205, 0.14), 0 30px 60px -22px rgba(2, 8, 4, 0.9), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --b-press: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+  --b-recess: inset 0 0 0 1px rgba(200, 240, 205, 0.08);
+  --b-well-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.08);
+  --b-deep-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.1);
+  --b-accent-fill: 0 0 0 0 transparent;
+  --b-accent-glow: 0 8px 22px -8px rgba(90, 190, 100, 0.7);
+  --b-ui: Gabarito, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --b-mono: Inconsolata, var(--term-font), 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --c-scrim: #050c08;
+  --c-working: #9be38a;
+  --c-attention: #ffb35c;
+  --c-danger: #ff9f8a;
+  --c-cyan: #8adfc4;
+  --ui-hover: rgba(200, 240, 205, 0.06);
+  --ui-ok: #9be38a;
+  --ui-warn: #ffb35c;
+  --ui-err: #ff9f8a;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --k-track: rgba(200, 240, 205, 0.13);
+  --k-fill: linear-gradient(90deg, #58b274, #9be38a);
+  --k-thread: rgba(155, 227, 138, 0.2);
+  --k-point: #34573f;
+
+  :is(.loom, .loom-modal, .loom-rawpill) {
+    --l-ok: #9be38a;
+    --l-warn: #ffb35c;
+    --l-err: #ff9f8a;
+    --l-info: #8fc4e8;
+    --l-r-card: 14px;
+    --l-r-ctl: 12px;
+  }
+
+  ::selection {
+    background: rgba(90, 190, 100, 0.34);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 240, 205, 0.32);
+    background-clip: padding-box;
+  }
+
+  /* The ground: the inside of a jar. Ferns sway in the bottom corners over moss and three
+     mushrooms, drops sit on the glass and one runs down it, and dust rises in a shaft of light. */
+  .ember-ground {
+    background: radial-gradient(120% 90% at 16% 100%, #1d3b2b 0%, #12271d 46%, #0b1712 100%);
+  }
+  .ember-ground > .ember-ground-live {
+    display: block;
+    inset: 0;
+  }
+  .eg-shaft {
+    left: -120px;
+    top: -160px;
+    width: 520px;
+    height: 900px;
+    transform: rotate(-18deg);
+    background: linear-gradient(180deg, rgba(255, 232, 170, 0.1), rgba(255, 232, 170, 0) 78%);
+    will-change: opacity;
+    animation: eg-tr-soft 23s ease-in-out infinite alternate;
+  }
+  .eg-glass {
+    left: 5px;
+    top: 37.5%;
+    width: 2.5px;
+    height: 42%;
+    border-radius: 2px;
+    background: rgba(230, 255, 235, 0.07);
+  }
+  .eg-glass-r {
+    right: 0;
+    bottom: 20px;
+    width: 80px;
+    height: 270px;
+  }
+  .eg-fern {
+    overflow: visible;
+    transform-origin: 50% 100%;
+    will-change: transform;
+    animation: eg-tr-sway-a 9s ease-in-out infinite alternate;
+  }
+  .eg-fern.is-b {
+    animation-name: eg-tr-sway-b;
+  }
+  .eg-moss {
+    left: -10px;
+    bottom: 0;
+    overflow: visible;
+  }
+  .eg-moss.is-r {
+    left: auto;
+    right: 0;
+  }
+  .eg-shroomglow {
+    left: 168px;
+    bottom: 112px;
+    width: 84px;
+    height: 64px;
+    background: radial-gradient(circle, rgba(255, 179, 92, 0.38) 0, rgba(255, 179, 92, 0) 68%);
+    will-change: opacity;
+    animation: eg-tr-glow 7s ease-in-out infinite alternate;
+  }
+  .eg-drop {
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(60% 50% at 35% 30%, rgba(255, 255, 255, 0.75), rgba(210, 255, 225, 0.14) 60%);
+    box-shadow:
+      inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+      0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .eg-drop.is-running {
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: eg-tr-run 19s ease-in infinite;
+  }
+  .eg-mote {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #fff1c2;
+    box-shadow: 0 0 6px 1px rgba(255, 236, 170, 0.6);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: eg-tr-mote 15s linear infinite;
+  }
+
+  .ember-brand-name {
+    gap: 9px;
+    font: 700 14.5px/1 var(--b-ui);
+    letter-spacing: 0.01em;
+  }
+  .ember-brand-name::before {
+    width: 14px;
+    height: 15px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 15'%3E%3Cpath d='M7 14V7' fill='none' stroke='%2358B274' stroke-width='1.600' stroke-linecap='round'/%3E%3Cpath d='M7 8C3 8 1.500 5.500 1.500 2.500 5 2.500 7 4.500 7 8z' fill='%239BE38A'/%3E%3Cpath d='M7 10c3 0 5-1.500 5.500-5-3.500 0-5.500 2-5.500 5z' fill='%2358B274'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .ember-sidebar {
+    margin: 0 0 12px 12px;
+  }
+  .ember-stack {
+    margin: 0 12px 12px 12px;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.11), inset 0 1.5px 0 rgba(240, 255, 240, 0.14), 0 20px 60px rgba(2, 8, 4, 0.5);
+  }
+  .ember-panel {
+    margin: 0 12px 12px 0;
+    border-radius: 22px;
+    background: var(--b-surface);
+    box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.11), inset 0 1.5px 0 rgba(240, 255, 240, 0.14), 0 20px 60px rgba(2, 8, 4, 0.5);
+  }
+
+  .ember-card {
+    margin: 0 0 5px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+  .ember-card:not(.is-active):hover {
+    background: rgba(200, 240, 205, 0.06);
+    box-shadow: none;
+  }
+  .ember-card-plate {
+    border-radius: 16px;
+    background: linear-gradient(165deg, rgba(155, 227, 138, 0.26), rgba(88, 178, 116, 0.1));
+    box-shadow: inset 0 1px 0 rgba(235, 255, 230, 0.3), inset 0 0 0 1px rgba(155, 227, 138, 0.18), 0 10px 26px -10px rgba(70, 170, 90, 0.5);
+  }
+  .ember-card-title {
+    font: 500 14.5px/1.3 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-title {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .ember-card.is-active :is(.ember-card-status, .ember-card-metatext) {
+    color: var(--b-dim);
+  }
+  .ember-card.is-active .ember-card-link {
+    color: var(--b-accent);
+  }
+  .ember-card-state {
+    width: 9px;
+    height: 9px;
+    border-radius: 0 70% 0 70%;
+    background: #2b4635;
+  }
+  :is(.ember-card.is-active, .ember-card[data-state='working']) .ember-card-state {
+    background: var(--b-accent);
+    box-shadow: 0 0 10px 1px rgba(155, 227, 138, 0.7);
+  }
+
+  :is(.loom-qd-btn.is-primary, .ember-settings-reset.is-armed) {
+    font-weight: 700;
+  }
+  :is(.loom-qd-tab.is-at, .ember-settings-tab.is-current) {
+    background: rgba(90, 190, 100, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(90, 190, 100, 0.2);
+  }
+
+  .loom-view-switch {
+    border-radius: 12px;
+    background: rgba(200, 240, 205, 0.09);
+    box-shadow: none;
+  }
+  .loom-view-switch::before {
+    border-radius: 9px 9px 9px 2px;
+    background: var(--b-accent);
+    box-shadow: 0 6px 16px -6px rgba(90, 190, 100, 0.7);
+  }
+  .loom-view-switch button {
+    border-radius: 9px 9px 9px 2px;
+    font: 500 13px/1.2 var(--b-ui);
+    color: var(--b-dim);
+  }
+  .loom-view-switch button.is-on {
+    font-weight: 700;
+    color: var(--b-on-accent);
+  }
+
+  /* The points on the thread are leaves. */
+  .loom-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 0 70% 0 70%;
+  }
+  .loom-dot.is-at {
+    width: 12px;
+    height: 12px;
+    background: var(--b-accent);
+    box-shadow: 0 0 12px 1px rgba(155, 227, 138, 0.7);
+  }
+
+  .loom-turn.is-shown > .loom-ask,
+  .loom-ask {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-text);
+  }
+  .loom-follow {
+    font: 400 12.5px/1.5 var(--b-mono);
+    color: var(--b-dim);
+    border-top-color: rgba(200, 240, 205, 0.2);
+  }
+
+  .loom-say :is(h1, h2, h3, h4) {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #fbfff6;
+  }
+  .loom-say > :is(h1, h2):first-child {
+    max-width: 640px;
+    font-size: clamp(26px, 2.58vw, 38px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .loom-say,
+  .loom-turn.is-shown > .loom-say.is-current {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .loom-say p {
+    max-width: 570px;
+  }
+  .loom-say strong {
+    font-weight: 600;
+    color: var(--b-text);
+  }
+  .loom-say a,
+  .loom-link {
+    text-decoration-color: rgba(90, 190, 100, 0.45);
+  }
+  .loom-say a:hover {
+    color: var(--b-accent);
+  }
+  .loom-say code {
+    box-shadow: none;
+  }
+
+  /* The table is a card. */
+  .loom-table {
+    overflow: hidden;
+    padding: 0;
+    border-radius: 14px;
+    background: rgba(200, 240, 205, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.1), inset 0 1px 0 rgba(240, 255, 240, 0.1);
+    font-size: 14px;
+  }
+  .loom-table th {
+    padding: 9px 14px;
+    font: 600 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--b-faint);
+  }
+  .loom-table td {
+    padding: 9px 14px;
+  }
+  .loom-table td:first-child {
+    font-size: 13px;
+  }
+  .loom-table strong {
+    color: #ffb35c;
+    font-weight: 600;
+  }
+
+  .loom-code {
+    border-radius: 14px;
+  }
+  .loom-code-bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .loom-diff-row.is-ctx .tx {
+    color: var(--b-faint);
+  }
+  .loom-diff-row.is-del {
+    background: rgba(255, 159, 138, 0.1);
+  }
+  .loom-diff-row.is-del :is(.sg, .tx) {
+    color: #ff9f8a;
+  }
+  .loom-diff-row.is-add {
+    background: rgba(155, 227, 138, 0.09);
+  }
+  .loom-diff-row.is-add :is(.sg, .tx) {
+    color: #9be38a;
+  }
+
+  :is(.loom-piece, .loom-note, .loom-out, .loom-answers),
+  .loom-piece.is-pinned {
+    border-radius: 22px;
+    background: linear-gradient(170deg, rgba(200, 240, 205, 0.1), rgba(200, 240, 205, 0.03));
+    box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.13), inset 0 1.5px 0 rgba(240, 255, 240, 0.16);
+  }
+  .loom-piece.is-pinned.is-dragging {
+    background: #14291d;
+  }
+  .loom-piece-title {
+    font: 600 11px/1.4 var(--b-ui);
+    letter-spacing: 0.07em;
+  }
+
+  :is(.loom-menu, .loom-pop, .loom-steps, .loom-drawer, .loom-chip, .ember-toast, .ember-search) {
+    border-radius: 12px;
+  }
+  :is(.ember-palette-panel, .ember-settings-panel, .ember-cheatsheet-panel) {
+    border-radius: 18px;
+  }
+  .loom-qd-text {
+    font-weight: 600;
+  }
+
+  .loom-live {
+    clip-path: inset(2px 6px 8px round 16px);
+  }
+  .loom-live::after {
+    border-radius: 16px;
+  }
+  .loom-live::before {
+    border-radius: 16px;
+    background: rgba(7, 16, 12, 0.78);
+    box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.11);
+  }
+
+  &:not(.sidebar-mini) {
+    .ember-sidebar-head {
+      padding: 8px 14px 8px;
+    }
+    .ember-sidebar-title {
+      font: 600 11px/1.4 var(--b-ui);
+      letter-spacing: 0.08em;
+    }
+    .ember-newrow {
+      margin: 6px 0 0;
+      padding: 11px 14px;
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px rgba(200, 240, 205, 0.12);
+      font-size: 13px;
+    }
+    .ember-newrow:hover {
+      background: rgba(200, 240, 205, 0.05);
+    }
+    .ember-newrow kbd {
+      font-size: 11px;
+    }
+    .ember-vitals {
+      row-gap: 10px;
+      padding: 0 14px;
+    }
+    .ember-vitals-bar {
+      height: 6px;
+      border-radius: 3px;
+    }
+    .ember-vitals-chip {
+      color: var(--b-dim);
+    }
+    .ember-version {
+      color: var(--b-faint);
+    }
+    .ember-places {
+      padding: 10px 6px 0;
+    }
+  }
+}
+
+/* Snowfall, Tide, Terrarium: what moves in their grounds. */
+@keyframes eg-sf-soft {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+@keyframes eg-sf-smoke {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(26px, -70px) scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes eg-sf-fall-a {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(16px, 27vh);
+  }
+  50% {
+    transform: translate(-6px, 54vh);
+  }
+  75% {
+    transform: translate(14px, 81vh);
+  }
+  100% {
+    transform: translate(0, 108vh);
+  }
+}
+@keyframes eg-sf-fall-b {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-14px, 27vh);
+  }
+  50% {
+    transform: translate(8px, 54vh);
+  }
+  75% {
+    transform: translate(-12px, 81vh);
+  }
+  100% {
+    transform: translate(4px, 108vh);
+  }
+}
+@keyframes eg-td-a {
+  from {
+    transform: translate(0, 12vh);
+  }
+  to {
+    transform: translate(46px, 0);
+  }
+}
+@keyframes eg-td-b {
+  from {
+    transform: translate(30px, 7vh);
+  }
+  to {
+    transform: translate(-20px, 0);
+  }
+}
+@keyframes eg-td-c {
+  from {
+    transform: translate(-24px, 3vh);
+  }
+  to {
+    transform: translate(18px, 0);
+  }
+}
+@keyframes eg-td-glint {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+@keyframes eg-td-grain {
+  from {
+    opacity: 0.04;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+@keyframes eg-td-moon {
+  from {
+    transform: translate(-14%, 0);
+    opacity: 0.55;
+  }
+  to {
+    transform: translate(46%, 8%);
+    opacity: 1;
+  }
+}
+@keyframes eg-tr-soft {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@keyframes eg-tr-sway-a {
+  from {
+    transform: rotate(-2.2deg);
+  }
+  to {
+    transform: rotate(2.4deg);
+  }
+}
+@keyframes eg-tr-sway-b {
+  from {
+    transform: rotate(1.8deg);
+  }
+  to {
+    transform: rotate(-2deg);
+  }
+}
+@keyframes eg-tr-glow {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+@keyframes eg-tr-run {
+  0%,
+  12% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  18% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(150px);
+    opacity: 1;
+  }
+  86%,
+  100% {
+    transform: translateY(190px);
+    opacity: 0;
+  }
+}
+@keyframes eg-tr-mote {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(18px, -150px);
+    opacity: 0;
   }
 }
 

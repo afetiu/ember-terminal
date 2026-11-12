@@ -10,7 +10,7 @@
 // VERSION is the version the site advertises. scripts/deploy-site.mjs stamps it from
 // package.json on every deploy. [data-version] elements show it, [data-repo] gets REPO_URL and
 // [data-releases] gets the release list.
-const VERSION = '1.10.2'
+const VERSION = '1.11.0'
 const REPO_URL = 'https://github.com/afetiu/ember-terminal'
 // ---------------------------------------------------------------------------------
 

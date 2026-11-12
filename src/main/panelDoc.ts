@@ -651,7 +651,7 @@ export interface DocPalette {
  * A look, inside a document: the same material the window is in. Basalt is matte stone
  * nodes with stone-grey edges and the lava accent kept for the one node a diagram marks
  * `hot`; the others follow their own boards (Smoke's glass, Lacquer's gold-ringed pills,
- * Patina's plates, Hearth's outlines and one coal, Lamp's wax). The faces come from the
+ * Patina's plates, Hearth's outlines and one coal, Lamp's wax, Snowfall's snow-topped amber, Tide's pebbles, Terrarium's leaves). The faces come from the
  * bridge's /vendor (prepare-resources copies them out of the renderer's assets), since a
  * document is its own page and cannot see the app's @font-face.
  *
@@ -910,6 +910,108 @@ const LAMP_DOC: LookDoc = {
   thumb: 'rgba(255,235,245,0.22)',
 }
 
+const SNOWFALL_DOC: LookDoc = {
+  node: '#2A2342',
+  raised: '#352C50',
+  text: '#F7F2EC',
+  dim: '#E4DCD8',
+  faint: '#B0A6BC',
+  edge: '#6A5F86',
+  well: '#120E20',
+  line: '#322A4A',
+  bar: '#4A4066',
+  accent: '#FFB868',
+  ui: `Nunito, ${UI_TAIL}`,
+  mono: `'Source Code Pro', ${MONO_TAIL}`,
+  faces: [vf('Nunito', 'nunito', '200 1000'), vf('Source Code Pro', 'source-code-pro', '200 900')],
+  preload: ['600 13px Nunito', '800 13px Nunito'],
+  nodeCss: 'fill: rgba(225,212,255,0.09) !important; stroke: none !important;',
+  rx: 10,
+  labelWeight: 600,
+  hotCss: 'fill: #FFB868 !important; stroke: #F4F0FA !important; stroke-width: 2.5px !important; filter: drop-shadow(0 6px 11px rgba(255,160,80,0.5));',
+  hotLabel: '#3A2208',
+  hotWeight: 800,
+  series: ['#FFB868', '#4A4066', '#FF8F6B', '#F4F0FA'],
+  cats: ['#FFB868', '#FF8F6B', '#F4F0FA', '#4A4066', '#A9B8FF', '#6A5F86', '#A6E0B8', '#D6A8F0'],
+  headCss: 'font-weight: 800; letter-spacing: -0.015em; color: #FFFFFF;',
+  subheadCss: 'font-weight: 700;',
+  codeCss: 'background: rgba(15,12,28,0.6); box-shadow: inset 0 0 0 1px rgba(225,212,255,0.1); border-radius: 14px;',
+  tableCss: 'background: none;',
+  actCss: 'background: rgba(225,212,255,0.09); color: #F7F2EC; border-color: transparent; border-radius: 10px; font-weight: 600;',
+  actHoverCss: 'background: rgba(225,212,255,0.16);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(15,12,28,0.5); box-shadow: inset 0 0 0 1px rgba(225,212,255,0.1); border-radius: 14px;',
+  thumb: 'rgba(225,212,255,0.2)',
+}
+
+const TIDE_DOC: LookDoc = {
+  node: '#2E251C',
+  raised: '#3A2F24',
+  text: '#F6EFE4',
+  dim: '#E2D9CB',
+  faint: '#AEA595',
+  edge: '#6E6455',
+  well: '#100D0A',
+  line: '#33291F',
+  bar: '#4A3F33',
+  accent: '#8FE6D4',
+  ui: `Onest, ${UI_TAIL}`,
+  mono: `'M PLUS 1 Code', ${MONO_TAIL}`,
+  faces: [vf('Onest', 'onest', '100 900'), vf('M PLUS 1 Code', 'm-plus-1-code', '100 700')],
+  preload: ['500 13px Onest', '700 13px Onest'],
+  nodeCss: 'fill: rgba(240,225,200,0.1) !important; stroke: none !important;',
+  rx: 15,
+  labelWeight: 500,
+  hotCss: 'fill: #FF9478 !important; stroke: none !important; filter: drop-shadow(0 6px 11px rgba(255,130,95,0.5));',
+  hotLabel: '#451608',
+  hotWeight: 700,
+  series: ['#FF9478', '#4A3F33', '#8FE6D4', '#E9DCC4'],
+  cats: ['#8FE6D4', '#FF9478', '#E9DCC4', '#3FB3A6', '#4A3F33', '#F2C98A', '#8FBFE6', '#E3A6C0'],
+  headCss: 'font-weight: 600; letter-spacing: -0.025em; color: #FFFAF0;',
+  subheadCss: 'font-weight: 600; letter-spacing: -0.015em;',
+  codeCss: 'background: rgba(16,13,10,0.6); box-shadow: inset 0 0 0 1px rgba(240,225,200,0.09); border-radius: 16px;',
+  tableCss: 'background: none;',
+  actCss: 'background: rgba(240,225,200,0.1); color: #F6EFE4; border-color: transparent; border-radius: 999px;',
+  actHoverCss: 'background: rgba(240,225,200,0.17);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(16,13,10,0.5); box-shadow: inset 0 0 0 1px rgba(240,225,200,0.09); border-radius: 16px;',
+  thumb: 'rgba(240,225,200,0.2)',
+}
+
+const TERRARIUM_DOC: LookDoc = {
+  node: '#183124',
+  raised: '#203D2D',
+  text: '#F0F6EA',
+  dim: '#DCE6D5',
+  faint: '#A3B5A2',
+  edge: '#5C7A62',
+  well: '#07100C',
+  line: '#1D3327',
+  bar: '#2F5740',
+  accent: '#9BE38A',
+  ui: `Gabarito, ${UI_TAIL}`,
+  mono: `Inconsolata, ${MONO_TAIL}`,
+  faces: [vf('Gabarito', 'gabarito', '400 900'), vf('Inconsolata', 'inconsolata', '200 900')],
+  preload: ['500 13px Gabarito', '700 13px Gabarito'],
+  nodeCss: 'fill: rgba(200,240,205,0.1) !important; stroke: none !important;',
+  rx: 11,
+  labelWeight: 500,
+  hotCss: 'fill: #FFB35C !important; stroke: none !important; filter: drop-shadow(0 6px 11px rgba(255,160,70,0.5));',
+  hotLabel: '#40220A',
+  hotWeight: 700,
+  series: ['#FFB35C', '#2F5740', '#9BE38A', '#F1E3CC'],
+  cats: ['#9BE38A', '#FFB35C', '#58B274', '#F1E3CC', '#2F5740', '#8FC4E8', '#E0A8D0', '#8ADFC4'],
+  headCss: 'font-weight: 600; letter-spacing: -0.01em; color: #FBFFF6;',
+  subheadCss: 'font-weight: 600;',
+  codeCss: 'background: rgba(7,16,12,0.6); box-shadow: inset 0 0 0 1px rgba(200,240,205,0.1); border-radius: 14px;',
+  tableCss: 'background: none;',
+  actCss: 'background: rgba(200,240,205,0.1); color: #F0F6EA; border-color: transparent; border-radius: 12px 12px 12px 3px;',
+  actHoverCss: 'background: rgba(200,240,205,0.17);',
+  actActiveCss: FLAT_ACT.actActiveCss,
+  askCss: 'background: rgba(7,16,12,0.5); box-shadow: inset 0 0 0 1px rgba(200,240,205,0.1); border-radius: 14px;',
+  thumb: 'rgba(200,240,205,0.2)',
+}
+
 const LOOK_DOCS: Record<Look, LookDoc> = {
   basalt: BASALT_DOC,
   smoke: SMOKE_DOC,
@@ -917,6 +1019,9 @@ const LOOK_DOCS: Record<Look, LookDoc> = {
   patina: PATINA_DOC,
   hearth: HEARTH_DOC,
   lamp: LAMP_DOC,
+  snowfall: SNOWFALL_DOC,
+  tide: TIDE_DOC,
+  terrarium: TERRARIUM_DOC,
 }
 
 /** Every face a document may ask the bridge for. */

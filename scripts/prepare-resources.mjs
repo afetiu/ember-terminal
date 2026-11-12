@@ -38,6 +38,12 @@ const files = [
     'hanken-grotesk-latin-wght',
     'jetbrains-mono-latin-wght',
     'fredoka-latin-wght',
+    'nunito-latin-wght',
+    'source-code-pro-latin-wght',
+    'onest-latin-wght',
+    'm-plus-1-code-latin-wght',
+    'gabarito-latin-wght',
+    'inconsolata-latin-wght',
   ].map((f) => [
     `src/renderer/src/assets/fonts/${f}-normal.woff2`,
     `${f}-normal.woff2`,

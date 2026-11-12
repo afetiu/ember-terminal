@@ -26,6 +26,7 @@ import { sound } from '../motion/sound'
 import { drawMascot } from './Mascot'
 import { AGENTS, agentSpec, type AgentId } from '@shared/agents'
 import { LOOKS, LOOK_INFO, findLook, type Look } from '@shared/looks'
+import { snowfallGround, terrariumGround, tideGround } from './grounds'
 import type { ActivityState, AttentionKind } from '../core/Activity'
 import { LoomView } from '../canvas/LoomView'
 
@@ -523,7 +524,7 @@ export class App {
   /**
    * What the window stands on, behind every surface: nothing in Basalt (the stone is the
    * ground), soft colour under Smoke's glass, blooms and grain under Patina: painted once
-   * and never animated, so they cost a texture and no frames. Hearth and Lamp put something
+   * and never animated, so they cost a texture and no frames. The looks after Patina put something
    * alive in it (groundLive), a handful of layers the compositor moves on its own.
    */
   private static ground(): HTMLElement {
@@ -544,7 +545,7 @@ export class App {
 
   /**
    * The moving part of a living ground, as markup: Hearth's fire glow and rising embers,
-   * Lamp's wax and the pool it rises from. Only transform and opacity ever animate, each
+   * Lamp's wax and the pool it rises from, and the three small scenes of ui/grounds.ts. Only transform and opacity ever animate, each
    * piece is a layer of its own, and every other look gets nothing at all.
    */
   /** Put a look on, from the palette or `ember theme <name>`. */
@@ -602,6 +603,9 @@ export class App {
         '<path d="M0 46 C120 10 220 60 360 42 S600 8 760 40 S1010 66 1130 30 S1240 28 1280 44 L1280 80 L0 80 Z" fill="url(#ember-pool)"/></svg>'
       )
     }
+    if (look === 'snowfall') return snowfallGround()
+    if (look === 'tide') return tideGround()
+    if (look === 'terrarium') return terrariumGround()
     return ''
   }
 

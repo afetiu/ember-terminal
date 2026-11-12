@@ -6,7 +6,7 @@
  * Shared by main (palette, terminal face, documents) and the renderer (stylesheet class,
  * interface face, the picker), so the list lives here and nowhere else.
  */
-export const LOOKS = ['basalt', 'smoke', 'lacquer', 'patina', 'hearth', 'lamp'] as const
+export const LOOKS = ['basalt', 'smoke', 'lacquer', 'patina', 'hearth', 'lamp', 'snowfall', 'tide', 'terrarium'] as const
 
 export type Look = (typeof LOOKS)[number]
 
@@ -74,6 +74,30 @@ export const LOOK_INFO: Record<Look, LookInfo> = {
     ui: `Fredoka, ${UI_TAIL}`,
     mono: `'DM Mono', ${MONO_TAIL}`,
     swatch: { ground: '#1B0D24', surface: '#3A1B3E', ink: '#FFF5EC', accent: '#FF7A5E' },
+  },
+  snowfall: {
+    id: 'snowfall',
+    name: 'Snowfall',
+    about: 'Snow on a cabin in the pines',
+    ui: `Nunito, ${UI_TAIL}`,
+    mono: `'Source Code Pro', ${MONO_TAIL}`,
+    swatch: { ground: '#1B1730', surface: '#30284A', ink: '#F7F2EC', accent: '#FFB868' },
+  },
+  tide: {
+    id: 'tide',
+    name: 'Tide',
+    about: 'A beach at night, the water coming in',
+    ui: `Onest, ${UI_TAIL}`,
+    mono: `'M PLUS 1 Code', ${MONO_TAIL}`,
+    swatch: { ground: '#1F1913', surface: '#143F43', ink: '#F6EFE4', accent: '#8FE6D4' },
+  },
+  terrarium: {
+    id: 'terrarium',
+    name: 'Terrarium',
+    about: 'Ferns under glass, mushrooms glowing',
+    ui: `Gabarito, ${UI_TAIL}`,
+    mono: `Inconsolata, ${MONO_TAIL}`,
+    swatch: { ground: '#0E1E16', surface: '#1D3B2B', ink: '#F0F6EA', accent: '#9BE38A' },
   },
 }
 

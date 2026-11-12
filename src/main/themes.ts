@@ -167,6 +167,84 @@ export const LAMP: ThemeConfig = {
   brightWhite: '#FFFFFF',
 }
 
+/** Snowfall: a plum night with snow on it. The caret is the lit window. */
+export const SNOWFALL: ThemeConfig = {
+  name: 'Snowfall',
+  background: '#19152B',
+  foreground: '#F7F2EC',
+  cursor: '#FFB868',
+  cursorAccent: '#19152B',
+  selectionBackground: '#473A63',
+  black: '#2E2745',
+  red: '#FF8F8F',
+  green: '#A6E0B8',
+  yellow: '#FFB868',
+  blue: '#A9B8FF',
+  magenta: '#D6A8F0',
+  cyan: '#9FD6E8',
+  white: '#D5CCE2',
+  brightBlack: '#A297B2',
+  brightRed: '#FFB3A6',
+  brightGreen: '#C6EED2',
+  brightYellow: '#FFD49A',
+  brightBlue: '#C6D0FF',
+  brightMagenta: '#E6C6F7',
+  brightCyan: '#C2E8F2',
+  brightWhite: '#FFFFFF',
+}
+
+/** Tide: dark sand and sea water. Seafoam for the caret, coral for what is wrong. */
+export const TIDE: ThemeConfig = {
+  name: 'Tide',
+  background: '#1B1611',
+  foreground: '#F6EFE4',
+  cursor: '#8FE6D4',
+  cursorAccent: '#1B1611',
+  selectionBackground: '#2F4A46',
+  black: '#322A21',
+  red: '#FF9478',
+  green: '#9BE2B4',
+  yellow: '#F2C98A',
+  blue: '#8FBFE6',
+  magenta: '#E3A6C0',
+  cyan: '#8FE6D4',
+  white: '#D8CEBE',
+  brightBlack: '#AEA595',
+  brightRed: '#FFB5A0',
+  brightGreen: '#BFF0CF',
+  brightYellow: '#FFE0AE',
+  brightBlue: '#B5D6F2',
+  brightMagenta: '#F0C4D6',
+  brightCyan: '#C8FFF2',
+  brightWhite: '#FFFAF0',
+}
+
+/** Terrarium: deep green under glass. Leaf green for the caret, mushroom orange for warnings. */
+export const TERRARIUM: ThemeConfig = {
+  name: 'Terrarium',
+  background: '#0D1B14',
+  foreground: '#F0F6EA',
+  cursor: '#9BE38A',
+  cursorAccent: '#0D1B14',
+  selectionBackground: '#2B4A35',
+  black: '#1F3528',
+  red: '#FF9F8A',
+  green: '#9BE38A',
+  yellow: '#FFB35C',
+  blue: '#8FC4E8',
+  magenta: '#E0A8D0',
+  cyan: '#8ADFC4',
+  white: '#CFE0CB',
+  brightBlack: '#A3B5A2',
+  brightRed: '#FFBDAE',
+  brightGreen: '#C2F2B6',
+  brightYellow: '#FFD08F',
+  brightBlue: '#B8DAF2',
+  brightMagenta: '#EEC6E2',
+  brightCyan: '#B6F0DC',
+  brightWhite: '#FBFFF6',
+}
+
 export const THEMES: Record<Look, ThemeConfig> = {
   basalt: BASALT,
   smoke: SMOKE,
@@ -174,4 +252,7 @@ export const THEMES: Record<Look, ThemeConfig> = {
   patina: PATINA,
   hearth: HEARTH,
   lamp: LAMP,
+  snowfall: SNOWFALL,
+  tide: TIDE,
+  terrarium: TERRARIUM,
 }
