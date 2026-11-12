@@ -154,14 +154,42 @@ try {
   await ev(`(() => { const d = [...${VIS}.querySelectorAll('.loom-rail .loom-dot')].pop(); d.click(); return true })()`)
   await ev(`window.__ember.loomWorking(${JSON.stringify(tab)}, true)`)
   await wait(500)
-  const dup = () => ev(`(() => { const v = ${VIS}; const row = [...v.querySelectorAll('.loom-flow .loom-tool')].find((x) => /loaded tools/i.test(x.textContent)); const now = v.querySelector('.loom-now.is-on .loom-now-line')?.innerText ?? ''; return { now, row: !!row, rowShown: !!row && getComputedStyle(row).display !== 'none' } })()`)
+  const dup = () => ev(`(() => { const v = ${VIS}; const row = [...v.querySelectorAll('.loom-flow .loom-tool')].find((x) => /loaded tools/i.test(x.textContent)); const now = v.querySelector('.loom-now.is-on .loom-now-line')?.innerText ?? ''; return { now, row: !!row, rowShown: !!row && row.getClientRects().length > 0 } })()`)
   let d = await dup()
   check('mid-step: "Loaded tools" is said once, on the live line, not also as a row', /Loaded tools/.test(d.now) && d.row && !d.rowShown, JSON.stringify(d))
   await shot('3-step-said-once')
   await ev(`window.__ember.loomWorking(${JSON.stringify(tab)}, false)`)
   await wait(300)
   d = await dup()
-  check('once the work stops the step row is back', d.rowShown && !d.now, JSON.stringify(d))
+  check('once the work stops the step stays folded away', d.row && !d.rowShown && !d.now, JSON.stringify(d))
+
+  // A request's steps are one line that counts them; the rows are behind it.
+  const use = (id, name, input) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', content: [{ type: 'tool_use', id, name, input }] } })
+  const res = (id, content, is_error = false) => ({ type: 'user', uuid: `u${++n}`, timestamp: at(2), message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content, is_error }] } })
+  const work = [
+    use('b1', 'Bash', { command: 'cd /c/repo; git grep -nE "tree changes" origin/master -- policy', description: 'Grep limits in policy' }),
+    res('b1', 'policy/work-types.yaml:181: max_per_day: 40'),
+    use('r1', 'Read', { file_path: 'C:/repo/policy/work-types.yaml' }),
+    res('r1', 'max_per_day: 40'),
+    use('b2', 'Bash', { command: 'ls .github/workflows', description: 'List workflows' }),
+    res('b2', "ls: cannot access '.github/workflows': No such file or directory", true),
+    use('e1', 'Edit', { file_path: 'C:/repo/policy/work-types.yaml', old_string: 'max_per_day: 40', new_string: 'max_per_day: 50' }),
+    res('e1', 'done'),
+    a('The daily limit is now 50.', 4),
+  ]
+  await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify(work)})`)
+  await wait(600)
+  const fold = () => ev(`(() => { const v = ${VIS}; const t = v.querySelector('.loom-turn.is-shown'); const shown = (x) => x.getClientRects().length > 0; return { folds: [...t.querySelectorAll('.loom-fold')].filter(shown).map((f) => f.querySelector('.loom-tool-head').innerText.replace(/\\s+/g, ' ').trim()), rows: [...t.querySelectorAll('.loom-tool')].filter(shown).length, peeks: [...t.querySelectorAll('.loom-peek-line, .loom-diff')].filter(shown).length } })()`)
+  let f = await fold()
+  check('the steps of a request are one line that counts them', f.folds.length === 1 && /5 steps/.test(f.folds[0]) && /ran 2 commands/.test(f.folds[0]) && /read 1 file/.test(f.folds[0]) && /1 failed/.test(f.folds[0]), JSON.stringify(f))
+  check('no command, output or diff on the canvas until it is opened', f.rows === 0 && f.peeks === 0, JSON.stringify(f))
+  await shot('3b-steps-folded')
+  await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-fold > .loom-tool-head').click()`)
+  await wait(300)
+  f = await fold()
+  check('the line opens to the steps', f.rows >= 4, JSON.stringify(f))
+  await shot('3c-steps-open')
+  await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-fold > .loom-tool-head').click()`)
 
   // A named session's card: just the name; the folder only when there is no name.
   await ev(`window.__ember.loomTitle(${JSON.stringify(tab)}, '', 'claude')`)

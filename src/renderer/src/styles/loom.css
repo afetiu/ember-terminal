@@ -613,6 +613,40 @@
   margin-left: 1.6em;
 }
 
+/* A request's steps, behind one line that counts them. */
+.loom-fold {
+  margin: 2px 0 10px;
+}
+.loom-fold > .loom-tool-head {
+  width: auto;
+  max-width: 100%;
+  padding-right: 10px;
+  color: var(--l-faint);
+}
+.loom-fold > .loom-tool-head {
+  font-size: 0.84em;
+}
+.loom-fold > .loom-tool-head .loom-tool-name,
+.loom-fold > .loom-tool-head .loom-tool-arg {
+  font-weight: 400;
+  color: var(--l-faint);
+}
+.loom-fold > .loom-tool-head:hover :is(.loom-tool-name, .loom-tool-arg) {
+  color: var(--l-dim);
+}
+.loom-fold-list {
+  display: none;
+  margin: 4px 0 6px 0.3em;
+  border-left: 1px solid var(--l-line);
+  padding-left: 12px;
+}
+.loom-fold.is-open > .loom-fold-list {
+  display: block;
+}
+.loom-fold.is-open > .loom-tool-head .loom-chev {
+  transform: rotate(90deg);
+  opacity: 1;
+}
 .loom-quiet-list {
   display: none;
   margin: 2px 0 8px 1.6em;
@@ -5484,6 +5518,6 @@
   display: none;
 }
 /* The step the large live line names, while it is the one in progress: said once. */
-.loom-turn > .is-now-step {
+.loom-turn .is-now-step {
   display: none;
 }

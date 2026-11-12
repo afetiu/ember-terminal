@@ -8,8 +8,8 @@ import { joinsTurn, type PromptKind, type TurnState } from '@shared/turnGroups'
  *
  * Every line Claude Code writes to the session's JSONL becomes part of the canvas, in
  * order. Most of what an agent does is noise to the person watching — a dozen reads
- * and searches before anything happens — so the feed is quiet by default: exploration
- * folds into one line, a command is one line, and anything can be opened. What is
+ * and searches before anything happens — so the feed is quiet by default: every step of
+ * a request folds into one line that counts them, and it opens to the steps. What is
  * meant to be *seen* is shown as itself: the reply as rich text with its diagrams, an
  * edit as a diff, a screenshot as a picture.
  *
@@ -208,8 +208,61 @@ class QuietGroup {
     const text = parts.join(' · ')
     this.head.innerHTML =
       `<span class="loom-glyph${this.pending ? ' is-live' : ''}">⏺</span>` +
-      `<span class="loom-tool-name">${this.items.length === 1 ? escapeHtml(this.items[0]!.row.textContent ?? text) : 'Explored'}</span>` +
+      `<span class="loom-tool-name">${this.items.length === 1 ? escapeHtml(this.items[0]!.row.querySelector('.loom-quiet-label')?.textContent ?? text) : 'Explored'}</span>` +
       (this.items.length === 1 ? '' : `<span class="loom-tool-arg">${escapeHtml(text)}</span>`) +
+      `<span class="loom-chev">›</span>`
+  }
+}
+
+type StepKind = 'command' | 'read' | 'search' | 'web' | 'edit' | 'agent' | 'other'
+
+/**
+ * Every step taken for one request, behind one line that counts them. The canvas shows
+ * what was said and what was made; how the agent got there is here, a click away.
+ */
+class StepFold {
+  readonly el: HTMLElement
+  /** Where the step rows go. */
+  readonly list: HTMLElement
+  private readonly head: HTMLElement
+  private readonly counts: Record<StepKind, number> = { command: 0, read: 0, search: 0, web: 0, edit: 0, agent: 0, other: 0 }
+  private failed = 0
+
+  constructor(parent: HTMLElement) {
+    this.el = el('div', 'loom-fold')
+    this.head = el('button', 'loom-tool-head')
+    ;(this.head as HTMLButtonElement).type = 'button'
+    this.list = el('div', 'loom-fold-list')
+    this.head.addEventListener('click', () => this.el.classList.toggle('is-open'))
+    this.el.append(this.head, this.list)
+    parent.appendChild(this.el)
+  }
+
+  add(kind: StepKind): void {
+    this.counts[kind]++
+    this.render()
+  }
+
+  fail(): void {
+    this.failed++
+    this.render()
+  }
+
+  private render(): void {
+    const c = this.counts
+    const parts: string[] = []
+    if (c.command) parts.push(`ran ${plural(c.command, 'command')}`)
+    if (c.read) parts.push(`read ${plural(c.read, 'file')}`)
+    if (c.search) parts.push(`searched ${plural(c.search, 'time')}`)
+    if (c.web) parts.push(`looked at ${plural(c.web, 'page')} on the web`)
+    if (c.edit) parts.push(`edited ${plural(c.edit, 'time')}`)
+    if (c.agent) parts.push(`used ${plural(c.agent, 'agent')}`)
+    if (c.other) parts.push(plural(c.other, 'other step'))
+    if (this.failed) parts.push(`${this.failed} failed`)
+    const total = Object.values(c).reduce((a, b) => a + b, 0)
+    this.head.innerHTML =
+      `<span class="loom-tool-name">${plural(total, 'step')}</span>` +
+      `<span class="loom-tool-arg">${escapeHtml(parts.join(' · '))}</span>` +
       `<span class="loom-chev">›</span>`
   }
 }
@@ -292,9 +345,11 @@ export class Feed {
   readonly el: HTMLElement
   private turn: HTMLElement
   private quiet: QuietGroup | null = null
+  /** The fold this request's steps go into; a new request or follow-up starts another. */
+  private fold: StepFold | null = null
   /** The last slash command, shown as a quiet line until the agent answers it (then it is a turn). */
   private pendingCmd: { note: HTMLElement; label: string; uuid: string } | null = null
-  private readonly tools = new Map<string, { view?: ToolView; quiet?: { group: QuietGroup; item: QuietItem }; name: string; input: Json }>()
+  private readonly tools = new Map<string, { view?: ToolView; quiet?: { group: QuietGroup; item: QuietItem }; fold?: StepFold | undefined; name: string; input: Json }>()
   /** Where a piece the session pushes should land: right after the tool call that made it. */
   private readonly anchors: Array<{ name: string; el: HTMLElement; used: boolean }> = []
   private readonly seen = new Set<string>()
@@ -350,6 +405,7 @@ export class Feed {
     this.el.appendChild(t)
     this.turn = t
     this.quiet = null
+    this.fold = null
     this.act = ''
     this.actEl = null
     this.group = null
@@ -387,6 +443,8 @@ export class Feed {
 
   /** Your words inside a turn: one small line, with a way to make it a turn of its own. */
   private followLine(caret: string, text: string, command = false, uuid = this.uuid): HTMLElement {
+    this.fold = null
+    this.quiet = null
     const f = el('div', `loom-follow${command ? ' is-command' : ''}`)
     f.innerHTML =
       `<span class="loom-caret">${caret}</span><span class="loom-follow-text">${escapeHtml(text)}</span>` +
@@ -758,6 +816,13 @@ export class Feed {
     root.querySelectorAll<HTMLImageElement>('img').forEach((img) => (img.dataset['zoom'] = '1'))
   }
 
+  /** The fold a step of `kind` goes into, counted. */
+  private step(kind: StepKind): HTMLElement {
+    if (!this.fold) this.fold = new StepFold(this.turn)
+    this.fold.add(kind)
+    return this.fold.list
+  }
+
   private tool(id: string, name: string, input: Json): void {
     if (name === 'TodoWrite') {
       const todos = Array.isArray(input['todos']) ? (input['todos'] as Todo[]) : []
@@ -774,12 +839,15 @@ export class Feed {
       return
     }
     if (QUIET.has(name)) {
-      if (!this.quiet) this.quiet = new QuietGroup(this.turn)
+      const kind: StepKind =
+        name === 'Read' || name === 'NotebookRead' ? 'read' : name === 'Grep' || name === 'Glob' || name === 'LS' ? 'search' : name === 'WebSearch' || name === 'WebFetch' ? 'web' : 'other'
+      const list = this.step(kind)
+      if (!this.quiet) this.quiet = new QuietGroup(list)
       const item = this.quiet.add(id, name, input)
       this.act = cap(item.row.querySelector('.loom-quiet-label')?.textContent ?? name)
       // One step folded alone says what the live line says; a group of them says more.
       this.actEl = this.quiet.items.length === 1 ? this.quiet.el : null
-      this.tools.set(id, { quiet: { group: this.quiet, item }, name, input })
+      this.tools.set(id, { quiet: { group: this.quiet, item }, fold: this.fold ?? undefined, name, input })
       return
     }
     this.quiet = null
@@ -787,20 +855,20 @@ export class Feed {
 
     if (EDITS.has(name)) return this.edit(id, name, input)
     if (SHELLS.has(name)) {
-      const view = new ToolView(this.turn, 'shell', name)
+      const view = new ToolView(this.step('command'), 'shell', name)
       const command = String(input['command'] ?? '')
       view.setHead('$', firstLine(command, 160), String(input['description'] ?? ''))
       this.act = String(input['description'] ?? '').trim() || `$ ${firstLine(command, 120)}`
       this.actEl = view.el
-      this.tools.set(id, { view, name, input })
+      this.tools.set(id, { view, fold: this.fold ?? undefined, name, input })
       return
     }
     if (AGENTS.has(name)) {
-      const view = new ToolView(this.turn, 'agent', name)
+      const view = new ToolView(this.step('agent'), 'agent', name)
       view.setHead(String(input['subagent_type'] ?? 'agent'), String(input['description'] ?? ''), '')
       this.act = cap(String(input['description'] ?? '').trim() || 'Working with an agent')
       this.ctx.agent?.({ kind: 'start', key: id, desc: String(input['description'] ?? 'agent'), type: String(input['subagent_type'] ?? ''), at: this.at })
-      this.tools.set(id, { view, name, input })
+      this.tools.set(id, { view, fold: this.fold ?? undefined, name, input })
       return
     }
     if (name === 'ExitPlanMode') {
@@ -816,7 +884,7 @@ export class Feed {
       return
     }
 
-    const view = new ToolView(this.turn, 'other', name)
+    const view = new ToolView(this.step('other'), 'other', name)
     const mcp = /^mcp__(.+?)__(.+)$/.exec(name)
     const label = mcp ? `${mcp[2]!.replace(/_/g, ' ')}` : name
     const source = mcp ? mcp[1]!.replace(/^plugin_[^_]+_/, '').replace(/^claude_ai_/, '').replace(/[-_]/g, ' ') : ''
@@ -824,11 +892,11 @@ export class Feed {
     view.setHead(label, arg ? firstLine(arg, 100) : '', source)
     this.act = cap(`${label}${arg ? ` ${firstLine(arg, 80)}` : ''}`)
     this.actEl = view.el
-    this.tools.set(id, { view, name, input })
+    this.tools.set(id, { view, fold: this.fold ?? undefined, name, input })
   }
 
   private edit(id: string, name: string, input: Json): void {
-    const view = new ToolView(this.turn, 'edit', name)
+    const view = new ToolView(this.step('edit'), 'edit', name)
     const file = String(input['file_path'] ?? input['notebook_path'] ?? '')
     this.act = `${name === 'Write' ? 'Writing' : 'Editing'} ${base(file)}`
     let lines: DiffLine[] = []
@@ -841,7 +909,7 @@ export class Feed {
     } else if (name === 'Write') lines = diffLines('', String(input['content'] ?? ''))
     else if (name === 'NotebookEdit') lines = diffLines('', String(input['new_source'] ?? ''))
     this.paintEdit(view, name, file, lines)
-    this.tools.set(id, { view, name, input })
+    this.tools.set(id, { view, fold: this.fold ?? undefined, name, input })
   }
 
   private paintEdit(view: ToolView, name: string, file: string, lines: DiffLine[]): void {
@@ -862,6 +930,7 @@ export class Feed {
     const entry = this.tools.get(id)
     if (!entry) return
     const isError = block['is_error'] === true
+    if (isError) entry.fold?.fail()
     const { text, images } = partsOf(block['content'])
     const s = (structured && typeof structured === 'object' ? structured : {}) as Json
 
