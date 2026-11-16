@@ -3427,3 +3427,40 @@ section h2 span {
     animation: none;
   }
 }
+
+/* pinned anywhere: dragged out and let go, it stays above the conversation */
+.pc.is-float {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  opacity: 1;
+  transform: none;
+  box-shadow: 0 22px 50px -22px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--w-rim), inset 0 2px 0 color-mix(in srgb, var(--acc) 70%, transparent);
+  transition: box-shadow 200ms var(--ease);
+}
+.pc.is-float .pc__h b::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--acc);
+  vertical-align: 1px;
+}
+.pc.is-float .pc__b {
+  overflow: hidden;
+}
+.pc.is-float .tl {
+  padding-block: 6px;
+}
+.pc.is-float .tl li {
+  padding-block: 4px;
+}
+.pc.is-float .doc,
+.pc.is-float .tbw {
+  font-size: 12.5px;
+}
+.pc.is-float.is-flash {
+  animation: pcFlash 1400ms var(--ease);
+}

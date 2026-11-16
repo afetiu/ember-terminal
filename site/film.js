@@ -1024,6 +1024,62 @@ function start() {
     ptr.classList.remove('is-on')
     await wait(200)
   }
+  // ---------------------------------------------------------------- pinned anywhere, on top
+  // Dragged out and let go anywhere (not at an edge): the piece is pinned there, above the
+  // conversation, and stays in view while the work scrolls on under it.
+  const floats = []
+  /** A place on the canvas, in fractions of its size. */
+  // (below the Canvas/CLI switch in the corner: y and h are fractions of the room under it)
+  const at = (x, y, w, h) => {
+    const top = 56
+    const room = cv.offsetHeight - top - GAP
+    return { x: cv.offsetWidth * x, y: top + room * y, w: cv.offsetWidth * w, h: room * h }
+  }
+  /** The words keep clear of the pinned pieces on the right. */
+  function roomForFloats() {
+    const left = Math.min(...floats.map((f) => parseFloat(f.style.left)))
+    col.style.width = floats.length ? `${left - GAP}px` : ''
+  }
+  async function dragFree(el, to) {
+    ember(false)
+    const inline = el.classList.contains('is-inline')
+    const head = el.querySelector('.pc__h')
+    await glide(mid(head))
+    if (inline) {
+      el.classList.add('is-hover')
+      await wait(300)
+      await glide(mid(el.querySelector('.pc__grip')))
+    }
+    await wait(120)
+    ripple({ x: P.x, y: P.y })
+    let r0
+    let gap = null
+    if (inline) {
+      ;({ r0, gap } = liftOut(el))
+      void gap.offsetHeight
+      gap.style.height = '0px'
+    } else r0 = box(el, cv)
+    el.classList.add('is-lift')
+    el.classList.remove('is-float')
+    const c0 = box(cv)
+    const grab = { x: P.x - c0.x - r0.x, y: P.y - c0.y - r0.y }
+    // Carried at its own size, it takes its pinned size as it nears the spot.
+    await tween(1000, (u) => {
+      const r = lerp(r0, to, u)
+      setRect(el, r)
+      P.x = c0.x + r.x + grab.x * (r.w / r0.w)
+      P.y = c0.y + r.y + Math.min(grab.y, 18)
+      placePtr()
+    })
+    await wait(160)
+    el.classList.remove('is-lift', 'is-hover')
+    el.classList.add('is-float')
+    if (!floats.includes(el)) floats.push(el)
+    roomForFloats()
+    gap?.remove()
+    await wait(300)
+  }
+
   /** Ctrl+`: the agent's own CLI takes the tab, as it is; again, and the canvas is back. */
   async function cliView(on, lines = []) {
     await keys('Ctrl', '`')
@@ -1299,7 +1355,7 @@ function start() {
   }
 
   // ================================================================ 9 · write a postmortem
-  // Opened full screen from its menu; asked about right there; follow-ups go to the todos.
+  // Three pieces dragged out and stacked in view: the numbers, the timeline, the draft.
   async function incidentStory() {
     await beat(0)
     await ask('write up last night’s outage')
@@ -1321,18 +1377,23 @@ function start() {
     ]))
     await show(tl)
     busy(false)
-    await wait(1000)
+    await wait(900)
 
     await beat(1)
-    await menuTile(tl.querySelector('.pc__h'), 'What happened', 'full')
-    await fullScreen(tl)
-    await wait(1400)
+    await dragFree(st, narrow ? at(0.5, 0.06, 0.48, 0.2) : at(0.6, 0.03, 0.38, 0.19))
+    await dragFree(tl, narrow ? at(0.5, 0.28, 0.48, 0.42) : at(0.6, 0.24, 0.38, 0.42))
+    ptr.classList.remove('is-on')
+    await wait(900)
 
     await beat(2)
     await askAbout(tl.querySelector('[data-t="2"]'), 'What happened · 23:11', 'why 9 minutes to alert?',
       'The alert waits for five bad minutes in a row. The cache alarm went off at 23:05, but it only sends email.')
-    await leaveFull()
-    await wait(400)
+    await ask('who was on call?')
+    think('Reading the pager log…')
+    await wait(900)
+    await line('The platform rotation. Paged at 23:11, in #incidents at 23:19.')
+    busy(false)
+    await wait(1200)
 
     await beat(3)
     await ask('draft the postmortem, and put the follow-ups on my list')
@@ -1341,18 +1402,19 @@ function start() {
     unthink()
     const doc = piece('Postmortem · Nov 14', 'markdown', docBody(
       `<h4>Checkout outage, 23:02–23:49</h4><p>A config change set the cache lifetime to zero. Every request went to the database, and checkout timed out.</p>` +
-      `<ul><li>Page on-call when cache hits fall, not email</li><li>Check config values before a push</li></ul>`
+      `<ul><li>Page on-call when cache hits fall</li><li>Check config values before a push</li></ul>`
     ))
     await show(doc)
-    addTodo('page on cache hits, not email')
-    await wait(1700)
-    addTodo('check config values before a push')
     busy(false)
+    await wait(600)
+    await dragFree(doc, narrow ? at(0.5, 0.72, 0.48, 0.26) : at(0.6, 0.69, 0.38, 0.29))
+    ptr.classList.remove('is-on')
+    addTodo('page on cache hits, not email')
     await wait(4000)
   }
 
   // ================================================================ 10 · explain a bill
-  // Everything in the reply: asked about where it is, fixed with a button, a reminder set.
+  // The numbers and the chart pinned top right; the conversation keeps going under them.
   async function costStory() {
     await beat(0)
     await ask('why did the AWS bill jump this month?')
@@ -1373,28 +1435,44 @@ function start() {
     ]))
     await show(bars)
     busy(false)
-    await wait(1200)
+    await wait(1000)
 
     await beat(1)
-    await askAbout(bars.querySelector('[data-b="1"]'), 'Cost by service · NAT Gateway', 'what is going through it?',
-      'The image resizer reads from S3 over the public route since Nov 3. An S3 endpoint in the VPC makes that free.')
+    await dragFree(st, narrow ? at(0.5, 0.05, 0.48, 0.2) : at(0.6, 0.04, 0.38, 0.2))
+    await dragFree(bars, narrow ? at(0.5, 0.28, 0.48, 0.32) : at(0.6, 0.27, 0.38, 0.34))
+    ptr.classList.remove('is-on')
+    await wait(900)
 
     await beat(2)
-    await choose('Add the S3 endpoint?', 'Add it')
+    await ask('what is going through the NAT gateway?')
+    think('Reading the VPC flow logs…')
+    await wait(1100)
+    await line('The image resizer, reading from S3 over the public route since Nov 3.')
+    busy(false)
+    await wait(700)
+    await askAbout(bars.querySelector('[data-b="2"]'), 'Cost by service · RDS', 'and is RDS normal?',
+      'Yes. Same as October, within 1%.')
+
+    await beat(3)
+    await choose('Add an S3 endpoint to the VPC? That traffic becomes free.', 'Add it')
     think('Editing infra/network.tf…')
     await wait(1100)
     const t = tool('run', 'terraform plan')
     await wait(1300)
     t.textContent = 'terraform plan · 1 to add, 0 to change'
-    await line('Planned, not applied. It should save about $2,700 a month.')
-    busy(false)
-    await wait(1200)
-
-    await beat(3)
-    await ask('remind me to apply it after review')
-    tool('todo', 'add · apply the S3 endpoint after review')
+    // the pinned numbers update where they are
+    const nat = st.querySelectorAll('.sts__i, .st__i')[1]
+    if (nat) {
+      nat.querySelector('b').textContent = '≈ $670'
+      const em = nat.querySelector('em')
+      if (em) {
+        em.textContent = 'next month'
+        em.className = 'is-up'
+      }
+    }
+    st.classList.add('is-flash')
+    await line('Planned, not applied. NAT should drop to about $670 a month.')
     addTodo('apply the S3 endpoint after review')
-    await line('On your list.')
     busy(false)
     await wait(4000)
   }
@@ -1484,7 +1562,10 @@ function start() {
     ]))
     await show(tb)
     busy(false)
-    await wait(1600)
+    await wait(900)
+    await dragFree(tb, narrow ? at(0.46, 0.05, 0.52, 0.34) : at(0.58, 0.04, 0.4, 0.3))
+    ptr.classList.remove('is-on')
+    await wait(900)
 
     await beat(2)
     await ask('the invoice one is done already')
@@ -1766,9 +1847,9 @@ function start() {
       story: incidentStory,
       moments: [
         ['Ask', 11000, 'Ask what happened. It reads the alerts, the chat and the deploys.'],
-        ['Full screen', 5000, 'Open the timeline full screen from its menu.'],
-        ['Ask about it', 10000, 'Right-click a moment to ask about it, right there.'],
-        ['Draft', 8000, 'It drafts the postmortem and puts the follow-ups on your todo list.'],
+        ['Lay it out', 7500, 'Drag the numbers and the timeline out, and let go anywhere. They stay on top, in view.'],
+        ['Keep going', 13500, 'Ask about a pinned piece, or just keep talking. The conversation moves on under them.'],
+        ['Add a third', 9500, 'Drag the draft out too. Three things in view while you work.'],
       ],
     },
     {
@@ -1778,9 +1859,9 @@ function start() {
       story: costStory,
       moments: [
         ['Ask', 10000, 'Ask why the bill went up. It shows where the money went.'],
-        ['Ask about it', 9500, 'Right-click the line that grew, right in the reply.'],
-        ['Fix it', 8000, 'It makes the change and plans it. Nothing is applied until you say so.'],
-        ['Remind me', 5500, 'Ask for a reminder. It goes on your todo list.'],
+        ['Keep in view', 7500, 'Drag the numbers and the chart out, and let go wherever suits you. They stay on top.'],
+        ['Keep going', 12500, 'Keep asking. The answers scroll by under them; right-click a pinned bar to ask about it.'],
+        ['Fix it', 9000, 'Make the fix. The pinned numbers update where they are.'],
       ],
     },
     {
@@ -1802,8 +1883,8 @@ function start() {
       story: dayStory,
       moments: [
         ['Ask', 10000, 'Ask what needs you today. It reads your mail, Slack and GitHub.'],
-        ['Order it', 5500, 'Your todos, in the order to do them.'],
-        ['Tick one', 5500, 'Tell it what is done. It comes off the list.'],
+        ['Keep it in view', 8500, 'Drag the list out and leave it top right, in view all day.'],
+        ['Tick one', 5500, 'Tell it what is done. It comes off the pinned list too.'],
         ['Start one', 7000, 'Start a session on the next one, in a new tab.'],
       ],
     },
@@ -1946,6 +2027,7 @@ function start() {
     cards.querySelectorAll('[data-extra]').forEach((c) => c.remove())
     kbdEl = null
     full = null
+    floats.length = 0
     root.querySelector('.cliv')?.classList.remove('is-on')
     root.querySelectorAll('.vs__b').forEach((b, i) => b.classList.toggle('is-on', i === 0))
     beatNow = 0
