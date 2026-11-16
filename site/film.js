@@ -401,7 +401,7 @@ function start() {
       `<div class="menu__ask"><span class="menu__box" data-box></span><span class="menu__ph">Ask about this, or say what to change…</span></div>` +
       `<div class="menu__hint">A question is answered here · anything else changes it</div>` +
       `<div class="menu__ans" data-ans></div>` +
-      `<div class="menu__grid"><span><i>⤢</i>Full screen</span><span><i>▁</i>Minimize</span><span data-tile="note"><i>✎</i>Save note</span><span><i>✕</i>Remove</span></div>`
+      `<div class="menu__grid"><span data-tile="full"><i>⤢</i>Full screen</span><span data-tile="min"><i>▁</i>Minimize</span><span data-tile="note"><i>✎</i>Save note</span><span data-tile="x"><i>✕</i>Remove</span></div>`
     const c = box(cv)
     const w = narrow ? 270 : 320
     menu.style.width = `${w}px`
@@ -913,7 +913,136 @@ function start() {
     todoN.textContent = String(Math.max(0, Number(todoN.textContent) - 1))
   }
 
+  // ---------------------------------------------------------------- other ways of working
+  // The canvas does not ask you to pin anything. These are the other ways in, all real:
+  // the keyboard (Ctrl+↑ selects, Enter full screen, Shift+arrow snaps, Space opens the menu),
+  // the menu's tiles, typed follow-ups that change a piece in place, and the CLI itself (Ctrl+`).
+  let kbdEl = null
+  function kbdOff() {
+    kbdEl?.classList.remove('is-kbd')
+    kbdEl = null
+  }
+  /** Ctrl+↑: the keyboard goes to the canvas and the newest piece is selected. */
+  async function keySelect(el) {
+    ember(false)
+    ptr.classList.remove('is-on')
+    await keys('Ctrl', '↑')
+    kbdOff()
+    kbdEl = el
+    el.classList.add('is-kbd')
+    await wait(600)
+  }
+  const lerp = (a, b, u) => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, w: a.w + (b.w - a.w) * u, h: a.h + (b.h - a.h) * u })
+  /** Lift a piece out of the reply onto the board, where it is placed by hand; its place closes up. */
+  function liftOut(el) {
+    const r0 = box(el, cv)
+    const gap = document.createElement('div')
+    gap.className = 'gap'
+    gap.style.height = `${el.offsetHeight + 14}px`
+    el.before(gap)
+    board.appendChild(el)
+    el.classList.remove('is-inline', 'is-hover')
+    setRect(el, r0)
+    return { r0, gap }
+  }
+  let full = null
+  /** Full screen (Enter, or the menu's tile): the piece takes the whole canvas. */
+  async function fullScreen(el) {
+    const inline = el.classList.contains('is-inline')
+    const { r0, gap } = inline ? liftOut(el) : { r0: box(el, cv), gap: null }
+    el.classList.add('is-full')
+    full = { el, r0, gap }
+    const to = { x: GAP, y: 56, w: cv.offsetWidth - 2 * GAP, h: cv.offsetHeight - 56 - GAP }
+    await tween(460, (u) => setRect(el, lerp(r0, to, u)))
+  }
+  /** Esc: back to where it was. */
+  async function leaveFull() {
+    if (!full) return
+    const { el, r0, gap } = full
+    full = null
+    await keys('Esc')
+    const from = box(el, cv)
+    await tween(380, (u) => setRect(el, lerp(from, r0, u)))
+    el.classList.remove('is-full')
+    if (gap) {
+      gap.replaceWith(el)
+      el.removeAttribute('style')
+      el.classList.add('is-inline', 'is-on')
+    }
+  }
+  /** Shift+arrow on a selected piece: it snaps to that edge, no dragging. */
+  async function snapByKey(el, side, deep = 0.42) {
+    if (side === 'bottom') depth = deep
+    await keys('Shift', side === 'right' ? '→' : '↓')
+    const { r0, gap } = liftOut(el)
+    el.classList.add('is-snapped')
+    void gap.offsetHeight
+    gap.style.height = '0px'
+    const target = side === 'right' ? snapRect('right') : bottomRects([...bottoms, el]).at(-1)
+    if (side === 'right') snaps.right = el
+    else {
+      bottoms.forEach((b, i) => {
+        b.classList.add('is-relayout')
+        setRect(b, bottomRects([...bottoms, el])[i])
+      })
+      bottoms.push(el)
+    }
+    makeRoom()
+    await tween(460, (u) => setRect(el, lerp(r0, target, u)))
+    gap.remove()
+  }
+  /** Ask in the menu that is open, and read the answer there. */
+  async function menuAsk(m, question, answer) {
+    await wait(400)
+    await typeInto(m.box, question)
+    await wait(250)
+    await keys('Enter')
+    m.ans.classList.add('is-on', 'is-busy')
+    await wait(1000)
+    m.ans.classList.remove('is-busy')
+    const a = document.createElement('p')
+    m.ans.appendChild(a)
+    await stream(a, answer)
+    await wait(2200)
+    await keys('Esc')
+    closeMenu()
+    await wait(400)
+  }
+  /** Space on the selected piece opens its menu, no mouse. */
+  async function askByKey(el, head, question, answer) {
+    await keys('Space')
+    await menuAsk(openMenu(mid(el), head), question, answer)
+  }
+  /** Right-click, then one of the menu's tiles: full screen, save note… */
+  async function menuTile(el, head, tile) {
+    ember(false)
+    await click(el, true)
+    openMenu(mid(el), head)
+    await wait(800)
+    await click(menu.querySelector(`[data-tile="${tile}"]`))
+    closeMenu()
+    ptr.classList.remove('is-on')
+    await wait(200)
+  }
+  /** Ctrl+`: the agent's own CLI takes the tab, as it is; again, and the canvas is back. */
+  async function cliView(on, lines = []) {
+    await keys('Ctrl', '`')
+    const b = root.querySelectorAll('.vs__b')
+    b[0].classList.toggle('is-on', !on)
+    b[1].classList.toggle('is-on', on)
+    let c = root.querySelector('.cliv')
+    if (!c) {
+      c = document.createElement('div')
+      c.className = 'cliv'
+      cv.after(c)
+    }
+    if (on) c.innerHTML = lines.map((l) => `<p>${l}</p>`).join('')
+    c.classList.toggle('is-on', on)
+    await wait(300)
+  }
+
   // ================================================================ 4 · map the system
+  // Stays in the reply: changed there with a right-click, then looked at full screen from the keyboard.
   const SYS = [
     { id: 'web', label: 'Web app', sub: 'Next.js', x: 16, y: 24 },
     { id: 'mob', label: 'Mobile', sub: 'iOS · Android', x: 16, y: 74 },
@@ -932,23 +1061,25 @@ function start() {
     const dg = piece('How the services talk', 'diagram', diagramBody(SYS, SYS_E))
     await show(dg)
     busy(false)
-    await wait(1200)
-    await dragTo(dg, 'right')
-    ptr.classList.remove('is-on')
-    await wait(600)
+    await wait(1600)
 
     await beat(1)
-    await askAbout(dg.querySelector('[data-n="db"]'), 'How the services talk · Postgres', 'what breaks if this goes down?',
-      'Everything but the static pages. Web and mobile both read through the API, and the jobs write to it.')
-
-    await beat(2)
     await change(dg.querySelector('[data-n="api"]'), 'How the services talk · API', 'split billing out into its own service', 'the diagram, “API”')
     think('Reading src/billing… redrawing')
     await wait(1200)
     addNode(dg, SYS, { id: 'bill', label: 'Billing', sub: 'new service', x: 50, y: 78 }, [['api', 'bill'], ['bill', 'q']], ['api-q'])
-    await line('Billing is its own service now. It takes over the jobs; nothing else moves.')
+    await line('Redrawn: billing is its own service, and it takes over the jobs.')
     busy(false)
     await wait(1400)
+
+    await beat(2)
+    await keySelect(dg)
+    await keys('Enter')
+    await fullScreen(dg)
+    await wait(2600)
+    await leaveFull()
+    kbdOff()
+    await wait(500)
 
     await beat(3)
     await choose('Write the migration plan?', 'Write it')
@@ -964,6 +1095,7 @@ function start() {
   }
 
   // ================================================================ 5 · learn a codebase
+  // Snapped from the keyboard, then a walk-through, then a fact kept for every agent.
   const FLOW = [
     { id: 'route', label: 'Route', sub: 'routes/orders.ts', x: 15, y: 28 },
     { id: 'svc', label: 'Service', sub: 'services/orders.ts', x: 38, y: 72 },
@@ -981,12 +1113,15 @@ function start() {
     const dg = piece('POST /orders, start to end', 'diagram', diagramBody(FLOW, FLOW_E))
     await show(dg)
     busy(false)
-    await wait(1000)
-    await dragTo(dg, 'bottom', 0.42)
-    ptr.classList.remove('is-on')
-    await wait(500)
+    await wait(1200)
 
     await beat(1)
+    await keySelect(dg)
+    await snapByKey(dg, 'bottom', 0.42)
+    kbdOff()
+    await wait(700)
+
+    await beat(2)
     await ask('walk me through it')
     const n = (id) => dg.querySelector(`[data-n="${id}"]`)
     await walkThrough(
@@ -998,13 +1133,9 @@ function start() {
       ],
       { x: narrow ? 220 : 640, y: narrow ? 200 : 260 }
     )
-    await line('Start in services/. That is where the rules are.')
+    await line('Start in services/. Services never write SQL; repositories do.')
     busy(false)
     await wait(900)
-
-    await beat(2)
-    await askAbout(n('svc'), 'POST /orders · Service', 'why is there no SQL here?',
-      'On purpose. Services call repositories, so the rules can be tested without a database.')
 
     await beat(3)
     await ask('remember that for next time')
@@ -1017,6 +1148,7 @@ function start() {
   }
 
   // ================================================================ 6 · read a spreadsheet
+  // Nothing moved: a typed follow-up changes the chart where it is; the menu keeps it as a note.
   async function sheetStory() {
     await beat(0)
     await ask('which plan loses the most customers? customers.csv')
@@ -1038,51 +1170,69 @@ function start() {
     ]))
     await show(bars)
     busy(false)
-    await wait(1000)
+    await wait(1200)
 
     await beat(1)
-    await dragTo(bars, 'right')
-    ptr.classList.remove('is-on')
-    await wait(800)
+    await ask('only people who joined this year')
+    think('Filtering… updating the chart')
+    await wait(1100)
+    unthink()
+    const vals = [[30, '3.0%'], [26, '2.6%'], [21, '2.1%'], [72, '7.2%']]
+    bars.querySelectorAll('.hb__r').forEach((r, i) => {
+      r.querySelector('b').style.setProperty('--v', `${vals[i][0]}%`)
+      r.querySelector('em').textContent = vals[i][1]
+    })
+    bars.querySelector('.pc__h b').textContent = 'Monthly churn by plan · joined 2026'
+    bars.classList.add('is-flash')
+    await line('Updated in place. Team is still the highest, at 7.2%.')
+    busy(false)
+    await wait(1400)
 
     await beat(2)
     await askAbout(bars.querySelector('[data-b="3"]'), 'Monthly churn · Team', 'why is Team so high?',
       'Most leave in month two, when the trial seats run out. 61% never invited a second person.')
 
     await beat(3)
-    await ask('save that as a note for Monday')
-    tool('notes', 'create “Churn: the Team plan”')
-    await wait(600)
-    await line('Saved to your notes, with the chart.')
-    showToast('Saved to your notes: Churn: the Team plan')
-    busy(false)
+    await menuTile(bars, 'Monthly churn by plan', 'note')
+    showToast('Saved to your notes: Monthly churn by plan')
     await wait(4000)
   }
 
   // ================================================================ 7 · make a decision
+  // The agent asks back with buttons; a typed follow-up; the decision kept.
   async function decideStory() {
     await beat(0)
     await ask('postgres or dynamodb for the events table?')
     think('Reading how events/ is queried…')
     await wait(1400)
-    await line('Postgres. You look events up by user and by date, and join them to orders.')
+    await line('You look events up by user and by date, and join them to orders.')
     const cmp = piece('Events table', 'compare', compareBody([
       { title: 'Postgres', best: true, points: [['+', 'Joins with orders'], ['+', 'Already running'], ['-', 'Slows past ~500M rows']], verdict: 'Fits how you query' },
       { title: 'DynamoDB', points: [['+', 'Scales on its own'], ['-', 'No joins'], ['-', 'A second database to run']], verdict: 'Only for one key' },
       { title: 'ClickHouse', points: [['+', 'Fast for reports'], ['-', 'Slow single updates'], ['-', 'New to the team']], verdict: 'Later, for analytics' },
     ]))
     await show(cmp)
-    busy(false)
-    await wait(1000)
+    await wait(600)
 
     await beat(1)
-    await dragTo(cmp, 'bottom', 0.46)
-    ptr.classList.remove('is-on')
-    await wait(800)
+    await choose('One thing decides it: how many events a day?', '1 to 10 million', 'More than that')
+    think('Working it out…')
+    await wait(1000)
+    unthink()
+    const v = cmp.querySelector('[data-c="0"] p')
+    v.textContent = 'Fine for years, split by month'
+    v.classList.add('is-new')
+    await line('Then Postgres, split by month. It holds for years.')
+    busy(false)
+    await wait(1400)
 
     await beat(2)
-    await askAbout(cmp.querySelector('[data-c="0"] [data-p="2"]'), 'Events table · Postgres', 'when would we hit that?',
-      'In about four years at today’s rate. Splitting the table by month pushes it far past that.')
+    await ask('what would change your mind?')
+    think('…')
+    await wait(900)
+    await line('Over 50 million events a day, or reports that scan everything. Then ClickHouse, beside Postgres.')
+    busy(false)
+    await wait(1600)
 
     await beat(3)
     await choose('Remember this decision?', 'Remember it')
@@ -1095,6 +1245,7 @@ function start() {
   }
 
   // ================================================================ 8 · write release notes
+  // Two pieces side by side along the bottom; changed by just saying so.
   async function notesStory() {
     await beat(0)
     await ask('write the release notes for v3.1 from the merged PRs')
@@ -1102,7 +1253,7 @@ function start() {
     await wait(1000)
     tool('gh', 'pr list --state merged · 23')
     await wait(500)
-    await line('Twenty-three PRs. These are the ones a customer would notice.')
+    await line('Twenty-three PRs. These are the ones a customer would notice, and a draft.')
     const tl = piece('v3.1 · what changed', 'timeline', timelineBody([
       ['Nov 4', 'Search is 4× faster', '#401 · new index'],
       ['Nov 6', 'Export to CSV', '#409'],
@@ -1110,36 +1261,32 @@ function start() {
       ['Nov 12', 'Fixed: double emails', '#420', 'ok'],
     ]))
     await show(tl)
-    busy(false)
-    await wait(900)
-    await dragTo(tl, 'right')
-    ptr.classList.remove('is-on')
-    await wait(500)
-
-    await beat(1)
-    await line('And the draft:')
     const doc = piece('RELEASE-v3.1.md', 'markdown', docBody(
       `<h4>v3.1</h4><p data-lead>Search queries now use a composite GIN index on (tenant_id, tsv), cutting p95 latency from 820 ms to 190 ms.</p>` +
       `<ul><li>Export any table to CSV</li><li>Invoices follow dark mode</li><li>Fixed: some emails were sent twice</li></ul>`
     ))
+    doc.dataset.w = '1.6'
     await show(doc)
     busy(false)
-    await wait(800)
-    await dragTo(doc, 'bottom', 0.46)
+    await wait(900)
+
+    await beat(1)
+    await dragTo(tl, 'bottom', 0.5)
+    await dragTo(doc, 'bottom', 0.5)
     ptr.classList.remove('is-on')
-    await wait(700)
+    await wait(800)
 
     await beat(2)
-    const lead = doc.querySelector('[data-lead]')
-    await change(lead, 'RELEASE-v3.1.md · first paragraph', 'say it for customers, not engineers', 'RELEASE-v3.1.md, the first paragraph')
-    think('Rewriting…')
+    await ask('the first paragraph is for engineers. say it for customers')
+    think('Rewriting RELEASE-v3.1.md…')
     await wait(1000)
     unthink()
+    const lead = doc.querySelector('[data-lead]')
     lead.classList.add('is-new')
     lead.textContent = 'Search is four times faster. Results now show up as you type.'
     await line('Rewritten in plain words.')
     busy(false)
-    await wait(1200)
+    await wait(1400)
 
     await beat(3)
     await choose('Publish it on GitHub Releases?', 'Publish')
@@ -1152,6 +1299,7 @@ function start() {
   }
 
   // ================================================================ 9 · write a postmortem
+  // Opened full screen from its menu; asked about right there; follow-ups go to the todos.
   async function incidentStory() {
     await beat(0)
     await ask('write up last night’s outage')
@@ -1173,20 +1321,21 @@ function start() {
     ]))
     await show(tl)
     busy(false)
-    await wait(800)
+    await wait(1000)
 
     await beat(1)
-    await dragTo(tl, 'right')
-    await dragTo(st, 'bottom', 0.24)
-    ptr.classList.remove('is-on')
-    await wait(700)
+    await menuTile(tl.querySelector('.pc__h'), 'What happened', 'full')
+    await fullScreen(tl)
+    await wait(1400)
 
     await beat(2)
     await askAbout(tl.querySelector('[data-t="2"]'), 'What happened · 23:11', 'why 9 minutes to alert?',
       'The alert waits for five bad minutes in a row. The cache alarm went off at 23:05, but it only sends email.')
+    await leaveFull()
+    await wait(400)
 
     await beat(3)
-    await ask('draft the postmortem and the follow-ups')
+    await ask('draft the postmortem, and put the follow-ups on my list')
     think('Writing…')
     await wait(1100)
     unthink()
@@ -1195,14 +1344,15 @@ function start() {
       `<ul><li>Page on-call when cache hits fall, not email</li><li>Check config values before a push</li></ul>`
     ))
     await show(doc)
-    showToast('Saved to your notes: Postmortem · Nov 14')
-    await wait(1600)
     addTodo('page on cache hits, not email')
+    await wait(1700)
+    addTodo('check config values before a push')
     busy(false)
     await wait(4000)
   }
 
   // ================================================================ 10 · explain a bill
+  // Everything in the reply: asked about where it is, fixed with a button, a reminder set.
   async function costStory() {
     await beat(0)
     await ask('why did the AWS bill jump this month?')
@@ -1223,18 +1373,13 @@ function start() {
     ]))
     await show(bars)
     busy(false)
-    await wait(900)
+    await wait(1200)
 
     await beat(1)
-    await dragTo(bars, 'right')
-    ptr.classList.remove('is-on')
-    await wait(700)
-
-    await beat(2)
     await askAbout(bars.querySelector('[data-b="1"]'), 'Cost by service · NAT Gateway', 'what is going through it?',
       'The image resizer reads from S3 over the public route since Nov 3. An S3 endpoint in the VPC makes that free.')
 
-    await beat(3)
+    await beat(2)
     await choose('Add the S3 endpoint?', 'Add it')
     think('Editing infra/network.tf…')
     await wait(1100)
@@ -1242,12 +1387,20 @@ function start() {
     await wait(1300)
     t.textContent = 'terraform plan · 1 to add, 0 to change'
     await line('Planned, not applied. It should save about $2,700 a month.')
+    busy(false)
+    await wait(1200)
+
+    await beat(3)
+    await ask('remind me to apply it after review')
+    tool('todo', 'add · apply the S3 endpoint after review')
     addTodo('apply the S3 endpoint after review')
+    await line('On your list.')
     busy(false)
     await wait(4000)
   }
 
   // ================================================================ 11 · review a design
+  // Full screen to look closely; one problem changed by right-click, the rest by asking.
   const shotBody = () =>
     `<div class="shot" data-shot><div class="shot__ph"><span class="shot__x" data-close>✕</span><h4>Checkout</h4>` +
     `<label>Card number</label><div class="shot__in">4242 4242 4242 4242</div>` +
@@ -1259,34 +1412,44 @@ function start() {
     await ask('check checkout.png for accessibility')
     think('Looking at checkout.png…')
     await wait(1300)
-    await line('Three problems. Here is the screen.')
+    await line('Three problems. Open it to see them marked.')
     const img = piece('checkout.png', 'image', shotBody())
     await show(img)
     busy(false)
-    await wait(900)
+    await wait(1000)
 
     await beat(1)
-    await dragTo(img, 'bottom', 0.56)
-    ptr.classList.remove('is-on')
-    await wait(500)
+    await keySelect(img)
+    await keys('Enter')
+    await fullScreen(img)
+    await wait(300)
     const shot = img.querySelector('[data-shot]')
     mark(shot, img.querySelector('[data-fine]'), 1, 'Too faint to read')
     await wait(500)
     mark(shot, img.querySelector('[data-exp]'), 2, 'No label', true)
     await wait(500)
     mark(shot, img.querySelector('[data-close]'), 3, 'Too small to tap')
-    await wait(1600)
+    await wait(1800)
 
     await beat(2)
-    await askAbout(img.querySelector('[data-exp]'), 'checkout.png · MM / YY', 'why does that matter?',
-      'A screen reader only says “edit text”. And once you start typing, the hint is gone too.')
+    await change(img.querySelector('[data-close]'), 'checkout.png · ✕', 'make this a real Close button', 'checkout.png, the “✕”')
+    think('Editing checkout.tsx…')
+    await wait(1100)
+    unthink()
+    shot.classList.add('is-fix-close')
+    shot.querySelectorAll('.mark')[2]?.remove()
+    await line('Done: a labelled Close button, big enough to tap.')
+    busy(false)
+    await wait(1300)
 
     await beat(3)
-    await ask('fix all three in checkout.tsx')
+    await leaveFull()
+    kbdOff()
+    shot.querySelectorAll('.mark').forEach((m) => m.remove())
+    await ask('fix the other two as well')
     think('Editing checkout.tsx and checkout.css…')
     await wait(1200)
-    tool('edit', 'checkout.tsx, checkout.css · 3 changes')
-    shot.querySelectorAll('.mark').forEach((m) => m.remove())
+    tool('edit', 'checkout.tsx, checkout.css · 2 changes')
     shot.classList.add('is-fixed')
     img.querySelector('.pc__h b').textContent = 'localhost:5173/checkout'
     img.querySelector('.pc__k').textContent = 'page'
@@ -1296,6 +1459,7 @@ function start() {
   }
 
   // ================================================================ 12 · plan the day
+  // No canvas work at all: the todo list fills, you talk, it ticks things off and opens a session.
   async function dayStory() {
     await beat(0)
     await ask('what do I need to do today?')
@@ -1320,10 +1484,7 @@ function start() {
     ]))
     await show(tb)
     busy(false)
-    await wait(900)
-    await dragTo(tb, 'right')
-    ptr.classList.remove('is-on')
-    await wait(600)
+    await wait(1600)
 
     await beat(2)
     await ask('the invoice one is done already')
@@ -1344,6 +1505,7 @@ function start() {
   }
 
   // ================================================================ 13 · learn how something works
+  // Walked through right where it is in the reply, then asked about there.
   async function explainStory() {
     await beat(0)
     await ask('how does “Sign in with Google” work? I’m new to this')
@@ -1360,10 +1522,7 @@ function start() {
     ]))
     await show(sq)
     busy(false)
-    await wait(900)
-    await dragTo(sq, 'right')
-    ptr.classList.remove('is-on')
-    await wait(600)
+    await wait(1200)
 
     await beat(1)
     await ask('walk me through it')
@@ -1387,6 +1546,7 @@ function start() {
   }
 
   // ================================================================ 14 · triage issues
+  // Keyboard only: select the table, Space for its menu, ask; then buttons.
   async function triageStory() {
     await beat(0)
     await ask('sort the open issues by how much they hurt users')
@@ -1403,30 +1563,35 @@ function start() {
     ]))
     await show(tb)
     busy(false)
-    await wait(900)
+    await wait(1200)
 
     await beat(1)
-    await dragTo(tb, 'bottom', 0.4)
-    ptr.classList.remove('is-on')
-    await wait(800)
+    await keySelect(tb)
+    await askByKey(tb, 'Open issues, worst first', 'is #512 new?',
+      'Since Tuesday’s release. Safari drops the session cookie after the change in PR #491.')
+    kbdOff()
 
     await beat(2)
-    await askAbout(tb.querySelector('[data-r="0"] td'), 'Open issues · #512', 'is this new?',
-      'Since Tuesday’s release. Safari drops the session cookie after the change in PR #491.')
-
-    await beat(3)
     await choose('Close the 11 duplicates, linking each to its original?', 'Close them')
     think('Closing…')
     await wait(1000)
     tool('gh', 'issue close · 11 closed, each with a link')
     tb.querySelector('[data-r="3"]').classList.add('is-done')
     await line('Done. 30 open now.')
-    addTodo('fix #512 first')
+    busy(false)
+    await wait(1200)
+
+    await beat(3)
+    await choose('Start a session on #512?', 'Start it')
+    newCard('Fix #512 Safari login', 'Opus 5.5 · 1%')
+    await wait(600)
+    await line('Opened in a new session. It starts from PR #491.')
     busy(false)
     await wait(4000)
   }
 
   // ================================================================ 15 · audit packages
+  // A look at the CLI itself (Ctrl+`), then back to the canvas while it works.
   async function auditStory() {
     await beat(0)
     await ask('are any of our packages vulnerable?')
@@ -1443,12 +1608,26 @@ function start() {
     ]))
     await show(tb)
     busy(false)
-    await wait(900)
-    await dragTo(tb, 'right')
-    ptr.classList.remove('is-on')
-    await wait(600)
+    await wait(1200)
 
     await beat(1)
+    await cliView(true, [
+      '<b>●</b> Bash(pnpm audit --json)',
+      '  ⎿  4 vulnerabilities (1 high, 1 moderate, 2 low)',
+      '',
+      '<b>●</b> Read(src/upload/resize.ts)',
+      '  ⎿  Read 84 lines',
+      '',
+      '<b>●</b> Four. One is serious, and the upload route reaches it.',
+      '',
+      '<i>────────────────────────────────────────────</i>',
+      '<b>&gt;</b> ',
+    ])
+    await wait(2800)
+    await cliView(false)
+    await wait(500)
+
+    await beat(2)
     await ask('fix them, one at a time, tests after each')
     const pl = startPlan('Upgrade 4 packages', ['img-probe → 1.2.1', 'xmlish → 3.4.3', 'tinyduration → 2.1.3', 'urlkit → 6.9.4'])
     await show(pl)
@@ -1463,10 +1642,6 @@ function start() {
     t.textContent = 'pnpm test · 211 passed'
     busy(false)
     await wait(1000)
-
-    await beat(2)
-    await askAbout(tb.querySelector('[data-r="0"] td'), 'pnpm audit · img-probe', 'were we actually exposed?',
-      'No. The bug needs uploads over 20 MB, and the proxy stops anything over 10 MB.')
 
     await beat(3)
     await choose('Open a pull request?', 'Open the PR')
@@ -1530,10 +1705,10 @@ function start() {
       session: ['Architecture', 'Opus 5.5 · 12%'],
       story: systemStory,
       moments: [
-        ['Ask', 12000, 'Ask for a picture of the system. It reads the code and draws it.'],
-        ['Ask about it', 9000, 'Right-click any box to ask about it.'],
-        ['Change it', 9500, 'Say what should change. The diagram is redrawn in place.'],
-        ['Plan it', 8500, 'One click turns it into a plan, saved with the code.'],
+        ['Ask', 9000, 'Ask for a picture of the system. It reads the code and draws it, right in the reply.'],
+        ['Change it', 9500, 'Right-click a box where it is and say what should change. It is redrawn in place.'],
+        ['Full screen', 6500, 'Ctrl+↑ selects it, Enter opens it full screen, Esc brings it back.'],
+        ['Plan it', 8500, 'Answer a button, and the change becomes a plan saved with the code.'],
       ],
     },
     {
@@ -1542,9 +1717,9 @@ function start() {
       session: ['New repo', 'Opus 5.5 · 7%'],
       story: learnStory,
       moments: [
-        ['Ask', 10500, 'New to a codebase? Ask how it fits together.'],
+        ['Ask', 9000, 'New to a codebase? Ask how it fits together.'],
+        ['Snap it', 4500, 'Snap it along the bottom from the keyboard: Ctrl+↑, then Shift+↓.'],
         ['Walk through', 12000, 'It points at each part, one step at a time.'],
-        ['Ask about it', 9000, 'Right-click a part to ask why it is built that way.'],
         ['Remember', 6500, 'Ask it to remember. Every agent you use will know it next time.'],
       ],
     },
@@ -1555,9 +1730,9 @@ function start() {
       story: sheetStory,
       moments: [
         ['Ask', 10000, 'Hand it a CSV and ask a plain question. The answer comes as a chart.'],
-        ['Pin it', 4500, 'Pin the chart beside you.'],
+        ['Narrow it', 7000, 'Just say what to change. The chart updates where it is.'],
         ['Ask about it', 9500, 'Right-click a bar to ask what is behind it.'],
-        ['Keep it', 6000, 'Keep the answer in your notes.'],
+        ['Keep it', 5500, 'Save note, from its menu: the chart goes into your notes.'],
       ],
     },
     {
@@ -1566,9 +1741,9 @@ function start() {
       session: ['Events storage', 'Opus 5.5 · 14%'],
       story: decideStory,
       moments: [
-        ['Ask', 10000, 'Ask which option fits. It compares them against your own code.'],
-        ['Pin it', 4500, 'Pin the comparison along the bottom.'],
-        ['Ask about it', 9500, 'Right-click a point to dig into it.'],
+        ['Ask', 9500, 'Ask which option fits. It compares them against your own code.'],
+        ['Answer it', 8000, 'It asks back with buttons. One click, and the comparison updates.'],
+        ['Follow up', 6500, 'Keep talking. No need to touch the canvas at all.'],
         ['Remember', 6500, 'Keep the decision, and the reasons, for every agent.'],
       ],
     },
@@ -1578,9 +1753,9 @@ function start() {
       session: ['v3.1 notes', 'Opus 5.5 · 9%'],
       story: notesStory,
       moments: [
-        ['Ask', 10000, 'Ask for release notes. It reads the merged PRs and lays them out.'],
-        ['Draft', 6000, 'The draft comes as a document you can pin.'],
-        ['Change it', 9500, 'Right-click a paragraph and say how to change it.'],
+        ['Ask', 11000, 'Ask for release notes. It reads the merged PRs and drafts them.'],
+        ['Side by side', 7000, 'Drag both along the bottom. They share the space.'],
+        ['Change it', 7000, 'Say what to change in plain words. The draft is rewritten.'],
         ['Publish', 6500, 'One click publishes it.'],
       ],
     },
@@ -1591,9 +1766,9 @@ function start() {
       story: incidentStory,
       moments: [
         ['Ask', 11000, 'Ask what happened. It reads the alerts, the chat and the deploys.'],
-        ['Pin it', 6000, 'Pin the timeline and the numbers.'],
-        ['Ask about it', 9500, 'Right-click a moment to ask about it.'],
-        ['Draft', 8000, 'It drafts the postmortem and adds the follow-ups to your todos.'],
+        ['Full screen', 5000, 'Open the timeline full screen from its menu.'],
+        ['Ask about it', 10000, 'Right-click a moment to ask about it, right there.'],
+        ['Draft', 8000, 'It drafts the postmortem and puts the follow-ups on your todo list.'],
       ],
     },
     {
@@ -1603,9 +1778,9 @@ function start() {
       story: costStory,
       moments: [
         ['Ask', 10000, 'Ask why the bill went up. It shows where the money went.'],
-        ['Pin it', 4500, 'Pin the costs beside you.'],
-        ['Ask about it', 9500, 'Right-click the line that grew to find out why.'],
-        ['Fix it', 9000, 'It makes the change and plans it. Nothing is applied until you say so.'],
+        ['Ask about it', 9500, 'Right-click the line that grew, right in the reply.'],
+        ['Fix it', 8000, 'It makes the change and plans it. Nothing is applied until you say so.'],
+        ['Remind me', 5500, 'Ask for a reminder. It goes on your todo list.'],
       ],
     },
     {
@@ -1615,9 +1790,9 @@ function start() {
       story: designStory,
       moments: [
         ['Ask', 9000, 'Drop in a screenshot and ask for a review.'],
-        ['Mark it', 7000, 'Pin it, and each problem is marked on the picture.'],
-        ['Ask about it', 9000, 'Right-click a mark to ask why it matters.'],
-        ['Fix it', 7500, 'Ask for the fix. The picture becomes the live page.'],
+        ['Look closely', 7500, 'Open it full screen. Each problem is marked on the picture.'],
+        ['Fix one', 8000, 'Right-click one problem and say how to fix it.'],
+        ['Fix the rest', 8000, 'Ask for the rest. The picture becomes the live page.'],
       ],
     },
     {
@@ -1627,7 +1802,7 @@ function start() {
       story: dayStory,
       moments: [
         ['Ask', 10000, 'Ask what needs you today. It reads your mail, Slack and GitHub.'],
-        ['Order it', 7000, 'Your todos, in the order to do them.'],
+        ['Order it', 5500, 'Your todos, in the order to do them.'],
         ['Tick one', 5500, 'Tell it what is done. It comes off the list.'],
         ['Start one', 7000, 'Start a session on the next one, in a new tab.'],
       ],
@@ -1638,8 +1813,8 @@ function start() {
       session: ['Sign-in', 'Opus 5.5 · 5%'],
       story: explainStory,
       moments: [
-        ['Ask', 10000, 'Ask how something works. The answer comes as a picture.'],
-        ['Walk through', 12500, 'It points at each step and says what happens.'],
+        ['Ask', 9000, 'Ask how something works. The answer comes as a picture.'],
+        ['Walk through', 12500, 'It points at each step, right where it is in the reply.'],
         ['Ask about it', 10000, 'Right-click a step to ask why.'],
       ],
     },
@@ -1650,9 +1825,9 @@ function start() {
       story: triageStory,
       moments: [
         ['Ask', 10000, 'Ask which issues hurt users most.'],
-        ['Pin it', 4500, 'Pin the list along the bottom.'],
-        ['Ask about it', 9000, 'Right-click one to ask about it.'],
-        ['Clean up', 8000, 'One click closes the duplicates.'],
+        ['Keyboard', 10000, 'No mouse: Ctrl+↑ selects the table, Space opens its menu, type a question.'],
+        ['Clean up', 7000, 'One click closes the duplicates.'],
+        ['Start one', 6000, 'Start a session on the worst one, in a new tab.'],
       ],
     },
     {
@@ -1661,9 +1836,9 @@ function start() {
       session: ['Security', 'Opus 5.5 · 16%'],
       story: auditStory,
       moments: [
-        ['Ask', 10500, 'Ask if anything you depend on is unsafe.'],
-        ['Fix them', 9000, 'It upgrades them one at a time and runs the tests.'],
-        ['Ask about it', 9000, 'Right-click a package to ask if you were exposed.'],
+        ['Ask', 10000, 'Ask if anything you depend on is unsafe.'],
+        ['See the CLI', 5500, 'Ctrl+` shows the agent’s own CLI, exactly as it is. Again, and the canvas is back.'],
+        ['Fix them', 8000, 'It upgrades them one at a time and runs the tests.'],
         ['Ship', 6000, 'One click opens the PR.'],
       ],
     },
@@ -1769,6 +1944,10 @@ function start() {
     cards.children[1].classList.remove('is-busy')
     cards.children[1].querySelector('small').textContent = 'Codex · idle'
     cards.querySelectorAll('[data-extra]').forEach((c) => c.remove())
+    kbdEl = null
+    full = null
+    root.querySelector('.cliv')?.classList.remove('is-on')
+    root.querySelectorAll('.vs__b').forEach((b, i) => b.classList.toggle('is-on', i === 0))
     beatNow = 0
     say = null
   }

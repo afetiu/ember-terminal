@@ -3324,3 +3324,106 @@ section h2 span {
     white-space: nowrap;
   }
 }
+
+/* ---- other ways of working: keyboard selection, full screen, the CLI view */
+/* Ctrl+↑: the selected piece wears the accent ring */
+.pc.is-kbd {
+  box-shadow: inset 0 0 0 1px var(--w-rim), 0 0 0 2px var(--acc), 0 0 0 6px color-mix(in srgb, var(--acc) 22%, transparent);
+  transition: box-shadow 200ms var(--ease);
+}
+/* full screen: the piece takes the whole canvas, over everything placed on it */
+.pc.is-full {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  opacity: 1;
+  transform: none;
+  box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.6), inset 0 0 0 1px var(--w-rim);
+}
+.pc.is-full.is-kbd {
+  box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.6), inset 0 0 0 1px var(--w-rim), 0 0 0 2px var(--acc);
+}
+.pc.is-full .dg,
+.pc.is-full .shot,
+.pc.is-full .web,
+.pc.is-full .pdf {
+  height: 100%;
+  max-width: none;
+}
+.pc.is-full .tl {
+  padding: 14px 18px;
+  font-size: 14px;
+}
+.pc.is-full .tl li {
+  padding-block: 9px;
+}
+/* a typed follow-up changed it in place */
+.pc.is-flash {
+  animation: pcFlash 1400ms var(--ease);
+}
+@keyframes pcFlash {
+  from {
+    box-shadow: inset 0 0 0 1px var(--w-rim), 0 0 0 2px color-mix(in srgb, var(--ok) 70%, transparent);
+  }
+}
+.pc.is-flash .hb__r i b {
+  transition: width 900ms var(--ease);
+}
+.cmp p.is-new {
+  animation: docNew 1600ms var(--ease);
+}
+/* one problem fixed by right-click: just the close button */
+.shot.is-fix-close .shot__x {
+  top: 8px;
+  right: 8px;
+  width: auto;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 26px;
+  color: #2a231d;
+  background: rgba(0, 0, 0, 0.06);
+}
+.shot.is-fix-close .shot__x::after {
+  content: ' Close';
+  font-weight: 600;
+}
+/* Ctrl+`: the agent's own CLI, the whole tab */
+.cliv {
+  position: absolute;
+  inset: 0 0 92px 0;
+  z-index: 3;
+  padding: 58px 40px 16px;
+  font: 400 13.5px/1.7 var(--mono);
+  color: var(--w-ink);
+  background: var(--w-pane);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease);
+  overflow: hidden;
+}
+.cliv.is-on {
+  opacity: 1;
+}
+.cliv p {
+  margin: 0;
+  min-height: 1.7em;
+  white-space: pre;
+}
+.cliv b {
+  color: var(--acc);
+}
+.cliv i {
+  font-style: normal;
+  color: var(--w-faint);
+}
+.demo.is-narrow .cliv {
+  padding: 54px 16px 12px;
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc.is-flash,
+  .cmp p.is-new {
+    animation: none;
+  }
+}
