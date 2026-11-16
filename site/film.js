@@ -1,6 +1,7 @@
 // The demo in the hero: Ember's window, rebuilt in HTML, playing real pieces of work from
-// start to finish. Four of them: fixing a bug, building a page, reviewing a contract, and
-// working another app. Nothing is a video.
+// start to finish. Four show first (running a project, fixing a bug, building a page,
+// reviewing a contract); twelve more sit behind "More examples". Nothing is a video.
+// #use/<slug> links straight to one.
 //
 // Each scene is one script. `beat(n)` marks where each of its moments starts: the buttons
 // under the demo show them, and a click on one replays the script instantly up to that
@@ -818,6 +819,664 @@ function start() {
     await wait(4200)
   }
 
+  // ================================================================ more scenes: the shapes they show
+  // Each is a body the canvas really draws: show_view's table, stats, bar, timeline and compare,
+  // show_file's spreadsheet and Markdown, show_panel's diagrams, show_image, show_steps.
+  const numCol = (c) => c.startsWith('#')
+  const tableBody = (cols, rows) =>
+    `<div class="tbw"><table class="tbl"><thead><tr>${cols.map((c) => `<th${numCol(c) ? ' class="num"' : ''}>${c.replace(/^#/, '')}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map((r, i) => `<tr data-r="${i}">${r.map((c, j) => `<td${numCol(cols[j]) ? ' class="num"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+  const sheetBody = (cols, rows) =>
+    `<div class="sheet"><table><thead><tr><th></th>${cols.map((_, i) => `<th>${'ABCDEFGH'[i]}</th>`).join('')}</tr></thead><tbody>` +
+    `<tr><th>1</th>${cols.map((c) => `<td><b>${c}</b></td>`).join('')}</tr>` +
+    rows.map((r, i) => `<tr><th>${i + 2}</th>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('') +
+    `</tbody></table></div>`
+  const statsBody = (items) =>
+    `<div class="sts">${items.map(([label, value, delta, tone]) => `<div class="sts__i"><small>${label}</small><b>${value}</b>${delta ? `<em class="is-${tone || 'flat'}">${delta}</em>` : ''}</div>`).join('')}</div>`
+  const barsBody = (rows) =>
+    `<div class="hb">${rows.map(([label, v, text, hot], i) => `<div class="hb__r${hot ? ' is-hot' : ''}" data-b="${i}"><span>${label}</span><i><b style="--v:${v}%"></b></i><em>${text}</em></div>`).join('')}</div>`
+  const timelineBody = (items) =>
+    `<ol class="tl">${items.map(([when, title, text, tone], i) => `<li data-t="${i}"${tone ? ` class="is-${tone}"` : ''}><time>${when}</time><div><b>${title}</b>${text ? `<small>${text}</small>` : ''}</div></li>`).join('')}</ol>`
+  const compareBody = (items) =>
+    `<div class="cmp">${items
+      .map(
+        (it, i) =>
+          `<div class="cmp__c${it.best ? ' is-best' : ''}" data-c="${i}"><h5>${it.title}${it.best ? '<i>Pick</i>' : ''}</h5>` +
+          `<ul>${it.points.map(([sign, text], j) => `<li class="${sign === '+' ? 'is-pro' : 'is-con'}" data-p="${j}">${text}</li>`).join('')}</ul><p>${it.verdict}</p></div>`
+      )
+      .join('')}</div>`
+  const docBody = (html) => `<div class="doc">${html}</div>`
+  const nodeHtml = (n) =>
+    `<div class="dg__n${n.cls ? ' ' + n.cls : ''}" data-n="${n.id}" style="left:${n.x}%;top:${n.y}%"><b>${n.label}</b>${n.sub ? `<small>${n.sub}</small>` : ''}</div>`
+  const edgeHtml = (at, [a, b]) => `<line data-e="${a}-${b}" x1="${at[a].x}" y1="${at[a].y}" x2="${at[b].x}" y2="${at[b].y}"/>`
+  /** A diagram: boxes, and the lines between them flowing the way the calls go. */
+  function diagramBody(nodes, edges) {
+    const at = Object.fromEntries(nodes.map((n) => [n.id, n]))
+    return `<div class="dg"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${edges.map((e) => edgeHtml(at, e)).join('')}</svg>${nodes.map(nodeHtml).join('')}</div>`
+  }
+  /** Redraw a diagram in place: a box comes in, and the lines that change move with it. */
+  function addNode(pc, nodes, node, add, drop = []) {
+    const dg = pc.querySelector('.dg')
+    const at = Object.fromEntries([...nodes, node].map((n) => [n.id, n]))
+    drop.forEach((id) => dg.querySelector(`[data-e="${id}"]`)?.remove())
+    const svg = dg.querySelector('svg')
+    add.forEach((e) => svg.insertAdjacentHTML('beforeend', edgeHtml(at, e).replace('<line', '<line class="is-new"')))
+    dg.insertAdjacentHTML('beforeend', nodeHtml({ ...node, cls: 'is-new' }))
+  }
+  /** A sequence diagram: who talks to whom, in order. */
+  function seqBody(actors, msgs) {
+    const x = (i) => ((i * 2 + 1) / (actors.length * 2)) * 100
+    return (
+      `<div class="sq"><div class="sq__h">${actors.map((a, i) => `<b style="left:${x(i)}%">${a}</b>`).join('')}</div>` +
+      actors.map((_, i) => `<i class="sq__life" style="left:${x(i)}%"></i>`).join('') +
+      `<ol>${msgs
+        .map(([f, t, label], k) => {
+          const l = Math.min(x(f), x(t))
+          return `<li data-m="${k}"${t < f ? ' class="is-back"' : ''} style="--l:${l}%;--w:${Math.abs(x(t) - x(f))}%"><span>${label}</span><i></i></li>`
+        })
+        .join('')}</ol></div>`
+    )
+  }
+  /** Ember's pointer goes over each target in turn, a numbered note beside it. */
+  async function walkThrough(list, startAt) {
+    ember(true)
+    if (startAt) {
+      P.x = startAt.x
+      P.y = startAt.y
+      placePtr()
+    }
+    for (const [i, [el, note]] of list.entries()) {
+      tag.textContent = ''
+      await glide(mid(el))
+      list.forEach(([e]) => e.classList.remove('is-hl'))
+      el.classList.add('is-hl')
+      tag.innerHTML = `<b>Step ${i + 1} of ${list.length}</b>${note}`
+      await wait(2300)
+    }
+    tag.textContent = ''
+    list.forEach(([e]) => e.classList.remove('is-hl'))
+    ember(false)
+    ptr.classList.remove('is-on')
+  }
+  /** Another session in the sidebar, opened from this one. */
+  function newCard(title, sub) {
+    const c = document.createElement('div')
+    c.className = 'card is-busy is-new'
+    c.dataset.extra = ''
+    c.innerHTML = `<span class="card__dot"></span><div><b></b><small></small></div>`
+    c.querySelector('b').textContent = title
+    c.querySelector('small').textContent = sub
+    cards.appendChild(c)
+  }
+  function tickTodo(text) {
+    showToast(`Ticked off: ${text}`)
+    todoN.textContent = String(Math.max(0, Number(todoN.textContent) - 1))
+  }
+
+  // ================================================================ 4 · map the system
+  const SYS = [
+    { id: 'web', label: 'Web app', sub: 'Next.js', x: 16, y: 24 },
+    { id: 'mob', label: 'Mobile', sub: 'iOS · Android', x: 16, y: 74 },
+    { id: 'api', label: 'API', sub: 'one service', x: 50, y: 34 },
+    { id: 'db', label: 'Postgres', sub: 'one database', x: 84, y: 24 },
+    { id: 'q', label: 'Queue', sub: 'jobs', x: 84, y: 74 },
+  ]
+  const SYS_E = [['web', 'api'], ['mob', 'api'], ['api', 'db'], ['api', 'q']]
+
+  async function systemStory() {
+    await beat(0)
+    await ask('draw how our services talk to each other')
+    think('Reading docker-compose.yml and the API routes…')
+    await wait(1300)
+    await line('Five parts, and everything goes through the API.')
+    const dg = piece('How the services talk', 'diagram', diagramBody(SYS, SYS_E))
+    await show(dg)
+    busy(false)
+    await wait(1200)
+    await dragTo(dg, 'right')
+    ptr.classList.remove('is-on')
+    await wait(600)
+
+    await beat(1)
+    await askAbout(dg.querySelector('[data-n="db"]'), 'How the services talk · Postgres', 'what breaks if this goes down?',
+      'Everything but the static pages. Web and mobile both read through the API, and the jobs write to it.')
+
+    await beat(2)
+    await change(dg.querySelector('[data-n="api"]'), 'How the services talk · API', 'split billing out into its own service', 'the diagram, “API”')
+    think('Reading src/billing… redrawing')
+    await wait(1200)
+    addNode(dg, SYS, { id: 'bill', label: 'Billing', sub: 'new service', x: 50, y: 78 }, [['api', 'bill'], ['bill', 'q']], ['api-q'])
+    await line('Billing is its own service now. It takes over the jobs; nothing else moves.')
+    busy(false)
+    await wait(1400)
+
+    await beat(3)
+    await choose('Write the migration plan?', 'Write it')
+    think('Planning…')
+    await wait(900)
+    const pl = startPlan('Split out billing', ['Move the billing tables behind a view', 'Stand up the billing service', 'Send /billing to it', 'Remove the old code'])
+    await show(pl)
+    step(0, 'active')
+    tool('write', 'docs/plans/billing-split.md')
+    await line('Four steps, each one safe to ship alone.')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 5 · learn a codebase
+  const FLOW = [
+    { id: 'route', label: 'Route', sub: 'routes/orders.ts', x: 15, y: 28 },
+    { id: 'svc', label: 'Service', sub: 'services/orders.ts', x: 38, y: 72 },
+    { id: 'repo', label: 'Repository', sub: 'repos/orders.ts', x: 62, y: 28 },
+    { id: 'pg', label: 'Postgres', sub: 'orders', x: 85, y: 72 },
+  ]
+  const FLOW_E = [['route', 'svc'], ['svc', 'repo'], ['repo', 'pg']]
+
+  async function learnStory() {
+    await beat(0)
+    await ask('I’m new here. how does a request get to the database?')
+    think('Reading src/…')
+    await wait(1300)
+    await line('Three hops. Here they are, in order.')
+    const dg = piece('POST /orders, start to end', 'diagram', diagramBody(FLOW, FLOW_E))
+    await show(dg)
+    busy(false)
+    await wait(1000)
+    await dragTo(dg, 'bottom', 0.42)
+    ptr.classList.remove('is-on')
+    await wait(500)
+
+    await beat(1)
+    await ask('walk me through it')
+    const n = (id) => dg.querySelector(`[data-n="${id}"]`)
+    await walkThrough(
+      [
+        [n('route'), 'Checks the input, nothing else'],
+        [n('svc'), 'The business rules live here'],
+        [n('repo'), 'The only place that writes SQL'],
+        [n('pg'), 'orders and order_items'],
+      ],
+      { x: narrow ? 220 : 640, y: narrow ? 200 : 260 }
+    )
+    await line('Start in services/. That is where the rules are.')
+    busy(false)
+    await wait(900)
+
+    await beat(2)
+    await askAbout(n('svc'), 'POST /orders · Service', 'why is there no SQL here?',
+      'On purpose. Services call repositories, so the rules can be tested without a database.')
+
+    await beat(3)
+    await ask('remember that for next time')
+    tool('remember', 'services never write SQL; repositories do')
+    await wait(500)
+    await line('Saved. Codex and your other agents will know it too.')
+    showToast('Remembered for all your agents')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 6 · read a spreadsheet
+  async function sheetStory() {
+    await beat(0)
+    await ask('which plan loses the most customers? customers.csv')
+    think('Reading customers.csv · 2,418 rows…')
+    await wait(1400)
+    await line('Team, by far: 9% leave every month.')
+    const sh = piece('customers.csv', 'spreadsheet', sheetBody(['plan', 'seats', 'months', 'status'], [
+      ['Team', '3', '2', 'cancelled'],
+      ['Pro', '1', '14', 'active'],
+      ['Team', '5', '1', 'cancelled'],
+      ['Starter', '1', '6', 'active'],
+    ]))
+    await show(sh)
+    const bars = piece('Monthly churn by plan', 'bar', barsBody([
+      ['Free', 41, '4.1%'],
+      ['Starter', 32, '3.2%'],
+      ['Pro', 24, '2.4%'],
+      ['Team', 90, '9.0%', true],
+    ]))
+    await show(bars)
+    busy(false)
+    await wait(1000)
+
+    await beat(1)
+    await dragTo(bars, 'right')
+    ptr.classList.remove('is-on')
+    await wait(800)
+
+    await beat(2)
+    await askAbout(bars.querySelector('[data-b="3"]'), 'Monthly churn · Team', 'why is Team so high?',
+      'Most leave in month two, when the trial seats run out. 61% never invited a second person.')
+
+    await beat(3)
+    await ask('save that as a note for Monday')
+    tool('notes', 'create “Churn: the Team plan”')
+    await wait(600)
+    await line('Saved to your notes, with the chart.')
+    showToast('Saved to your notes: Churn: the Team plan')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 7 · make a decision
+  async function decideStory() {
+    await beat(0)
+    await ask('postgres or dynamodb for the events table?')
+    think('Reading how events/ is queried…')
+    await wait(1400)
+    await line('Postgres. You look events up by user and by date, and join them to orders.')
+    const cmp = piece('Events table', 'compare', compareBody([
+      { title: 'Postgres', best: true, points: [['+', 'Joins with orders'], ['+', 'Already running'], ['-', 'Slows past ~500M rows']], verdict: 'Fits how you query' },
+      { title: 'DynamoDB', points: [['+', 'Scales on its own'], ['-', 'No joins'], ['-', 'A second database to run']], verdict: 'Only for one key' },
+      { title: 'ClickHouse', points: [['+', 'Fast for reports'], ['-', 'Slow single updates'], ['-', 'New to the team']], verdict: 'Later, for analytics' },
+    ]))
+    await show(cmp)
+    busy(false)
+    await wait(1000)
+
+    await beat(1)
+    await dragTo(cmp, 'bottom', 0.46)
+    ptr.classList.remove('is-on')
+    await wait(800)
+
+    await beat(2)
+    await askAbout(cmp.querySelector('[data-c="0"] [data-p="2"]'), 'Events table · Postgres', 'when would we hit that?',
+      'In about four years at today’s rate. Splitting the table by month pushes it far past that.')
+
+    await beat(3)
+    await choose('Remember this decision?', 'Remember it')
+    tool('remember', 'events stay in Postgres, split by month')
+    await wait(600)
+    await line('Saved for all your agents, with the reasons.')
+    showToast('Remembered: events stay in Postgres')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 8 · write release notes
+  async function notesStory() {
+    await beat(0)
+    await ask('write the release notes for v3.1 from the merged PRs')
+    think('Reading the merged PRs…')
+    await wait(1000)
+    tool('gh', 'pr list --state merged · 23')
+    await wait(500)
+    await line('Twenty-three PRs. These are the ones a customer would notice.')
+    const tl = piece('v3.1 · what changed', 'timeline', timelineBody([
+      ['Nov 4', 'Search is 4× faster', '#401 · new index'],
+      ['Nov 6', 'Export to CSV', '#409'],
+      ['Nov 9', 'Dark mode for invoices', '#414'],
+      ['Nov 12', 'Fixed: double emails', '#420', 'ok'],
+    ]))
+    await show(tl)
+    busy(false)
+    await wait(900)
+    await dragTo(tl, 'right')
+    ptr.classList.remove('is-on')
+    await wait(500)
+
+    await beat(1)
+    await line('And the draft:')
+    const doc = piece('RELEASE-v3.1.md', 'markdown', docBody(
+      `<h4>v3.1</h4><p data-lead>Search queries now use a composite GIN index on (tenant_id, tsv), cutting p95 latency from 820 ms to 190 ms.</p>` +
+      `<ul><li>Export any table to CSV</li><li>Invoices follow dark mode</li><li>Fixed: some emails were sent twice</li></ul>`
+    ))
+    await show(doc)
+    busy(false)
+    await wait(800)
+    await dragTo(doc, 'bottom', 0.46)
+    ptr.classList.remove('is-on')
+    await wait(700)
+
+    await beat(2)
+    const lead = doc.querySelector('[data-lead]')
+    await change(lead, 'RELEASE-v3.1.md · first paragraph', 'say it for customers, not engineers', 'RELEASE-v3.1.md, the first paragraph')
+    think('Rewriting…')
+    await wait(1000)
+    unthink()
+    lead.classList.add('is-new')
+    lead.textContent = 'Search is four times faster. Results now show up as you type.'
+    await line('Rewritten in plain words.')
+    busy(false)
+    await wait(1200)
+
+    await beat(3)
+    await choose('Publish it on GitHub Releases?', 'Publish')
+    think('Publishing…')
+    await wait(900)
+    tool('gh', 'release create v3.1 · published')
+    await line('Published.')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 9 · write a postmortem
+  async function incidentStory() {
+    await beat(0)
+    await ask('write up last night’s outage')
+    think('Reading the alerts, #incidents and the deploy log…')
+    await wait(1500)
+    await line('47 minutes down. A config push emptied the cache.')
+    const st = piece('Outage · Nov 14', 'stats', statsBody([
+      ['Down for', '47 min'],
+      ['Failed orders', '1,204', '3.1% of the day', 'down'],
+      ['Time to alert', '9 min', 'goal: 2', 'down'],
+    ]))
+    await show(st)
+    const tl = piece('What happened', 'timeline', timelineBody([
+      ['23:02', 'Config v88 pushed', 'cache TTL set to 0'],
+      ['23:04', 'Cache hits drop to 0%'],
+      ['23:11', 'Alert: checkout over 4 s', 'paged on-call', 'bad'],
+      ['23:41', 'Config rolled back'],
+      ['23:49', 'Back to normal', '', 'ok'],
+    ]))
+    await show(tl)
+    busy(false)
+    await wait(800)
+
+    await beat(1)
+    await dragTo(tl, 'right')
+    await dragTo(st, 'bottom', 0.24)
+    ptr.classList.remove('is-on')
+    await wait(700)
+
+    await beat(2)
+    await askAbout(tl.querySelector('[data-t="2"]'), 'What happened · 23:11', 'why 9 minutes to alert?',
+      'The alert waits for five bad minutes in a row. The cache alarm went off at 23:05, but it only sends email.')
+
+    await beat(3)
+    await ask('draft the postmortem and the follow-ups')
+    think('Writing…')
+    await wait(1100)
+    unthink()
+    const doc = piece('Postmortem · Nov 14', 'markdown', docBody(
+      `<h4>Checkout outage, 23:02–23:49</h4><p>A config change set the cache lifetime to zero. Every request went to the database, and checkout timed out.</p>` +
+      `<ul><li>Page on-call when cache hits fall, not email</li><li>Check config values before a push</li></ul>`
+    ))
+    await show(doc)
+    showToast('Saved to your notes: Postmortem · Nov 14')
+    await wait(1600)
+    addTodo('page on cache hits, not email')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 10 · explain a bill
+  async function costStory() {
+    await beat(0)
+    await ask('why did the AWS bill jump this month?')
+    think('Reading Cost Explorer…')
+    await wait(1400)
+    await line('Up $3,180, and $2,740 of that is one line: NAT Gateway data.')
+    const st = piece('AWS · November', 'stats', statsBody([
+      ['This month', '$14,920', '+27%', 'down'],
+      ['NAT Gateway', '$3,410', '+410%', 'down'],
+      ['EC2', '$6,120', '+2%'],
+    ]))
+    await show(st)
+    const bars = piece('Cost by service', 'bar', barsBody([
+      ['EC2', 82, '$6,120'],
+      ['NAT Gateway', 46, '$3,410', true],
+      ['RDS', 33, '$2,460'],
+      ['S3', 14, '$1,050'],
+    ]))
+    await show(bars)
+    busy(false)
+    await wait(900)
+
+    await beat(1)
+    await dragTo(bars, 'right')
+    ptr.classList.remove('is-on')
+    await wait(700)
+
+    await beat(2)
+    await askAbout(bars.querySelector('[data-b="1"]'), 'Cost by service · NAT Gateway', 'what is going through it?',
+      'The image resizer reads from S3 over the public route since Nov 3. An S3 endpoint in the VPC makes that free.')
+
+    await beat(3)
+    await choose('Add the S3 endpoint?', 'Add it')
+    think('Editing infra/network.tf…')
+    await wait(1100)
+    const t = tool('run', 'terraform plan')
+    await wait(1300)
+    t.textContent = 'terraform plan · 1 to add, 0 to change'
+    await line('Planned, not applied. It should save about $2,700 a month.')
+    addTodo('apply the S3 endpoint after review')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 11 · review a design
+  const shotBody = () =>
+    `<div class="shot" data-shot><div class="shot__ph"><span class="shot__x" data-close>✕</span><h4>Checkout</h4>` +
+    `<label>Card number</label><div class="shot__in">4242 4242 4242 4242</div>` +
+    `<div class="shot__row"><div><label class="shot__lb">Expiry</label><div class="shot__in" data-exp>MM / YY</div></div><div><label class="shot__lb">CVC</label><div class="shot__in">123</div></div></div>` +
+    `<p class="shot__fine" data-fine>By paying you agree to the terms of sale</p><span class="shot__btn">Pay $48.00</span></div></div>`
+
+  async function designStory() {
+    await beat(0)
+    await ask('check checkout.png for accessibility')
+    think('Looking at checkout.png…')
+    await wait(1300)
+    await line('Three problems. Here is the screen.')
+    const img = piece('checkout.png', 'image', shotBody())
+    await show(img)
+    busy(false)
+    await wait(900)
+
+    await beat(1)
+    await dragTo(img, 'bottom', 0.56)
+    ptr.classList.remove('is-on')
+    await wait(500)
+    const shot = img.querySelector('[data-shot]')
+    mark(shot, img.querySelector('[data-fine]'), 1, 'Too faint to read')
+    await wait(500)
+    mark(shot, img.querySelector('[data-exp]'), 2, 'No label', true)
+    await wait(500)
+    mark(shot, img.querySelector('[data-close]'), 3, 'Too small to tap')
+    await wait(1600)
+
+    await beat(2)
+    await askAbout(img.querySelector('[data-exp]'), 'checkout.png · MM / YY', 'why does that matter?',
+      'A screen reader only says “edit text”. And once you start typing, the hint is gone too.')
+
+    await beat(3)
+    await ask('fix all three in checkout.tsx')
+    think('Editing checkout.tsx and checkout.css…')
+    await wait(1200)
+    tool('edit', 'checkout.tsx, checkout.css · 3 changes')
+    shot.querySelectorAll('.mark').forEach((m) => m.remove())
+    shot.classList.add('is-fixed')
+    img.querySelector('.pc__h b').textContent = 'localhost:5173/checkout'
+    img.querySelector('.pc__k').textContent = 'page'
+    await line('Fixed. That is the live page now, not the picture.')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 12 · plan the day
+  async function dayStory() {
+    await beat(0)
+    await ask('what do I need to do today?')
+    think('Checking mail, Slack and GitHub…')
+    await wait(1100)
+    tool('gmail', '14 new · 2 need you')
+    addTodo('reply to finance about the Q4 invoice')
+    await wait(1500)
+    tool('slack', '5 mentions · 1 needs you')
+    addTodo('answer the layout question in #web')
+    await wait(1500)
+    tool('github', '1 review asked')
+    addTodo('review PR #422')
+    await wait(1500)
+
+    await beat(1)
+    await line('Three new, six in all. I’d go in this order:')
+    const tb = piece('Today', 'table', tableBody(['What', 'From', 'Why now'], [
+      ['Review PR #422', 'GitHub', 'blocks the release'],
+      ['Q4 invoice', 'Gmail', 'due at 12:00'],
+      ['Layout question', 'Slack', 'waiting since Friday'],
+    ]))
+    await show(tb)
+    busy(false)
+    await wait(900)
+    await dragTo(tb, 'right')
+    ptr.classList.remove('is-on')
+    await wait(600)
+
+    await beat(2)
+    await ask('the invoice one is done already')
+    tool('todo', 'done · reply to finance about the Q4 invoice')
+    tb.querySelector('[data-r="1"]').classList.add('is-done')
+    tickTodo('the Q4 invoice')
+    await line('Ticked off.')
+    busy(false)
+    await wait(1400)
+
+    await beat(3)
+    await choose('Start a session on PR #422?', 'Start it')
+    newCard('Review PR #422', 'Opus 5.5 · 2%')
+    await wait(600)
+    await line('It is open in a new session, reading the diff.')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 13 · learn how something works
+  async function explainStory() {
+    await beat(0)
+    await ask('how does “Sign in with Google” work? I’m new to this')
+    think('Drawing it…')
+    await wait(1200)
+    await line('Your app never sees the password. Google gives it a short code instead.')
+    const sq = piece('Sign in with Google', 'diagram', seqBody(['You', 'Your app', 'Google'], [
+      [0, 1, 'Click “Sign in with Google”'],
+      [1, 2, 'Send you to Google'],
+      [0, 2, 'Type your password'],
+      [2, 1, 'Hand back a one-time code'],
+      [1, 2, 'Trade the code for a token'],
+      [2, 1, 'Token: who you are'],
+    ]))
+    await show(sq)
+    busy(false)
+    await wait(900)
+    await dragTo(sq, 'right')
+    ptr.classList.remove('is-on')
+    await wait(600)
+
+    await beat(1)
+    await ask('walk me through it')
+    const m = (k) => sq.querySelector(`[data-m="${k}"] span`)
+    await walkThrough(
+      [
+        [m(1), 'Your app sends you away'],
+        [m(2), 'Only Google sees the password'],
+        [m(3), 'A code, useless on its own'],
+        [m(4), 'The real trade, server to server'],
+      ],
+      { x: narrow ? 160 : 560, y: narrow ? 240 : 300 }
+    )
+    await line('That is the whole idea. The password stays with Google.')
+    busy(false)
+    await wait(900)
+
+    await beat(2)
+    await askAbout(m(4), 'Sign in with Google · step 5', 'why not send the token straight away?',
+      'The code passes through the browser, where it can leak. The trade is server to server, with your app’s secret.')
+  }
+
+  // ================================================================ 14 · triage issues
+  async function triageStory() {
+    await beat(0)
+    await ask('sort the open issues by how much they hurt users')
+    think('Reading the open issues…')
+    await wait(1000)
+    tool('gh', 'issue list · 41 open')
+    await wait(600)
+    await line('Three matter now. Eleven are duplicates.')
+    const tb = piece('Open issues, worst first', 'table', tableBody(['Issue', '#Reports', 'Impact'], [
+      ['#512 Login loops on Safari', '212', '<em class="hi">High</em>'],
+      ['#498 Export times out', '64', '<em class="hi">High</em>'],
+      ['#505 Wrong currency on receipts', '31', '<em class="md">Medium</em>'],
+      ['11 duplicates', '—', '<em class="lo">Close</em>'],
+    ]))
+    await show(tb)
+    busy(false)
+    await wait(900)
+
+    await beat(1)
+    await dragTo(tb, 'bottom', 0.4)
+    ptr.classList.remove('is-on')
+    await wait(800)
+
+    await beat(2)
+    await askAbout(tb.querySelector('[data-r="0"] td'), 'Open issues · #512', 'is this new?',
+      'Since Tuesday’s release. Safari drops the session cookie after the change in PR #491.')
+
+    await beat(3)
+    await choose('Close the 11 duplicates, linking each to its original?', 'Close them')
+    think('Closing…')
+    await wait(1000)
+    tool('gh', 'issue close · 11 closed, each with a link')
+    tb.querySelector('[data-r="3"]').classList.add('is-done')
+    await line('Done. 30 open now.')
+    addTodo('fix #512 first')
+    busy(false)
+    await wait(4000)
+  }
+
+  // ================================================================ 15 · audit packages
+  async function auditStory() {
+    await beat(0)
+    await ask('are any of our packages vulnerable?')
+    think('Running the audit…')
+    await wait(1000)
+    tool('run', 'pnpm audit · 4 found')
+    await wait(500)
+    await line('Four. One is serious, and the upload route reaches it.')
+    const tb = piece('pnpm audit', 'table', tableBody(['Package', 'Severity', 'Fixed in'], [
+      ['img-probe 1.0.2', '<em class="hi">High</em>', '1.2.1'],
+      ['xmlish 3.4.0', '<em class="md">Medium</em>', '3.4.3'],
+      ['tinyduration 2.1.1', '<em class="lo">Low</em>', '2.1.3'],
+      ['urlkit 6.9.0', '<em class="lo">Low</em>', '6.9.4'],
+    ]))
+    await show(tb)
+    busy(false)
+    await wait(900)
+    await dragTo(tb, 'right')
+    ptr.classList.remove('is-on')
+    await wait(600)
+
+    await beat(1)
+    await ask('fix them, one at a time, tests after each')
+    const pl = startPlan('Upgrade 4 packages', ['img-probe → 1.2.1', 'xmlish → 3.4.3', 'tinyduration → 2.1.3', 'urlkit → 6.9.4'])
+    await show(pl)
+    for (let i = 0; i < 4; i++) {
+      step(i, 'active')
+      await wait(900)
+      step(i, 'done')
+      tb.querySelector(`[data-r="${i}"]`).classList.add('is-done')
+    }
+    const t = tool('run', 'pnpm test')
+    await wait(1200)
+    t.textContent = 'pnpm test · 211 passed'
+    busy(false)
+    await wait(1000)
+
+    await beat(2)
+    await askAbout(tb.querySelector('[data-r="0"] td'), 'pnpm audit · img-probe', 'were we actually exposed?',
+      'No. The bug needs uploads over 20 MB, and the proxy stops anything over 10 MB.')
+
+    await beat(3)
+    await choose('Open a pull request?', 'Open the PR')
+    think('Pushing…')
+    await wait(1000)
+    await line('PR #431 is open, with the audit in the description.')
+    busy(false)
+    await wait(4000)
+  }
+
   // ================================================================ the scenes
   const SCENES = [
     {
@@ -864,12 +1523,184 @@ function start() {
         ['Draft', 8500, 'It drafts the email, and keeps it in your notes.'],
       ],
     },
+    // ---- behind "More examples"
+    {
+      tab: 'Map the system',
+      more: true,
+      session: ['Architecture', 'Opus 5.5 · 12%'],
+      story: systemStory,
+      moments: [
+        ['Ask', 12000, 'Ask for a picture of the system. It reads the code and draws it.'],
+        ['Ask about it', 9000, 'Right-click any box to ask about it.'],
+        ['Change it', 9500, 'Say what should change. The diagram is redrawn in place.'],
+        ['Plan it', 8500, 'One click turns it into a plan, saved with the code.'],
+      ],
+    },
+    {
+      tab: 'Learn a codebase',
+      more: true,
+      session: ['New repo', 'Opus 5.5 · 7%'],
+      story: learnStory,
+      moments: [
+        ['Ask', 10500, 'New to a codebase? Ask how it fits together.'],
+        ['Walk through', 12000, 'It points at each part, one step at a time.'],
+        ['Ask about it', 9000, 'Right-click a part to ask why it is built that way.'],
+        ['Remember', 6500, 'Ask it to remember. Every agent you use will know it next time.'],
+      ],
+    },
+    {
+      tab: 'Read a spreadsheet',
+      more: true,
+      session: ['Churn', 'Opus 5.5 · 10%'],
+      story: sheetStory,
+      moments: [
+        ['Ask', 10000, 'Hand it a CSV and ask a plain question. The answer comes as a chart.'],
+        ['Pin it', 4500, 'Pin the chart beside you.'],
+        ['Ask about it', 9500, 'Right-click a bar to ask what is behind it.'],
+        ['Keep it', 6000, 'Keep the answer in your notes.'],
+      ],
+    },
+    {
+      tab: 'Make a decision',
+      more: true,
+      session: ['Events storage', 'Opus 5.5 · 14%'],
+      story: decideStory,
+      moments: [
+        ['Ask', 10000, 'Ask which option fits. It compares them against your own code.'],
+        ['Pin it', 4500, 'Pin the comparison along the bottom.'],
+        ['Ask about it', 9500, 'Right-click a point to dig into it.'],
+        ['Remember', 6500, 'Keep the decision, and the reasons, for every agent.'],
+      ],
+    },
+    {
+      tab: 'Release notes',
+      more: true,
+      session: ['v3.1 notes', 'Opus 5.5 · 9%'],
+      story: notesStory,
+      moments: [
+        ['Ask', 10000, 'Ask for release notes. It reads the merged PRs and lays them out.'],
+        ['Draft', 6000, 'The draft comes as a document you can pin.'],
+        ['Change it', 9500, 'Right-click a paragraph and say how to change it.'],
+        ['Publish', 6500, 'One click publishes it.'],
+      ],
+    },
+    {
+      tab: 'Write a postmortem',
+      more: true,
+      session: ['Outage Nov 14', 'Opus 5.5 · 21%'],
+      story: incidentStory,
+      moments: [
+        ['Ask', 11000, 'Ask what happened. It reads the alerts, the chat and the deploys.'],
+        ['Pin it', 6000, 'Pin the timeline and the numbers.'],
+        ['Ask about it', 9500, 'Right-click a moment to ask about it.'],
+        ['Draft', 8000, 'It drafts the postmortem and adds the follow-ups to your todos.'],
+      ],
+    },
+    {
+      tab: 'Explain a bill',
+      more: true,
+      session: ['AWS bill', 'Opus 5.5 · 11%'],
+      story: costStory,
+      moments: [
+        ['Ask', 10000, 'Ask why the bill went up. It shows where the money went.'],
+        ['Pin it', 4500, 'Pin the costs beside you.'],
+        ['Ask about it', 9500, 'Right-click the line that grew to find out why.'],
+        ['Fix it', 9000, 'It makes the change and plans it. Nothing is applied until you say so.'],
+      ],
+    },
+    {
+      tab: 'Review a design',
+      more: true,
+      session: ['Checkout a11y', 'Opus 5.5 · 13%'],
+      story: designStory,
+      moments: [
+        ['Ask', 9000, 'Drop in a screenshot and ask for a review.'],
+        ['Mark it', 7000, 'Pin it, and each problem is marked on the picture.'],
+        ['Ask about it', 9000, 'Right-click a mark to ask why it matters.'],
+        ['Fix it', 7500, 'Ask for the fix. The picture becomes the live page.'],
+      ],
+    },
+    {
+      tab: 'Plan the day',
+      more: true,
+      session: ['Morning', 'Opus 5.5 · 6%'],
+      story: dayStory,
+      moments: [
+        ['Ask', 10000, 'Ask what needs you today. It reads your mail, Slack and GitHub.'],
+        ['Order it', 7000, 'Your todos, in the order to do them.'],
+        ['Tick one', 5500, 'Tell it what is done. It comes off the list.'],
+        ['Start one', 7000, 'Start a session on the next one, in a new tab.'],
+      ],
+    },
+    {
+      tab: 'Learn how it works',
+      more: true,
+      session: ['Sign-in', 'Opus 5.5 · 5%'],
+      story: explainStory,
+      moments: [
+        ['Ask', 10000, 'Ask how something works. The answer comes as a picture.'],
+        ['Walk through', 12500, 'It points at each step and says what happens.'],
+        ['Ask about it', 10000, 'Right-click a step to ask why.'],
+      ],
+    },
+    {
+      tab: 'Triage issues',
+      more: true,
+      session: ['Issues', 'Opus 5.5 · 15%'],
+      story: triageStory,
+      moments: [
+        ['Ask', 10000, 'Ask which issues hurt users most.'],
+        ['Pin it', 4500, 'Pin the list along the bottom.'],
+        ['Ask about it', 9000, 'Right-click one to ask about it.'],
+        ['Clean up', 8000, 'One click closes the duplicates.'],
+      ],
+    },
+    {
+      tab: 'Audit packages',
+      more: true,
+      session: ['Security', 'Opus 5.5 · 16%'],
+      story: auditStory,
+      moments: [
+        ['Ask', 10500, 'Ask if anything you depend on is unsafe.'],
+        ['Fix them', 9000, 'It upgrades them one at a time and runs the tests.'],
+        ['Ask about it', 9000, 'Right-click a package to ask if you were exposed.'],
+        ['Ship', 6000, 'One click opens the PR.'],
+      ],
+    },
   ]
+  const FIRST_MORE = SCENES.findIndex((s) => s.more)
+  const slugOf = (s) => s.tab.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
   // ---------------------------------------------------------------- the buttons under the demo
   let sceneNow = 0
-  scenesEl.innerHTML = SCENES.map((s, i) => `<button type="button" role="tab" data-sc="${i}">${s.tab}</button>`).join('')
+  const extra = SCENES.length - FIRST_MORE
+  scenesEl.innerHTML =
+    SCENES.map((s, i) => `<button type="button" role="tab" data-sc="${i}"${s.more ? ' hidden' : ''}>${s.tab}</button>`).join('') +
+    `<button type="button" class="scenes__more" data-more aria-expanded="false">More examples <span>+${extra}</span></button>`
   const sceneBtns = [...scenesEl.querySelectorAll('[data-sc]')]
+  const moreBtn = scenesEl.querySelector('[data-more]')
+  // The extra examples stay out of the list, and out of the autoplay, until asked for.
+  let showAll = false
+  function setMore(on) {
+    showAll = on
+    sceneBtns.forEach((b, i) => {
+      if (!SCENES[i].more) return
+      b.hidden = !on
+      b.classList.toggle('is-reveal', on)
+    })
+    moreBtn.setAttribute('aria-expanded', String(on))
+    moreBtn.innerHTML = on ? 'Fewer examples' : `More examples <span>+${extra}</span>`
+  }
+  moreBtn.addEventListener('click', () => {
+    setMore(!showAll)
+    if (!showAll && SCENES[sceneNow].more) {
+      paused = false
+      pauseBtn.classList.remove('is-paused')
+      history.replaceState(null, '', location.pathname + location.search)
+      void play(0, 0)
+    }
+  })
+  const nextScene = (sc) => (showAll ? (sc + 1) % SCENES.length : sc + 1 >= FIRST_MORE ? 0 : sc + 1)
   let beatBtns = []
   function buildMoments(sc) {
     momentsEl.querySelectorAll('[data-ch]').forEach((b) => b.remove())
@@ -885,6 +1716,11 @@ function start() {
       b.classList.toggle('is-on', i === sc)
       b.setAttribute('aria-selected', String(i === sc))
     })
+    // a tab bar that scrolls sideways (phones) keeps the playing one in view
+    if (scenesEl.scrollWidth > scenesEl.clientWidth + 1) {
+      const b = sceneBtns[sc]
+      scenesEl.scrollTo({ left: Math.max(0, b.offsetLeft - 12), behavior: reduced ? 'auto' : 'smooth' })
+    }
   }
 
   // ---------------------------------------------------------------- playing them
@@ -932,6 +1768,7 @@ function start() {
     busy(false)
     cards.children[1].classList.remove('is-busy')
     cards.children[1].querySelector('small').textContent = 'Codex · idle'
+    cards.querySelectorAll('[data-extra]').forEach((c) => c.remove())
     beatNow = 0
     say = null
   }
@@ -961,7 +1798,7 @@ function start() {
         root.classList.remove('is-ff')
         return
       }
-      sc = (sc + 1) % SCENES.length
+      sc = nextScene(sc)
       from = 0
     }
   }
@@ -969,8 +1806,21 @@ function start() {
   sceneBtns.forEach((b) => b.addEventListener('click', () => {
     paused = false
     pauseBtn.classList.remove('is-paused')
-    void play(Number(b.dataset.sc), 0)
+    const sc = Number(b.dataset.sc)
+    // a link straight to this example, to share
+    history.replaceState(null, '', `#use/${slugOf(SCENES[sc])}`)
+    void play(sc, 0)
   }))
+
+  // #use/<slug> opens on that example.
+  const linked = (() => {
+    const m = /^#use\/([a-z0-9-]+)$/.exec(location.hash)
+    return m ? SCENES.findIndex((s) => slugOf(s) === m[1]) : -1
+  })()
+  if (linked >= 0) {
+    if (SCENES[linked].more) setMore(true)
+    requestAnimationFrame(() => document.getElementById('demo')?.scrollIntoView({ block: 'start' }))
+  }
 
   // The bar under the moment that is playing, and the conversation following its newest line.
   ;(function progress() {
@@ -1009,7 +1859,7 @@ function start() {
   new IntersectionObserver(
     ([e]) => {
       visible = e.isIntersecting
-      if (visible && !playing) void play(0, 0)
+      if (visible && !playing) void play(Math.max(0, linked), 0)
       if (!reduced && !pauseBtn.classList.contains('is-paused')) paused = !visible
     },
     { threshold: 0.25 }
