@@ -39,10 +39,28 @@ export function ruleOf(line: LineLike | undefined, cols: number, cell?: CellLike
     if (c.getWidth() === 0) continue
     const ch = c.getChars()
     if (!ch || ch === ' ') continue
-    if (!RULE.has(ch)) return undefined
+    if (!RULE.has(ch)) {
+      // Claude's prompt rule with the session's name in it ("──── my-session ─"): still the rule.
+      return n > 0 && isLabelledRule(textOf(line, cols, cell), cols) ? color : undefined
+    }
     if (n++ === 0) color = c.isFgRGB() ? { rgb: c.getFgColor() } : c.isFgPalette() ? { palette: c.getFgColor() } : null
   }
   return n >= Math.ceil(cols * SPAN) ? color : undefined
+}
+
+/**
+ * A rule carrying a short label near its end, the way Claude Code draws its prompt's top rule
+ * once the session has a name: line characters across most of the width, one label, and at
+ * most a few line characters after it. A separator with words in the middle is not one.
+ * (streamEngine.ts keeps its own copy: node runs these files directly and they import nothing.)
+ */
+const LABELLED = /^\s*([─━═])\1* +(\S[^─━═]{0,47}?) *(?:[─━═]{1,4})?\s*$/
+export function isLabelledRule(text: string, cols: number): boolean {
+  const m = LABELLED.exec(text)
+  if (!m) return false
+  let n = 0
+  for (const ch of text) if (ch === m[1]) n++
+  return n >= Math.ceil(cols * SPAN)
 }
 
 /** A grey (or the default colour): a rule in its ordinary dress, nothing to tell. */

@@ -61,8 +61,19 @@ export interface EngineOptions {
   now?: () => number
 }
 
+/** Claude's prompt rule with the session's name near its end ("──── my-session ─"). Same as liveRules.ts. */
+const LABELLED = /^\s*([─━═])\1* +(\S[^─━═]{0,47}?) *(?:[─━═]{1,4})?\s*$/
+function isLabelledRule(text: string, cols: number): boolean {
+  const m = LABELLED.exec(text)
+  if (!m) return false
+  let n = 0
+  for (const ch of text) if (ch === m[1]) n++
+  return n >= Math.ceil(cols * 0.6)
+}
+
 /** A row the renderer draws as a border: one character repeated over (nearly) the whole width. */
 export function isBorderRow(text: string, cols: number): boolean {
+  if (isLabelledRule(text, cols)) return true
   const t = text.replace(/\s+$/, '')
   if (t.length < Math.max(8, Math.floor(cols * 0.6))) return false
   const s = t.replace(/^ /, '')
@@ -194,6 +205,19 @@ export class StreamEngine {
     return out
   }
 
+  /** A tool call's head ("● Bash(…)", its bullet on or off mid-blink). */
+  private static readonly TOOL = /^\s*(?:[●⏺]\s*)?[A-Z][\w.:-]*\(/
+
+  /** Whether a row is a tool call or hangs under one (its `⎿` output, its wrapped arguments). */
+  private static inToolCall(rows: string[], y: number): boolean {
+    for (let k = y; k >= 0; k--) {
+      const t = rows[k] ?? ''
+      if (StreamEngine.TOOL.test(t)) return true
+      if (!/^\s*⎿|^\s{2,}\S/.test(t)) return false
+    }
+    return false
+  }
+
   /** The last row with anything on it, or -1. */
   private static lastDrawn(rows: string[], from = 0): number {
     for (let y = rows.length - 1; y >= from; y--) if (rows[y]!.trim()) return y
@@ -295,7 +319,13 @@ export class StreamEngine {
         break
       }
     let animTop = Infinity
-    for (const dist of this.anim.keys()) animTop = Math.min(animTop, bottom - dist)
+    for (const dist of this.anim.keys()) {
+      const row = bottom - dist
+      // A tool call still running blinks its bullet and ticks its "Running…" line: that is the
+      // transcript, not the live area, so it never lifts the top over the prompt's rule.
+      if (border >= 0 && row < border && StreamEngine.inToolCall(rows, row)) continue
+      animTop = Math.min(animTop, row)
+    }
     // The queue holds while the turn does and its rows stay where they were drawn.
     if (this.queue) {
       // Its first row, as drawn, where it was or moved with the frame: gone, the queue was
