@@ -129,25 +129,36 @@ try {
 
   check('/model and what it printed are not on the canvas', await ev(`[...${VIS}.querySelectorAll('.loom-flow [data-cmd]')].every((x) => x.getClientRects().length === 0)`))
 
-  // The step the large live line names is not shown twice while it is the one in progress.
-  const tool = { type: 'assistant', uuid: `a${++n}`, timestamp: at(5), message: { role: 'assistant', content: [{ type: 'tool_use', id: 'ts1', name: 'ToolSearch', input: { query: 'select:Read' } }] } }
+  // The live status, in plain words: the stage large, what exactly under it, what is done so far.
+  const tool = { type: 'assistant', uuid: `a${++n}`, timestamp: at(5), message: { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'ts1', name: 'ToolSearch', input: { query: 'select:Read' } }] } }
   await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify([tool])})`)
   await ev(`(() => { const d = [...${VIS}.querySelectorAll('.loom-rail .loom-dot')].pop(); d.click(); return true })()`)
   await ev(`window.__ember.loomWorking(${JSON.stringify(tab)}, true)`)
   await wait(500)
-  const dup = () => ev(`(() => { const v = ${VIS}; const row = [...v.querySelectorAll('.loom-flow .loom-tool')].find((x) => /loaded tools/i.test(x.textContent)); const now = v.querySelector('.loom-now.is-on .loom-now-line')?.innerText ?? ''; return { now, row: !!row, rowShown: !!row && row.getClientRects().length > 0 } })()`)
-  let d = await dup()
-  check('mid-step: "Loaded tools" is said once, on the live line, not also as a row', /Loaded tools/.test(d.now) && d.row && !d.rowShown, JSON.stringify(d))
-  await shot('3-step-said-once')
+  const status = () => ev(`(() => { const v = ${VIS}; const n = v.querySelector('.loom-now.is-on'); if (!n) return null; const t = (s) => { const e = n.querySelector(s); return e && !e.hidden ? e.innerText.trim() : '' }; return { stage: t('.loom-reel-row:last-child'), what: t('.loom-now-what'), done: t('.loom-now-done'), phase: n.dataset.phase } })()`)
+  let st = await status()
+  check('getting ready: the stage and what, in plain words', st?.stage === 'Getting ready' && st?.what === 'Getting the tools it needs', JSON.stringify(st))
+  const steps2 = [
+    { type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'rd1', name: 'Read', input: { file_path: 'C:/repo/src/settings.ts' } }] } },
+    { type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'ws1', name: 'WebSearch', input: { query: 'quiet hours picker accessibility' } }] } },
+    { type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'ed1', name: 'Edit', input: { file_path: 'C:/repo/src/settings.ts', old_string: 'a', new_string: 'b' } }] } },
+    { type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'bt1', name: 'Bash', input: { command: 'npm test', description: 'Run the settings tests' } }] } },
+  ]
+  await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify(steps2)})`)
+  await wait(700)
+  st = await status()
+  check('testing: the stage, its own words, and what is done so far', st?.stage === 'Testing' && st?.what === 'Run the settings tests' && /read 1 file/.test(st?.done ?? '') && /looked one thing up online/.test(st?.done ?? '') && /changed 1 file/.test(st?.done ?? '') && /ran the tests once/.test(st?.done ?? ''), JSON.stringify(st))
+  await shot('3-status-testing')
   await ev(`window.__ember.loomWorking(${JSON.stringify(tab)}, false)`)
   await wait(300)
-  d = await dup()
-  check('once the work stops the step stays folded away', d.row && !d.rowShown && !d.now, JSON.stringify(d))
+  st = await status()
+  check('once the work stops the status goes', st === null, JSON.stringify(st))
 
   // A request's steps are one line that counts them; the rows are behind it.
   const use = (id, name, input) => ({ type: 'assistant', uuid: `a${++n}`, timestamp: at(3), message: { role: 'assistant', content: [{ type: 'tool_use', id, name, input }] } })
   const res = (id, content, is_error = false) => ({ type: 'user', uuid: `u${++n}`, timestamp: at(2), message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content, is_error }] } })
   const work = [
+    u('Raise the daily limit for tree changes', 30),
     use('b1', 'Bash', { command: 'cd /c/repo; git grep -nE "tree changes" origin/master -- policy', description: 'Grep limits in policy' }),
     res('b1', 'policy/work-types.yaml:181: max_per_day: 40'),
     use('r1', 'Read', { file_path: 'C:/repo/policy/work-types.yaml' }),
@@ -162,7 +173,7 @@ try {
   await wait(600)
   const fold = () => ev(`(() => { const v = ${VIS}; const t = v.querySelector('.loom-turn.is-shown'); const shown = (x) => x.getClientRects().length > 0; return { folds: [...t.querySelectorAll('.loom-fold')].filter(shown).map((f) => f.querySelector('.loom-tool-head').innerText.replace(/\\s+/g, ' ').trim()), rows: [...t.querySelectorAll('.loom-tool')].filter(shown).length, peeks: [...t.querySelectorAll('.loom-peek-line, .loom-diff')].filter(shown).length } })()`)
   let f = await fold()
-  check('the steps of a request are one line that counts them', f.folds.length === 1 && /5 steps/.test(f.folds[0]) && /ran 2 commands/.test(f.folds[0]) && /read 1 file/.test(f.folds[0]) && /1 failed/.test(f.folds[0]), JSON.stringify(f))
+  check('the steps of a request are one line that counts them', f.folds.length === 1 && /4 steps/.test(f.folds[0]) && /ran 2 commands/.test(f.folds[0]) && /read 1 file/.test(f.folds[0]) && /1 failed/.test(f.folds[0]), JSON.stringify(f))
   check('no command, output or diff on the canvas until it is opened', f.rows === 0 && f.peeks === 0, JSON.stringify(f))
   await shot('3b-steps-folded')
   await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-fold > .loom-tool-head').click()`)

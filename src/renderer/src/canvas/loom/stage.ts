@@ -2,6 +2,7 @@ import { escapeHtml, renderMarkdown } from '../markdown'
 import type { FeedContext } from '../Feed'
 import type { LoomView } from '../LoomView'
 import { ICON, LIFTABLE, div, holdsResult, reduced } from './shared'
+import { PHASE_LABEL, elapsed, type PhaseKey } from '../phase'
 
 /**
  * The stage: the one turn the canvas holds, and how you move between turns — the rail of
@@ -26,6 +27,8 @@ export class Stage {
   spin = { glyph: '', verb: '', detail: '' }
   private reelAnim: Animation | null = null
   nowText = ''
+  /** The stage line the reel shows. */
+  private reelText = ''
   trailTurn: HTMLElement | null = null
 
   shown: HTMLElement | null = null
@@ -137,28 +140,34 @@ export class Stage {
   private nowStep: HTMLElement | null = null
 
   /**
-   * The step the large live line names is not shown twice: its row in the turn is hidden
-   * while it is the step in progress, and comes back once the work moves on or ends.
+   * Steps stay where they are while they run. (They used to hide while named on the live
+   * line and come back after: a row appearing, going and appearing again.)
    */
   markNowStep(): void {
-    const feed = this.v.feed
-    const step = this.v.host.working && feed.action ? feed.actEl : null
-    if (step === this.nowStep) return
     this.nowStep?.classList.remove('is-now-step')
-    step?.classList.add('is-now-step')
-    this.nowStep = step
+    this.nowStep = null
   }
 
-  /** One line, large: what the session is doing this moment. It replaces itself; nothing piles up. */
+  /**
+   * The live status, in plain words: the stage the work is at, large ("Reading the code",
+   * "Building", "Testing"), what exactly under it, and what this request has done so far.
+   * The stage line rolls only when the stage changes; the words under it just update.
+   */
   renderNow(): void {
     this.markNowStep()
-    const action = this.v.host.working ? this.v.feed.action || this.spin.verb : ''
+    const feed = this.v.feed
+    const host = this.v.host
+    const step = feed.stepNow
+    const phase: PhaseKey = host.waiting ? 'wait' : (step?.phase ?? 'think')
+    const action = host.working ? PHASE_LABEL[phase] : ''
     // Always in the turn while it works, plan or no plan: the plan can be in an earlier
     // turn, minimized, removed, or holding a step the agent left "in progress" long ago,
     // and the turn you are looking at must still say what is happening now.
     this.now.classList.toggle('is-on', !!action)
     if (!action) {
       this.nowText = ''
+      this.reelText = ''
+      delete this.now.dataset['phase']
       return
     }
     // One window, one line tall, and a strip inside it that rolls: the new words come up
@@ -170,9 +179,9 @@ export class Stage {
     }
     const glyph = line.querySelector<HTMLElement>('.loom-now-glyph')!
     if (this.spin.glyph || !glyph.textContent) glyph.textContent = this.spin.glyph || '✻'
-    if (action !== this.nowText) {
-      const first = !this.nowText
-      this.nowText = action
+    if (action !== this.reelText) {
+      const first = !this.reelText
+      this.reelText = action
       const track = line.querySelector<HTMLElement>('.loom-reel-track')!
       this.reelAnim?.finish()
       const row = document.createElement('span')
@@ -194,12 +203,31 @@ export class Stage {
         }
       }
     }
-    let d = this.now.querySelector<HTMLElement>('.loom-now-detail')
-    if (!d) {
-      d = div('loom-now-detail')
-      this.now.appendChild(d)
+    this.now.querySelector('.loom-now-detail')?.remove()
+    const time = elapsed(this.spin.detail)
+    const what = host.waiting
+      ? step?.phase === 'wait' && step.what
+        ? step.what
+        : 'It needs your answer in the box below'
+      : (step?.what ?? '')
+    let w = this.now.querySelector<HTMLElement>('.loom-now-what')
+    if (!w) {
+      w = div('loom-now-what')
+      line.after(w)
     }
-    if (d.textContent !== this.spin.detail) d.textContent = this.spin.detail
+    if (w.textContent !== what) w.textContent = what
+    w.hidden = !what
+    const done = feed.progress.summary()
+    let so = this.now.querySelector<HTMLElement>('.loom-now-done')
+    if (!so) {
+      so = div('loom-now-done')
+      this.now.appendChild(so)
+    }
+    const doneText = [done ? `So far: ${done}` : '', time].filter(Boolean).join(' · ')
+    if (so.textContent !== doneText) so.textContent = doneText
+    so.hidden = !doneText
+    this.now.dataset['phase'] = phase
+    this.nowText = what || action
     this.v.plan.tickPlan()
   }
 

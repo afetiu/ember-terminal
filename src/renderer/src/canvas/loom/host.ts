@@ -42,8 +42,10 @@ export class AgentHost {
   private tabAgentSince = Date.now()
   /** The wrapped agent running in the tab's shell (announced, and no prompt since), or null. */
   onAgent: string | null = null
-  /** The agent is mid-turn (its working line is on screen). */
+  /** The agent is mid-turn (its working line is on screen, or the transcript says the request is open). */
   working = false
+  /** Mid-turn, with the CLI asking you something (a permission, a question): its spinner is gone and so is the prompt. */
+  waiting = false
   /** The working line, as the agent draws it. */
   live: LiveRead['live'] = null
   /** The agent's plain prompt has been on screen since it started. */
@@ -285,7 +287,16 @@ export class AgentHost {
     }
     if (r.live) this.liveAt = now
     if (r.prompt) v.syncPasted(r.marks)
-    this.setLive(r.live ?? (now - this.liveAt < 1500 ? this.live : null))
+    // Working is the spinner, steadied by the transcript. The spinner drops out for moments
+    // (between steps, while a question for you is up), and each drop used to take the live
+    // status and the narration off the canvas and put them back. While the request is open
+    // (no end of turn yet) a gap is held for 8s, and for as long as the prompt box is gone
+    // (a question or a permission is waiting on you). Once the turn has ended, it is off at once.
+    const open = v.feed.turnOpen
+    const gap = now - this.liveAt
+    const held = open && (gap < 8000 || (!r.prompt && this.promptSeen))
+    this.waiting = open && !r.live && !r.prompt && this.promptSeen && gap > 1200
+    this.setLive(r.live ?? (held || (!open && gap < 600) ? (this.live ?? { glyph: '✻', verb: 'Working…', detail: '' }) : null))
     window.clearTimeout(this.recheck)
     if (this.live) this.recheck = window.setTimeout(() => v.schedule(), 250)
   }

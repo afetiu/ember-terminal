@@ -249,6 +249,8 @@ export class LoomView {
           this.feed.add(f.lines)
         }
         this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
+        // An end of turn in the transcript ends "working" now, not when the spinner goes.
+        this.host.look()
         stage.restage()
         stage.renderNow()
       }),

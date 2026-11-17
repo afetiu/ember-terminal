@@ -5527,3 +5527,28 @@
 .loom-turn > [data-cmd] {
   display: none;
 }
+
+/* ---------------------------------------------------------------- the live status, in plain words
+   The stage, large ("Building", "Testing"); what exactly under it; what is done so far and
+   how long it has been, small. Nothing here hides and comes back between steps. */
+.loom-now-what {
+  margin: 3px 0 0 32px;
+  font: 400 0.86em/1.45 var(--l-prose, inherit);
+  color: var(--l-ink);
+  opacity: 0.86;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-now-done {
+  margin: 4px 0 0 32px;
+  font: 400 0.7em/1.45 var(--l-prose, inherit);
+  color: var(--l-faint);
+}
+.loom-now[data-phase='wait'] .loom-now-glyph {
+  color: var(--l-warn, #e0b45a);
+}
+.loom-now[data-phase='wait'] .loom-now-what {
+  color: var(--l-warn, #e0b45a);
+  opacity: 1;
+}

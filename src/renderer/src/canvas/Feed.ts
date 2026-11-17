@@ -2,6 +2,7 @@ import { escapeHtml, renderMarkdown } from './markdown'
 import { diffLines, fromPatch, tally, type DiffLine } from './diff'
 import { answerCard } from './questions'
 import { joinsTurn, type PromptKind, type TurnState } from '@shared/turnGroups'
+import { classifyStep, Progress, type Step } from './phase'
 
 /**
  * The conversation, drawn from the transcript.
@@ -362,8 +363,18 @@ export class Feed {
   private group: TurnState | null = null
   /** The line being read's uuid. */
   private uuid = ''
-  /** The step the large live line names (the newest tool row), hidden while it is the one in progress. */
+  /** The step the large live line names (the newest tool row). */
   actEl: HTMLElement | null = null
+  /**
+   * The request on screen is still being worked on: from your message until the agent
+   * writes its end of turn (or you interrupt, or the session starts over). The transcript
+   * says this for sure; the CLI's spinner only while it happens to be drawn.
+   */
+  turnOpen = false
+  /** The step in progress, in plain words (phase.ts). */
+  stepNow: Step | null = null
+  /** What this request has done so far, in plain words. */
+  progress = new Progress()
 
   constructor(private readonly ctx: FeedContext) {
     this.el = el('div', 'loom-flow')
@@ -401,6 +412,8 @@ export class Feed {
     this.act = ''
     this.actEl = null
     this.group = null
+    this.stepNow = null
+    this.progress = new Progress()
     return t
   }
 
@@ -489,6 +502,7 @@ export class Feed {
     this.anchors.length = 0
     this.pendingCmd = null
     this.clearedOut = true
+    this.turnOpen = false
     this.newTurn()
     this.ctx.cleared?.()
   }
@@ -657,6 +671,7 @@ export class Feed {
       return
     }
     if (/^\[Request interrupted by user/.test(clean)) {
+      this.turnOpen = false
       this.turn.appendChild(el('div', 'loom-interrupt', 'interrupted'))
       if (this.group) {
         this.group.interrupted = true
@@ -670,6 +685,7 @@ export class Feed {
     this.pendingCmd = null
     this.ctx.prompted?.(clean)
     const follow = this.placePrompt(clean, 'prompt')
+    this.turnOpen = true
     const ask = follow ? this.followLine('❯', clean) : this.askLine('❯', clean)
     if (images.length) {
       const thumbs = el('div', 'loom-thumbs')
@@ -711,8 +727,13 @@ export class Feed {
     for (const block of content as Json[]) {
       const type = block['type']
       if (type === 'text') this.say(String(block['text'] ?? ''))
+      else if (type === 'thinking' || type === 'redacted_thinking') this.stepNow = { phase: 'think', what: '' }
       else if (type === 'tool_use') this.tool(String(block['id'] ?? ''), String(block['name'] ?? ''), (block['input'] ?? {}) as Json)
     }
+    // The agent's end of turn: nothing more is coming for this request.
+    const stop = msg['stop_reason']
+    if (stop === 'end_turn' || stop === 'stop_sequence' || stop === 'max_tokens' || stop === 'refusal') this.turnOpen = false
+    else if (stop === 'tool_use') this.turnOpen = true
   }
 
   private say(text: string): void {
@@ -773,6 +794,10 @@ export class Feed {
   }
 
   private tool(id: string, name: string, input: Json): void {
+    // In plain words, for the live status: the stage, what exactly, what is done so far.
+    const st = classifyStep(name, input)
+    this.stepNow = st
+    this.progress.add(st)
     if (name === 'TodoWrite') {
       const todos = Array.isArray(input['todos']) ? (input['todos'] as Todo[]) : []
       this.ctx.todos(todos)
