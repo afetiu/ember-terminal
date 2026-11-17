@@ -208,11 +208,21 @@ export class StreamEngine {
   /** A tool call's head ("● Bash(…)", its bullet on or off mid-blink). */
   private static readonly TOOL = /^\s*(?:[●⏺]\s*)?[A-Z][\w.:-]*\(/
 
-  /** Whether a row is a tool call or hangs under one (its `⎿` output, its wrapped arguments). */
+  /** A running command's own ticking tail: "… +3 lines (30s)", "(ctrl+b to run in background)", "Running… (12s)". */
+  private static readonly TOOL_TAIL = /^\s+(?:⎿\s+)?(?:…\s*\+\d+ lines?\b|\+\d+ lines? \(\d|\(ctrl\+b to run in background\)|Running…)/
+
+  /**
+   * Whether a row is a tool call or hangs under one (its `⎿` output, its wrapped arguments).
+   * A blank line in the output does not end it, and output whose head has scrolled off the
+   * top still counts when its tail is a tool's own (reported 2026-11-17: the box grew to
+   * take in "… +1 lines (30s)" and "(ctrl+b to run in background)").
+   */
   private static inToolCall(rows: string[], y: number): boolean {
+    if (StreamEngine.TOOL_TAIL.test(rows[y] ?? '')) return true
     for (let k = y; k >= 0; k--) {
       const t = rows[k] ?? ''
       if (StreamEngine.TOOL.test(t)) return true
+      if (!t.trim()) continue
       if (!/^\s*⎿|^\s{2,}\S/.test(t)) return false
     }
     return false

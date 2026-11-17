@@ -77,3 +77,25 @@ test('the working line still lifts the top (and the box still leaves it out)', a
   const s = shown(r)
   assert.match(s[0], /^❯/)
 })
+
+// Reported 2026-11-17: a running command's tail ("… +1 lines (30s)", "(ctrl+b to run in
+// background)") ticks its timer above the prompt, and the box grew to take it in.
+for (const [name, above, tick] of [
+  ['tool head on screen', ['● Bash(node scripts/probe.mjs)', '  ⎿  first line of output', '     … +1 lines (30s)', '     (ctrl+b to run in background)', ''], 2],
+  ['a blank line in its output', ['● Bash(node scripts/probe.mjs)', '  ⎿  first line of output', '', '     … +1 lines (30s)', '     (ctrl+b to run in background)', ''], 3],
+  ['its head scrolled off the top', ['     more output', '     … +1 lines (30s)', '     (ctrl+b to run in background)', ''], 1],
+  ['the plain Running line with a timer', ['● Bash(sleep 60)', '  ⎿  Running… (30s)', '     (ctrl+b to run in background)', ''], 1],
+]) {
+  test(`a running command's ticking tail stays out of the box: ${name}`, async () => {
+    const { step, shown } = await setup()
+    const y0 = 26 - above.length
+    let r = await step(frame(y0, above, ''))
+    const row = (n) => above[tick].replace(/\(30s\)/, `(${n}s)`)
+    for (let i = 31; i < 38; i++) {
+      r = await step(at(y0 + tick) + row(i) + `\x1b[${y0 + above.length + 2};3H`, 1000)
+      const s = shown(r)
+      assert.ok(!s.some((l) => /lines \(|ctrl\+b|Running…|output/.test(l)), `tick ${i}: box shows the command's tail: ${JSON.stringify(s)} (${r.why})`)
+      assert.match(s[0], /^❯/)
+    }
+  })
+}
