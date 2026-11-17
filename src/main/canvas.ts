@@ -194,6 +194,8 @@ function slimLine(line: Json): Json | null {
   const type = String(line['type'] ?? '')
   // `/rename`: the session's name, for the tab's card.
   if (type === 'custom-title' && typeof line['customTitle'] === 'string') return { type, customTitle: cap(String(line['customTitle'])) }
+  // The title Claude Code gives a session by itself (what `/resume` lists), until you name it.
+  if (type === 'ai-title' && typeof line['aiTitle'] === 'string') return { type, aiTitle: cap(String(line['aiTitle'])) }
   if (type !== 'user' && type !== 'assistant' && type !== 'system') return null
   const msg = (line['message'] ?? {}) as Json
   const content = msg['content']
@@ -265,7 +267,7 @@ class Tail {
   /** The session's subagents' own logs, and how far each has been read. */
   private agentOffsets = new Map<string, number>()
   /** Another agent's log, when the tab runs one with an adapter (providers/logs.ts). */
-  private log: { agent: string; since: number; adapter: AgentLog; state: Record<string, unknown>; locatedAt: number; stamp: string } | null = null
+  private log: { agent: string; since: number; adapter: AgentLog; state: Record<string, unknown>; locatedAt: number; stamp: string; name: string } | null = null
 
   constructor(
     private readonly tabId: string,
@@ -434,7 +436,7 @@ class Tail {
    */
   private async readLog(agent: TabAgent, adapter: AgentLog): Promise<void> {
     if (!this.log || this.log.agent !== agent.agent || this.log.since !== agent.since || this.log.adapter !== adapter) {
-      this.log = { agent: agent.agent, since: agent.since, adapter, state: {}, locatedAt: 0, stamp: '' }
+      this.log = { agent: agent.agent, since: agent.since, adapter, state: {}, locatedAt: 0, stamp: '', name: '' }
     }
     const log = this.log
     // Looked for even before the folder is known: an agent started with the shell runs
@@ -453,7 +455,14 @@ class Tail {
         this.carry = ''
         log.state = {}
         log.stamp = ''
+        log.name = ''
         this.emit({ tabId: this.tabId, kind: 'switch', file: found, first })
+      }
+      // The session's name, where the agent keeps one apart from its log (Codex's thread names).
+      const name = this.isMine() ? (adapter.name?.(this.file) ?? '') : ''
+      if (name && name !== log.name) {
+        log.name = name
+        this.emit({ tabId: this.tabId, kind: 'lines', lines: [{ type: 'custom-title', customTitle: cap(name) }] })
       }
     }
     if (!this.isMine()) return

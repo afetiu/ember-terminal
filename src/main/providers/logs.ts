@@ -32,6 +32,8 @@ export interface AgentLog {
   locate(cwd: string, since: number, taken?: ReadonlySet<string>): string | null
   /** 'jsonl' = appended lines (tail by offset); 'doc' = one JSON document rewritten whole. */
   kind: 'jsonl' | 'doc'
+  /** The session's name, when the agent keeps it outside the log; '' when it has none. */
+  name?(file: string): string
   /** Raw records → Claude-transcript-shaped lines (the canonical form Feed and PhoneHost read). */
   convert(records: Json[], state: Record<string, unknown>): Json[]
 }
@@ -184,6 +186,42 @@ const CODEX_SESSIONS = join(CODEX_HOME, 'sessions')
 const CODEX_INJECTED = /^\s*(?:<([a-z_]+)>[\s\S]*<\/\1>\s*$|# AGENTS\.md instructions)/
 /** The cwd in each rollout's first line, by path. A rollout's folder never changes. */
 const codexCwd = new Map<string, string>()
+
+/**
+ * A Codex session's thread name: `session_index.jsonl` keeps one line per naming (the
+ * automatic title, then `/rename`), newest last, by the id the rollout's file name ends in.
+ */
+function codexName(file: string): string {
+  const id = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$/i.exec(file)?.[1]
+  if (!id) return ''
+  const index = join(CODEX_HOME, 'session_index.jsonl')
+  let text = ''
+  try {
+    const size = statSync(index).size
+    const from = Math.max(0, size - 256_000)
+    const fd = openSync(index, 'r')
+    try {
+      const buf = Buffer.alloc(size - from)
+      readSync(fd, buf, 0, buf.length, from)
+      text = buf.toString('utf8')
+    } finally {
+      closeSync(fd)
+    }
+  } catch {
+    return ''
+  }
+  let name = ''
+  for (const raw of text.split('\n')) {
+    if (!raw.includes(id)) continue
+    try {
+      const j = JSON.parse(raw) as Json
+      if (j['id'] === id && typeof j['thread_name'] === 'string' && j['thread_name'].trim()) name = j['thread_name'].trim()
+    } catch {
+      /* the first, cut line of the window */
+    }
+  }
+  return name
+}
 
 function pad(n: number): string {
   return String(n).padStart(2, '0')
@@ -638,6 +676,6 @@ function geminiConvert(records: Json[]): Json[] {
  *   unverified.
  */
 export const AGENT_LOGS: Record<string, AgentLog> = {
-  codex: { kind: 'jsonl', locate: codexLocate, convert: codexConvert },
+  codex: { kind: 'jsonl', locate: codexLocate, convert: codexConvert, name: codexName },
   gemini: { kind: 'jsonl', locate: geminiLocate, convert: (records) => geminiConvert(records) },
 }

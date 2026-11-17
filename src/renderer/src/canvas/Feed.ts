@@ -46,6 +46,8 @@ export interface FeedContext {
   grew(): void
   /** `/clear` started the conversation over: the turns are gone, the view drops what hung on them. */
   cleared?(): void
+  /** You said something to the agent (a prompt, not a command): the tab names an unnamed session by its first. */
+  prompted?(text: string): void
 }
 
 const QUIET = new Set([
@@ -666,6 +668,7 @@ export class Feed {
     if (clean.startsWith('Caveat: The messages below')) return
 
     this.pendingCmd = null
+    this.ctx.prompted?.(clean)
     const follow = this.placePrompt(clean, 'prompt')
     const ask = follow ? this.followLine('❯', clean) : this.askLine('❯', clean)
     if (images.length) {

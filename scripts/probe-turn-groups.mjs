@@ -3,7 +3,7 @@
  * Ember (own EMBER_HOME) whose canvas is fed a made-up transcript through
  * window.__ember.loomFeed: a request, its reply, `/model`, "yes do it", a reply, then a long
  * new request and its reply. Two points on the rail; the follow-ups inside turn 1; "Split into
- * its own turn" and "Join previous" move them; a named session's card is just the name.
+ * a session's card is its name: /rename, else the automatic title, else the first prompt.
  *
  *   npm run build; node scripts/probe-turn-groups.mjs [out-dir]
  *
@@ -180,7 +180,17 @@ try {
   await wait(1200)
   const after = await ev(`window.__ember.card(${JSON.stringify(tab)})`)
   const title = await ev(`document.querySelector('.ember-card.is-active .ember-card-title, .ember-card .ember-card-title')?.textContent ?? ''`)
-  check('unnamed: the card is "agent · folder"', /·/.test(before.split('\n')[0] ?? ''), JSON.stringify(before))
+  check('unnamed: the card is the first prompt', /^Refactor the auth middleware/.test(before.split('\n')[0] ?? ''), JSON.stringify(before))
+  // The title Claude Code gives a session by itself, until it is named.
+  await ev(`window.__ember.loomTitle(${JSON.stringify(tab)}, '')`)
+  await ev(`window.__ember.loomFeed(${JSON.stringify(tab)}, ${JSON.stringify([{ type: 'ai-title', aiTitle: 'Auth middleware refactor' }])})`)
+  await wait(1200)
+  const ai = await ev(`window.__ember.card(${JSON.stringify(tab)})`)
+  check('ai-title: the card is the automatic title', /^Auth middleware refactor/.test(ai.split('\n')[0] ?? ''), JSON.stringify(ai))
+  await ev(`window.__ember.loomTitle(${JSON.stringify(tab)}, 'test')`)
+  await wait(1200)
+  const renamed = await ev(`window.__ember.card(${JSON.stringify(tab)})`)
+  check('a name you give beats the automatic title', /^test/.test(renamed), JSON.stringify(renamed))
   check('named "test": the card title is just "test"', (title || after.split('\n')[0]).trim() === 'test', JSON.stringify({ title, after }))
   await shot('4-card-named')
 

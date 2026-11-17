@@ -12,6 +12,8 @@ import { Stage } from './loom/stage'
 import { FrameSleeper } from './loom/frames'
 import { div, reduced, viewSwitch, sameTitle, type Browser, type Mode, type Piece } from './loom/shared'
 import { pasteIntoTui } from './liveRead'
+import { sessionName } from './sessionName'
+import { agentFromTitle } from '@shared/agents'
 
 /**
  * A tab's canvas: a real shell whose output space becomes a canvas while an agent runs.
@@ -135,6 +137,11 @@ export class LoomView {
       grew: () => this.grew(),
       replay: (tool, input, at) => void this.board.replay(tool, input as Record<string, unknown>, at),
       agent: (e) => this.stage.onAgentEvent(e),
+      prompted: (text) => {
+        if (this.firstPrompt) return
+        this.firstPrompt = text
+        this.hooks.changed?.()
+      },
       cleared: () => this.onCleared(),
     })
     // Three layers, top to bottom: the plan of the work in progress, the exchange (your
@@ -229,15 +236,16 @@ export class LoomView {
     this.unsubs.push(
       window.ember.canvas.onFeed((f: CanvasFeed) => {
         if (f.tabId !== this.tabId) return
-        if (f.kind === 'switch') this.feed.switchSession(f.first, f.fresh === true)
-        else {
-          // The session's name (`/rename`), for the tab's card.
-          for (const l of f.lines as unknown as Array<Record<string, unknown>>) {
-            if (l['type'] === 'custom-title' && typeof l['customTitle'] === 'string' && l['customTitle'] !== this.host.title) {
-              this.host.title = l['customTitle']
-              this.hooks.changed?.()
-            }
-          }
+        if (f.kind === 'switch') {
+          // Another session in the tab (a new one, `/resume`, `/clear`): its name comes from
+          // its own log, which is read again from its first line.
+          this.host.title = ''
+          this.aiTitle = ''
+          this.firstPrompt = ''
+          this.hooks.changed?.()
+          this.feed.switchSession(f.first, f.fresh === true)
+        } else {
+          this.takeNames(f.lines as unknown as Array<Record<string, unknown>>)
           this.feed.add(f.lines)
         }
         this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
@@ -418,10 +426,31 @@ export class LoomView {
     if (this.pinned.size) this.snapping.reflow()
   }
 
-  /** The tab's card while an agent runs in it: the agent in a folder, not the shell. */
+  /** The title the agent gave the session by itself (Claude Code's `ai-title`). */
+  private aiTitle = ''
+  /** The session's first prompt: its name when nothing better names it. */
+  private firstPrompt = ''
+
+  /** The session's name (`/rename`, Codex's thread name) and the title the agent gave it by itself, for the tab's card. */
+  private takeNames(lines: Array<Record<string, unknown>>): void {
+    for (const l of lines) {
+      if (l['type'] === 'custom-title' && typeof l['customTitle'] === 'string' && l['customTitle'] !== this.host.title) {
+        this.host.title = l['customTitle']
+        this.hooks.changed?.()
+      }
+      if (l['type'] === 'ai-title' && typeof l['aiTitle'] === 'string' && l['aiTitle'] !== this.aiTitle) {
+        this.aiTitle = l['aiTitle']
+        this.hooks.changed?.()
+      }
+    }
+  }
+
+  /** The tab's card while an agent runs in it: the session's name, else the agent in a folder. */
   get claudeCard(): { folder: string; title: string; agent: string; cli: boolean } | null {
     if (!this.host.onAgent) return null
-    return { folder: this.session.cwd || this.session.initialCwd || '', title: this.host.title, agent: this.host.who, cli: this.raw }
+    const folder = this.session.cwd || this.session.initialCwd || ''
+    const title = sessionName({ named: this.host.title, ai: this.aiTitle, terminal: this.session.rawTitle, first: this.firstPrompt, agent: this.host.who, folder, isAgent: (t) => !!agentFromTitle(t) })
+    return { folder, title, agent: this.host.who, cli: this.raw }
   }
 
   /**
@@ -675,6 +704,7 @@ export class LoomView {
 
   /** Probe-only: hand the canvas transcript lines as if they came from the session's log. */
   feedForProbe(lines: Array<Record<string, unknown>>): void {
+    this.takeNames(lines)
     this.feed.add(lines as never)
     this.hint.classList.toggle('is-gone', !this.feed.isEmpty)
     this.stage.restage()
