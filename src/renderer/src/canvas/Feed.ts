@@ -358,7 +358,7 @@ export class Feed {
   private clearedOut = false
   /** The turn on screen, for grouping follow-ups into it (shared/turnGroups.ts); null: none to join. */
   private group: TurnState | null = null
-  /** The line being read's uuid: a prompt's handle for "Split" / "Join previous". */
+  /** The line being read's uuid. */
   private uuid = ''
   /** The step the large live line names (the newest tool row), hidden while it is the one in progress. */
   actEl: HTMLElement | null = null
@@ -366,16 +366,6 @@ export class Feed {
   constructor(private readonly ctx: FeedContext) {
     this.el = el('div', 'loom-flow')
     this.turn = this.newTurn()
-    // "Split into its own turn" on a follow-up, "Join previous" on a turn's head.
-    this.el.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLElement>('.loom-regroup')
-      if (!b || !this.el.contains(b)) return
-      e.stopPropagation()
-      const line = b.closest<HTMLElement>('.loom-follow, .loom-ask')
-      if (!line) return
-      if (line.classList.contains('loom-follow')) this.split(line)
-      else this.joinPrevious(line)
-    })
   }
 
   /** What the session is doing right now, as one sentence: the last step it started. */
@@ -417,9 +407,8 @@ export class Feed {
   /** Where a prompt goes: true, a follow-up in the turn on screen; false, a new turn (made here). */
   private placePrompt(text: string, kind: PromptKind): boolean {
     const at = Date.parse(this.at)
-    const forced = this.uuid ? overrides()[this.uuid] : undefined
-    const g = joinsTurn(text, at, kind, this.group)
-    const join = !!this.group && (forced === 'split' ? false : forced === 'join' ? true : g.join)
+    // Every message you send is a turn of its own; only `!` shell lines stay in the turn on screen.
+    const join = !!this.group && joinsTurn(text, at, kind, this.group).join
     if (join && this.group) {
       if (Number.isFinite(at)) this.group.lastAt = at
       if (kind === 'prompt') {
@@ -441,69 +430,26 @@ export class Feed {
     if (Number.isFinite(at)) this.group.lastAt = at
   }
 
-  /** Your words inside a turn: one small line, with a way to make it a turn of its own. */
+  /** A `!` shell line inside a turn: one small line. */
   private followLine(caret: string, text: string, command = false, uuid = this.uuid): HTMLElement {
     this.fold = null
     this.quiet = null
     const f = el('div', `loom-follow${command ? ' is-command' : ''}`)
     f.innerHTML =
       `<span class="loom-caret">${caret}</span><span class="loom-follow-text">${escapeHtml(text)}</span>` +
-      (uuid ? `<button type="button" class="loom-regroup" title="Show this as a turn of its own">Split into its own turn</button>` : '')
+''
     if (uuid) f.dataset['uuid'] = uuid
     return f
   }
 
-  /** The head of a turn: what you asked, with "Join previous". */
+  /** The head of a turn: what you asked. */
   private askLine(caret: string, text: string, command = false, uuid = this.uuid): HTMLElement {
     const ask = el('div', `loom-ask${command ? ' is-command' : ''}`)
     ask.innerHTML =
       `<span class="loom-caret">${caret}</span><span class="loom-ask-text">${escapeHtml(text)}</span>` +
-      (uuid ? `<button type="button" class="loom-regroup" title="Make this part of the turn before">Join previous</button>` : '')
+''
     if (uuid) ask.dataset['uuid'] = uuid
     return ask
-  }
-
-  /** "Split into its own turn": the follow-up and everything after it in its turn move to a new turn. */
-  private split(line: HTMLElement): void {
-    const turn = line.parentElement
-    if (!turn) return
-    setOverride(line.dataset['uuid'], 'split')
-    const t = el('section', 'loom-turn')
-    turn.after(t)
-    const text = line.querySelector('.loom-follow-text')?.textContent ?? ''
-    const caret = line.querySelector('.loom-caret')?.textContent ?? '❯'
-    const ask = this.askLine(caret, text, line.classList.contains('is-command'), line.dataset['uuid'] ?? '')
-    line.querySelectorAll('.loom-thumbs').forEach((n) => ask.appendChild(n))
-    const moving: Element[] = []
-    for (let n: Element | null = line.nextElementSibling; n; n = n.nextElementSibling) {
-      if (!n.classList.contains('loom-activity') && !n.classList.contains('loom-board')) moving.push(n)
-    }
-    line.remove()
-    t.append(ask, ...moving)
-    if (this.turn === turn) this.turn = t
-    this.ctx.grew()
-  }
-
-  /** "Join previous": this turn becomes a follow-up of the one before it. */
-  private joinPrevious(ask: HTMLElement): void {
-    const turn = ask.parentElement
-    let prev = turn?.previousElementSibling as HTMLElement | null
-    while (prev && prev.classList.contains('loom-turn') && !prev.querySelector(':scope > .loom-ask')) prev = prev.previousElementSibling as HTMLElement | null
-    if (!turn || !prev || !prev.classList.contains('loom-turn')) return
-    setOverride(ask.dataset['uuid'], 'join')
-    const text = ask.querySelector('.loom-ask-text')?.textContent ?? ''
-    const caret = ask.querySelector('.loom-caret')?.textContent ?? '❯'
-    const f = this.followLine(caret, text, ask.classList.contains('is-command'), ask.dataset['uuid'] ?? '')
-    ask.querySelectorAll('.loom-thumbs').forEach((n) => f.appendChild(n))
-    ask.replaceWith(f)
-    const before = prev.querySelector(':scope > .loom-activity, :scope > .loom-board')
-    for (const n of Array.from(turn.children)) {
-      if (n.classList.contains('loom-activity')) continue
-      prev.insertBefore(n, before)
-    }
-    turn.remove()
-    if (this.turn === turn) this.turn = prev
-    this.ctx.grew()
   }
 
   /**
@@ -1025,32 +971,6 @@ export class Feed {
     // Hook chatter and the like: quiet, but there.
     if (/hook|statusline|^\s*$/i.test(subtype)) return
     this.turn.appendChild(el('div', 'loom-note-line', escapeHtml(firstLine(text, 300))))
-  }
-}
-
-/** The turns you split or joined by hand, by prompt uuid: kept, so a reload groups them the same. */
-const OVERRIDES = 'ember.turnOverrides'
-let overrideCache: Record<string, 'split' | 'join'> | null = null
-function overrides(): Record<string, 'split' | 'join'> {
-  if (overrideCache) return overrideCache
-  try {
-    overrideCache = JSON.parse(localStorage.getItem(OVERRIDES) ?? '{}') as Record<string, 'split' | 'join'>
-  } catch {
-    overrideCache = {}
-  }
-  return overrideCache
-}
-function setOverride(uuid: string | undefined, how: 'split' | 'join'): void {
-  if (!uuid) return
-  const all = overrides()
-  delete all[uuid]
-  all[uuid] = how
-  const keys = Object.keys(all)
-  for (const k of keys.slice(0, Math.max(0, keys.length - 500))) delete all[k]
-  try {
-    localStorage.setItem(OVERRIDES, JSON.stringify(all))
-  } catch {
-    /* kept for this run only */
   }
 }
 

@@ -6,7 +6,7 @@
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { groupSteps, joinsTurn } from '../src/shared/turnGroups.ts'
+import { classifyFollowUp, groupSteps, joinsTurn } from '../src/shared/turnGroups.ts'
 
 const MIN = 60_000
 /** A tiny script: `> text` a prompt, `/x` a command, `!x` a shell command, `<` a reply (`<?` one with questions), `^C` an interrupt, `+N` minutes pass, `CLEAR`. */
@@ -55,12 +55,23 @@ const CASES = [
   ['three requests, three turns', [`> ${LONG}`, '<', '+4', '> Look at the failing CI job on main and tell me what broke', '<', '+30', '> ok', '<'], [0, 1, 2]],
 ]
 
-for (const [name, script, want] of CASES) {
-  test(name, () => assert.deepEqual(groupSteps(steps(script)), want))
+// Since 2026-11-17 every message is a turn of its own: only slash commands and `!` lines join.
+for (const [name, script] of CASES) {
+  test(`every message its own turn: ${name}`, () => {
+    const s = steps(script)
+    const turns = groupSteps(s)
+    const promptTurns = s.filter((x) => 'text' in x).map((x, i) => [x.kind, turns[i]]).filter(([k]) => k === 'prompt').map(([, t]) => t)
+    assert.equal(new Set(promptTurns).size, promptTurns.length)
+  })
 }
 
-test('no timestamps: words decide alone', () => {
+test('commands and shell lines stay in the turn on screen', () => {
+  assert.deepEqual(groupSteps(steps(['> fix the build', '<', '/model', '!git status', '> yes do it', '<'])), [0, 0, 0, 1])
+})
+
+test('the old follow-up classifier still reads words', () => {
   const st = { askAt: NaN, lastAt: NaN, prompt: 'x', interrupted: false, questions: false }
-  assert.equal(joinsTurn('yes', NaN, 'prompt', st).join, true)
-  assert.equal(joinsTurn('check disk usage on the box', NaN, 'prompt', st).join, false)
+  assert.equal(joinsTurn('yes', NaN, 'prompt', st).join, false)
+  assert.equal(classifyFollowUp('yes', NaN, st).join, true)
+  assert.equal(classifyFollowUp('check disk usage on the box', NaN, st).join, false)
 })

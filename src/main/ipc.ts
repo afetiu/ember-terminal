@@ -24,6 +24,9 @@ import type {
   SpawnResult,
 } from '../shared/types.js'
 
+/** What a side question's run answers when the question is really work for the session. */
+const SIDE_WORK = '[[WORK]]'
+
 export function registerIpc(host: PtyHost): void {
   // Loom tabs: the transcript feed, media and page annotations for the canvas.
   registerCanvas({ origin: bridgeOrigin, hostDoc, markCanvasTab })
@@ -32,10 +35,15 @@ export function registerIpc(host: PtyHost): void {
   ipcMain.handle('ember:canvas:sideAsk', async (_e, question: string, about: string, source: string, cwd?: string) => {
     const prompt =
       `Answer the user's question about one object on their screen, briefly: a few sentences or a short list, ` +
-      `plain markdown, no preamble. You may read files if it helps, but do not change anything.\n\n` +
+      `plain markdown, no preamble. You may read files if it helps, but do not change anything.\n` +
+      `If it is not a question but a request for work (change, fix, build, rewrite, run something), ` +
+      `do not do it and do not explain: reply with exactly ${SIDE_WORK} and nothing else.\n\n` +
       `The object: ${about}\n${source ? `Its content:\n${String(source).slice(0, 12000)}\n` : ''}\nThe question: ${question}`
     const { runAgent } = await import('./agents.js')
-    return runAgent(prompt, { timeoutMs: 120_000, ...(cwd ? { cwd } : {}) }).done
+    const r = await runAgent(prompt, { timeoutMs: 120_000, ...(cwd ? { cwd } : {}) }).done
+    // Work goes to the session, as a turn of its own; the renderer sends it.
+    if (r.ok && r.text.includes(SIDE_WORK)) return { ok: true, text: '', work: true }
+    return r
   })
   ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
   ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {

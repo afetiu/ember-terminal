@@ -553,7 +553,7 @@ export interface EmberBridge {
     /** Host a small document (a mermaid diagram) on the bridge; returns its URL. */
     doc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string): Promise<string>
     /** A quick question about one object, answered on the side — not a turn of the session. */
-    sideAsk(question: string, about: string, source: string, cwd?: string): Promise<{ ok: boolean; text: string; error?: string }>
+    sideAsk(question: string, about: string, source: string, cwd?: string): Promise<{ ok: boolean; text: string; error?: string; work?: boolean }>
     /** How a document rendered (a diagram that failed to parse), for the session that showed it. */
     docStatus(id: string, status: { ok: boolean; error: string; repaired: boolean }): void
     /** Show a file on the tab's canvas by path (a note, the todo list, anything show_file takes). */

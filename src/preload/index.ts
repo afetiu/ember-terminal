@@ -59,7 +59,7 @@ const bridge: EmberBridge = {
     doc: (tabId, title, format, content) => ipcRenderer.invoke('ember:canvas:doc', tabId, title, format, content) as Promise<string>,
     docStatus: (id, status) => ipcRenderer.send('ember:canvas:docStatus', id, status),
     sideAsk: (question, about, source, cwd) =>
-      ipcRenderer.invoke('ember:canvas:sideAsk', question, about, source, cwd) as Promise<{ ok: boolean; text: string; error?: string }>,
+      ipcRenderer.invoke('ember:canvas:sideAsk', question, about, source, cwd) as Promise<{ ok: boolean; text: string; error?: string; work?: boolean }>,
     showFile: (tabId, path, title) => ipcRenderer.invoke('ember:canvas:showFile', tabId, path, title) as Promise<{ ok?: boolean; title?: string; error?: string }>,
     onMedia: (cb) => on<CanvasMedia>('ember:canvas:media', cb),
     onAnnotate: (cb) => on<CanvasAnnotate>('ember:canvas:annotate', cb),

@@ -1,9 +1,12 @@
 /**
- * Ember turns: a main request and its follow-ups.
+ * Ember turns.
  *
- * Not every prompt is a new chat. "yes do it", "/model", "try again", "and the other one?",
- * an answer to the questions the reply asked: each carries on the turn on screen, and the
- * canvas shows it inside that turn (one point on the rail) rather than as a turn of its own.
+ * Every message you send is a turn of its own (2026-11-17: guessing which prompts were
+ * follow-ups made the canvas hard to follow). Only the CLI's own business — slash commands
+ * and `!` shell lines — stays inside the turn on screen. Questions asked from a popup on the
+ * canvas never reach the session as a prompt at all; they are answered in the popup.
+ *
+ * The follow-up heuristics below (`classifyFollowUp`) are kept for probes and tests.
  *
  * Deterministic and cheap: the prompt's words and the transcript's timestamps only, so a
  * live session and the same transcript reloaded group the same way. No model call.
@@ -76,11 +79,18 @@ export function likeness(a: string, b: string): number {
  * Does this prompt join the turn on screen? `state` null: there is no turn to join (the
  * first prompt, after `/clear`, after a compaction or a new session).
  */
-export function joinsTurn(text: string, at: number, kind: PromptKind, state: TurnState | null): Grouping {
+export function joinsTurn(_text: string, _at: number, kind: PromptKind, state: TurnState | null): Grouping {
   if (!state) return { join: false, why: 'no turn' }
   // The CLI's own business, and `!` shell commands: part of what you were doing.
   if (kind === 'command') return { join: true, why: 'command' }
   if (kind === 'shell') return { join: true, why: 'shell' }
+  // Anything you say to the agent is a turn of its own.
+  return { join: false, why: 'message' }
+}
+
+/** Would this prompt read as a follow-up of the turn on screen? Not used for grouping any more. */
+export function classifyFollowUp(text: string, at: number, state: TurnState | null): Grouping {
+  if (!state) return { join: false, why: 'no turn' }
   const t = text.trim()
   const n = words(t)
   const last = Number.isFinite(state.lastAt) ? state.lastAt : state.askAt

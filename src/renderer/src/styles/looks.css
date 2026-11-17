@@ -4288,3 +4288,27 @@ body.theme-basalt.ground-still .ember-ground * {
   line-height: 1.35;
   color: var(--b-faint);
 }
+
+/* What you asked, in every look: the head of each turn is a block you can find at a glance —
+   readable size, full-strength ink, a tinted band with an accent edge. Every message is a
+   turn of its own (2026-11-17), so this line is how you find your way along the canvas.
+   Specificity sits above each look's own `.loom-turn.is-shown > .loom-ask`. */
+body[class] .loom-flow .loom-turn > .loom-ask:not(.is-command) {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 10px 16px 10px 14px;
+  border: 0;
+  border-left: 3px solid var(--b-accent, var(--l-accent));
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--b-accent, var(--l-accent)) 9%, transparent);
+  font: 500 15px/1.5 var(--b-ui, var(--l-prose, inherit));
+  color: var(--b-text, var(--l-ink));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+body[class] .loom-flow .loom-turn > .loom-ask:not(.is-command) .loom-ask-text {
+  flex: 1 1 0;
+  min-width: 0;
+}

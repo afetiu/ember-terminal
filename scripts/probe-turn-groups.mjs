@@ -1,5 +1,5 @@
 /**
- * Ember turns: a request and its follow-ups are one turn (src/shared/turnGroups.ts). A dev
+ * Ember turns: every message is a turn of its own (src/shared/turnGroups.ts). A dev
  * Ember (own EMBER_HOME) whose canvas is fed a made-up transcript through
  * window.__ember.loomFeed: a request, its reply, `/model`, "yes do it", a reply, then a long
  * new request and its reply. Two points on the rail; the follow-ups inside turn 1; "Split into
@@ -114,39 +114,18 @@ try {
   await wait(800)
 
   let s = await state()
-  check('two points on the rail', s?.dots === 2, JSON.stringify(s?.titles))
-  check('the rail titles hold no button labels', !s?.titles.some((x) => /Join previous|Split into/.test(x)))
-  check('the rail says the main requests', /Refactor the auth middleware/.test(s?.titles[0] ?? '') && /Now something else/.test(s?.titles[1] ?? ''), JSON.stringify(s?.titles))
-  const t1 = s?.turns[0]
-  check('turn 1: /model and "yes do it" are inside it', !!t1 && t1.notes.some((x) => /\/model/.test(x)) && t1.follows.includes('yes do it'), JSON.stringify(t1))
-  check('turn 1: both replies are in it', !!t1 && t1.says.length === 2, JSON.stringify(t1?.says))
-  check('turn 2: the long new request, no follow-ups', s?.turns[1]?.follows.length === 0 && /Now something else/.test(s?.turns[1]?.ask ?? ''))
-  await shot('1-turn2-newest')
-
-  // Back to turn 1: both parts and their answers on screen.
-  await ev(`(() => { const d = ${VIS}.querySelector('.loom-rail .loom-dot'); d.click(); return true })()`)
+  // Every message is a turn of its own (2026-11-17); /model stays a quiet line in turn 1.
+  check('three points on the rail, one per message', s?.dots === 3, JSON.stringify(s?.titles))
+  check('the rail says each message', /Refactor the auth middleware/.test(s?.titles[0] ?? '') && /yes do it/.test(s?.titles[1] ?? '') && /Now something else/.test(s?.titles[2] ?? ''), JSON.stringify(s?.titles))
+  check('turn 1: /model inside it, no follow-ups', !!s?.turns[0] && s.turns[0].notes.some((x) => /\/model/.test(x)) && s.turns[0].follows.length === 0, JSON.stringify(s?.turns[0]))
+  check('turn 2: "yes do it" heads it, with its answer', s?.turns[1]?.ask === 'yes do it' && /Done\./.test(s?.turns[1]?.says[0] ?? ''), JSON.stringify(s?.turns[1]))
+  check('no Split / Join buttons', await ev(`!${VIS}.querySelector('.loom-regroup')`))
+  const askFont = await ev(`(() => { const a = ${VIS}.querySelector('.loom-turn.is-shown > .loom-ask'); const cs = getComputedStyle(a); return { size: parseFloat(cs.fontSize), bg: cs.backgroundColor } })()`)
+  check('what you asked reads at 15px on a tinted band', askFont?.size >= 15 && askFont?.bg !== 'rgba(0, 0, 0, 0)', JSON.stringify(askFont))
+  await shot('1-turn3-newest')
+  await ev(`(() => { const d = ${VIS}.querySelectorAll('.loom-rail .loom-dot')[1]; d.click(); return true })()`)
   await wait(700)
-  s = await state()
-  check('turn 1 on screen: its request, the follow-up and both answers visible', /Refactor/.test(s?.shownAsk ?? '') && s?.turns[0]?.says.length === 2, JSON.stringify(s?.turns[0]))
-  await ev(`(() => { const f = ${VIS}.querySelector('.loom-turn.is-shown .loom-follow'); const r = f.getBoundingClientRect(); return true })()`)
-  // Hover the follow-up so its "Split" shows in the picture.
-  const fr = await ev(`(() => { const r = ${VIS}.querySelector('.loom-turn.is-shown > .loom-follow').getBoundingClientRect(); return { x: r.x + 40, y: r.y + r.height / 2 } })()`)
-  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: fr.x, y: fr.y })
-  await wait(300)
-  await shot('2-turn1-with-follow-up')
-
-  // Split it off, then join it back.
-  await ev(`(() => { ${VIS}.querySelector('.loom-turn.is-shown > .loom-follow .loom-regroup').click(); return true })()`)
-  await wait(500)
-  s = await state()
-  check('"Split into its own turn": three turns, "yes do it" heads the second', s?.dots === 3 && s?.turns[1]?.ask === 'yes do it' && /Done\./.test(s?.turns[1]?.says[0] ?? ''), JSON.stringify(s?.turns.map((x) => x.ask)))
-  const stored = await ev(`localStorage.getItem('ember.turnOverrides')`)
-  check('the split is remembered for a reload', /"u5":"split"/.test(stored ?? ''), stored)
-  await ev(`(() => { const t = [...${VIS}.querySelectorAll('.loom-flow > .loom-turn')].find((x) => x.querySelector(':scope > .loom-ask .loom-ask-text')?.textContent === 'yes do it'); t.querySelector(':scope > .loom-ask .loom-regroup').click(); return true })()`)
-  await wait(500)
-  s = await state()
-  check('"Join previous": two turns again, "yes do it" back inside turn 1', s?.dots === 2 && s?.turns[0]?.follows.includes('yes do it') && s?.turns[0]?.says.length === 2, JSON.stringify(s?.turns))
-  check('the first turn offers no "Join previous"', await ev(`(() => { const b = ${VIS}.querySelector('.loom-turn.is-first > .loom-ask .loom-regroup'); return !b || getComputedStyle(b).display === 'none' })()`))
+  await shot('2-turn2-yes-do-it')
 
   check('/model and what it printed are not on the canvas', await ev(`[...${VIS}.querySelectorAll('.loom-flow [data-cmd]')].every((x) => x.getClientRects().length === 0)`))
 

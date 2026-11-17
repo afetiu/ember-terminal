@@ -330,6 +330,13 @@ export class CanvasInput {
       answer.innerHTML = `<span class="loom-menu-dots"><i></i><i></i><i></i></span>`
       const source = (quote ?? '').trim() || obj.piece?.source || host.dataset['source'] || (host.innerText ?? '').slice(0, 6000)
       void window.ember.canvas.sideAsk(q, about, source, v.session.cwd || undefined).then((r) => {
+        // Not a question after all: work, so the session does it, as a turn of its own.
+        if (r.work) {
+          v.type(obj.title ? `Change ${about}${quoted}: ${q}. It is on my screen as "${obj.title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.` : `About ${about}${quoted} — ${q}`, true)
+          this.closeMenu()
+          v.toBottom(true)
+          return
+        }
         answer.classList.remove('is-busy')
         answer.innerHTML = r.ok && r.text ? renderMarkdown(r.text).html : `<p class="err">${escapeHtml(r.error || 'No answer came back.')}</p>`
         box.disabled = false
@@ -387,8 +394,10 @@ export class CanvasInput {
       `<div class="loom-pop-about">${change ? 'Change' : 'Ask about'} ${escapeHtml(about)}</div>` +
       (quote ? `<div class="loom-pop-quote">${escapeHtml(quote.length > 240 ? `${quote.slice(0, 240)}…` : quote)}</div>` : '') +
       `<textarea rows="2" placeholder="${change ? 'What should change?' : 'What do you want to know?'}" spellcheck="false"></textarea>` +
-      `<div class="loom-pop-foot"><span><kbd>Enter</kbd> ${change ? 'change it' : 'ask'}</span><span><kbd>Esc</kbd> close</span></div>`
+      `<div class="loom-menu-answer"></div>` +
+      `<div class="loom-pop-foot"><span><kbd>Enter</kbd> ${change ? 'change it' : 'ask · answered here'}</span><span><kbd>Esc</kbd> close</span></div>`
     const box = this.pop.querySelector('textarea')!
+    const answer = this.pop.querySelector<HTMLElement>('.loom-menu-answer')!
     box.addEventListener('keydown', (e) => {
       e.stopPropagation()
       if (e.key === 'Escape') {
@@ -401,12 +410,32 @@ export class CanvasInput {
         const q = box.value.trim()
         if (!q) return
         const quoted = quote ? ` — “${quote.replace(/\s+/g, ' ').slice(0, 600)}”` : ''
-        const context = change
-          ? `Change ${about}${quoted}: ${q}. It is on my screen as "${title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`
-          : `About ${about}${quoted} — ${q}`
-        v.type(context, true)
-        this.closeAsk()
-        v.toBottom(true)
+        // Work goes to the session as a turn of its own.
+        const toSession = () => {
+          v.type(
+            change
+              ? `Change ${about}${quoted}: ${q}. It is on my screen as "${title}" — change it in place (edit_panel, or show_panel with that title); do not make a new one.`
+              : `About ${about}${quoted} — ${q}`,
+            true,
+          )
+          this.closeAsk()
+          v.toBottom(true)
+        }
+        if (change || !isQuestion(q)) return toSession()
+        // A question is answered here, in the popup, never as a turn.
+        box.disabled = true
+        answer.classList.add('is-on', 'is-busy')
+        answer.innerHTML = `<span class="loom-menu-dots"><i></i><i></i><i></i></span>`
+        void window.ember.canvas.sideAsk(q, about, (quote ?? '').trim(), v.session.cwd || undefined).then((r) => {
+          if (!this.pop.contains(box)) return
+          if (r.work) return toSession()
+          answer.classList.remove('is-busy')
+          answer.innerHTML = r.ok && r.text ? renderMarkdown(r.text).html : `<p class="err">${escapeHtml(r.error || 'No answer came back.')}</p>`
+          box.disabled = false
+          box.value = ''
+          box.placeholder = 'Ask a follow-up…'
+          box.focus()
+        })
       }
     })
     const w = 360
