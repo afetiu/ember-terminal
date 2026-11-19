@@ -117,12 +117,21 @@ body.theme-basalt:not(.look-basalt) {
     color: var(--b-faint);
   }
 
-  /* The rail: points on a thread, not a strip. */
+  /* The rail: points on a thread, not a strip. It scrolls, and a scrolling box clips at its
+     own edges: the room for the current point's glow is padding on both sides (and above),
+     taken back with a negative margin, so the points stay where they were. */
   .loom-rail.is-on {
     gap: 14px;
     border-radius: 0;
     background: none;
     box-shadow: none;
+    box-sizing: content-box;
+    width: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-left: -16px;
+    padding-top: 18px;
+    margin-top: -8px;
   }
   .loom-rail::before {
     display: block;
@@ -4311,4 +4320,16 @@ body[class] .loom-flow .loom-turn > .loom-ask:not(.is-command) {
 body[class] .loom-flow .loom-turn > .loom-ask:not(.is-command) .loom-ask-text {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* The mark at the top is always Ember's own logo, whatever the look (2026-11-19): the looks
+   used to hide it and draw a square of their own colours in its place. */
+body.theme-basalt[class] .ember-brand .ember-brand-mark {
+  display: block;
+  width: 18px;
+  height: 18px;
+  filter: none;
+}
+body.theme-basalt[class] .ember-brand .ember-brand-name::before {
+  display: none;
 }
