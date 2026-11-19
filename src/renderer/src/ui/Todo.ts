@@ -28,6 +28,9 @@ export class TodoView {
   private readonly list: TaskList
   private readonly countEl: HTMLElement
   private readonly status: HTMLElement
+  private readonly checkBtn: HTMLButtonElement
+  private readonly report: HTMLElement
+  private checking = false
   private readonly clearBtn: HTMLButtonElement
   /** Under the list: the archive's count as a quiet toggle, and the archive itself. */
   private readonly foot: HTMLElement
@@ -64,7 +67,19 @@ export class TodoView {
     this.clearBtn.hidden = true
     this.clearBtn.addEventListener('click', () => this.clearDone())
 
-    head.append(h, this.countEl, this.status, this.clearBtn)
+    this.checkBtn = document.createElement('button')
+    this.checkBtn.className = 'ember-notes-check'
+    this.checkBtn.textContent = 'Check todos'
+    this.checkBtn.title = 'Go through your mail, Slack, Jira and GitHub with Claude: add what needs doing, tick what is done'
+    this.checkBtn.addEventListener('click', () => void this.checkTodos())
+
+    head.append(h, this.countEl, this.status, this.clearBtn, this.checkBtn)
+
+    // What the check said. Click to dismiss; the items themselves are already in the list.
+    this.report = document.createElement('div')
+    this.report.className = 'ember-notes-report'
+    this.report.hidden = true
+    this.report.addEventListener('click', () => (this.report.hidden = true))
 
     this.foot = document.createElement('div')
     this.foot.className = 'ember-todo-foot'
@@ -89,7 +104,8 @@ export class TodoView {
       onLeave: () => hooks.onClose?.(),
     })
 
-    this.el.append(head, this.list.el, this.foot)
+    this.el.append(head, this.report, this.list.el, this.foot)
+    void this.showChecked()
   }
 
   /** Read the file and show it. */
@@ -358,9 +374,50 @@ export class TodoView {
     this.hooks.onClose?.()
   }
 
+  /** When this machine last checked, beside the count. */
+  private async showChecked(): Promise<void> {
+    const st = await window.ember.notes.todoState()
+    if (this.disposed || this.checking) return
+    const at = st.lastCheckedAt ? Date.parse(st.lastCheckedAt) : NaN
+    if (Number.isFinite(at)) this.status.textContent = `checked ${checkedAgo(at)}`
+  }
+
+  /** Run `/check-todos` in the local Claude and show what it said; items arrive (and get ticked) by themselves. */
+  async checkTodos(): Promise<void> {
+    if (this.checking) return
+    this.checking = true
+    this.checkBtn.disabled = true
+    this.checkBtn.textContent = 'Checking…'
+    this.status.textContent = 'going through your mail and messages with Claude, a minute or two'
+    this.report.hidden = true
+    try {
+      const r = await window.ember.notes.checkTodos()
+      if (this.disposed) return
+      this.report.textContent = r.ok ? r.output || 'Nothing new to do.' : `Could not run the check: ${r.error ?? 'unknown error'}`
+      this.report.classList.toggle('is-error', !r.ok)
+      this.report.hidden = false
+      this.status.textContent = r.ok ? 'checked just now' : ''
+    } finally {
+      this.checking = false
+      this.checkBtn.disabled = false
+      this.checkBtn.textContent = 'Check todos'
+    }
+  }
+
   dispose(): void {
     void this.flush()
     this.disposed = true
     this.el.remove()
   }
+}
+
+/** "5 min ago", "yesterday", "3 days ago". */
+function checkedAgo(at: number): string {
+  const m = Math.round((Date.now() - at) / 60_000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h} h ago`
+  const d = Math.round(h / 24)
+  return d === 1 ? 'yesterday' : `${d} days ago`
 }

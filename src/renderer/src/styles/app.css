@@ -3802,3 +3802,44 @@ body.sidebar-mini .ember-places {
 
 /* Light themes: secondary text a step stronger — 44% ink on paper all but vanished. */
 
+
+/* Check todos (brought back 2026-11-19): the button on the Todo page, and what the check said. */
+.ember-notes-check {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+.ember-notes-check:hover {
+  background: color-mix(in srgb, var(--c-accent) 24%, transparent);
+}
+.ember-notes-check:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ember-notes-report {
+  flex: none;
+  max-height: 32%;
+  overflow-y: auto;
+  margin: 10px 16px 0;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-accent) 8%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+.ember-notes-report[hidden] {
+  display: none;
+}
+.ember-notes-report.is-error {
+  background: color-mix(in srgb, var(--c-red, #e2676f) 12%, transparent);
+}

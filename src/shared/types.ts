@@ -620,6 +620,10 @@ export interface EmberBridge {
     onOpen(cb: (e: { mode?: 'list' | 'new' | 'open' | 'todo'; text?: string; id?: string; tabId?: string }) => void): () => void
     /** A note was written or removed by something other than this window — a Claude session, usually. */
     onChanged(cb: (e: { id: string; was?: string; deleted?: boolean }) => void): () => void
+    /** Check todos: `/check-todos` in the local Claude; items land in the list by themselves. */
+    checkTodos(): Promise<{ ok: boolean; output: string; error?: string; lastCheckedAt?: string }>
+    /** When this machine last checked. */
+    todoState(): Promise<{ lastCheckedAt?: string }>
   }
   /**
    * This machine's membership of the Ember account, and the devices on it.

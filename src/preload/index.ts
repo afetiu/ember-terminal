@@ -82,6 +82,8 @@ const bridge: EmberBridge = {
     render: (push: PanelPush) => ipcRenderer.invoke('ember:panel:render', push) as Promise<string>,
   },
   notes: {
+    checkTodos: () => ipcRenderer.invoke('ember:todo:check') as Promise<{ ok: boolean; output: string; error?: string; lastCheckedAt?: string }>,
+    todoState: () => ipcRenderer.invoke('ember:todo:state') as Promise<{ lastCheckedAt?: string }>,
     list: () => ipcRenderer.invoke('ember:notes:list') as Promise<NoteMeta[]>,
     read: (id: string) => ipcRenderer.invoke('ember:notes:read', id) as Promise<string | null>,
     save: (id: string, body: string) =>

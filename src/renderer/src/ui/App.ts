@@ -2559,6 +2559,7 @@ export class App {
         { id: 'todo-back', group: 'Todo', title: 'Back to the shell', hint: 'Esc', cli: 'back', aliases: ['b'], run: () => todo.leave() },
         { id: 'todo-add', group: 'Todo', title: 'Add an item', cli: 'add <text>', aliases: ['a'], run: (a) => todo.add(a.join(' ')) },
         { id: 'todo-done', group: 'Todo', title: 'Tick an item', cli: 'done <words>', aliases: ['d'], run: (a) => todo.done(a.join(' ')) },
+        { id: 'todo-check', group: 'Todo', title: 'Check todos: go through mail, Slack, Jira and GitHub with Claude', cli: 'check', run: () => void todo.checkTodos() },
         { id: 'todo-clear-done', group: 'Todo', title: 'Clear the ticked items into the archive', cli: 'clear done', aliases: ['purge'], run: () => todo.clearDone() },
         { id: 'todo-archive', group: 'Todo', title: 'Show or hide the archive', cli: 'archive', aliases: ['archived', 'history'], run: () => todo.toggleArchive() },
         { id: 'todo-claude', group: 'Todo', title: 'Hand an item to a new Claude session', cli: 'claude <words>', aliases: ['cl'], run: (a) => todo.handOff(a.join(' ')) },

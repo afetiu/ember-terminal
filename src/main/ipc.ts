@@ -112,6 +112,9 @@ export function registerIpc(host: PtyHost): void {
   // note written from a shell — or by a Claude session, or by Notepad — shows up in an
   // open tab by itself.
   const notesBin = installNotesCli()
+  // Check todos: the person's own Claude, run once, headless (main/todoCheck.ts).
+  ipcMain.handle('ember:todo:check', async () => (await import('./todoCheck.js')).checkTodos(notesBin))
+  ipcMain.handle('ember:todo:state', async () => (await import('./todoCheck.js')).todoState())
   installSkills()
   const unwatchNotes = watchNotes((id) => broadcast('ember:notes:changed', { id }))
   ipcMain.on('ember:cmd:reply', (_e, reqId: string, r: { result: string; error?: string }) => resolveCmd(reqId, r))
