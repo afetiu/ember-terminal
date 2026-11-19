@@ -122,6 +122,8 @@ export interface CardModel {
   claude: ClaudeStatus | null
   /** The folder of a named agent session: its title is just the name, the folder goes on the second line. */
   folder?: string
+  /** Why it wants you, in words: blocked on you (a question, a permission) or done (finished, ended). */
+  need?: { kind: 'blocked' | 'done'; text: string } | null
 }
 
 export interface SidebarHandlers {
@@ -379,7 +381,10 @@ export class Sidebar {
       const parts: string[] = []
       if (card.activity.detail) parts.push(card.activity.detail)
       if (card.paneCount > 1) parts.push(`${card.paneCount} panes`)
-      const statusText = parts.join(' · ')
+      // Why it wants you, in words, in place of the timer: "Needs your permission".
+      const need = card.need ?? null
+      const statusText = need ? need.text : parts.join(' · ')
+      node.root.dataset['need'] = need?.kind ?? ''
       node.root.title = card.activity.label
       // A resting session has nothing to add, so the whole line gets out of the way
       // rather than leaving a lone dot floating under the title.

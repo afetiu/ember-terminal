@@ -2,7 +2,7 @@ import { AGENTS, agentFromTitle, type AgentId } from '@shared/agents'
 export type ActivityState = 'idle' | 'working' | 'attention' | 'exited'
 
 /** Why a session is asking for you. The mascot reacts differently to each. */
-export type AttentionKind = 'question' | 'handoff' | 'bell'
+export type AttentionKind = 'question' | 'permission' | 'handoff' | 'bell'
 
 /** What a monitor needs from a session, kept narrow to avoid a circular import. */
 export interface ActivitySource {
@@ -56,8 +56,6 @@ export class ActivityMonitor {
   private static readonly WORKING_WINDOW_MS = 600
   /** How long a screen signal survives a frame that happens to catch a redraw. */
   private static readonly SIGNAL_STICKY_MS = 1200
-  /** How long a finished Claude turn keeps waving before it settles into idle. */
-  private static readonly HANDOFF_MS = 20_000
   /**
    * How long a BEL keeps claiming you.
    *
@@ -77,6 +75,9 @@ export class ActivityMonitor {
   private static readonly SELECTED_LINE = /^\s*(?:[│┃]\s*)?[❯›▸>●]\s*[1-9][.)]\s+\S/
   /** The footer Claude Code prints under a dialog it is blocked on. */
   private static readonly CONFIRM_FOOTER = /\benter to confirm\b/i
+  /** A dialog asking leave to do something, not a question about the work. */
+  private static readonly PERMISSION = /\bdo you want to (?:proceed|make this edit|create|run|allow|fetch|edit|write|delete|overwrite)\b|don'?t ask again|\ballow (?:once|always)\b|\bpermission\b/i
+  private questionIsPermission = false
   /**
    * The spinner Claude Code draws while a turn is in flight:
    *   "✳ Scurrying… (6m 45s · ↓ 20.3k tokens)"
@@ -204,14 +205,20 @@ export class ActivityMonitor {
   private claudeState(now: number, belled: boolean): [ActivityState, AttentionKind | null] {
     const tail = this.tailLines()
     if (ActivityMonitor.looksBusy(tail)) this.lastBusyAt = now
-    if (ActivityMonitor.looksLikeQuestion(tail)) this.lastQuestionAt = now
+    if (ActivityMonitor.looksLikeQuestion(tail)) {
+      this.lastQuestionAt = now
+      // A permission dialog ("Do you want to proceed?", "Yes, and don't ask again") is not a question about the work.
+      this.questionIsPermission = tail.some((l) => ActivityMonitor.PERMISSION.test(l))
+    }
 
     const sticky = ActivityMonitor.SIGNAL_STICKY_MS
-    if (now - this.lastQuestionAt < sticky) return ['attention', 'question']
+    if (now - this.lastQuestionAt < sticky) return ['attention', this.questionIsPermission ? 'permission' : 'question']
     if (now - this.lastBusyAt < sticky) return ['working', null]
     if (belled) return ['attention', 'bell']
-    // A turn that just finished is the one moment a quiet session is worth looking at.
-    if (now - this.turnEndedAt < ActivityMonitor.HANDOFF_MS) return ['attention', 'handoff']
+    // A turn that finished is worth looking at until you have looked: a tab you are not on
+    // stays "finished" (2026-11-19: it used to fade after 20s, and a finished tab you had not
+    // seen then looked like any other). The tab on screen is acknowledged as it finishes.
+    if (this.turnEndedAt > -Infinity) return ['attention', 'handoff']
     return ['idle', null]
   }
 
@@ -281,7 +288,7 @@ export class ActivityMonitor {
       case 'working':
         return isClaude ? 'Working' : 'Running'
       case 'attention':
-        return attention === 'handoff' ? 'Your turn' : 'Needs you'
+        return attention === 'handoff' ? 'Finished, your turn' : attention === 'permission' ? 'Needs your permission' : attention === 'question' ? 'Has a question for you' : 'Wants your attention'
       case 'exited':
         return 'Exited'
       case 'idle':

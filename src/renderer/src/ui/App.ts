@@ -115,6 +115,8 @@ export class App {
   private readonly shellHistory: string[] = []
   /** Built-in palettes, fetched once — the list is static for the life of the process. */
   private notifiedGroups = new Map<string, number>()
+  /** The attention kind each tab last chimed for: one chime per episode. */
+  private readonly chimedFor = new Map<string, string>()
   /** Said once per run, not once per config reload. */
   /** cwd -> git status, refreshed on the activity tick. */
   private readonly gitByCwd = new Map<string, GitStatus | null>()
@@ -1762,7 +1764,7 @@ export class App {
       const a = session.activity.current
       // Showing a picker of its own (a trust prompt, a login): the answer is the person's,
       // and a brief typed now would land in the picker.
-      if (a.agent && a.attention === 'question') {
+      if (a.agent && (a.attention === 'question' || a.attention === 'permission')) {
         if (!asked) {
           asked = true
           this.flashToast(`"${group.displayTitle}" is asking you something before it can start — answer it and the brief goes in.`)
@@ -2135,6 +2137,7 @@ export class App {
         unread: g.id === this.activeId ? 0 : g.panes.reduce((n, p) => n + p.unread, 0),
         // Only while Claude Code runs there: once it exits the tab is a terminal again.
         claude: this.config.claude.statusLine && (!g.loom || g.loom.isClaude) ? (this.claudeByTab.get(g.id) ?? null) : null,
+        need: needOf(activity.state, activity.attention, !!g.loom?.asksQuestions),
       }
     })
     this.sidebar.render(models, this.activeId)
@@ -2158,10 +2161,16 @@ export class App {
     // flicker in detection produced a fresh chime — which is what made it feel random.
     // A hard cooldown means even a mis-detection costs you one sound, not a stream,
     // and a session that genuinely still wants you is already saying so on its card.
+    // And once per episode: a finished tab stays "finished" until you look at it, and must
+    // not chime every minute while it waits. Back at work, it may chime again.
+    for (const m of models) if (m.activity.state === 'working') this.chimedFor.delete(m.id)
     for (const m of needy) {
+      const key = m.activity.attention ?? ''
+      if (this.chimedFor.get(m.id) === key) continue
       const last = this.notifiedGroups.get(m.id) ?? 0
       if (now - last < App.ATTENTION_COOLDOWN_MS) continue
       this.notifiedGroups.set(m.id, now)
+      this.chimedFor.set(m.id, key)
       sound.play('attention')
     }
 
@@ -2968,4 +2977,24 @@ export class App {
 function folderName(path: string): string {
   const parts = path.replace(/[\\/]+$/, '').split(/[\\/]/)
   return parts[parts.length - 1] || path
+}
+
+/**
+ * Why a tab wants you, said outright on its card: a dot's colour was not enough to tell a
+ * question from a permission from a finished turn, nor a tab that wants you from the one
+ * you are on (2026-11-19).
+ */
+function needOf(state: string, attention: string | null, asks: boolean): { kind: 'blocked' | 'done'; text: string } | null {
+  if (state === 'exited') return { kind: 'done', text: 'Ended' }
+  if (state !== 'attention') return null
+  switch (attention) {
+    case 'permission':
+      return { kind: 'blocked', text: 'Needs your permission' }
+    case 'question':
+      return { kind: 'blocked', text: 'Has a question for you' }
+    case 'handoff':
+      return asks ? { kind: 'blocked', text: 'Has questions for you' } : { kind: 'done', text: 'Finished, your turn' }
+    default:
+      return { kind: 'blocked', text: 'Wants your attention' }
+  }
 }

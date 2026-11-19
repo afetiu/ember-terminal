@@ -377,6 +377,8 @@ export class Feed {
   stepNow: Step | null = null
   /** What this request has done so far, in plain words. */
   progress = new Progress()
+  /** The agent's last reply ended asking you questions (the canvas put an answer card under it). */
+  endsAsking = false
   /** The request on screen: what you asked (its uuid) and the agent's last words, for its story line. */
   private request = { uuid: '', prompt: '', reply: '' }
 
@@ -690,6 +692,7 @@ export class Feed {
     this.ctx.prompted?.(clean)
     const follow = this.placePrompt(clean, 'prompt')
     this.turnOpen = true
+    this.endsAsking = false
     this.request = { uuid: this.uuid, prompt: clean, reply: '' }
     const ask = follow ? this.followLine('❯', clean) : this.askLine('❯', clean)
     if (images.length) {
@@ -757,6 +760,7 @@ export class Feed {
     this.hydrate(div, r.diagrams, r.images)
     const card = answerCard(div, (line) => this.ctx.send(line, true))
     if (this.group) this.group.questions = !!card
+    this.endsAsking = !!card
   }
 
   /**

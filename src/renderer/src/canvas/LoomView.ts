@@ -434,6 +434,11 @@ export class LoomView {
     if (this.pinned.size) this.snapping.reflow()
   }
 
+  /** The agent finished and its last reply asks you questions. */
+  get asksQuestions(): boolean {
+    return this.feed.endsAsking && !this.host.working
+  }
+
   /** The title the agent gave the session by itself (Claude Code's `ai-title`). */
   private aiTitle = ''
   /** The session's first prompt: its name when nothing better names it. */
