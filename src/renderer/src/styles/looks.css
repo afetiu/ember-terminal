@@ -4402,3 +4402,18 @@ body[class] .ember-card[data-need]:not([data-need='']) .ember-card-status [class
   width: auto;
   min-width: 0;
 }
+
+/* The sessions list scrolls, and a scrolling box clips at its edges: the glow of a tab
+   that wants you was cut off at the right. Room on both sides, taken back with negative
+   margins, so the cards stay where they were. */
+body.theme-basalt:not(.look-basalt):not(.sidebar-mini) .ember-cards {
+  padding-left: 14px;
+  padding-right: 14px;
+  margin-left: -14px;
+  margin-right: -14px;
+  padding-top: 8px;
+  margin-top: -8px;
+}
+body[class] .ember-card[data-need='blocked']:not(.is-active) {
+  box-shadow: 0 0 14px -5px color-mix(in srgb, var(--need) 75%, transparent);
+}
