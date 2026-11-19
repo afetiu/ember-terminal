@@ -342,6 +342,12 @@ export class App {
         if (l) l.host.title = title
         return !!l
       },
+      /** A Loom tab's story, as main would hand it back, for probes with no model. */
+      loomStory: (id: string, s: { header: string; goal: string; entries: Array<{ uuid: string; goal: string; text: string; at: number }> }) => {
+        const l = this.groups.find((g) => g.id === id)?.loom
+        l?.storyForProbe(s)
+        return !!l
+      },
       /** A Loom tab as if its agent were mid-turn (or not), for probes with no agent running. */
       loomWorking: (id: string, on: boolean) => {
         const l = this.groups.find((g) => g.id === id)?.loom

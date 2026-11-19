@@ -13,6 +13,7 @@ import { FrameSleeper } from './loom/frames'
 import { div, reduced, viewSwitch, sameTitle, type Browser, type Mode, type Piece } from './loom/shared'
 import { pasteIntoTui } from './liveRead'
 import { sessionName } from './sessionName'
+import { StoryView } from './loom/story'
 import { agentFromTitle } from '@shared/agents'
 
 /**
@@ -143,6 +144,7 @@ export class LoomView {
         this.hooks.changed?.()
       },
       cleared: () => this.onCleared(),
+      turnEnded: (t) => this.tellStory(t),
     })
     // Three layers, top to bottom: the plan of the work in progress, the exchange (your
     // words and Claude's latest), and the board — everything Claude has shown, which stays
@@ -165,6 +167,8 @@ export class LoomView {
     const { input, host } = this
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
+    this.story = new StoryView(this.el, (uuid) => this.jumpToTurn(uuid))
+    this.unsubs.push(() => this.story.dispose())
     this.el.append(this.scroller, this.stage.rail, this.objects.pinLayer, this.hint, this.sign, this.steps, this.jump, this.pastedEl, input.chip, input.pop, input.ctxMenu, this.notebook.drawer, input.lightbox)
     panes.append(this.el, host.divider, this.rawPill)
     panes.classList.add('has-loom')
@@ -237,6 +241,8 @@ export class LoomView {
       window.ember.canvas.onFeed((f: CanvasFeed) => {
         if (f.tabId !== this.tabId) return
         if (f.kind === 'switch') {
+          // Its story, kept for its transcript (a resumed session has it back).
+          this.loadStory(f.file)
           // Another session in the tab (a new one, `/resume`, `/clear`): its name comes from
           // its own log, which is read again from its first line.
           this.host.title = ''
@@ -432,6 +438,49 @@ export class LoomView {
   private aiTitle = ''
   /** The session's first prompt: its name when nothing better names it. */
   private firstPrompt = ''
+
+  // ================================================================ the story
+
+  private story!: StoryView
+  /** The session the story is for: its transcript's name. */
+  private storyKey = ''
+
+  private loadStory(file: string): void {
+    const key = (file.split(/[\\/]/).pop() ?? '').replace(/\.jsonl?$/i, '')
+    if (!key || key === this.storyKey) return
+    this.storyKey = key
+    this.story.set({ header: '', goal: '', entries: [] })
+    void window.ember.canvas.storyLoad(key).then((s) => {
+      if (this.storyKey === key) this.story.set(s)
+    })
+  }
+
+  /** A request ended: its line and the new header, written on the side. Only live ones — a history read back is not re-told. */
+  private tellStory(t: { uuid: string; prompt: string; reply: string; at: number }): void {
+    const key = this.storyKey
+    if (!key || this.story.has(t.uuid) || Date.now() - t.at > 3 * 60_000) return
+    this.story.setWriting(true)
+    void window.ember.canvas.storyTell({ key, ...t }).then((s) => {
+      if (this.storyKey !== key) return
+      this.story.setWriting(false)
+      this.story.set(s)
+    })
+  }
+
+  /** Show the turn a story line is about. */
+  private jumpToTurn(uuid: string): void {
+    const ask = uuid ? this.feed.el.querySelector<HTMLElement>(`.loom-ask[data-uuid="${CSS.escape(uuid)}"]`) : null
+    const turn = ask?.closest<HTMLElement>('.loom-turn')
+    if (!turn) return
+    const turns = this.feed.turns()
+    this.stage.viewing = turn === turns[turns.length - 1] ? null : turn
+    this.stage.restage()
+  }
+
+  /** Probe-only: a story, as main would hand it back. */
+  storyForProbe(s: { header: string; goal: string; entries: Array<{ uuid: string; goal: string; text: string; at: number }> }): void {
+    this.story.set(s)
+  }
 
   /** The session's name (`/rename`, Codex's thread name) and the title the agent gave it by itself, for the tab's card. */
   private takeNames(lines: Array<Record<string, unknown>>): void {

@@ -22,6 +22,7 @@ import type {
   PanelPush,
   SpawnRequest,
   SpawnResult,
+  StoryRequest,
 } from '../shared/types.js'
 
 /** What a side question's run answers when the question is really work for the session. */
@@ -45,6 +46,9 @@ export function registerIpc(host: PtyHost): void {
     if (r.ok && r.text.includes(SIDE_WORK)) return { ok: true, text: '', work: true }
     return r
   })
+  // The session's story: a header and plain lines, written on the side as requests end.
+  ipcMain.handle('ember:canvas:storyLoad', async (_e, key: string) => (await import('./story.js')).loadStory(String(key)))
+  ipcMain.handle('ember:canvas:storyTell', async (_e, req: StoryRequest) => (await import('./story.js')).tellStory(req))
   ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
   ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {
     try {

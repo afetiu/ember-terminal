@@ -552,6 +552,10 @@ export interface EmberBridge {
     media(path: string): Promise<{ src: string; kind: 'image' | 'video' | 'audio'; name: string } | { error: string }>
     /** Host a small document (a mermaid diagram) on the bridge; returns its URL. */
     doc(tabId: string, title: string, format: 'markdown' | 'mermaid' | 'code' | 'html' | 'view', content: string): Promise<string>
+    /** The session's story (header + plain lines), as kept for its transcript. */
+    storyLoad(key: string): Promise<Story>
+    /** A request ended: write its line and the new header, on the side. */
+    storyTell(req: StoryRequest): Promise<Story>
     /** A quick question about one object, answered on the side — not a turn of the session. */
     sideAsk(question: string, about: string, source: string, cwd?: string): Promise<{ ok: boolean; text: string; error?: string; work?: boolean }>
     /** How a document rendered (a diagram that failed to parse), for the session that showed it. */
@@ -726,3 +730,28 @@ export interface BrainStatus {
   agents: Array<{ agent: string; file: string; present: boolean; synced: boolean; skills: number | null }>
 }
 
+
+/** One plain line of a session's story: what one request achieved, under its goal. */
+export interface StoryEntry {
+  /** The prompt's uuid: the turn it belongs to. */
+  uuid: string
+  goal: string
+  text: string
+  at: number
+}
+
+/** What a session is doing and where it stands, for the person (main/story.ts). */
+export interface Story {
+  header: string
+  goal: string
+  entries: StoryEntry[]
+}
+
+export interface StoryRequest {
+  /** The session (its transcript's name). */
+  key: string
+  uuid: string
+  prompt: string
+  reply: string
+  at: number
+}

@@ -107,6 +107,8 @@ export interface RunOptions {
   timeoutMs: number
   /** A line of progress: a tool being used, or the first line of something it said. */
   onLine?: (line: string) => void
+  /** A smaller, faster model for small jobs ("haiku"); Claude Code only, others ignore it. */
+  model?: string
 }
 
 function quoteArg(a: string): string {
@@ -212,6 +214,7 @@ export function runAgent(prompt: string, opts: RunOptions): AgentRun {
   const runDir = join(tmpdir(), 'ember-agent', randomUUID())
   mkdirSync(runDir, { recursive: true })
   const args = [...spec.headless, ...spec.readOnly]
+  if (opts.model && spec.id === 'claude') args.push('--model', opts.model)
 
   let promptFile = ''
   if (spec.promptArg) {

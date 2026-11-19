@@ -5552,3 +5552,147 @@
   color: var(--l-warn, #e0b45a);
   opacity: 1;
 }
+
+/* ---------------------------------------------------------------- the story: what we are doing
+   One quiet line at the top — the work and where it stands — and behind it the story so far,
+   a drawer that drops from it and goes again. Never a log: plain sentences, no tools. */
+.loom-story {
+  position: absolute;
+  z-index: 6;
+  top: 10px;
+  left: calc(max(var(--ins-l, 0px), 30px) + 22px);
+  right: 190px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  max-width: 82ch;
+  padding: 6px 12px 6px 10px;
+  border-radius: 99px;
+  font: 500 var(--fs-13, 13px) / 1.4 var(--l-prose, inherit);
+  color: var(--l-ink);
+  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: inset 0 0 0 1px var(--l-line);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    box-shadow 160ms,
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-story.is-on {
+  display: flex;
+}
+.loom-story:hover,
+.loom-story.is-open {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--l-accent) 45%, transparent);
+}
+.loom-story-mark {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-accent);
+}
+.loom-story.is-writing .loom-story-mark {
+  animation: loom-breathe 1s ease-in-out infinite;
+}
+.loom-story-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.loom-story-more {
+  flex: none;
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--l-faint);
+}
+.loom.has-story .loom-scroll {
+  padding-top: 54px;
+}
+
+.loom-story-drawer {
+  position: absolute;
+  z-index: 7;
+  top: 48px;
+  left: calc(max(var(--ins-l, 0px), 30px) + 22px);
+  width: min(560px, calc(100% - 80px));
+  max-height: min(62%, 520px);
+  overflow: auto;
+  padding: 14px 18px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-bg) 92%, #000);
+  box-shadow:
+    0 24px 60px -18px #000,
+    inset 0 0 0 1px var(--l-line);
+  font-family: var(--l-prose, inherit);
+  color: var(--l-ink);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 180ms,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s 220ms;
+}
+.loom-story-drawer.is-on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 180ms,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.loom-story-now {
+  margin: 0 0 12px;
+  font-size: 1.02em;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.loom-story-drawer section + section {
+  margin-top: 12px;
+}
+.loom-story-drawer h4 {
+  margin: 0 0 4px;
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--l-faint);
+}
+.loom-story-drawer ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.loom-story-drawer li {
+  position: relative;
+  padding: 4px 8px 4px 18px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  font-size: 0.94em;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.loom-story-drawer li::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0.85em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--l-faint);
+}
+.loom-story-drawer li:hover {
+  background: var(--l-card-2);
+}
+.loom-story-empty {
+  margin: 0;
+  color: var(--l-faint);
+  font-size: 0.9em;
+}

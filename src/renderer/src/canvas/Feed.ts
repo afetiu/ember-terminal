@@ -49,6 +49,8 @@ export interface FeedContext {
   cleared?(): void
   /** You said something to the agent (a prompt, not a command): the tab names an unnamed session by its first. */
   prompted?(text: string): void
+  /** A request ended (the agent's end of turn): what you asked, its last reply, when. */
+  turnEnded?(t: { uuid: string; prompt: string; reply: string; at: number }): void
 }
 
 const QUIET = new Set([
@@ -375,6 +377,8 @@ export class Feed {
   stepNow: Step | null = null
   /** What this request has done so far, in plain words. */
   progress = new Progress()
+  /** The request on screen: what you asked (its uuid) and the agent's last words, for its story line. */
+  private request = { uuid: '', prompt: '', reply: '' }
 
   constructor(private readonly ctx: FeedContext) {
     this.el = el('div', 'loom-flow')
@@ -686,6 +690,7 @@ export class Feed {
     this.ctx.prompted?.(clean)
     const follow = this.placePrompt(clean, 'prompt')
     this.turnOpen = true
+    this.request = { uuid: this.uuid, prompt: clean, reply: '' }
     const ask = follow ? this.followLine('❯', clean) : this.askLine('❯', clean)
     if (images.length) {
       const thumbs = el('div', 'loom-thumbs')
@@ -732,12 +737,18 @@ export class Feed {
     }
     // The agent's end of turn: nothing more is coming for this request.
     const stop = msg['stop_reason']
-    if (stop === 'end_turn' || stop === 'stop_sequence' || stop === 'max_tokens' || stop === 'refusal') this.turnOpen = false
+    if (stop === 'end_turn' || stop === 'stop_sequence' || stop === 'max_tokens' || stop === 'refusal') {
+      const was = this.turnOpen
+      this.turnOpen = false
+      const r = this.request
+      if (was && r.uuid) this.ctx.turnEnded?.({ ...r, at: Date.parse(this.at) || Date.now() })
+    }
     else if (stop === 'tool_use') this.turnOpen = true
   }
 
   private say(text: string): void {
     if (!text.trim() || text.trim() === '(no content)') return
+    this.request.reply = text
     this.quiet = null
     const r = renderMarkdown(text)
     const div = el('div', 'loom-say', r.html)

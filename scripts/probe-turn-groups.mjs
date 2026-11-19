@@ -183,6 +183,39 @@ try {
   await shot('3c-steps-open')
   await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-fold > .loom-tool-head').click()`)
 
+  // The story: a header that says what the work is and where it stands; the story so far behind it.
+  const story = {
+    goal: 'Notification settings page',
+    header: 'Building the notification settings page — the channel toggles work, the preview is next.',
+    entries: [
+      { uuid: 'u1', goal: 'Sessions in the auth middleware', text: 'Planned moving sessions to the new store', at: 1 },
+      { uuid: 'u5', goal: 'Sessions in the auth middleware', text: 'Moved sessions over, old cookies still work for a week', at: 2 },
+      { uuid: 'u7', goal: 'Notification settings page', text: 'Added the settings page with a toggle per channel', at: 3 },
+    ],
+  }
+  await ev(`window.__ember.loomStory(${JSON.stringify(tab)}, ${JSON.stringify(story)})`)
+  await wait(400)
+  const head = await ev(`(() => { const h = ${VIS}.querySelector('.loom-story'); return h && h.getClientRects().length ? h.innerText : '' })()`)
+  check('the header says what we are doing and where it stands', /Building the notification settings page/.test(head ?? ''), JSON.stringify(head))
+  await shot('5-story-header')
+  await ev(`${VIS}.querySelector('.loom-story').click()`)
+  await wait(400)
+  const drawer = await ev(`(() => { const d = ${VIS}.querySelector('.loom-story-drawer.is-on'); return d ? { goals: [...d.querySelectorAll('h4')].map((x) => x.innerText), lines: d.querySelectorAll('li').length } : null })()`)
+  check('the story so far opens, grouped by goal', drawer?.goals.length === 2 && drawer?.lines === 3, JSON.stringify(drawer))
+  await shot('6-story-drawer')
+  await ev(`${VIS}.querySelector('.loom-story-drawer li[data-uuid="u5"]').click()`)
+  await wait(500)
+  const shownAsk = await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-ask-text')?.textContent ?? ''`)
+  const closed = await ev(`!${VIS}.querySelector('.loom-story-drawer.is-on')`)
+  check('a line takes you to its turn, and the drawer goes', shownAsk === 'yes do it' && closed, JSON.stringify({ shownAsk, closed }))
+  await ev(`${VIS}.querySelector('.loom-story').click()`)
+  await wait(200)
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await wait(300)
+  check('Esc sends the drawer away', await ev(`!${VIS}.querySelector('.loom-story-drawer.is-on')`))
+  await ev(`(() => { const d = [...${VIS}.querySelectorAll('.loom-rail .loom-dot')].pop(); d.click(); return true })()`)
+  await wait(300)
+
   // A named session's card: just the name; the folder only when there is no name.
   await ev(`window.__ember.loomTitle(${JSON.stringify(tab)}, '', 'claude')`)
   await wait(1200)
