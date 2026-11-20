@@ -183,38 +183,29 @@ try {
   await shot('3c-steps-open')
   await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-fold > .loom-tool-head').click()`)
 
-  // The story: a header that says what the work is and where it stands; the story so far behind it.
+  // The story: the session's title at the top, as a heading; the story behind it, plain sentences.
   const story = {
     goal: 'Notification settings page',
-    header: 'Building the notification settings page — the channel toggles work, the preview is next.',
+    header: 'Acme app: settings and notifications',
     entries: [
-      { uuid: 'u1', goal: 'Sessions in the auth middleware', text: 'Planned moving sessions to the new store', at: 1 },
-      { uuid: 'u5', goal: 'Sessions in the auth middleware', text: 'Moved sessions over, old cookies still work for a week', at: 2 },
-      { uuid: 'u7', goal: 'Notification settings page', text: 'Added the settings page with a toggle per channel', at: 3 },
+      { uuid: 'u1', goal: 'Sessions in the auth middleware', text: 'We planned moving sessions to the new store and kept the old cookie path as a fallback.', at: 1 },
+      { uuid: 'u5', goal: 'Sessions in the auth middleware', text: 'We moved sessions over; old cookies still work for a week, so nobody is logged out.', at: 2 },
+      { uuid: 'u7', goal: 'Notification settings page', text: 'We added the settings page with a toggle per channel; the preview is next.', at: 3 },
     ],
   }
   await ev(`window.__ember.loomStory(${JSON.stringify(tab)}, ${JSON.stringify(story)})`)
   await wait(400)
-  const head = await ev(`(() => { const h = ${VIS}.querySelector('.loom-story'); return h && h.getClientRects().length ? h.innerText : '' })()`)
-  check('the header says what we are doing and where it stands', /Building the notification settings page/.test(head ?? ''), JSON.stringify(head))
-  await shot('5-story-header')
+  const head = await ev(`(() => { const h = ${VIS}.querySelector('.loom-story .loom-story-text'); if (!h || !h.getClientRects().length) return null; const cs = getComputedStyle(h); const box = getComputedStyle(h.parentElement); return { text: h.innerText, size: parseFloat(cs.fontSize), bg: box.backgroundColor } })()`)
+  check('the title is a heading at the top, not a badge', head?.text === 'Acme app: settings and notifications' && head.size >= 20 && /rgba\(0, 0, 0, 0\)|transparent/.test(head.bg), JSON.stringify(head))
+  await shot('5-story-title')
   await ev(`${VIS}.querySelector('.loom-story').click()`)
   await wait(400)
-  const drawer = await ev(`(() => { const d = ${VIS}.querySelector('.loom-story-drawer.is-on'); return d ? { goals: [...d.querySelectorAll('h4')].map((x) => x.innerText), lines: d.querySelectorAll('li').length } : null })()`)
-  check('the story so far opens, grouped by goal', drawer?.goals.length === 2 && drawer?.lines === 3, JSON.stringify(drawer))
+  const drawer = await ev(`(() => { const d = ${VIS}.querySelector('.loom-story-drawer.is-on'); return d ? { goals: [...d.querySelectorAll('h4')].map((x) => x.innerText), lines: d.querySelectorAll('p').length, links: d.querySelectorAll('a, button, [data-uuid]').length } : null })()`)
+  check('the story opens: plain sentences under what they were about, nothing to click', drawer?.goals.length === 2 && drawer?.lines === 3 && drawer?.links === 0, JSON.stringify(drawer))
   await shot('6-story-drawer')
-  await ev(`${VIS}.querySelector('.loom-story-drawer li[data-uuid="u5"]').click()`)
-  await wait(500)
-  const shownAsk = await ev(`${VIS}.querySelector('.loom-turn.is-shown .loom-ask-text')?.textContent ?? ''`)
-  const closed = await ev(`!${VIS}.querySelector('.loom-story-drawer.is-on')`)
-  check('a line takes you to its turn, and the drawer goes', shownAsk === 'yes do it' && closed, JSON.stringify({ shownAsk, closed }))
-  await ev(`${VIS}.querySelector('.loom-story').click()`)
-  await wait(200)
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   await wait(300)
-  check('Esc sends the drawer away', await ev(`!${VIS}.querySelector('.loom-story-drawer.is-on')`))
-  await ev(`(() => { const d = [...${VIS}.querySelectorAll('.loom-rail .loom-dot')].pop(); d.click(); return true })()`)
-  await wait(300)
+  check('Esc sends the story away', await ev(`!${VIS}.querySelector('.loom-story-drawer.is-on')`))
 
   // A named session's card: just the name; the folder only when there is no name.
   await ev(`window.__ember.loomTitle(${JSON.stringify(tab)}, '', 'claude')`)

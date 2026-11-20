@@ -51,6 +51,9 @@ export function registerIpc(host: PtyHost): void {
   // The session's story: a header and plain lines, written on the side as requests end.
   ipcMain.handle('ember:canvas:storyLoad', async (_e, key: string) => (await import('./story.js')).loadStory(String(key)))
   ipcMain.handle('ember:canvas:storyTell', async (_e, req: StoryRequest) => (await import('./story.js')).tellStory(req))
+  ipcMain.handle('ember:canvas:storyBackfill', async (_e, key: string, asks: Array<{ uuid: string; text: string }>, last: string, folder?: string) =>
+    (await import('./story.js')).backfillStory(String(key), Array.isArray(asks) ? asks : [], String(last ?? ''), String(folder ?? ''))
+  )
   ipcMain.on('ember:canvas:docStatus', (_e, id: string, status: { ok: boolean; error: string; repaired: boolean }) => docStatus(id, status))
   ipcMain.handle('ember:canvas:showFile', (_e, tabId: string, path: string, title?: string) => {
     try {

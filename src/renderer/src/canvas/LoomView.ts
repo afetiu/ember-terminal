@@ -167,7 +167,7 @@ export class LoomView {
     const { input, host } = this
     // Focusable, so the keyboard can be on the canvas (Ctrl+↑) rather than in the terminal.
     this.el.tabIndex = -1
-    this.story = new StoryView(this.el, (uuid) => this.jumpToTurn(uuid))
+    this.story = new StoryView(this.el)
     this.unsubs.push(() => this.story.dispose())
     this.el.append(this.scroller, this.stage.rail, this.objects.pinLayer, this.hint, this.sign, this.steps, this.jump, this.pastedEl, input.chip, input.pop, input.ctxMenu, this.notebook.drawer, input.lightbox)
     panes.append(this.el, host.divider, this.rawPill)
@@ -461,7 +461,27 @@ export class LoomView {
     this.storyKey = key
     this.story.set({ header: '', goal: '', entries: [] })
     void window.ember.canvas.storyLoad(key).then((s) => {
-      if (this.storyKey === key) this.story.set(s)
+      if (this.storyKey !== key) return
+      this.story.set(s)
+      // No story yet (a session from before there were stories, or one resumed): written
+      // once from its history, after the history has been read onto the canvas.
+      if (!s.header) window.setTimeout(() => this.backfillStory(key), 2500)
+    })
+  }
+
+  private backfillStory(key: string): void {
+    if (this.storyKey !== key || !this.story.empty) return
+    const asks = [...this.feed.el.querySelectorAll<HTMLElement>('.loom-ask[data-uuid]:not(.is-command)')]
+      .map((a) => ({ uuid: a.dataset['uuid'] ?? '', text: a.querySelector('.loom-ask-text')?.textContent?.trim() ?? '' }))
+      .filter((a) => a.uuid && a.text)
+    if (!asks.length) return
+    const says = this.feed.el.querySelectorAll<HTMLElement>('.loom-say')
+    const last = says[says.length - 1]?.textContent ?? ''
+    this.story.setWriting(true)
+    void window.ember.canvas.storyBackfill(key, asks, last, this.session.cwd || this.session.initialCwd || '').then((s) => {
+      if (this.storyKey !== key) return
+      this.story.setWriting(false)
+      if (s.header) this.story.set(s)
     })
   }
 
@@ -470,21 +490,11 @@ export class LoomView {
     const key = this.storyKey
     if (!key || this.story.has(t.uuid) || Date.now() - t.at > 3 * 60_000) return
     this.story.setWriting(true)
-    void window.ember.canvas.storyTell({ key, ...t }).then((s) => {
+    void window.ember.canvas.storyTell({ key, ...t, folder: this.session.cwd || this.session.initialCwd || '' }).then((s) => {
       if (this.storyKey !== key) return
       this.story.setWriting(false)
       this.story.set(s)
     })
-  }
-
-  /** Show the turn a story line is about. */
-  private jumpToTurn(uuid: string): void {
-    const ask = uuid ? this.feed.el.querySelector<HTMLElement>(`.loom-ask[data-uuid="${CSS.escape(uuid)}"]`) : null
-    const turn = ask?.closest<HTMLElement>('.loom-turn')
-    if (!turn) return
-    const turns = this.feed.turns()
-    this.stage.viewing = turn === turns[turns.length - 1] ? null : turn
-    this.stage.restage()
   }
 
   /** Probe-only: a story, as main would hand it back. */

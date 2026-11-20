@@ -556,6 +556,8 @@ export interface EmberBridge {
     storyLoad(key: string): Promise<Story>
     /** A request ended: write its line and the new header, on the side. */
     storyTell(req: StoryRequest): Promise<Story>
+    /** A session with no story yet: its title and story so far, from its history. */
+    storyBackfill(key: string, asks: Array<{ uuid: string; text: string }>, lastReply: string, folder?: string): Promise<Story>
     /** A quick question about one object, answered on the side — not a turn of the session. */
     sideAsk(question: string, about: string, source: string, cwd?: string): Promise<{ ok: boolean; text: string; error?: string; work?: boolean }>
     /** How a document rendered (a diagram that failed to parse), for the session that showed it. */
@@ -774,6 +776,8 @@ export interface StoryRequest {
   prompt: string
   reply: string
   at: number
+  /** The session's folder, so the title names the right project. */
+  folder?: string
 }
 
 /** A Slack message for you: a DM, a mention, or a reply in a thread a session took on. */

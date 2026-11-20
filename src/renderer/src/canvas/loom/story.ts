@@ -1,10 +1,11 @@
 /**
- * The session's story on the canvas: one quiet line at the top — what the work is and where
- * it stands — and, behind it, the story so far: a plain line per request, under its goal.
- * The story is a drawer that drops from the header and goes again on Esc, a click outside,
- * or the next thing you type. It never stays on screen by itself.
+ * The session's story on the canvas: its title at the top, as a proper heading — what this
+ * session is about, high level, changing only when the work grows beyond it — and, behind
+ * it, the story of what happened: plain sentences, under what they were about. Reading
+ * only; nothing in it is a link or a button. The story drops down when the title is clicked
+ * and goes again on Esc, a click outside, or the next thing you type.
  *
- * Written on the side by main/story.ts as each request ends.
+ * Written on the side by main/story.ts as each request ends (`header` is the title).
  */
 import type { Story } from '@shared/types'
 import { escapeHtml } from '../markdown'
@@ -17,13 +18,10 @@ export class StoryView {
   /** A line is being written (a request just ended). */
   private writing = false
 
-  constructor(
-    host: HTMLElement,
-    private readonly jump: (uuid: string) => void
-  ) {
+  constructor(host: HTMLElement) {
     this.header.setAttribute('role', 'button')
     this.header.tabIndex = 0
-    this.header.title = 'The story so far'
+    this.header.title = 'What happened in this session'
     this.header.addEventListener('click', (e) => {
       e.stopPropagation()
       this.toggle()
@@ -33,13 +31,6 @@ export class StoryView {
         e.preventDefault()
         this.toggle()
       }
-    })
-    this.drawer.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const li = (e.target as HTMLElement).closest<HTMLElement>('[data-uuid]')
-      if (!li) return
-      this.close()
-      this.jump(li.dataset['uuid'] ?? '')
     })
     // Temporary: Esc, a click anywhere else, or typing sends it away.
     const away = (e: Event) => {
@@ -60,7 +51,7 @@ export class StoryView {
 
   readonly dispose: () => void
 
-  /** What the session is doing, as its story says. */
+  /** What the session is about, as its story says. */
   get current(): { goal: string; header: string } {
     return { goal: this.story.goal, header: this.story.header }
   }
@@ -72,6 +63,10 @@ export class StoryView {
   /** The uuids that already have a line, so a request is never written twice. */
   has(uuid: string): boolean {
     return this.story.entries.some((e) => e.uuid === uuid)
+  }
+
+  get empty(): boolean {
+    return !this.story.header
   }
 
   set(story: Story): void {
@@ -90,11 +85,10 @@ export class StoryView {
   }
 
   open(): void {
-    if (!this.story.entries.length && !this.story.header) return
+    if (!this.story.entries.some((e) => e.text) && !this.story.header) return
     this.renderDrawer()
     this.drawer.classList.add('is-on')
     this.header.classList.add('is-open')
-    // The latest at the foot, in view.
     requestAnimationFrame(() => (this.drawer.scrollTop = this.drawer.scrollHeight))
   }
 
@@ -108,31 +102,33 @@ export class StoryView {
     const on = !!s.header
     this.header.classList.toggle('is-on', on)
     this.header.closest('.loom')?.classList.toggle('has-story', on)
+    const told = s.entries.filter((e) => e.text).length
     this.header.innerHTML = on
-      ? `<span class="loom-story-mark"></span><span class="loom-story-text">${escapeHtml(s.header)}</span>` +
-        (s.entries.length ? `<span class="loom-story-more">${s.entries.length > 1 ? 'Story so far' : 'So far'}</span>` : '')
+      ? `<h1 class="loom-story-text">${escapeHtml(s.header)}</h1>` +
+        (told ? `<span class="loom-story-more">The story so far<span class="loom-story-caret">▾</span></span>` : '')
       : ''
     this.header.classList.toggle('is-writing', this.writing)
     if (this.isOpen) this.renderDrawer()
   }
 
   private renderDrawer(): void {
-    const groups: Array<{ goal: string; items: Story['entries'] }> = []
+    const groups: Array<{ goal: string; items: string[] }> = []
     for (const e of this.story.entries) {
+      if (!e.text) continue
       const last = groups[groups.length - 1]
-      if (last && last.goal === e.goal) last.items.push(e)
-      else groups.push({ goal: e.goal, items: [e] })
+      if (last && last.goal === e.goal) last.items.push(e.text)
+      else groups.push({ goal: e.goal, items: [e.text] })
     }
     this.drawer.innerHTML =
       `<div class="loom-story-now">${escapeHtml(this.story.header)}</div>` +
       groups
         .map(
           (g) =>
-            `<section><h4>${escapeHtml(g.goal || 'Getting started')}</h4><ul>` +
-            g.items.map((e) => `<li data-uuid="${escapeHtml(e.uuid)}">${escapeHtml(e.text)}</li>`).join('') +
-            `</ul></section>`
+            `<section>${g.goal ? `<h4>${escapeHtml(g.goal)}</h4>` : ''}` +
+            g.items.map((t) => `<p>${escapeHtml(t)}</p>`).join('') +
+            `</section>`
         )
         .join('') +
-      (groups.length ? '' : `<p class="loom-story-empty">Nothing yet: a line is added as each request ends.</p>`)
+      (groups.length ? '' : `<p class="loom-story-empty">Nothing yet: the story is written as each request ends.</p>`)
   }
 }

@@ -5553,78 +5553,75 @@
   opacity: 1;
 }
 
-/* ---------------------------------------------------------------- the story: what we are doing
-   One quiet line at the top — the work and where it stands — and behind it the story so far,
-   a drawer that drops from it and goes again. Never a log: plain sentences, no tools. */
+/* ---------------------------------------------------------------- the story: what this session is
+   Its title at the top of the canvas, a heading in the canvas's own type: what the session
+   is about, high level. "The story so far" beside it drops down what happened, in plain
+   sentences. Nothing in the story is a link or a button. */
 .loom-story {
   position: absolute;
   z-index: 6;
-  top: 10px;
+  top: 14px;
   left: calc(max(var(--ins-l, 0px), 30px) + 22px);
   right: 190px;
   display: none;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 14px;
   max-width: 82ch;
-  padding: 6px 12px 6px 10px;
-  border-radius: 99px;
-  font: 500 var(--fs-13, 13px) / 1.4 var(--l-prose, inherit);
-  color: var(--l-ink);
-  background: color-mix(in srgb, var(--c-bg) 70%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: inset 0 0 0 1px var(--l-line);
   cursor: pointer;
   user-select: none;
-  transition:
-    box-shadow 160ms,
-    left 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .loom-story.is-on {
   display: flex;
 }
-.loom-story:hover,
-.loom-story.is-open {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--l-accent) 45%, transparent);
-}
-.loom-story-mark {
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--l-accent);
-}
-.loom-story.is-writing .loom-story-mark {
-  animation: loom-breathe 1s ease-in-out infinite;
-}
 .loom-story-text {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
+  margin: 0;
+  font: 650 22px/1.25 var(--l-prose, inherit);
+  letter-spacing: -0.01em;
+  color: var(--l-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.loom-story.is-writing .loom-story-text {
+  animation: loom-breathe 1.6s ease-in-out infinite;
+}
 .loom-story-more {
   flex: none;
-  font-size: 0.85em;
-  font-weight: 400;
+  font: 500 12px/1 var(--l-prose, inherit);
   color: var(--l-faint);
+  transition: color 160ms;
 }
+.loom-story:hover .loom-story-more,
+.loom-story.is-open .loom-story-more {
+  color: var(--l-ink);
+}
+.loom-story-caret {
+  display: inline-block;
+  margin-left: 4px;
+  transition: transform 200ms;
+}
+.loom-story.is-open .loom-story-caret {
+  transform: rotate(180deg);
+}
+/* The words start under the title, and fade out as they scroll up beneath it. */
 .loom.has-story .loom-scroll {
-  padding-top: 54px;
+  padding-top: 64px;
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 50px, #000 72px, #000 calc(100% - 18px), transparent 100%);
 }
 
 .loom-story-drawer {
   position: absolute;
   z-index: 7;
-  top: 48px;
+  top: 54px;
   left: calc(max(var(--ins-l, 0px), 30px) + 22px);
-  width: min(560px, calc(100% - 80px));
-  max-height: min(62%, 520px);
+  width: min(620px, calc(100% - 80px));
+  max-height: min(66%, 560px);
   overflow: auto;
-  padding: 14px 18px 16px;
+  padding: 18px 22px 20px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--c-bg) 92%, #000);
+  background: color-mix(in srgb, var(--c-bg) 94%, #000);
   box-shadow:
     0 24px 60px -18px #000,
     inset 0 0 0 1px var(--l-line);
@@ -5649,47 +5646,27 @@
     transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .loom-story-now {
-  margin: 0 0 12px;
-  font-size: 1.02em;
-  font-weight: 600;
-  line-height: 1.45;
+  margin: 0 0 14px;
+  font-size: 1.15em;
+  font-weight: 650;
+  line-height: 1.35;
 }
 .loom-story-drawer section + section {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 .loom-story-drawer h4 {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   font-size: 0.78em;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--l-faint);
 }
-.loom-story-drawer ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.loom-story-drawer li {
-  position: relative;
-  padding: 4px 8px 4px 18px;
-  margin: 0 -8px;
-  border-radius: 8px;
-  font-size: 0.94em;
-  line-height: 1.45;
-  cursor: pointer;
-}
-.loom-story-drawer li::before {
-  content: '';
-  position: absolute;
-  left: 7px;
-  top: 0.85em;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--l-faint);
-}
-.loom-story-drawer li:hover {
-  background: var(--l-card-2);
+.loom-story-drawer p {
+  margin: 0 0 8px;
+  font-size: 0.95em;
+  line-height: 1.6;
+  cursor: default;
 }
 .loom-story-empty {
   margin: 0;

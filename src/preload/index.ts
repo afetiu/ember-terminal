@@ -64,6 +64,7 @@ const bridge: EmberBridge = {
     docStatus: (id, status) => ipcRenderer.send('ember:canvas:docStatus', id, status),
     storyLoad: (key) => ipcRenderer.invoke('ember:canvas:storyLoad', key) as Promise<Story>,
     storyTell: (req) => ipcRenderer.invoke('ember:canvas:storyTell', req) as Promise<Story>,
+    storyBackfill: (key, asks, lastReply, folder) => ipcRenderer.invoke('ember:canvas:storyBackfill', key, asks, lastReply, folder) as Promise<Story>,
     sideAsk: (question, about, source, cwd) =>
       ipcRenderer.invoke('ember:canvas:sideAsk', question, about, source, cwd) as Promise<{ ok: boolean; text: string; error?: string; work?: boolean }>,
     showFile: (tabId, path, title) => ipcRenderer.invoke('ember:canvas:showFile', tabId, path, title) as Promise<{ ok?: boolean; title?: string; error?: string }>,
