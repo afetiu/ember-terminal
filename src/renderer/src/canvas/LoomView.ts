@@ -434,6 +434,11 @@ export class LoomView {
     if (this.pinned.size) this.snapping.reflow()
   }
 
+  /** What the session is doing, as its story says (for routing a Slack message to it). */
+  get storyNow(): { goal: string; header: string } {
+    return this.story.current
+  }
+
   /** The agent finished and its last reply asks you questions. */
   get asksQuestions(): boolean {
     return this.feed.endsAsking && !this.host.working

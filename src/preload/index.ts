@@ -19,6 +19,9 @@ import type {
   UpdateState,
   CanvasFeed,
   Story,
+  SlackMessage,
+  SlackRoute,
+  SlackStatus,
   CanvasMedia,
   CanvasAnnotate,
   CanvasAnnotateResult,
@@ -147,6 +150,18 @@ const bridge: EmberBridge = {
   cmd: {
     onRun: (cb) => on<{ reqId: string; words: string[]; tabId: string }>('ember:cmd', cb),
     reply: (reqId, r) => ipcRenderer.send('ember:cmd:reply', reqId, r),
+  },
+  slack: {
+    status: () => ipcRenderer.invoke('ember:slack:status') as Promise<SlackStatus>,
+    connect: (a: string, u: string) => ipcRenderer.invoke('ember:slack:connect', a, u) as Promise<SlackStatus>,
+    disconnect: (forget: boolean) => ipcRenderer.invoke('ember:slack:disconnect', forget) as Promise<void>,
+    manifest: () => ipcRenderer.invoke('ember:slack:manifest') as Promise<string>,
+    waiting: () => ipcRenderer.invoke('ember:slack:waiting') as Promise<SlackMessage[]>,
+    route: (m, sessions) => ipcRenderer.invoke('ember:slack:route', m, sessions) as Promise<SlackRoute>,
+    remember: (channel: string, threadTs: string, tabId: string) => ipcRenderer.send('ember:slack:remember', channel, threadTs, tabId),
+    settle: (id: string) => ipcRenderer.send('ember:slack:settle', id),
+    onMessage: (cb) => on<SlackMessage>('ember:slack:message', cb),
+    onStatus: (cb) => on<SlackStatus>('ember:slack:statusChanged', cb),
   },
   todo: {
     read: () => ipcRenderer.invoke('ember:todo:read') as Promise<string>,

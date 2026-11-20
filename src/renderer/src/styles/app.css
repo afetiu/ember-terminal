@@ -3843,3 +3843,185 @@ body.sidebar-mini .ember-places {
 .ember-notes-report.is-error {
   background: color-mix(in srgb, var(--c-red, #e2676f) 12%, transparent);
 }
+
+/* ---------------------------------------------------------------- Slack: cards and the sheet
+   A new DM or mention of you: who, the words, where it should go, and the four ways, the
+   suggested one first and filled. They stack at the top right, newest on top. */
+.ember-slack {
+  position: fixed;
+  z-index: 60;
+  top: 52px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 36px));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.ember-slack-card {
+  pointer-events: auto;
+  padding: 12px 14px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-bg) 94%, #000);
+  box-shadow:
+    0 18px 50px -16px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+  color: var(--c-fg);
+  font-family: var(--ui-font);
+  font-size: 13px;
+  animation: ember-slack-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 200ms,
+    transform 200ms;
+}
+.ember-slack-card.is-leaving {
+  opacity: 0;
+  transform: translateX(16px);
+}
+@keyframes ember-slack-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.ember-slack-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ember-slack-src {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: #4a154b;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ember-slack-who {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.ember-slack-who[href]:hover {
+  text-decoration: underline;
+}
+.ember-slack-when {
+  flex: none;
+  font-size: 11px;
+  opacity: 0.55;
+}
+.ember-slack-x {
+  flex: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.45;
+  cursor: pointer;
+}
+.ember-slack-x:hover {
+  opacity: 1;
+}
+.ember-slack-text {
+  margin: 8px 0 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ember-slack-why {
+  margin: 8px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.ember-slack-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.ember-slack-act,
+.ember-slack-btn {
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  background: none;
+  color: inherit;
+  font: 500 12px var(--ui-font);
+  cursor: pointer;
+}
+.ember-slack-act:hover,
+.ember-slack-btn:hover {
+  background: color-mix(in srgb, var(--c-fg) 8%, transparent);
+}
+.ember-slack-act.is-primary,
+.ember-slack-btn.is-primary {
+  border-color: transparent;
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font-weight: 600;
+}
+.ember-slack-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ember-slack-sheet .ember-pair-card {
+  max-width: 520px;
+}
+.ember-slack-steps {
+  margin: 14px 0;
+  padding-left: 20px;
+  line-height: 1.55;
+  font-size: 13px;
+}
+.ember-slack-steps li + li {
+  margin-top: 12px;
+}
+.ember-slack-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ember-slack-input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--c-fg) 16%, transparent);
+  background: color-mix(in srgb, var(--c-fg) 4%, transparent);
+  color: inherit;
+  font: 12px var(--term-font, monospace);
+}
+.ember-slack-p {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.7;
+}
+.ember-slack-steps code {
+  font-family: var(--term-font, monospace);
+  font-size: 0.95em;
+}
+.ember-slack-sheet .ember-pair-body {
+  text-align: left;
+}
+.ember-slack-sheet .ember-pair-status {
+  text-align: center;
+}
+.ember-slack-sheet .ember-slack-btn.is-primary {
+  display: block;
+  margin: 4px auto 0;
+}

@@ -15,6 +15,7 @@ import { AGENTS, agentSpec, type AgentId } from '../shared/agents.js'
 import { clearLegacyState } from './state.js'
 import { bridgeEnv, bridgeOrigin, docStatus, forgetTab, hostDoc, markCanvasTab, pushFromMain, resolveCmd, showFile } from './bridge.js'
 import { registerCanvas } from './canvas.js'
+import { SLACK_MANIFEST, SlackLink, routeSlack } from './slack.js'
 import { renderPanelDocument } from './panelDoc.js'
 import { createAccount, joinAccount, readAccount, renameDevice, saveAccount } from './remote.js'
 import type { PtyHost } from './pty/PtyHost.js'
@@ -23,6 +24,7 @@ import type {
   SpawnRequest,
   SpawnResult,
   StoryRequest,
+  SlackMessage,
 } from '../shared/types.js'
 
 /** What a side question's run answers when the question is really work for the session. */
@@ -83,6 +85,20 @@ export function registerIpc(host: PtyHost): void {
   ipcMain.handle('ember:tasks', (_e, cwd: string) => listTasks(cwd))
   ipcMain.handle('ember:killPort', (_e, port: number) => killPort(port))
 
+  // Slack, live: DMs and mentions of you, for the sessions (main/slack.ts).
+  const slack = new SlackLink({
+    message: (m) => broadcast('ember:slack:message', m),
+    status: (s) => broadcast('ember:slack:statusChanged', s),
+  })
+  slack.start()
+  ipcMain.handle('ember:slack:status', () => slack.status)
+  ipcMain.handle('ember:slack:connect', (_e, a: string, u: string) => slack.setTokens(String(a ?? ''), String(u ?? '')))
+  ipcMain.handle('ember:slack:disconnect', (_e, forget: boolean) => slack.disconnect(!!forget))
+  ipcMain.handle('ember:slack:manifest', () => JSON.stringify(SLACK_MANIFEST, null, 2))
+  ipcMain.handle('ember:slack:waiting', () => slack.waiting)
+  ipcMain.handle('ember:slack:route', (_e, m: SlackMessage, sessions: Parameters<typeof routeSlack>[1]) => routeSlack(m, sessions))
+  ipcMain.on('ember:slack:remember', (_e, c: string, t: string, tab: string) => slack.remember(c, t, tab))
+  ipcMain.on('ember:slack:settle', (_e, id: string) => slack.settle(id))
   const vitals = new VitalsWatcher((s) => broadcast('ember:vitals:state', s))
   vitals.start()
   app.on('before-quit', () => vitals.dispose())

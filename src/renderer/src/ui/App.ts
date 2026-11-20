@@ -16,6 +16,7 @@ import { PhoneHost } from '../phone/PhoneHost'
 import { PHONE_LINK } from '../phone/flag'
 import { FirstRun } from './FirstRun'
 import { PairSheet } from './PairSheet'
+import { SlackInbox, SlackSheet } from './Slack'
 // @ts-expect-error - plain ES shared verbatim with the phone bundle
 import { parseAccountUrl } from '../../../../resources/relay/protocol.js'
 import type { PanelHooks } from './Panel'
@@ -57,6 +58,8 @@ export class App {
   /** The first run, in the empty desk, until setup is done. */
   private firstRun: FirstRun | null = null
   private readonly pairSheet: PairSheet
+  private readonly slackSheet: SlackSheet
+  private readonly slackInbox: SlackInbox
   private readonly palette: Palette
   private readonly search: Search
   private readonly focusRing: FocusRing
@@ -271,6 +274,43 @@ export class App {
       }),
     })
     this.root.appendChild(this.pairSheet.el)
+    // Slack: your DMs and mentions as cards, each one click from a session (ui/Slack.ts).
+    this.slackSheet = new SlackSheet()
+    this.slackInbox = new SlackInbox({
+      sessions: () =>
+        this.groups
+          .filter((g) => g.loom && !g.isSplit)
+          .map((g) => {
+            const cc = g.loom!.claudeCard
+            const story = g.loom!.storyNow
+            return {
+              tabId: g.id,
+              title: g.customTitle || cc?.title || g.displayTitle,
+              folder: g.focused?.cwd || g.focused?.initialCwd || '',
+              goal: story.goal,
+              header: story.header,
+            }
+          }),
+      send: (tabId, text) => {
+        const g = this.groups.find((x) => x.id === tabId)
+        if (!g?.focused) return false
+        if (g.loom) g.loom.type(text, true)
+        else this.typeTask(g.focused.id, text)
+        return true
+      },
+      newSession: (brief, folder, title) => this.startSession(brief, folder || this.activeGroup?.focused?.cwd || '', title),
+      addTodo: async (text) => {
+        const body = await window.ember.todo.read()
+        const next = `${body.replace(/\s*$/, '')}\n- [ ] ${text.replace(/\s+/g, ' ').trim()}\n`
+        await window.ember.todo.write(body.trim() ? next : `# Todo\n\n${next.trimStart()}`)
+      },
+      titleOf: (tabId) => {
+        const g = this.groups.find((x) => x.id === tabId)
+        return g ? g.customTitle || g.loom?.claudeCard?.title || g.displayTitle : ''
+      },
+      toast: (text) => this.flashToast(text),
+    })
+    this.root.append(this.slackSheet.el, this.slackInbox.el)
     this.root.append(this.titleBar.el, this.sidebar.el, this.stack)
     document.body.appendChild(this.root)
 
@@ -344,6 +384,10 @@ export class App {
         if (l) l.host.title = title
         return !!l
       },
+      /** A Slack message as if it had just arrived (probes: no Slack connection). */
+      slackMessage: (m: Parameters<SlackInbox['arrive']>[0]) => void this.slackInbox.arrive(m),
+      /** The Slack sheet, open. */
+      slackSheet: () => this.slackSheet.show(),
       /** A Loom tab's story, as main would hand it back, for probes with no model. */
       loomStory: (id: string, s: { header: string; goal: string; entries: Array<{ uuid: string; goal: string; text: string; at: number }> }) => {
         const l = this.groups.find((g) => g.id === id)?.loom
@@ -1717,16 +1761,17 @@ export class App {
    * Open a tab, start the default agent in it, and give it the brief — without waiting for
    * it. Coming up takes several seconds; the brief goes in when the agent is on screen.
    */
-  private async startSession(task: string, cwd: string, name: string): Promise<void> {
+  private async startSession(task: string, cwd: string, name: string): Promise<string> {
     const group = await this.newGroup(undefined, cwd || undefined)
     if (name) group.customTitle = name.slice(0, 40)
     const session = group.focused
-    if (!session) return
+    if (!session) return ''
     // Start the chosen agent, then wait for it to come up before briefing it. Typing the
     // brief at a shell prompt would run it as a command.
     const agent = AGENTS[this.config.agent.default] ?? AGENTS.claude
     window.ember.write(session.id, `${[agent.bin, ...(agent.unattended ?? [])].join(' ')}\r`)
     void this.briefWhenOnScreen(group.id, session.id, task)
+    return group.id
   }
 
   /**
@@ -2440,6 +2485,7 @@ export class App {
       },
       { id: 'notes', group: 'Notes', title: 'All notes', cli: 'notes', run: () => void this.goPlace('notes') },
       { id: 'note-new', group: 'Notes', title: 'New note', cli: 'note [text]', run: (a) => void this.openNotesIn(this.activeGroup, 'new', a.join(' ') || undefined) },
+      { id: 'slack', group: 'Slack', title: 'Slack: connect, or see how it is connected', cli: 'slack', run: () => this.slackSheet.show() },
       { id: 'todo', group: 'Todo', title: 'Todo list', hint: 'Ctrl+Shift+D', cli: 'todo', aliases: ['t'], run: () => void this.goPlace('todo') },
       { id: 'keys', group: 'View', title: 'Keyboard shortcuts', hint: 'F1', cli: 'keys', aliases: ['h'], run: () => this.cheatsheet.toggle() },
       {

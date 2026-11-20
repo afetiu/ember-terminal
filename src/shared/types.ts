@@ -695,6 +695,22 @@ export interface EmberBridge {
     onRun(cb: (e: { reqId: string; words: string[]; tabId: string }) => void): () => void
     reply(reqId: string, r: { result: string; error?: string }): void
   }
+  /** Slack, live (main/slack.ts): your DMs and mentions, to hand to sessions. */
+  slack: {
+    status(): Promise<SlackStatus>
+    connect(appToken: string, userToken: string): Promise<SlackStatus>
+    disconnect(forget: boolean): Promise<void>
+    /** The Slack app to create, as a manifest to paste. */
+    manifest(): Promise<string>
+    /** Messages not yet acted on. */
+    waiting(): Promise<SlackMessage[]>
+    route(m: SlackMessage, sessions: Array<{ tabId: string; title: string; folder: string; goal: string; header: string }>): Promise<SlackRoute>
+    /** A session took this thread on: later replies go straight to it. */
+    remember(channel: string, threadTs: string, tabId: string): void
+    settle(id: string): void
+    onMessage(cb: (m: SlackMessage) => void): () => void
+    onStatus(cb: (s: SlackStatus) => void): () => void
+  }
   /** The todo list's file: its own surface, not a note. */
   todo: {
     read(): Promise<string>
@@ -758,4 +774,39 @@ export interface StoryRequest {
   prompt: string
   reply: string
   at: number
+}
+
+/** A Slack message for you: a DM, a mention, or a reply in a thread a session took on. */
+export interface SlackMessage {
+  /** `channel:ts`. */
+  id: string
+  channel: string
+  /** '' for a DM. */
+  channelName: string
+  dm: boolean
+  user: string
+  userName: string
+  text: string
+  ts: string
+  /** The thread it belongs to (its own ts when it starts one). */
+  threadTs: string
+  permalink: string
+  /** The tab already handling its thread, if one is. */
+  tabId?: string
+  at: number
+}
+
+export interface SlackStatus {
+  state: 'off' | 'connecting' | 'connected' | 'error'
+  team?: string
+  error?: string
+}
+
+/** Where a Slack message should go, as the small model reads it. */
+export interface SlackRoute {
+  action: 'session' | 'new' | 'todo' | 'ignore'
+  tabId?: string
+  why: string
+  title: string
+  folder?: string
 }

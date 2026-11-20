@@ -60,6 +60,11 @@ export class StoryView {
 
   readonly dispose: () => void
 
+  /** What the session is doing, as its story says. */
+  get current(): { goal: string; header: string } {
+    return { goal: this.story.goal, header: this.story.header }
+  }
+
   get isOpen(): boolean {
     return this.drawer.classList.contains('is-on')
   }
