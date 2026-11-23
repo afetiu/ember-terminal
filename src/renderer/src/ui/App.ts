@@ -304,6 +304,7 @@ export class App {
         const next = `${body.replace(/\s*$/, '')}\n- [ ] ${text.replace(/\s+/g, ' ').trim()}\n`
         await window.ember.todo.write(body.trim() ? next : `# Todo\n\n${next.trimStart()}`)
       },
+      addNote: async (body) => !!(await window.ember.notes.create(body).catch(() => null)),
       titleOf: (tabId) => {
         const g = this.groups.find((x) => x.id === tabId)
         return g ? g.customTitle || g.loom?.claudeCard?.title || g.displayTitle : ''

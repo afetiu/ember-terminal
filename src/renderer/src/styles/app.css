@@ -3930,6 +3930,37 @@ body.sidebar-mini .ember-places {
 .ember-slack-x:hover {
   opacity: 1;
 }
+/* One slot: a newer card takes the old one's place with a short cross-fade, no slide-in. */
+.ember-slack-card.is-swap {
+  animation: ember-slack-swap 180ms ease-out;
+}
+@keyframes ember-slack-swap {
+  from {
+    opacity: 0.35;
+  }
+}
+.ember-slack-step {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.ember-slack-nav {
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 0 4px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ember-slack-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 .ember-slack-text {
   margin: 8px 0 0;
   line-height: 1.5;

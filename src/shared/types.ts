@@ -808,7 +808,7 @@ export interface SlackStatus {
 
 /** Where a Slack message should go, as the small model reads it. */
 export interface SlackRoute {
-  action: 'session' | 'new' | 'todo' | 'ignore'
+  action: 'session' | 'new' | 'todo' | 'note' | 'ignore'
   tabId?: string
   why: string
   title: string

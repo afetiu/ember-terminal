@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import { safeStorage } from 'electron'
 import { CONFIG_DIR } from './config.js'
 import type { SlackMessage, SlackStatus } from '../shared/types.js'
-import { wantSlackEvent } from '../shared/slackFilter.js'
+import { parseRoute, wantSlackEvent } from '../shared/slackFilter.js'
 
 const STORE = join(CONFIG_DIR, 'slack.json')
 const THREADS = join(CONFIG_DIR, 'slack-threads.json')
@@ -332,9 +332,12 @@ export class SlackLink {
   }
 }
 
-/** Where a message should go, decided on the side by a small model: a session, a new one, a todo, or nowhere. */
+/**
+ * Where a message should go, decided on the side by a small model: a session, a new one, a
+ * todo, a note, or nowhere. Most Slack is chat; only what Ember can act on gets through.
+ */
 export async function routeSlack(m: SlackMessage, sessions: Array<{ tabId: string; title: string; folder: string; goal: string; header: string }>): Promise<{
-  action: 'session' | 'new' | 'todo' | 'ignore'
+  action: 'session' | 'new' | 'todo' | 'note' | 'ignore'
   tabId?: string
   why: string
   title: string
@@ -342,15 +345,18 @@ export async function routeSlack(m: SlackMessage, sessions: Array<{ tabId: strin
 }> {
   const list = sessions.map((s, i) => `${i + 1}. "${s.title}" in ${s.folder || '(no folder)'}${s.goal ? ` — working on: ${s.goal}` : ''}${s.header ? ` — ${s.header}` : ''}`)
   const prompt = [
-    'A Slack message has arrived for the person. Decide where it should go. Reply with ONLY a JSON object, no prose:',
-    '{"action": "session" | "new" | "todo" | "ignore", "session": <number or null>, "why": "...", "title": "..."}',
+    'A Slack message has arrived for the person, a software developer working with coding agents. Most Slack is chat that needs nothing.',
+    'Decide whether it is worth interrupting them, and where it goes. Reply with ONLY a JSON object, no prose:',
+    '{"action": "session" | "new" | "todo" | "note" | "ignore", "session": <number or null>, "why": "...", "title": "..."}',
     '',
     '- session: it is about the same work as one of the open agent sessions listed below. Give its number.',
     '  Only when it clearly is the same topic; a loose match is not.',
-    '- new: it asks the person to do or look into something that needs real work now, and no session fits.',
-    '- todo: it asks for something that can wait, or that is not work for a coding agent (a call, a reply, a decision).',
-    '- ignore: nothing is asked of the person (FYI, thanks, social, automated).',
-    'why: at most 10 plain words, for the person; never a session number. title: 2 to 5 words naming the work, for a new session or the todo.',
+    '- new: it asks for concrete work an agent can do now (a bug, an error, a change, a review, a deploy, something to look into), and no session fits.',
+    '- todo: it asks the person for something specific that can wait, or that is not agent work (a call, a reply, a decision, a meeting).',
+    '- note: nothing is asked, but it carries something worth keeping: a decision, a spec, credentials location, an address, a date, a link to remember.',
+    '- ignore: everything else. Greetings, small talk, jokes, thanks, "ok", reactions, banter, gossip, lunch, FYI with nothing to keep, automated noise.',
+    '  When in doubt between ignore and anything else, choose ignore.',
+    'why: at most 10 plain words, for the person; never a session number. title: 2 to 5 words naming the work, for a new session, the todo or the note.',
     '',
     'Open sessions:',
     ...(list.length ? list : ['(none)']),
@@ -360,22 +366,5 @@ export async function routeSlack(m: SlackMessage, sessions: Array<{ tabId: strin
   ].join('\n')
   const { runAgent } = await import('./agents.js')
   const out = await runAgent(prompt, { timeoutMs: 60_000, model: 'haiku' }).done
-  const fallback = { action: 'new' as const, why: 'Could not sort it; your call', title: m.text.slice(0, 30) }
-  if (!out.ok) return fallback
-  const j = /\{[\s\S]*\}/.exec(out.text)
-  if (!j) return fallback
-  try {
-    const r = JSON.parse(j[0]) as Record<string, unknown>
-    const action = (['session', 'new', 'todo', 'ignore'] as const).find((a) => a === r['action']) ?? 'new'
-    const n = Number(r['session'])
-    const s = action === 'session' && Number.isInteger(n) ? sessions[n - 1] : undefined
-    return {
-      action: action === 'session' && !s ? 'new' : action,
-      ...(s ? { tabId: s.tabId, folder: s.folder } : {}),
-      why: String(r['why'] ?? '').slice(0, 120),
-      title: String(r['title'] ?? '').slice(0, 60) || m.text.slice(0, 30),
-    }
-  } catch {
-    return fallback
-  }
+  return parseRoute(out.ok ? out.text : '', m, sessions)
 }

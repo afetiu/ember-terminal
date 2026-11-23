@@ -1,7 +1,11 @@
 /**
- * Slack in Ember: each new DM or mention of you arrives as a card with a suggestion of
- * where it should go — one of your open sessions, a new session, the todo list, or
- * nowhere — and one click does it. A reply in a thread a session already took on goes
+ * Slack in Ember: not a feed. Each new DM or mention of you is read on the side by a small
+ * model first, and only what Ember can act on is shown — work for one of your sessions,
+ * new work, a todo, or something worth keeping as a note. Chat, thanks and banter never
+ * reach the screen.
+ *
+ * One card at a time: a newer message takes the card's place, and the ones it covered stay
+ * a step away (‹ ›) until dealt with. A reply in a thread a session already took on goes
  * straight to that session. Nothing is typed into a session without a click, apart from
  * those replies.
  *
@@ -17,6 +21,8 @@ export interface SlackHooks {
   /** Open a new session with a brief; its tab id. */
   newSession(brief: string, folder: string, title: string): Promise<string>
   addTodo(text: string): Promise<void>
+  /** A new note with this body; whether it was written. */
+  addNote(body: string): Promise<boolean>
   titleOf(tabId: string): string
   toast(text: string): void
 }
@@ -36,36 +42,97 @@ function ago(at: number): string {
   return h < 24 ? `${h}h` : `${Math.round(h / 24)}d`
 }
 
+function whereOf(m: SlackMessage): string {
+  return m.dm ? 'a direct message' : m.channelName ? `#${m.channelName}` : 'Slack'
+}
+
 /** What a session is handed: who, where, the words, the link, and what to do with it. */
 export function briefFor(m: SlackMessage): string {
-  const where = m.dm ? 'a direct message' : m.channelName ? `#${m.channelName}` : 'Slack'
   return (
-    `New Slack message from ${m.userName} in ${where}: "${m.text.replace(/\s+/g, ' ').trim()}"` +
+    `New Slack message from ${m.userName} in ${whereOf(m)}: "${m.text.replace(/\s+/g, ' ').trim()}"` +
     (m.permalink ? ` (${m.permalink})` : '') +
     '. Work out what they need and handle it; if it needs a decision or something only I can do, tell me exactly what. ' +
     'Do not reply on Slack unless I ask.'
   )
 }
 
+/** A note kept from Slack: a title, who and where, the words, the link. */
+export function noteFor(m: SlackMessage, title: string): string {
+  const when = new Date(m.at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+  const quote = m.text
+    .trim()
+    .split('\n')
+    .map((l) => `> ${l}`)
+    .join('\n')
+  return `# ${title || `Slack: ${m.userName}`}\n\nFrom ${m.userName} in ${whereOf(m)}, ${when}.\n\n${quote}\n${m.permalink ? `\n[Open in Slack](${m.permalink})\n` : ''}`
+}
+
+interface Item {
+  m: SlackMessage
+  r: SlackRoute
+}
+
 export class SlackInbox {
   readonly el = el('div', 'ember-slack')
-  private readonly cards = new Map<string, HTMLElement>()
+  /** Routed and worth showing, oldest first; the card shows `at` (the newest, unless stepped back). */
+  private items: Item[] = []
+  private at = -1
+  /** Being read by the router, so a reload or a repeat does not route twice. */
+  private readonly routing = new Set<string>()
+  private card: HTMLElement | null = null
+  /** You stepped (‹ ›) to a card: a new arrival does not snatch it away. */
+  private stepped = false
 
   constructor(private readonly hooks: SlackHooks) {
     window.ember.slack.onMessage((m) => void this.arrive(m))
     void window.ember.slack.waiting().then((list) => list.forEach((m) => void this.arrive(m)))
   }
 
-  /** A message came in: a thread a session took on goes straight there; anything else is a card. */
+  /**
+   * A message came in: a thread a session took on goes straight there; anything else is read
+   * first, and shown only if there is something to do with it.
+   */
   async arrive(m: SlackMessage): Promise<void> {
-    if (this.cards.has(m.id)) return
+    if (this.routing.has(m.id) || this.items.some((x) => x.m.id === m.id)) return
     if (m.tabId && this.hooks.titleOf(m.tabId) && this.hooks.send(m.tabId, briefFor(m))) {
       window.ember.slack.settle(m.id)
       this.hooks.toast(`Slack: ${m.userName}'s reply went to "${this.hooks.titleOf(m.tabId)}"`)
       return
     }
+    this.routing.add(m.id)
+    const r: SlackRoute = await window.ember.slack
+      .route(m, this.hooks.sessions())
+      .catch(() => ({ action: 'todo' as const, why: 'Could not sort it; your call', title: m.text.slice(0, 30) }))
+    this.routing.delete(m.id)
+    if (r.action === 'ignore') {
+      // Chat: nothing to do, nothing shown.
+      window.ember.slack.settle(m.id)
+      return
+    }
+    this.items.push({ m, r })
+    this.items.sort((a, b) => a.m.at - b.m.at)
+    // What just came in takes the card, unless you stepped to another one to read it.
+    const keep = this.stepped && this.card?.isConnected ? this.card.dataset.id : m.id
+    this.at = Math.max(0, this.items.findIndex((x) => x.m.id === keep))
+    this.render()
+  }
+
+  /** The one card: the item at `at`, built fresh in the same slot. */
+  private render(): void {
+    if (!this.items.length) {
+      this.at = -1
+      const old = this.card
+      this.card = null
+      if (old) {
+        old.classList.add('is-leaving')
+        window.setTimeout(() => old.remove(), 220)
+      }
+      return
+    }
+    this.at = Math.max(0, Math.min(this.at < 0 ? this.items.length - 1 : this.at, this.items.length - 1))
+    const { m, r } = this.items[this.at]!
     const card = el('div', 'ember-slack-card')
-    this.cards.set(m.id, card)
+    card.dataset.id = m.id
     const head = el('div', 'ember-slack-head')
     const who = el('a', 'ember-slack-who', `${m.userName}${m.dm ? '' : m.channelName ? ` · #${m.channelName}` : ''}`)
     if (m.permalink) {
@@ -75,39 +142,64 @@ export class SlackInbox {
     }
     const when = el('span', 'ember-slack-when', ago(m.at))
     const close = el('button', 'ember-slack-x', '✕')
-    close.title = 'Ignore'
+    close.title = 'Dismiss'
     close.addEventListener('click', () => this.done(m))
-    head.append(el('span', 'ember-slack-src', m.dm ? 'DM' : '@you'), who, when, close)
+    head.append(el('span', 'ember-slack-src', m.dm ? 'DM' : '@you'), who, when)
+    if (this.items.length > 1) head.append(this.stepper())
+    head.append(close)
     const text = el('div', 'ember-slack-text', m.text)
-    const why = el('div', 'ember-slack-why', 'Working out where this goes…')
+    const why = el('div', 'ember-slack-why', this.say(r))
+    why.hidden = !why.textContent
     const acts = el('div', 'ember-slack-acts')
+    this.renderActs(m, acts, r)
     card.append(head, text, why, acts)
-    this.el.prepend(card)
-    this.renderActs(m, acts, null)
-    const sessions = this.hooks.sessions()
-    const route = await window.ember.slack.route(m, sessions).catch(() => null)
-    if (!card.isConnected) return
-    why.textContent = route ? this.say(route) : ''
-    why.hidden = !route
-    this.renderActs(m, acts, route)
+    if (this.card?.isConnected) {
+      // Same slot: the new one takes the old one's place, no stacking.
+      card.classList.add('is-swap')
+      this.card.replaceWith(card)
+    } else this.el.replaceChildren(card)
+    this.card = card
+  }
+
+  /** ‹ 2/3 › — the others still waiting, a step away. */
+  private stepper(): HTMLElement {
+    const box = el('span', 'ember-slack-step')
+    const prev = el('button', 'ember-slack-nav', '‹')
+    prev.title = 'Earlier'
+    prev.disabled = this.at <= 0
+    prev.addEventListener('click', () => {
+      this.at--
+      this.stepped = true
+      this.render()
+    })
+    const next = el('button', 'ember-slack-nav', '›')
+    next.title = 'Newer'
+    next.disabled = this.at >= this.items.length - 1
+    next.addEventListener('click', () => {
+      this.at++
+      this.stepped = true
+      this.render()
+    })
+    box.append(prev, el('span', 'ember-slack-count', `${this.at + 1}/${this.items.length}`), next)
+    return box
   }
 
   /** The suggestion, in a line: the session by name, else the model's own reason. */
   private say(r: SlackRoute): string {
     if (r.action === 'session' && r.tabId) return `For "${this.hooks.titleOf(r.tabId)}"${r.why ? ` — ${r.why}` : ''}`
-    return r.why || (r.action === 'new' ? 'Looks like new work' : r.action === 'todo' ? 'Can wait: a todo' : 'Nothing asked of you')
+    return r.why || (r.action === 'new' ? 'Looks like new work' : r.action === 'todo' ? 'Can wait: a todo' : r.action === 'note' ? 'Worth keeping' : '')
   }
 
-  /** The four ways, the suggested one first and filled. */
-  private renderActs(m: SlackMessage, acts: HTMLElement, r: SlackRoute | null): void {
+  /** The ways, the suggested one first and filled. */
+  private renderActs(m: SlackMessage, acts: HTMLElement, r: SlackRoute): void {
     acts.replaceChildren()
-    const send = r?.action === 'session' && r.tabId ? r.tabId : ''
+    const send = r.action === 'session' && r.tabId && this.hooks.titleOf(r.tabId) ? r.tabId : ''
     const items: Array<[key: string, label: string, run: () => void | Promise<void>]> = []
     if (send) items.push(['session', `Send to "${this.hooks.titleOf(send).slice(0, 28)}"`, () => this.toSession(m, send)])
     items.push(['new', 'New session', () => this.toNew(m, r)])
     items.push(['todo', 'Todo', () => this.toTodo(m, r)])
-    items.push(['ignore', 'Ignore', () => this.done(m)])
-    const first = r ? (r.action === 'session' && send ? 'session' : r.action) : ''
+    items.push(['note', 'Note', () => this.toNote(m, r)])
+    const first = r.action === 'session' ? (send ? 'session' : 'new') : r.action
     items.sort((a, b) => Number(b[0] === first) - Number(a[0] === first))
     for (const [key, label, run] of items) {
       const b = el('button', `ember-slack-act${key === first ? ' is-primary' : ''}`, label)
@@ -123,26 +215,34 @@ export class SlackInbox {
     this.done(m)
   }
 
-  private async toNew(m: SlackMessage, r: SlackRoute | null): Promise<void> {
+  private async toNew(m: SlackMessage, r: SlackRoute): Promise<void> {
     this.done(m)
-    const tab = await this.hooks.newSession(briefFor(m), r?.folder ?? '', r?.title || `Slack: ${m.userName}`)
+    const tab = await this.hooks.newSession(briefFor(m), r.folder ?? '', r.title || `Slack: ${m.userName}`)
     if (tab) window.ember.slack.remember(m.channel, m.threadTs, tab)
   }
 
-  private async toTodo(m: SlackMessage, r: SlackRoute | null): Promise<void> {
+  private async toTodo(m: SlackMessage, r: SlackRoute): Promise<void> {
     this.done(m)
-    const what = r?.title && r.action === 'todo' ? r.title : m.text.replace(/\s+/g, ' ').slice(0, 80)
+    const what = r.title && r.action === 'todo' ? r.title : m.text.replace(/\s+/g, ' ').slice(0, 80)
     await this.hooks.addTodo(`${m.userName}: ${what}${m.permalink ? ` [Slack](${m.permalink})` : ''}`)
     this.hooks.toast('Added to your todo list')
   }
 
+  private async toNote(m: SlackMessage, r: SlackRoute): Promise<void> {
+    this.done(m)
+    const ok = await this.hooks.addNote(noteFor(m, r.action === 'note' ? r.title : ''))
+    this.hooks.toast(ok ? 'Kept as a note' : 'Could not write the note')
+  }
+
   private done(m: SlackMessage): void {
     window.ember.slack.settle(m.id)
-    const card = this.cards.get(m.id)
-    this.cards.delete(m.id)
-    if (!card) return
-    card.classList.add('is-leaving')
-    window.setTimeout(() => card.remove(), 220)
+    const i = this.items.findIndex((x) => x.m.id === m.id)
+    if (i < 0) return
+    this.items.splice(i, 1)
+    this.stepped = false
+    // Next up: the newest still waiting.
+    this.at = this.items.length - 1
+    this.render()
   }
 }
 
@@ -189,11 +289,11 @@ export class SlackSheet {
     const line = el(
       'div',
       `ember-pair-status${on ? ' is-on' : s.state === 'connecting' ? ' is-wait' : ''}`,
-      on ? `Connected${s.team ? ` to ${s.team}` : ''}: your DMs and mentions come in as cards` : s.state === 'connecting' ? 'Connecting…' : s.state === 'error' ? `Not connected: ${s.error ?? ''}` : 'Not connected'
+      on ? `Connected${s.team ? ` to ${s.team}` : ''}: only what needs you comes in` : s.state === 'connecting' ? 'Connecting…' : s.state === 'error' ? `Not connected: ${s.error ?? ''}` : 'Not connected'
     )
     this.body.replaceChildren(line)
     if (on) {
-      const p = el('p', 'ember-slack-p', 'Each new DM or mention of you shows as a card with where it should go: one of your sessions, a new session, a todo, or nowhere. One click does it. Replies in a thread a session took on go straight to that session. Ember only reads; it never posts.')
+      const p = el('p', 'ember-slack-p', 'New DMs and mentions are read first: only the ones with something to do show, one card at a time, with where they should go (one of your sessions, a new session, a todo, or a note). Chat never shows. One click does it. Replies in a thread a session took on go straight to that session. Ember only reads; it never posts.')
       const row = el('div', 'ember-slack-row')
       const off = el('button', 'ember-slack-btn', 'Disconnect')
       off.addEventListener('click', () => void window.ember.slack.disconnect(true))

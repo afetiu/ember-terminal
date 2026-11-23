@@ -1,5 +1,5 @@
 /**
- * Slack cards: a simulated DM and mention, routed by the real small model; the setup sheet.
+ * Slack: four simulated messages routed by the real small model; chat never shows, the rest share one card; the setup sheet.
  *
  *   npm run build; LOOK=snowfall node scripts/probe-slack.mjs [out-dir]
  */
@@ -17,7 +17,7 @@ const PORT = Number(process.env.PROBE_PORT) || 9673
 const child = spawn(join(REPO, 'node_modules/electron/dist/electron.exe'), ['.', `--remote-debugging-port=${PORT}`], {
   cwd: REPO,
   stdio: 'ignore',
-  env: { ...process.env, EMBER_HOME, EMBER_PROBE_BOUNDS: '1280x800', EMBER_PROBE_INACTIVE: '1' },
+  env: { ...process.env, EMBER_HOME, EMBER_NOTES_DIR: join(EMBER_HOME, 'notes'), EMBER_PROBE_BOUNDS: '1280x800', EMBER_PROBE_INACTIVE: '1' },
 })
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 let failed = 0
@@ -77,26 +77,44 @@ try {
   await ev(`window.__ember.slackMessage(${JSON.stringify(m1)})`)
   await ev(`window.__ember.slackMessage(${JSON.stringify(m2)})`)
   const cards = () => ev(`[...document.querySelectorAll('.ember-slack-card')].map((c) => ({ who: c.querySelector('.ember-slack-who')?.textContent, why: c.querySelector('.ember-slack-why')?.textContent, acts: [...c.querySelectorAll('.ember-slack-act')].map((b) => (b.classList.contains('is-primary') ? '*' : '') + b.textContent) }))`)
-  let c = await cards()
-  check('two cards, newest on top', c.length === 2 && c[0].who === 'Mira', JSON.stringify(c))
-  for (let i = 0; i < 60; i++) {
-    c = await cards()
-    if (c.every((x) => !/Working out/.test(x.why ?? ''))) break
+  const m3 = { id: 'C2:3', channel: 'C2', channelName: 'design', dm: false, user: 'U3', userName: 'Nora', text: '@you we decided: the onboarding goes with the dark theme, final. Specs in the Figma file.', ts: '3', threadTs: '3', permalink: '', at: now + 1000 }
+  const m4 = { id: 'D2:4', channel: 'D2', channelName: '', dm: true, user: 'U4', userName: 'Kai', text: 'haha did you see the game last night', ts: '4', threadTs: '4', permalink: '', at: now + 2000 }
+  await ev(`window.__ember.slackMessage(${JSON.stringify(m3)})`)
+  await ev(`window.__ember.slackMessage(${JSON.stringify(m4)})`)
+  // Routing is on the side: wait until nothing is still being read.
+  for (let i = 0; i < 90; i++) {
     await wait(1000)
+    const count = await ev(`document.querySelector('.ember-slack-count')?.textContent ?? (document.querySelector('.ember-slack-card') ? '1/1' : '0')`)
+    if (count === '2/2' && i > 20) break
   }
-  console.log(JSON.stringify(c, null, 1))
-  check('the UAT message is suggested for the UAT session', /^\*Send to "Radix UAT deploy"/.test(c.find((x) => x.who.startsWith('Noah'))?.acts[0] ?? ''), JSON.stringify(c))
-  check('the thanks is suggested to ignore', c.find((x) => x.who.startsWith('Mira'))?.acts[0] === '*Ignore', JSON.stringify(c))
-  const pic = await send('Page.captureScreenshot', { format: 'png' })
-  writeFileSync(join(OUT, 'slack-cards.png'), Buffer.from(pic.data, 'base64'))
-  await ev(`[...document.querySelectorAll('.ember-slack-card')].find((x) => x.textContent.includes('Mira')).querySelector('.ember-slack-act.is-primary').click()`)
-  await wait(500)
+  await wait(8000)
+  let c = await cards()
+  const count = await ev(`document.querySelector('.ember-slack-count')?.textContent ?? ''`)
+  console.log(JSON.stringify({ c, count }, null, 1))
+  check('one card on screen, never a stack', c.length === 1, JSON.stringify(c))
+  check('chat (thanks, the game) never shows: two of four are waiting', count === '2/2', count)
+  check('the newest worth showing has the card: the decision, as a note', c[0]?.who?.startsWith('Nora') && c[0].acts[0] === '*Note', JSON.stringify(c))
+  await shot('slack-card')
+  await ev(`document.querySelector('.ember-slack-nav').click()`)
+  await wait(300)
   c = await cards()
-  check('Ignore takes the card away', c.length === 1 && c[0].who.startsWith('Noah'), JSON.stringify(c))
+  check('‹ steps back to the UAT message, suggested for the UAT session', c.length === 1 && c[0].who.startsWith('Noah') && /^\*Send to "Radix UAT deploy"/.test(c[0].acts[0] ?? ''), JSON.stringify(c))
+  await shot('slack-card-earlier')
+  const notesBefore = (await ev(`window.ember.notes.list()`)).length
+  await ev(`document.querySelector('.ember-slack-nav:not(:disabled)').click()`)
+  await wait(300)
+  await ev(`document.querySelector('.ember-slack-act.is-primary').click()`)
+  await wait(1200)
+  const notesAfter = await ev(`window.ember.notes.list()`)
+  check('Note keeps it as a note', notesAfter.length === notesBefore + 1, JSON.stringify(notesAfter.slice(0, 1)))
+  c = await cards()
+  check('the next one takes the slot', c.length === 1 && c[0].who.startsWith('Noah'), JSON.stringify(c))
+  await ev(`document.querySelector('.ember-slack-x').click()`)
+  await wait(500)
+  check('dismissing the last leaves nothing', (await cards()).length === 0)
   await ev(`window.__ember.slackSheet()`)
   await wait(500)
-  const sheet = await send('Page.captureScreenshot', { format: 'png' })
-  writeFileSync(join(OUT, 'slack-sheet.png'), Buffer.from(sheet.data, 'base64'))
+  await shot('slack-sheet')
   check('the sheet offers the manifest and the two tokens', await ev(`document.querySelectorAll('.ember-slack-sheet.is-open .ember-slack-input').length === 2`))
   ws.close()
 } finally {

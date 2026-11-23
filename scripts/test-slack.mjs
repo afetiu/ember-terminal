@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { wantSlackEvent } from '../src/shared/slackFilter.ts'
+import { parseRoute, wantSlackEvent } from '../src/shared/slackFilter.ts'
 
 const ME = 'U0ME'
 const msg = (o) => ({ type: 'message', user: 'U0NOAH', channel: 'C1', ts: '100.1', text: 'hi', channel_type: 'channel', ...o })
@@ -31,4 +31,16 @@ test('your own messages, bots, edits and joins are not', () => {
 })
 test('a shared file in a DM still is', () => {
   assert.deepEqual(wantSlackEvent(msg({ channel_type: 'im', subtype: 'file_share' }), ME, {}), { dm: true })
+})
+
+const S = [{ tabId: 'g1', folder: 'C:/uat' }]
+test('the router can say: a session, a note, or nothing', () => {
+  assert.deepEqual(parseRoute('{"action":"session","session":1,"why":"same 502s","title":"UAT 502s"}', { text: 'x' }, S), { action: 'session', tabId: 'g1', folder: 'C:/uat', why: 'same 502s', title: 'UAT 502s' })
+  assert.equal(parseRoute('{"action":"note","why":"a decision","title":"Ingress decision"}', { text: 'x' }, S).action, 'note')
+  assert.equal(parseRoute('Sure! {"action":"ignore","why":"small talk","title":"hi"}', { text: 'x' }, S).action, 'ignore')
+})
+test('a session that is not there is new work; an unreadable answer is shown, not dropped', () => {
+  assert.equal(parseRoute('{"action":"session","session":4}', { text: 'x' }, S).action, 'new')
+  assert.equal(parseRoute('no idea', { text: 'x' }, S).action, 'todo')
+  assert.equal(parseRoute('{"action":"panic"}', { text: 'x' }, S).action, 'todo')
 })
