@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync, createReadStream } from 'node:fs'
 import { open, readFile } from 'node:fs/promises'
 import { extname, basename, isAbsolute, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
+import { StringDecoder } from 'node:string_decoder'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { CanvasAnnotateResult, CanvasFeed, ScreenItem } from '../shared/types.js'
 import { transcriptPath } from './transcript.js'
@@ -166,7 +167,15 @@ function slimBlock(block: unknown): unknown {
         type: 'tool_result',
         tool_use_id: b['tool_use_id'],
         is_error: b['is_error'] === true,
-        content: typeof content === 'string' ? cap(content) : Array.isArray(content) ? content.map(slimBlock) : content,
+        // Images in a result are what the session looked at (screenshots it read), which the
+        // canvas never shows (Feed.result): their bytes stay here. In a long session they were
+        // most of what the feed carried.
+        content:
+          typeof content === 'string'
+            ? cap(content)
+            : Array.isArray(content)
+              ? (content as Json[]).map((x) => (x && x['type'] === 'image' ? { type: 'text', text: '' } : slimBlock(x)))
+              : content,
       }
     }
     default:
@@ -233,11 +242,14 @@ function slimResult(raw: unknown): unknown {
   for (const [k, v] of Object.entries(raw as Json)) {
     if (k === 'originalFile' || (k === 'content' && typeof v === 'string' && v.length > TEXT_CAP)) continue
     if (typeof v === 'string') out[k] = cap(v)
-    else if (Array.isArray(v)) out[k] = v.slice(0, 200)
+    else if (Array.isArray(v)) out[k] = v.slice(0, 200).map((x) => (x && typeof x === 'object' && (x as Json)['type'] === 'image' ? { type: 'image' } : x))
     else if (v && typeof v === 'object') {
       const inner: Json = {}
       for (const [ik, iv] of Object.entries(v as Json)) {
         if (ik === 'content' && typeof iv === 'string') inner[ik] = cap(iv, 2000)
+        // A Read of an image keeps the whole picture here (`file.base64`), a second copy of
+        // the result's own; nothing on the canvas reads a string this long.
+        else if (typeof iv === 'string' && iv.length > TEXT_CAP) continue
         else if (typeof iv !== 'object' || iv === null) inner[ik] = iv
       }
       out[k] = inner
@@ -261,6 +273,7 @@ class Tail {
   private switching: { file: string; first: boolean; since: number } | null = null
   private offset = 0
   private carry = ''
+  private decoder = new StringDecoder('utf8')
   private timer: NodeJS.Timeout | null = null
   private reading: Promise<void> | null = null
   private meter = new CostMeter()
@@ -372,57 +385,89 @@ class Tail {
       if (!existsSync(file)) return
       const first = !this.file
       this.file = file
-      this.offset = 0
-      this.carry = ''
+      this.rewind()
       this.meter = new CostMeter()
       // Told with the first lines, which say whether the session is fresh (`/clear`, a new
       // `claude`) or one with a history (`/resume`, `--continue`).
       this.switching = { file, first, since: this.targetSince }
     }
+    let costed = false
+    await this.readRecords(file, (records) => {
+      const lines: Json[] = []
+      for (const parsed of records) {
+        if (this.meter.add(parsed)) costed = true
+        const slim = slimLine(parsed)
+        if (slim) lines.push(slim)
+      }
+      const sw = this.switching
+      if (sw && lines.length) {
+        this.switching = null
+        this.emit({ tabId: this.tabId, kind: 'switch', file: sw.file, first: sw.first, fresh: isFresh(lines, sw.since) })
+      }
+      if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
+    })
+    if (costed && !this.to.isDestroyed()) this.to.send('ember:canvas:cost', this.meter.summary(this.tabId))
+    await this.readAgents(file)
+  }
+
+  /** Start the file on screen over from its first byte. */
+  private rewind(): void {
+    this.offset = 0
+    this.carry = ''
+    this.decoder = new StringDecoder('utf8')
+  }
+
+  /**
+   * Everything appended to `file` since last time, as whole JSON records, handed to `take`
+   * a chunk at a time.
+   *
+   * Never the whole file at once: a long session's transcript passes 537 MB, the longest
+   * string V8 can make, and reading it in one piece threw before a single line was parsed,
+   * so the canvas of that session stayed empty for good (scripts/probe-big-transcript.mjs).
+   * The decoder carries a character cut in two by a chunk's edge over to the next chunk.
+   */
+  private async readRecords(file: string, take: (records: Json[]) => void): Promise<void> {
     let size = 0
     try {
       size = statSync(file).size
     } catch {
       return
     }
-    if (size < this.offset) this.offset = 0
+    // Truncated or replaced: start over.
+    if (size < this.offset) this.rewind()
     if (size === this.offset) return
     const handle = await open(file, 'r')
     try {
-      const length = size - this.offset
-      const buf = Buffer.alloc(length)
-      await handle.read(buf, 0, length, this.offset)
-      this.offset = size
-      this.carry += buf.toString('utf8')
+      while (this.offset < size) {
+        const length = Math.min(size - this.offset, READ_CHUNK)
+        const buf = Buffer.alloc(length)
+        const { bytesRead } = await handle.read(buf, 0, length, this.offset)
+        if (bytesRead <= 0) break
+        this.offset += bytesRead
+        this.carry += this.decoder.write(bytesRead === length ? buf : buf.subarray(0, bytesRead))
+        const records: Json[] = []
+        let start = 0
+        let cut = this.carry.indexOf('\n')
+        while (cut !== -1) {
+          const raw = this.carry.slice(start, cut).trim()
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as unknown
+              if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) records.push(parsed as Json)
+            } catch {
+              /* a line that is not JSON: skipped */
+            }
+          }
+          start = cut + 1
+          cut = this.carry.indexOf('\n', start)
+        }
+        // What follows the last newline is half a line; the rest comes with the next chunk or append.
+        this.carry = this.carry.slice(start)
+        if (records.length) take(records)
+      }
     } finally {
       await handle.close()
     }
-    const lines: Json[] = []
-    let costed = false
-    let cut = this.carry.indexOf('\n')
-    while (cut !== -1) {
-      const raw = this.carry.slice(0, cut).trim()
-      this.carry = this.carry.slice(cut + 1)
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as Json
-          if (this.meter.add(parsed)) costed = true
-          const slim = slimLine(parsed)
-          if (slim) lines.push(slim)
-        } catch {
-          /* half a line; the rest arrives with the next append */
-        }
-      }
-      cut = this.carry.indexOf('\n')
-    }
-    const sw = this.switching
-    if (sw && lines.length) {
-      this.switching = null
-      this.emit({ tabId: this.tabId, kind: 'switch', file: sw.file, first: sw.first, fresh: isFresh(lines, sw.since) })
-    }
-    if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
-    if (costed && !this.to.isDestroyed()) this.to.send('ember:canvas:cost', this.meter.summary(this.tabId))
-    await this.readAgents(file)
   }
 
   /**
@@ -451,8 +496,7 @@ class Tail {
       if (found && found !== this.file && (!this.isMine() || born(found) >= born(this.file))) {
         const first = !this.file
         this.file = found
-        this.offset = 0
-        this.carry = ''
+        this.rewind()
         log.state = {}
         log.stamp = ''
         log.name = ''
@@ -497,39 +541,13 @@ class Tail {
       log.state = {}
       if (doc && typeof doc === 'object' && !Array.isArray(doc)) take([doc as Json])
     } else {
-      if (size < this.offset) {
-        // Truncated or replaced: start over.
-        this.offset = 0
-        this.carry = ''
-        log.state = {}
-      }
-      if (size === this.offset) return
-      const handle = await open(file, 'r')
-      try {
-        const length = size - this.offset
-        const buf = Buffer.alloc(length)
-        await handle.read(buf, 0, length, this.offset)
-        this.offset = size
-        this.carry += buf.toString('utf8')
-      } finally {
-        await handle.close()
-      }
-      const records: Json[] = []
-      let cut = this.carry.indexOf('\n')
-      while (cut !== -1) {
-        const raw = this.carry.slice(0, cut).trim()
-        this.carry = this.carry.slice(cut + 1)
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw) as unknown
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) records.push(parsed as Json)
-          } catch {
-            /* half a line; the rest arrives with the next append */
-          }
-        }
-        cut = this.carry.indexOf('\n')
-      }
-      if (records.length) take(records)
+      // Truncated or replaced (readRecords reads it again from the top): the adapter starts over too.
+      if (size < this.offset) log.state = {}
+      await this.readRecords(file, (records) => {
+        take(records)
+        if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines: lines.splice(0) })
+      })
+      return
     }
     if (lines.length) this.emit({ tabId: this.tabId, kind: 'lines', lines })
   }
@@ -539,6 +557,9 @@ class Tail {
     return !!this.log && !!this.file && this.file !== transcriptPath(this.tabId)
   }
 }
+
+/** How much of a transcript is read and parsed at once (see readRecords). */
+const READ_CHUNK = 32 * 1024 * 1024
 
 /** How often a tab following another agent looks for its log, or a newer one. */
 const RELOCATE_MS = 2000
